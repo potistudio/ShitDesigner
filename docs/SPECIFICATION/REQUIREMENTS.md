@@ -1,5 +1,9 @@
 # REQUIREMENTS
 
+## 状態
+
+確定。本書を初期版の要求に関する正本とし、具体的な実行規則は `NODES/` の各個別仕様、操作と表示は `../GUI/` の各個別仕様が所有する。
+
 ## Metadata
 
 - Interview ID: `afc4a065-2637-4fd1-84b0-b337d2814671`
@@ -10,8 +14,9 @@
 - Threshold: 20%
 - Threshold Source: `default`
 - Initial Context Summarized: no
-- Status: `PASSED`
-- Approval: pending
+- Interview Result: `PASSED`
+- Document Status: `CONFIRMED`
+- Approval: confirmed
 
 ## Clarity Breakdown
 
@@ -76,7 +81,7 @@ Unity上で継続的に拡張できる個人用汎用VJシステムを構築す�
 - [ ] 物理入力を名前付き論理コントロールへ割り当て、論理コントロールからパラメーターまたはプリセットを操作できる。
 - [ ] 物理入力デバイスの割り当てを変更しても、論理コントロールからグラフへの関係を維持できる。
 - [ ] Program映像と操作用Previewを同時に表示できる。
-- [ ] 確定予定の基準PC上で、Program映像を1920×1080・60fpsで維持できる。
+- [ ] `PerformanceBaseline.md`で定義したWindows／macOS基準PC上で、Program映像を1920×1080・60fpsで維持できる。
 - [ ] VJプロジェクトを保存し直しても、ノード、接続、パラメーター、論理コントロール、入力割り当て、プリセットが復元される。
 - [ ] 外部素材がVJプロジェクト内へコピーされ、元ファイルを参照せず読み込める。
 - [ ] VJプロジェクトフォルダーを別PCへコピーし、素材を含めて開ける。
@@ -97,14 +102,16 @@ Unity上で継続的に拡張できる個人用汎用VJシステムを構築す�
 | 性能は実装後に判断すればよい | 出力成功条件を確認 | FHD・60fpsを最低基準とする |
 | 外部素材は元パス参照でよい | プロジェクトの可搬性を確認 | 素材をVJプロジェクト内へコピーする |
 
-## Remaining Decisions
+## Resolved Decisions
 
-- FHD・60fpsの性能試験に使用する基準PCのCPU、GPU、メモリ。
-- 初期対応する物理入力プロトコル。MIDI、OSCなどは未確定。
-- VJプロジェクトの具体的なファイル形式、バージョニング、破損復旧方式。
-- ノードグラフで循環接続を許可するかどうか。
-- 色空間、HDR、アルファ形式、RenderTexture解像度の伝播規則。
-- 音声解析、録画、配信、NDI、Spoutなどの導入時期。
+| Topic | Resolution | Owning Specification |
+|---|---|---|
+| FHD・60fps基準PC | WindowsはRyzen 5 5600X／RTX 3060 12GB／32GB、macOSはMacBook Pro M4／16GBを基準とする | [PerformanceBaseline](NODES/PerformanceBaseline.md) |
+| 初期物理入力 | Unity Input SystemのKeyboardだけを初期保証とし、Mouse、Gamepad、MIDI、OSC、DMX、NDI、Spoutは初期対象外とする | [PhysicalInputScope](NODES/PhysicalInputScope.md) |
+| プロジェクト形式と復旧 | UTF-8 `project.json`、ProjectFormatVersion、原子的置換、`.bak`、移行前バックアップおよびUnknownNode復旧を使用する | [VJProjectPersistence](NODES/VJProjectPersistence.md)、[NodeSchemaMigrationAndUnknown](NODES/NodeSchemaMigrationAndUnknown.md) |
+| グラフ循環 | `Feedback` ノードを経由するフレーム間循環だけを許可し、同一フレームの評価グラフは非循環に保つ | [Feedback](NODES/Feedback.md)、[GraphEvaluation](NODES/GraphEvaluation.md) |
+| 映像共通形式 | Linear、HDR RGBA16F、Premultiplied Alphaを内部形式とし、Programは固定1920×1080、表示時にACESでLDRへ変換する | [InternalColorSpace](NODES/InternalColorSpace.md)、[InternalDynamicRange](NODES/InternalDynamicRange.md)、[InternalAlpha](NODES/InternalAlpha.md)、[ResolutionAndOutputPolicy](NODES/ResolutionAndOutputPolicy.md) |
+| 外部連携 | 音声解析、録画、配信、NDI、SpoutおよびHDRディスプレイ直接出力は初期対象外として確定し、導入時に別要求として定義する | [Nodes設計インデックス](NODES/README.md) |
 
 ## Technical Context
 
