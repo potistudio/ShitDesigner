@@ -1,0 +1,14 @@
+{
+  "name": "ShitDesigner.Project",
+  "rootNamespace": "ShitDesigner.Project",
+  "references": ["ShitDesigner.Core"],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": true
+}

@@ -15,7 +15,7 @@
 
 ## Serializer
 
-Unity 6000.5.8f1のTargeting Packに含まれる `System.Text.Json` を使用する。追加のJSON Packageは導入しない。
+Unity 6000.5.9f1のTargeting Packに含まれる `System.Text.Json` を使用する。追加のJSON Packageは導入しない。
 
 - DTOはSource Generation対応の `JsonSerializerContext` へ明示登録する。
 - IL2CPP PlayerでRuntime Reflectionによる型探索へ依存しない。

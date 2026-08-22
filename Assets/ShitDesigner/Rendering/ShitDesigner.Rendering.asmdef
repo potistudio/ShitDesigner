@@ -1,0 +1,18 @@
+{
+  "name": "ShitDesigner.Rendering",
+  "rootNamespace": "ShitDesigner.Rendering",
+  "references": [
+    "ShitDesigner.Core",
+    "ShitDesigner.Runtime"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": []
+}

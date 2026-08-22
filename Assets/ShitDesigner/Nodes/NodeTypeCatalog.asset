@@ -1,0 +1,1021 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d8f4992f46ddad4d8ba17ded3f1d8fd, type: 3}
+  m_Name: NodeTypeCatalog
+  m_EditorClassIdentifier: ShitDesigner.Nodes::ShitDesigner.Nodes.NodeTypeCatalog
+  catalogSchemaVersion: 1
+  entries:
+  - typeId: system.program_output
+    schemaVersion: 1
+    displayName: ProgramOutput
+    category: System
+    systemOwned: 1
+    userAddable: 0
+    portIds:
+    - image
+    parameterIds: []
+    ports:
+    - id: image
+      displayName: Image
+      direction: 0
+      type: 0
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters: []
+    shaderKey: 
+    prefabKey: 
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 0}
+    outputPass: 0
+  - typeId: system.preview
+    schemaVersion: 1
+    displayName: Preview
+    category: System
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - image
+    parameterIds:
+    - display.mode
+    ports:
+    - id: image
+      displayName: Image
+      direction: 0
+      type: 0
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters:
+    - id: display.mode
+      displayName: Display Mode
+      type: 8
+      defaultValue: enum:fit
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions:
+      - fit
+      - fill
+      - stretch
+      group: 
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    shaderKey: 
+    prefabKey: 
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 0}
+    outputPass: 0
+  - typeId: system.feedback
+    schemaVersion: 1
+    displayName: Feedback
+    category: Processing
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - input
+    - image
+    parameterIds: []
+    ports:
+    - id: input
+      displayName: Input
+      direction: 0
+      type: 0
+      required: 0
+      hasDefaultImage: 1
+      defaultImage: 0
+    - id: image
+      displayName: Image
+      direction: 1
+      type: 0
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters: []
+    shaderKey: 
+    prefabKey: 
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 0}
+    outputPass: 0
+  - typeId: shitdesigner.scene.3d
+    schemaVersion: 1
+    displayName: 3D
+    category: 3D
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - image
+    parameterIds: []
+    ports:
+    - id: image
+      displayName: Image
+      direction: 1
+      type: 0
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters: []
+    shaderKey: 
+    prefabKey: builtin.scene.3d
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 100000, guid: 55555555555555555555555555555555, type: 3}
+    outputPass: 0
+  - typeId: shitdesigner.scene.2d
+    schemaVersion: 1
+    displayName: 2D
+    category: 2D
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - image
+    parameterIds: []
+    ports:
+    - id: image
+      displayName: Image
+      direction: 1
+      type: 0
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters: []
+    shaderKey: 
+    prefabKey: builtin.scene.2d
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 110000, guid: 66666666666666666666666666666666, type: 3}
+    outputPass: 0
+  - typeId: shitdesigner.shader.generator
+    schemaVersion: 1
+    displayName: Shader Generator
+    category: Shader/Generator
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - image
+    parameterIds:
+    - color
+    ports:
+    - id: image
+      displayName: Image
+      direction: 1
+      type: 0
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters:
+    - id: color
+      displayName: Color
+      type: 6
+      defaultValue: color:0,0,0,1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    shaderKey: builtin.shader.generator
+    prefabKey: 
+    shader: {fileID: 4800000, guid: 11111111111111111111111111111111, type: 3}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 0}
+    outputPass: 0
+  - typeId: shitdesigner.shader.effect
+    schemaVersion: 1
+    displayName: Shader Effect
+    category: Shader/Effect
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - input
+    - image
+    parameterIds: []
+    ports:
+    - id: input
+      displayName: Input
+      direction: 0
+      type: 0
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: image
+      displayName: Image
+      direction: 1
+      type: 0
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters: []
+    shaderKey: builtin.shader.effect
+    prefabKey: 
+    shader: {fileID: 4800000, guid: 22222222222222222222222222222222, type: 3}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 0}
+    outputPass: 0
+  - typeId: shitdesigner.shader.blend2
+    schemaVersion: 1
+    displayName: Shader 2-input Blend
+    category: Shader/Effect
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - a
+    - b
+    - image
+    parameterIds: []
+    ports:
+    - id: a
+      displayName: A
+      direction: 0
+      type: 0
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: b
+      displayName: B
+      direction: 0
+      type: 0
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: image
+      displayName: Image
+      direction: 1
+      type: 0
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters: []
+    shaderKey: builtin.shader.blend2
+    prefabKey: 
+    shader: {fileID: 4800000, guid: 33333333333333333333333333333333, type: 3}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 0}
+    outputPass: 0
+  - typeId: shitdesigner.video.player
+    schemaVersion: 1
+    displayName: VideoPlayer
+    category: Video
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - image
+    parameterIds:
+    - transport.media_asset
+    - transport.playing
+    - transport.playhead_seconds
+    - transport.speed
+    - transport.loop
+    ports:
+    - id: image
+      displayName: Image
+      direction: 1
+      type: 0
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters:
+    - id: transport.media_asset
+      displayName: Media Asset
+      type: 9
+      defaultValue: 'media:'
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      group: 
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: transport.playing
+      displayName: Playing
+      type: 2
+      defaultValue: bool:false
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      group: 
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: transport.playhead_seconds
+      displayName: Playhead
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:3.40282347E+38
+      runtimeStateful: 1
+      enumOptions: []
+      group: 
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: transport.speed
+      displayName: Speed
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:4
+      runtimeStateful: 0
+      enumOptions: []
+      group: 
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: transport.loop
+      displayName: Loop
+      type: 2
+      defaultValue: bool:true
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      group: 
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    shaderKey: 
+    prefabKey: 
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 0}
+    outputPass: 0
+  - typeId: shitdesigner.convert.float_to_int
+    schemaVersion: 1
+    displayName: Float To Int
+    category: Conversion
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - value
+    - result
+    parameterIds:
+    - rounding
+    ports:
+    - id: value
+      displayName: VALUE
+      direction: 0
+      type: 1
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: result
+      displayName: Result
+      direction: 1
+      type: 2
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters:
+    - id: rounding
+      displayName: Rounding
+      type: 8
+      defaultValue: enum:round
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions:
+      - round
+      - floor
+      - ceil
+      - truncate
+      group: 
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    shaderKey: 
+    prefabKey: 
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 0}
+    outputPass: 0
+  - typeId: shitdesigner.convert.int_to_float
+    schemaVersion: 1
+    displayName: Int To Float
+    category: Conversion
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - value
+    - result
+    parameterIds: []
+    ports:
+    - id: value
+      displayName: VALUE
+      direction: 0
+      type: 2
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: result
+      displayName: Result
+      direction: 1
+      type: 1
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters: []
+    shaderKey: 
+    prefabKey: 
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 0}
+    outputPass: 0
+  - typeId: shitdesigner.convert.float_to_bool
+    schemaVersion: 1
+    displayName: Float To Bool
+    category: Conversion
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - value
+    - result
+    parameterIds:
+    - threshold
+    ports:
+    - id: value
+      displayName: VALUE
+      direction: 0
+      type: 1
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: result
+      displayName: Result
+      direction: 1
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters:
+    - id: threshold
+      displayName: Threshold
+      type: 0
+      defaultValue: float:0.5
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      group: 
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    shaderKey: 
+    prefabKey: 
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 0}
+    outputPass: 0
+  - typeId: shitdesigner.convert.bool_to_float
+    schemaVersion: 1
+    displayName: Bool To Float
+    category: Conversion
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - value
+    - result
+    parameterIds:
+    - false_value
+    - true_value
+    ports:
+    - id: value
+      displayName: VALUE
+      direction: 0
+      type: 3
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: result
+      displayName: Result
+      direction: 1
+      type: 1
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters:
+    - id: false_value
+      displayName: False
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      group: 
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: true_value
+      displayName: True
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      group: 
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    shaderKey: 
+    prefabKey: 
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 0}
+    outputPass: 0
+  - typeId: shitdesigner.convert.compose_vector2
+    schemaVersion: 1
+    displayName: Compose Vector2
+    category: Conversion
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - x
+    - y
+    - result
+    parameterIds: []
+    ports:
+    - id: x
+      displayName: X
+      direction: 0
+      type: 1
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: y
+      displayName: Y
+      direction: 0
+      type: 1
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: result
+      displayName: Result
+      direction: 1
+      type: 4
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters: []
+    shaderKey: 
+    prefabKey: 
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 0}
+    outputPass: 0
+  - typeId: shitdesigner.convert.compose_vector3
+    schemaVersion: 1
+    displayName: Compose Vector3
+    category: Conversion
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - x
+    - y
+    - z
+    - result
+    parameterIds: []
+    ports:
+    - id: x
+      displayName: X
+      direction: 0
+      type: 1
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: y
+      displayName: Y
+      direction: 0
+      type: 1
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: z
+      displayName: Z
+      direction: 0
+      type: 1
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: result
+      displayName: Result
+      direction: 1
+      type: 5
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters: []
+    shaderKey: 
+    prefabKey: 
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 0}
+    outputPass: 0
+  - typeId: shitdesigner.convert.compose_vector4
+    schemaVersion: 1
+    displayName: Compose Vector4
+    category: Conversion
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - x
+    - y
+    - z
+    - w
+    - result
+    parameterIds: []
+    ports:
+    - id: x
+      displayName: X
+      direction: 0
+      type: 1
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: y
+      displayName: Y
+      direction: 0
+      type: 1
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: z
+      displayName: Z
+      direction: 0
+      type: 1
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: w
+      displayName: W
+      direction: 0
+      type: 1
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: result
+      displayName: Result
+      direction: 1
+      type: 6
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters: []
+    shaderKey: 
+    prefabKey: 
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 0}
+    outputPass: 0
+  - typeId: shitdesigner.convert.split_vector2
+    schemaVersion: 1
+    displayName: Split Vector2
+    category: Conversion
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - value
+    - x
+    - y
+    parameterIds: []
+    ports:
+    - id: value
+      displayName: VALUE
+      direction: 0
+      type: 4
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: x
+      displayName: X
+      direction: 1
+      type: 1
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: y
+      displayName: Y
+      direction: 1
+      type: 1
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters: []
+    shaderKey: 
+    prefabKey: 
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 0}
+    outputPass: 0
+  - typeId: shitdesigner.convert.split_vector3
+    schemaVersion: 1
+    displayName: Split Vector3
+    category: Conversion
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - value
+    - x
+    - y
+    - z
+    parameterIds: []
+    ports:
+    - id: value
+      displayName: VALUE
+      direction: 0
+      type: 5
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: x
+      displayName: X
+      direction: 1
+      type: 1
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: y
+      displayName: Y
+      direction: 1
+      type: 1
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: z
+      displayName: Z
+      direction: 1
+      type: 1
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters: []
+    shaderKey: 
+    prefabKey: 
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 0}
+    outputPass: 0
+  - typeId: shitdesigner.convert.split_vector4
+    schemaVersion: 1
+    displayName: Split Vector4
+    category: Conversion
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - value
+    - x
+    - y
+    - z
+    - w
+    parameterIds: []
+    ports:
+    - id: value
+      displayName: VALUE
+      direction: 0
+      type: 6
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: x
+      displayName: X
+      direction: 1
+      type: 1
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: y
+      displayName: Y
+      direction: 1
+      type: 1
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: z
+      displayName: Z
+      direction: 1
+      type: 1
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: w
+      displayName: W
+      direction: 1
+      type: 1
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters: []
+    shaderKey: 
+    prefabKey: 
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 0}
+    outputPass: 0
+  - typeId: shitdesigner.convert.vector_component
+    schemaVersion: 1
+    displayName: Vector Component
+    category: Conversion
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - value
+    - result
+    parameterIds:
+    - component
+    ports:
+    - id: value
+      displayName: VALUE
+      direction: 0
+      type: 6
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: result
+      displayName: Result
+      direction: 1
+      type: 1
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters:
+    - id: component
+      displayName: Component
+      type: 8
+      defaultValue: enum:x
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions:
+      - x
+      - y
+      - z
+      - w
+      group: 
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    shaderKey: 
+    prefabKey: 
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 0}
+    outputPass: 0
+  - typeId: shitdesigner.convert.color_to_luminance
+    schemaVersion: 1
+    displayName: Color To Luminance
+    category: Conversion
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - value
+    - result
+    parameterIds: []
+    ports:
+    - id: value
+      displayName: VALUE
+      direction: 0
+      type: 7
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: result
+      displayName: Result
+      direction: 1
+      type: 1
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters: []
+    shaderKey: 
+    prefabKey: 
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 0}
+    outputPass: 0
+  - typeId: shitdesigner.convert.float_to_color
+    schemaVersion: 1
+    displayName: Float To Color
+    category: Conversion
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - value
+    - result
+    parameterIds:
+    - alpha
+    ports:
+    - id: value
+      displayName: VALUE
+      direction: 0
+      type: 1
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: result
+      displayName: Result
+      direction: 1
+      type: 7
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters:
+    - id: alpha
+      displayName: Alpha
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      group: 
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    shaderKey: 
+    prefabKey: 
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 0}
+    outputPass: 0
