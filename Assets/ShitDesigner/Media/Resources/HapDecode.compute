@@ -1,0 +1,60 @@
+#pragma kernel HapDecode
+
+RWTexture2D<float4> Result;
+StructuredBuffer<uint> ColorBlocks;
+StructuredBuffer<uint> AlphaBlocks;
+int Width;
+int Height;
+int ColorFormat;
+int AlphaFormat;
+int IsYCoCg;
+int HasAlpha;
+
+float3 Rgb565(uint value) { return float3((value >> 11) & 31, (value >> 5) & 63, value & 31) / float3(31, 63, 31); }
+float4 Bc1(uint baseWord, uint pixel)
+{
+    uint c0Word = ColorBlocks[baseWord]; uint c1Word = ColorBlocks[baseWord + 1];
+    uint c0Bits = c0Word & 0xffff; uint c1Bits = c0Word >> 16; uint index = (c1Word >> (pixel * 2)) & 3;
+    float3 c0 = Rgb565(c0Bits); float3 c1 = Rgb565(c1Bits); float3 colors[4]; colors[0] = c0; colors[1] = c1;
+    colors[2] = c0Bits > c1Bits ? (2 * c0 + c1) / 3 : (c0 + c1) / 2;
+    colors[3] = c0Bits > c1Bits ? (c0 + 2 * c1) / 3 : 0;
+    return float4(colors[index], index == 3 && c0Bits <= c1Bits ? 0 : 1);
+}
+float AlphaBc4FromColor(uint baseWord, uint pixel)
+{
+    uint endpoints = ColorBlocks[baseWord]; uint a0 = endpoints & 255; uint a1 = (endpoints >> 8) & 255;
+    uint lowIndices = endpoints >> 16; uint highIndices = ColorBlocks[baseWord + 1]; uint bitOffset = pixel * 3;
+    uint index = bitOffset < 16 ? ((lowIndices >> bitOffset) | (highIndices << (16 - bitOffset))) & 7 : (highIndices >> (bitOffset - 16)) & 7;
+    if (index == 0) return a0 / 255.0; if (index == 1) return a1 / 255.0;
+    if (a0 > a1) return ((8 - index) * a0 + (index - 1) * a1) / (7.0 * 255.0);
+    if (index <= 5) return ((6 - index) * a0 + (index - 1) * a1) / (5.0 * 255.0);
+    return index == 6 ? 0 : 1;
+}
+float AlphaBc4(uint baseWord, uint pixel)
+{
+    uint endpoints = AlphaBlocks[baseWord]; uint a0 = endpoints & 255; uint a1 = (endpoints >> 8) & 255;
+    uint lowIndices = endpoints >> 16; uint highIndices = AlphaBlocks[baseWord + 1]; uint bitOffset = pixel * 3;
+    uint index = bitOffset < 16 ? ((lowIndices >> bitOffset) | (highIndices << (16 - bitOffset))) & 7 : (highIndices >> (bitOffset - 16)) & 7;
+    if (index == 0) return a0 / 255.0; if (index == 1) return a1 / 255.0;
+    if (a0 > a1) return ((8 - index) * a0 + (index - 1) * a1) / (7.0 * 255.0);
+    if (index <= 5) return ((6 - index) * a0 + (index - 1) * a1) / (5.0 * 255.0);
+    return index == 6 ? 0 : 1;
+}
+float SrgbToLinear(float value) { return value <= 0.04045 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4); }
+
+[numthreads(8, 8, 1)]
+void HapDecode(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= Width || id.y >= Height) return;
+    uint blockWidth = (Width + 3) / 4; uint block = (id.y / 4) * blockWidth + id.x / 4; uint pixel = (id.y & 3) * 4 + (id.x & 3);
+    uint colorBase = block * (ColorFormat == 1 ? 2 : 4); float4 color = ColorFormat == 1 ? Bc1(colorBase, pixel) : Bc1(colorBase + 2, pixel);
+    float colorAlpha = ColorFormat == 2 ? AlphaBc4FromColor(colorBase, pixel) : 1.0; float alpha = IsYCoCg != 0 ? 1.0 : colorAlpha; if (HasAlpha != 0 && IsYCoCg != 0) alpha = AlphaBc4(block * 2, pixel);
+    float3 rgb = color.rgb;
+    if (IsYCoCg != 0)
+    {
+        float2 coCg = rgb.rg - (0.5 * 256.0 / 255.0); float scale = rgb.b * (255.0 / 8.0) + 1.0; float co = coCg.x / scale; float cg = coCg.y / scale; float y = ColorFormat == 2 ? AlphaBc4FromColor(colorBase, pixel) : color.a;
+        rgb = saturate(float3(y + co - cg, y + cg, y - co - cg));
+    }
+    rgb = float3(SrgbToLinear(rgb.r), SrgbToLinear(rgb.g), SrgbToLinear(rgb.b));
+    Result[id.xy] = float4(rgb * alpha, alpha);
+}

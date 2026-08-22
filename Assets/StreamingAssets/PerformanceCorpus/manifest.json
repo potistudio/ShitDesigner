@@ -1,0 +1,25 @@
+{
+  "version": "fhd60-v1",
+  "entries": [
+    {
+      "name": "FHD60 H.264 performance corpus",
+      "codec": "H264",
+      "file": "h264_fhd60.mp4",
+      "xxh3_128": "00000000000000000000000000000000",
+      "bytes": 1,
+      "width": 1920,
+      "height": 1080,
+      "fps": 60
+    },
+    {
+      "name": "FHD60 Hap performance corpus",
+      "codec": "Hap",
+      "file": "hap_fhd60.mov",
+      "xxh3_128": "00000000000000000000000000000000",
+      "bytes": 1,
+      "width": 1920,
+      "height": 1080,
+      "fps": 60
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "ShitDesigner.Runtime.Tests.EditMode",
+  "rootNamespace": "ShitDesigner.Runtime.Tests",
+  "references": [
+    "ShitDesigner.Runtime",
+    "ShitDesigner.Graph",
+    "ShitDesigner.Project",
+    "ShitDesigner.Core",
+    "ShitDesigner.Tests.Shared",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": ["Editor"],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+  "versionDefines": [],
+  "noEngineReferences": true
+}

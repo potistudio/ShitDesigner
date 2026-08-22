@@ -45,7 +45,7 @@ Unity上で継続的に拡張できる個人用汎用VJシステムを構築す�
 
 ## Constraints
 
-- Unity `6000.5.8f1`とURP `17.5.0`を使用する。
+- Unity `6000.5.9f1`とURP `17.5.0`を使用する。
 - 各表現モジュールの共通映像出力はRenderTextureとする。
 - 映像の生成、加工、合成はノードグラフ方式とする。
 - Unity Editor自体をビルドへ含めない。
@@ -115,7 +115,7 @@ Unity上で継続的に拡張できる個人用汎用VJシステムを構築す�
 
 ## Technical Context
 
-- `ProjectSettings/ProjectVersion.txt`: Unity `6000.5.8f1`。
+- `ProjectSettings/ProjectVersion.txt`: Unity `6000.5.9f1`。
 - `Packages/manifest.json`: URP `17.5.0`、Input System `1.20.0`、Test Framework `1.7.0`。
 - `Assets/Scenes/SampleScene.unity`: Main Camera、Directional Light、Global Volumeだけのテンプレートシーン。
 - `Assets/Settings/PC_RPAsset.asset`: PC向けForward+、HDR、Depth/Opaque Texture有効。

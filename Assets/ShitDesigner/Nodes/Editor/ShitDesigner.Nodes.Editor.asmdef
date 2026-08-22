@@ -1,0 +1,15 @@
+{
+  "name": "ShitDesigner.Nodes.Editor",
+  "rootNamespace": "ShitDesigner.Nodes.Editor",
+  "references": ["ShitDesigner.Nodes", "ShitDesigner.Core"],
+  "includePlatforms": ["Editor"],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": []
+}

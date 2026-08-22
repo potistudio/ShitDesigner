@@ -1,0 +1,30 @@
+{
+  "name": "ShitDesigner.Tests.Shared",
+  "rootNamespace": "ShitDesigner.Tests.Shared",
+  "references": [
+    "ShitDesigner.Core",
+    "ShitDesigner.Project",
+    "ShitDesigner.Graph",
+    "ShitDesigner.Runtime",
+    "ShitDesigner.Rendering",
+    "ShitDesigner.Scene",
+    "ShitDesigner.Media",
+    "ShitDesigner.Nodes",
+    "ShitDesigner.Persistence",
+    "ShitDesigner.Application",
+    "ShitDesigner.Input",
+    "ShitDesigner.Presentation",
+    "UnityEngine.TestRunner"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
