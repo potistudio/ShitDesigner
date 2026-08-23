@@ -95,6 +95,52 @@ namespace ShitDesigner.Application.Tests
         }
 
         [Test]
+        public void LearnMidiMapsAndNormalizesControlChangeInput()
+        {
+            var target = Path.Combine(_root, "MidiInput");
+            using (var application = new ProjectApplication(new LocalProjectFileSystem()))
+            {
+                Assert.That(application.NewProject("MIDI Input", target).IsSuccess, Is.True);
+                var id = LogicalControlId.New();
+                Assert.That(application.AddLogicalControl(new LogicalControlRecord(id, "Intensity", LogicalControlKind.Value)).IsSuccess, Is.True);
+                Assert.That(application.BeginKeyboardLearn(id).IsSuccess, Is.True);
+                var control = new MidiControl("LCXL3 1 MIDI", MidiControlKind.ControlChange, 1, 21);
+
+                Assert.That(application.HandleMidi(new MidiInputEvent(control, 64)).IsSuccess, Is.True);
+                var mapping = application.ReadModel.Project.Model.LogicalControls.Single(x => x.Id == id.Value).Mappings.Single();
+                Assert.That(mapping.Kind, Is.EqualTo(ApplicationPhysicalInputKind.Midi));
+                Assert.That(mapping.PhysicalId, Is.EqualTo("LCXL3 1 MIDI:controlchange:1:21"));
+                Assert.That(mapping.RawMin, Is.Zero);
+                Assert.That(mapping.RawMax, Is.EqualTo(127));
+                Assert.That(application.IsKeyboardLearnActive, Is.False);
+
+                Assert.That(application.HandleMidi(new MidiInputEvent(control, 127)).Status, Is.EqualTo(ApplicationCommandStatus.Accepted));
+                application.Tick(0d);
+                Assert.That(application.ReadModel.ControlValues[id.Value], Is.EqualTo(1f));
+                Assert.That(application.HandleMidi(new MidiInputEvent(control, 0)).Status, Is.EqualTo(ApplicationCommandStatus.Accepted));
+                application.Tick(1d / 60d);
+                Assert.That(application.ReadModel.ControlValues[id.Value], Is.EqualTo(0f));
+            }
+        }
+
+        [Test]
+        public void InspectorLiveControlValueUsesRuntimeWithoutChangingMappings()
+        {
+            var target = Path.Combine(_root, "InspectorLiveControl");
+            using (var application = new ProjectApplication(new LocalProjectFileSystem()))
+            {
+                Assert.That(application.NewProject("Inspector Live Control", target).IsSuccess, Is.True);
+                var id = LogicalControlId.New();
+                Assert.That(application.AddLogicalControl(new LogicalControlRecord(id, "Intensity", LogicalControlKind.Value)).IsSuccess, Is.True);
+                Assert.That(application.SetLiveControlValue(id, 0.25f).Status, Is.EqualTo(ApplicationCommandStatus.Accepted));
+                application.Tick(0d);
+                Assert.That(application.ReadModel.ControlValues[id.Value], Is.EqualTo(0.25f));
+                Assert.That(application.ReadModel.Project.Model.LogicalControls.Single(x => x.Id == id.Value).Mappings, Is.Empty);
+                Assert.That(application.SetLiveControlValue(id, 1.1f).Status, Is.EqualTo(ApplicationCommandStatus.Rejected));
+            }
+        }
+
+        [Test]
         public void MediaDeleteWaitsForCommittedManifestBeforeRemovingDirectory()
         {
             var target = Path.Combine(_root, "Media");

@@ -18,6 +18,7 @@ namespace ShitDesigner.Bootstrap
         [SerializeField] private PresentationRoot _presentationRoot;
         [SerializeField] private ProductionBootstrapAssets _assets;
         [SerializeField] private PanelSettings _panelSettings;
+        [SerializeField] private MidiInputManager _midiInputManager;
         [SerializeField] private bool _createOnAwake = true;
         [SerializeField] private bool _createDefaultProject = true;
         [SerializeField] private string _defaultProjectName = "Untitled";
@@ -45,6 +46,7 @@ namespace ShitDesigner.Bootstrap
             EnforceMinimumWindowSize();
             if (_presentationRoot == null) _presentationRoot = GetComponent<PresentationRoot>();
             if (_presentationRoot == null) _presentationRoot = gameObject.AddComponent<PresentationRoot>();
+            if (_midiInputManager == null) _midiInputManager = GetComponent<MidiInputManager>();
             var document = _presentationRoot.GetComponent<UIDocument>();
             if (document == null) document = gameObject.AddComponent<UIDocument>();
             var panelSettingsSource = _panelSettings ?? document.panelSettings;
@@ -69,6 +71,7 @@ namespace ShitDesigner.Bootstrap
                 return;
             }
             var created = ProductionCompositionRoot.Create(new LocalProjectFileSystem(), provider.Value, pool: pool, presentationRoot: _presentationRoot,
+                inputFactory: application => new UnityProductionInputPoller(application, midiManager: _midiInputManager),
                 nodeTypeCatalog: _assets.NodeTypeCatalog, displayTransformShader: _assets.DisplayTransformShader);
             if (created.IsFailure)
             {
