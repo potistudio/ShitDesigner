@@ -1,0 +1,2505 @@
+{
+  "schemaVersion": 1,
+  "pack": "compositing-temporal",
+  "target": "Unity 6 / URP 17",
+  "alphaContract": "linear_hdr_premultiplied",
+  "endpointContract": "Blend Amount 0 bypasses to A; Transition Progress 0/1 returns A/B exactly; Temporal Reset returns current and paused GraphClock does not advance history.",
+  "families": [
+    {
+      "name": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variantCount": 36,
+      "stateful": false
+    },
+    {
+      "name": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variantCount": 36,
+      "stateful": false
+    },
+    {
+      "name": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variantCount": 32,
+      "stateful": true
+    }
+  ],
+  "variants": [
+    {
+      "id": "blend.normal_alpha_over",
+      "displayName": "Normal Alpha Over",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 0,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.premultiplied_over",
+      "displayName": "Premultiplied Over",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 1,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.under",
+      "displayName": "Under",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 2,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.add",
+      "displayName": "Add",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 3,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.linear_dodge",
+      "displayName": "Linear Dodge",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 4,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.subtract",
+      "displayName": "Subtract",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 5,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.reverse_subtract",
+      "displayName": "Reverse Subtract",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 6,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.multiply",
+      "displayName": "Multiply",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 7,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.screen",
+      "displayName": "Screen",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 8,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.overlay",
+      "displayName": "Overlay",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 9,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.hard_light",
+      "displayName": "Hard Light",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 10,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.soft_light",
+      "displayName": "Soft Light",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 11,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.vivid_light",
+      "displayName": "Vivid Light",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 12,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.linear_light",
+      "displayName": "Linear Light",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 13,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.pin_light",
+      "displayName": "Pin Light",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 14,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.hard_mix",
+      "displayName": "Hard Mix",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 15,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.difference",
+      "displayName": "Difference",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 16,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.exclusion",
+      "displayName": "Exclusion",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 17,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.darken",
+      "displayName": "Darken",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 18,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.lighten",
+      "displayName": "Lighten",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 19,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.color_dodge",
+      "displayName": "Color Dodge",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 20,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.color_burn",
+      "displayName": "Color Burn",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 21,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.linear_burn",
+      "displayName": "Linear Burn",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 22,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.divide",
+      "displayName": "Divide",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 23,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.average",
+      "displayName": "Average",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 24,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.negation",
+      "displayName": "Negation",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 25,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.phoenix",
+      "displayName": "Phoenix",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 26,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.reflect",
+      "displayName": "Reflect",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 27,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.glow_blend",
+      "displayName": "Glow Blend",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 28,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.hue",
+      "displayName": "Hue",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 29,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.saturation",
+      "displayName": "Saturation",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 30,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.color",
+      "displayName": "Color",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 31,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.luminosity",
+      "displayName": "Luminosity",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 32,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.luma_mask_composite",
+      "displayName": "Luma Mask Composite",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 33,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.external_mask_composite",
+      "displayName": "External Mask Composite",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 34,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "blend.depth_composite",
+      "displayName": "Depth Composite",
+      "family": "Blend",
+      "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+      "variant": 35,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Amount",
+        "ExternalMask"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "cpu_reference"
+    },
+    {
+      "id": "transition.crossfade",
+      "displayName": "Crossfade",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 0,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.dip_to_color",
+      "displayName": "Dip To Color",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 1,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.wipe_left_right",
+      "displayName": "Wipe Left Right",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 2,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.wipe_up_down",
+      "displayName": "Wipe Up Down",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 3,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.radial_wipe",
+      "displayName": "Radial Wipe",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 4,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.iris_circle",
+      "displayName": "Iris Circle",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 5,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.iris_box",
+      "displayName": "Iris Box",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 6,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.clock_wipe",
+      "displayName": "Clock Wipe",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 7,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.linear_dissolve",
+      "displayName": "Linear Dissolve",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 8,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.noise_dissolve",
+      "displayName": "Noise Dissolve",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 9,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.pixel_dissolve",
+      "displayName": "Pixel Dissolve",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 10,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.luma_dissolve",
+      "displayName": "Luma Dissolve",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 11,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.push",
+      "displayName": "Push",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 12,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.slide",
+      "displayName": "Slide",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 13,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.split",
+      "displayName": "Split",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 14,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.barn_door",
+      "displayName": "Barn Door",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 15,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.venetian_blinds",
+      "displayName": "Venetian Blinds",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 16,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.checker_wipe",
+      "displayName": "Checker Wipe",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 17,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.grid_flip",
+      "displayName": "Grid Flip",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 18,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.page_curl",
+      "displayName": "Page Curl",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 19,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.cube_rotate",
+      "displayName": "Cube Rotate",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 20,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.perspective_swap",
+      "displayName": "Perspective Swap",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 21,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.zoom",
+      "displayName": "Zoom",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 22,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.cross_zoom",
+      "displayName": "Cross Zoom",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 23,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.blur_crossfade",
+      "displayName": "Blur Crossfade",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 24,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.radial_blur",
+      "displayName": "Radial Blur",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 25,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.swirl",
+      "displayName": "Swirl",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 26,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.kaleidoscope",
+      "displayName": "Kaleidoscope",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 27,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.ripple",
+      "displayName": "Ripple",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 28,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.displacement_map",
+      "displayName": "Displacement Map",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 29,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.glitch",
+      "displayName": "Glitch",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 30,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.rgb_split",
+      "displayName": "Rgb Split",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 31,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.burn",
+      "displayName": "Burn",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 32,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.ink_spread",
+      "displayName": "Ink Spread",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 33,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.liquid",
+      "displayName": "Liquid",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 34,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "transition.voronoi_cells",
+      "displayName": "Voronoi Cells",
+      "family": "Transition",
+      "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+      "variant": 35,
+      "pass": 0,
+      "inputs": [
+        "TexA",
+        "TexB"
+      ],
+      "parameters": [
+        "Progress",
+        "Softness",
+        "Direction",
+        "Reverse",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "endpoint"
+    },
+    {
+      "id": "temporal.feedback_transform",
+      "displayName": "Feedback Transform",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 0,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 2,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.feedback_zoom",
+      "displayName": "Feedback Zoom",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 1,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 2,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.feedback_rotate",
+      "displayName": "Feedback Rotate",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 2,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 2,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.feedback_kaleidoscope",
+      "displayName": "Feedback Kaleidoscope",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 3,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 2,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.echo",
+      "displayName": "Echo",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 4,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 2,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.trails",
+      "displayName": "Trails",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 5,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 2,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.frame_delay",
+      "displayName": "Frame Delay",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 6,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 2,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.strobe",
+      "displayName": "Strobe",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 7,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 2,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.freeze_hold",
+      "displayName": "Freeze Hold",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 8,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 2,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.accumulate_add",
+      "displayName": "Accumulate Add",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 9,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 2,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.accumulate_max",
+      "displayName": "Accumulate Max",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 10,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 2,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.temporal_average",
+      "displayName": "Temporal Average",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 11,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.multi_tap_echo",
+      "displayName": "Multi Tap Echo",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 12,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.slit_scan_horizontal",
+      "displayName": "Slit Scan Horizontal",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 13,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.slit_scan_vertical",
+      "displayName": "Slit Scan Vertical",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 14,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.time_displacement_map",
+      "displayName": "Time Displacement Map",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 15,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.temporal_rgb_split",
+      "displayName": "Temporal Rgb Split",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 16,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.datamosh_feedback",
+      "displayName": "Datamosh Feedback",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 17,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.motion_trails",
+      "displayName": "Motion Trails",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 18,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.persistence_phosphor",
+      "displayName": "Persistence Phosphor",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 19,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.long_exposure",
+      "displayName": "Long Exposure",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 20,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.frame_difference",
+      "displayName": "Frame Difference",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 21,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.background_subtract",
+      "displayName": "Background Subtract",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 22,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.temporal_median",
+      "displayName": "Temporal Median",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 23,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.temporal_posterize",
+      "displayName": "Temporal Posterize",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 24,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.beat_repeat",
+      "displayName": "Beat Repeat",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 25,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.optical_flow_visualizer",
+      "displayName": "Optical Flow Visualizer",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 26,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.optical_flow_warp",
+      "displayName": "Optical Flow Warp",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 27,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.frame_interpolation",
+      "displayName": "Frame Interpolation",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 28,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.fluid_feedback",
+      "displayName": "Fluid Feedback",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 29,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.reaction_diffusion_feedback",
+      "displayName": "Reaction Diffusion Feedback",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 30,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    },
+    {
+      "id": "temporal.multi_buffer_cellular_simulation",
+      "displayName": "Multi Buffer Cellular Simulation",
+      "family": "Temporal",
+      "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+      "variant": 31,
+      "pass": 0,
+      "inputs": [
+        "MainTex",
+        "HistoryTex",
+        "HistoryTex2",
+        "HistoryTex3",
+        "DisplacementTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Feedback",
+        "Progress",
+        "GraphTime",
+        "Paused",
+        "Reset",
+        "Seed",
+        "Beat"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "testStrategy": "state_lifecycle"
+    }
+  ]
+}
