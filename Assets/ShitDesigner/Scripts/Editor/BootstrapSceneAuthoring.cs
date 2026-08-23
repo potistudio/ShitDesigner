@@ -64,6 +64,7 @@ namespace ShitDesigner.Bootstrap.Editor
             presentationSerialized.ApplyModifiedPropertiesWithoutUndo();
             var behaviour = root.GetComponent<ProductionBootstrapBehaviour>();
             if (behaviour == null) throw new InvalidOperationException("ProductionBootstrapBehaviour is missing.");
+            var midiInputManager = root.GetComponent<ShitDesigner.Input.MidiInputManager>() ?? root.AddComponent<ShitDesigner.Input.MidiInputManager>();
             var assets = root.GetComponent<ProductionBootstrapAssets>();
             if (assets == null) throw new InvalidOperationException("ProductionBootstrapAssets is missing.");
             var displayTransform = AssetDatabase.LoadAssetAtPath<Shader>(DisplayTransformShaderPath);
@@ -78,6 +79,9 @@ namespace ShitDesigner.Bootstrap.Editor
             var behaviourPanelProperty = behaviourSerialized.FindProperty("_panelSettings");
             if (behaviourPanelProperty == null) throw new InvalidOperationException("Bootstrap panel settings property is missing.");
             behaviourPanelProperty.objectReferenceValue = panel;
+            var behaviourMidiProperty = behaviourSerialized.FindProperty("_midiInputManager");
+            if (behaviourMidiProperty == null) throw new InvalidOperationException("Bootstrap MIDI Input Manager property is missing.");
+            behaviourMidiProperty.objectReferenceValue = midiInputManager;
             behaviourSerialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(behaviour);
             EditorSceneManager.MarkSceneDirty(scene);

@@ -642,7 +642,9 @@ namespace ShitDesigner.Presentation
             var physical = payloadValue(payload, "physicalId");
             var path = payloadValue(payload, "controlPath");
             if (string.IsNullOrEmpty(physical) && string.IsNullOrEmpty(path)) return Enumerable.Empty<ApplicationControlMappingRequest>();
-            return new[] { new ApplicationControlMappingRequest(physical, path, ParseFloat(payloadValue(payload, "rawMin")), ParseFloat(payloadValue(payload, "rawMax"), 1f), ParseBool(payloadValue(payload, "invert"), false)) };
+            var kindText = payloadValue(payload, "kind");
+            var kind = Enum.TryParse(kindText, true, out ApplicationPhysicalInputKind parsedKind) ? parsedKind : ApplicationPhysicalInputKind.Keyboard;
+            return new[] { new ApplicationControlMappingRequest(physical, path, ParseFloat(payloadValue(payload, "rawMin")), ParseFloat(payloadValue(payload, "rawMax"), 1f), ParseBool(payloadValue(payload, "invert"), false), kind) };
         }
 
         private static ApplicationMediaAssetRequest ParseMediaAssetRequest(PresentationCommandRequest request)
