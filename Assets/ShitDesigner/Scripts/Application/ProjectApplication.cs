@@ -162,7 +162,8 @@ namespace ShitDesigner.Application
     /// enum must not cross the Presentation/Input assembly boundary.</summary>
     public enum ApplicationPhysicalInputKind
     {
-        Keyboard
+        Keyboard,
+        Midi
     }
 
     public sealed class ControlMappingReadModel
@@ -177,7 +178,7 @@ namespace ShitDesigner.Application
 
         internal ControlMappingReadModel(ControlMappingRecord mapping)
         {
-            Kind = ApplicationPhysicalInputKind.Keyboard;
+            Kind = mapping.Kind == PhysicalInputKind.Midi ? ApplicationPhysicalInputKind.Midi : ApplicationPhysicalInputKind.Keyboard;
             PhysicalId = mapping.PhysicalId;
             ControlPath = mapping.ControlPath;
             RawMin = mapping.RawMin;
@@ -429,7 +430,7 @@ namespace ShitDesigner.Application
     /// project switches use an isolated Persistence candidate and install it
     /// only after the candidate has been fully validated and persisted.
     /// </summary>
-    public sealed class ProjectApplication : IProjectApplicationReadPort, IProjectApplicationCommandPort, IApplicationCommandPort, IKeyboardInputApplicationPort, IApplicationShortcutCommandPort, IDisposable
+    public sealed class ProjectApplication : IProjectApplicationReadPort, IProjectApplicationCommandPort, IApplicationCommandPort, IKeyboardInputApplicationPort, IMidiInputApplicationPort, ILiveControlApplicationPort, IApplicationShortcutCommandPort, IDisposable
     {
         // Terminal command results are UI feedback, not an unbounded audit
         // log. Keep a bounded public history so the completion snapshot is
@@ -798,7 +799,7 @@ namespace ShitDesigner.Application
             if (!Enum.TryParse<LogicalControlKind>(request.Kind.ToString(), out var kind)) return Rejected(Guid.Empty, Failure("application.input.control_kind", "Logical control kind is invalid."));
             PresetId? preset = null;
             if (!string.IsNullOrWhiteSpace(request.PresetId)) { if (!PresetId.TryParse(request.PresetId, out var parsed)) return Rejected(Guid.Empty, Failure("application.preset.invalid", "Preset ID is invalid.")); preset = parsed; }
-            var mappings = request.Mappings.Select(mapping => new ControlMappingRecord(PhysicalInputKind.Keyboard, mapping.PhysicalId, mapping.ControlPath, mapping.RawMin, mapping.RawMax, mapping.Invert));
+            var mappings = request.Mappings.Select(ToControlMapping);
             return AddLogicalControl(new LogicalControlRecord(id, request.Name, kind, request.InitialValue, mappings: mappings, presetId: preset));
         }
 
@@ -840,7 +841,7 @@ namespace ShitDesigner.Application
         public ApplicationCommandResult SetLogicalControlMappings(string logicalControlId, IEnumerable<ApplicationControlMappingRequest> mappings)
         {
             if (!LogicalControlId.TryParse(logicalControlId, out var id)) return Rejected(Guid.Empty, Failure("application.input.control_invalid", "Logical control ID is invalid."));
-            try { return SetLogicalControlMappings(id, (mappings ?? Enumerable.Empty<ApplicationControlMappingRequest>()).Select(mapping => new ControlMappingRecord(PhysicalInputKind.Keyboard, mapping.PhysicalId, mapping.ControlPath, mapping.RawMin, mapping.RawMax, mapping.Invert))); }
+            try { return SetLogicalControlMappings(id, (mappings ?? Enumerable.Empty<ApplicationControlMappingRequest>()).Select(ToControlMapping)); }
             catch (Exception exception) { return Rejected(Guid.Empty, new Diagnostic(new DiagnosticCode("application.input.mapping_invalid"), Severity.Error, exception.Message, module: "application")); }
         }
 
@@ -1480,6 +1481,55 @@ namespace ShitDesigner.Application
             // correlated terminal results at the frame boundary instead.
             return matched.Count == 0 ? Complete(request, ApplicationCommandStatus.Applied, null, _state) : AcceptedWithoutPublication(request);
         }
+
+        /// <summary>Consumes a decoded channel-voice MIDI event. Unmapped MIDI
+        /// traffic is ignored so clock-rate controllers cannot create UI work.</summary>
+        public ApplicationCommandResult HandleMidi(MidiInputEvent inputEvent)
+        {
+            var control = inputEvent.Control;
+            if (_learningControl.HasValue)
+            {
+                var mapping = new ControlMappingRecord(PhysicalInputKind.Midi, control.PhysicalId, control.ControlPath, control.RawMinimum, control.RawMaximum);
+                var learned = SetLogicalControlMappings(_learningControl.Value, new[] { mapping });
+                if (learned.IsSuccess) _learningControl = null;
+                return learned;
+            }
+
+            if (_frames == null || _document == null) return ApplicationCommandResult.Ignored(_sessionId);
+            var matched = _document.LogicalControls.SelectMany(logicalControl => logicalControl.Mappings
+                .Where(mapping => mapping.Kind == PhysicalInputKind.Midi && (string.Equals(mapping.PhysicalId, control.PhysicalId, StringComparison.Ordinal) || string.Equals(mapping.ControlPath, control.ControlPath, StringComparison.Ordinal)))
+                .Select(mapping => new { Control = logicalControl, Mapping = mapping })).ToList();
+            if (matched.Count == 0) return ApplicationCommandResult.Ignored(_sessionId);
+
+            var request = BeginRequest(Guid.Empty);
+            foreach (var item in matched)
+            {
+                var value = item.Mapping.Normalize(inputEvent.RawValue);
+                var sequence = ++_sequence;
+                var queued = _frames.EnqueueParameterEvent(RuntimeParameterEvent.ControlValue(sequence, item.Control.Id, value));
+                if (queued.IsFailure) return Complete(request, ApplicationCommandStatus.Rejected, queued.Diagnostic, _state);
+                TrackParameter(request, sequence);
+            }
+            return AcceptedWithoutPublication(request);
+        }
+
+        public ApplicationCommandResult SetLiveControlValue(LogicalControlId id, float normalizedValue)
+        {
+            var request = BeginRequest(Guid.Empty);
+            if (_frames == null || _document == null) return Complete(request, ApplicationCommandStatus.Rejected, Failure("application.project.missing", "There is no current project."), _state);
+            if (_document.FindLogicalControl(id) == null) return Complete(request, ApplicationCommandStatus.Rejected, Failure("application.input.control_missing", "Live Control does not exist."), _state);
+            if (float.IsNaN(normalizedValue) || float.IsInfinity(normalizedValue) || normalizedValue < 0f || normalizedValue > 1f)
+                return Complete(request, ApplicationCommandStatus.Rejected, Failure("application.input.control_value_invalid", "Live Control values must be between 0 and 1."), _state);
+            var sequence = ++_sequence;
+            var queued = _frames.EnqueueParameterEvent(RuntimeParameterEvent.ControlValue(sequence, id, normalizedValue));
+            if (queued.IsFailure) return Complete(request, ApplicationCommandStatus.Rejected, queued.Diagnostic, _state);
+            TrackParameter(request, sequence);
+            return AcceptedWithoutPublication(request);
+        }
+
+        private static ControlMappingRecord ToControlMapping(ApplicationControlMappingRequest mapping) =>
+            new ControlMappingRecord(mapping.Kind == ApplicationPhysicalInputKind.Midi ? PhysicalInputKind.Midi : PhysicalInputKind.Keyboard,
+                mapping.PhysicalId, mapping.ControlPath, mapping.RawMin, mapping.RawMax, mapping.Invert);
 
         public ApplicationFrameResult Tick(double monotonicTime = double.NaN)
         {
@@ -2834,5 +2884,15 @@ namespace ShitDesigner.Application
         ApplicationCommandResult HandleKeyboard(PhysicalKey key, bool pressed);
         ApplicationCommandResult BeginKeyboardLearn(LogicalControlId id, Guid? interactionId = null);
         ApplicationCommandResult CancelKeyboardLearn(Guid? interactionId = null);
+    }
+
+    public interface IMidiInputApplicationPort
+    {
+        ApplicationCommandResult HandleMidi(MidiInputEvent inputEvent);
+    }
+
+    public interface ILiveControlApplicationPort
+    {
+        ApplicationCommandResult SetLiveControlValue(LogicalControlId id, float normalizedValue);
     }
 }
