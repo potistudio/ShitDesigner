@@ -24,6 +24,22 @@ namespace ShitDesigner.Input
         }
     }
 
+    public sealed class MidiInputActivity
+    {
+        public MidiInputEvent InputEvent { get; }
+        public int MatchedBindings { get; }
+        public bool ApplicationConnected { get; }
+        public bool ForwardedToMidiLearn { get; }
+
+        internal MidiInputActivity(MidiInputEvent inputEvent, int matchedBindings, bool applicationConnected, bool forwardedToMidiLearn)
+        {
+            InputEvent = inputEvent;
+            MatchedBindings = matchedBindings;
+            ApplicationConnected = applicationConnected;
+            ForwardedToMidiLearn = forwardedToMidiLearn;
+        }
+    }
+
     [Serializable]
     public sealed class MidiLiveControlBinding
     {
@@ -59,6 +75,7 @@ namespace ShitDesigner.Input
         public bool TryResolve(out LogicalControlId id, out string error)
         {
             id = default(LogicalControlId);
+            if (string.IsNullOrWhiteSpace(LiveControlId)) { error = "Select a Live Control."; return false; }
             if (!LogicalControlId.TryParseUuidV4(LiveControlId, out id)) { error = "Live Control ID must be a UUID v4."; return false; }
             if (_channel < 1 || _channel > 16) { error = "MIDI channel must be between 1 and 16."; return false; }
             if (_number < 0 || _number > 127) { error = "MIDI number must be between 0 and 127."; return false; }
@@ -82,6 +99,7 @@ namespace ShitDesigner.Input
     public sealed class MidiInputManager : MonoBehaviour
     {
         private const int MaximumEventsPerPoll = 4096;
+        private const int RecentActivityCapacity = 12;
 
         private sealed class RuntimeBinding
         {
@@ -102,8 +120,10 @@ namespace ShitDesigner.Input
 
         private readonly List<RuntimeBinding> _runtimeBindings = new List<RuntimeBinding>();
         private readonly List<MidiLiveControlBindingState> _bindingStates = new List<MidiLiveControlBindingState>();
+        private readonly List<MidiInputActivity> _recentActivity = new List<MidiInputActivity>();
         private IMidiInputApplicationPort _midiApplication;
         private ILiveControlApplicationPort _liveControlApplication;
+        private IProjectApplicationReadPort _projectApplication;
         private IMidiInputSource _source;
         private bool _ownsSource;
         private bool _usesInjectedSource;
@@ -112,8 +132,18 @@ namespace ShitDesigner.Input
         public string DeviceName => _source?.DeviceName ?? string.Empty;
         public string LastError { get; private set; } = string.Empty;
         public bool IsOpen => _source != null;
+        public bool IsConfigured => _midiApplication != null && _liveControlApplication != null;
         public IReadOnlyList<MidiLiveControlBinding> Bindings => _bindings;
         public IReadOnlyList<MidiLiveControlBindingState> BindingStates => _bindingStates;
+        public IReadOnlyList<MidiInputActivity> RecentActivity => _recentActivity;
+        public IReadOnlyList<LogicalControlReadModel> AvailableLiveControls
+        {
+            get
+            {
+                var project = _projectApplication?.ReadModel?.Project?.Model;
+                return project?.LogicalControls ?? Array.Empty<LogicalControlReadModel>();
+            }
+        }
         public long ReceivedEventCount { get; private set; }
         public long MatchedBindingCount { get; private set; }
         public long ForwardedEventCount { get; private set; }
@@ -131,6 +161,7 @@ namespace ShitDesigner.Input
             Shutdown();
             _midiApplication = midiApplication ?? throw new ArgumentNullException(nameof(midiApplication));
             _liveControlApplication = liveControlApplication ?? throw new ArgumentNullException(nameof(liveControlApplication));
+            _projectApplication = liveControlApplication as IProjectApplicationReadPort;
             RefreshBindings();
 
             if (source != null)
@@ -148,7 +179,7 @@ namespace ShitDesigner.Input
         public void ApplyInspectorConfiguration(bool reopenDevice)
         {
             RefreshBindings();
-            if (!UnityEngine.Application.isPlaying || _midiApplication == null || _liveControlApplication == null || !reopenDevice) return;
+            if (!UnityEngine.Application.isPlaying || !reopenDevice) return;
             if (_usesInjectedSource) return;
             CloseOwnedSource();
             if (_openOnConfigure) OpenConfiguredDevice();
@@ -161,6 +192,7 @@ namespace ShitDesigner.Input
             ForwardedEventCount = 0;
             HasLastEvent = false;
             LastEvent = default(MidiInputEvent);
+            _recentActivity.Clear();
             foreach (var state in _bindingStates)
             {
                 state.HasValue = false;
@@ -218,7 +250,7 @@ namespace ShitDesigner.Input
 
         public int Poll()
         {
-            if (!isActiveAndEnabled || _source == null || _midiApplication == null || _liveControlApplication == null) return 0;
+            if (!isActiveAndEnabled || _source == null) return 0;
             var count = 0;
             while (count < MaximumEventsPerPoll && _source.TryDequeue(out var inputEvent))
             {
@@ -226,20 +258,25 @@ namespace ShitDesigner.Input
                 HasLastEvent = true;
                 LastEvent = inputEvent;
                 var handled = false;
+                var matches = 0;
                 foreach (var binding in _runtimeBindings)
                 {
                     if (!binding.Definition.Matches(inputEvent.Control)) continue;
                     var normalizedValue = binding.Definition.Normalize(inputEvent.RawValue);
-                    _liveControlApplication.SetLiveControlValue(binding.LiveControlId, normalizedValue);
+                    _liveControlApplication?.SetLiveControlValue(binding.LiveControlId, normalizedValue);
                     binding.State.Record(inputEvent.RawValue, normalizedValue);
                     MatchedBindingCount++;
+                    matches++;
                     handled = true;
                 }
-                if (!handled)
+                var forwarded = !handled && _midiApplication != null;
+                if (forwarded)
                 {
                     _midiApplication.HandleMidi(inputEvent);
                     ForwardedEventCount++;
                 }
+                _recentActivity.Insert(0, new MidiInputActivity(inputEvent, matches, IsConfigured, forwarded));
+                if (_recentActivity.Count > RecentActivityCapacity) _recentActivity.RemoveAt(_recentActivity.Count - 1);
                 count++;
             }
             return count;
@@ -252,8 +289,10 @@ namespace ShitDesigner.Input
             _usesInjectedSource = false;
             _midiApplication = null;
             _liveControlApplication = null;
+            _projectApplication = null;
             _runtimeBindings.Clear();
             _bindingStates.Clear();
+            _recentActivity.Clear();
         }
 
         private void CloseOwnedSource()
@@ -268,6 +307,15 @@ namespace ShitDesigner.Input
             if (_deviceId < 0) _deviceId = 0;
             if (UnityEngine.Application.isPlaying && _liveControlApplication != null) RefreshBindings();
         }
+
+        private void Start()
+        {
+            if (_source != null || !_openOnConfigure) return;
+            RefreshBindings();
+            OpenConfiguredDevice();
+        }
+
+        private void Update() => Poll();
 
         private void OnDestroy() => Shutdown();
     }
