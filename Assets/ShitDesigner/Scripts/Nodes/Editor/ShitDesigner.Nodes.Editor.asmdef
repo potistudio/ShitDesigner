@@ -1,7 +1,7 @@
 {
   "name": "ShitDesigner.Nodes.Editor",
   "rootNamespace": "ShitDesigner.Nodes.Editor",
-  "references": ["ShitDesigner.Nodes", "ShitDesigner.Core"],
+  "references": ["ShitDesigner.Nodes", "ShitDesigner.Core", "ShitDesigner.Runtime"],
   "includePlatforms": ["Editor"],
   "excludePlatforms": [],
   "allowUnsafeCode": false,

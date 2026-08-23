@@ -19,12 +19,12 @@ namespace ShitDesigner.Nodes.Editor
     public sealed class NodeTypeCatalogBuildValidator : IPreprocessBuildWithReport
     {
         public int callbackOrder => 0;
-        private const string AssetPath = "Assets/ShitDesigner/Nodes/NodeTypeCatalog.asset";
-        private const string Scene3dPath = "Assets/ShitDesigner/Bootstrap/Scene3D.prefab";
-        private const string Scene2dPath = "Assets/ShitDesigner/Bootstrap/Scene2D.prefab";
-        private const string GeneratorShaderPath = "Assets/ShitDesigner/Media/Shaders/BuiltinGenerator.shader";
-        private const string EffectShaderPath = "Assets/ShitDesigner/Media/Shaders/BuiltinEffect.shader";
-        private const string BlendShaderPath = "Assets/ShitDesigner/Media/Shaders/BuiltinBlend2.shader";
+        private const string AssetPath = "Assets/ShitDesigner/Scripts/Nodes/NodeTypeCatalog.asset";
+        private const string Scene3dPath = "Assets/ShitDesigner/Scripts/Bootstrap/Scene3D.prefab";
+        private const string Scene2dPath = "Assets/ShitDesigner/Scripts/Bootstrap/Scene2D.prefab";
+        private const string GeneratorShaderPath = "Assets/ShitDesigner/Scripts/Media/Shaders/BuiltinGenerator.shader";
+        private const string EffectShaderPath = "Assets/ShitDesigner/Scripts/Media/Shaders/BuiltinEffect.shader";
+        private const string BlendShaderPath = "Assets/ShitDesigner/Scripts/Media/Shaders/BuiltinBlend2.shader";
         private const string WindowsNativePath = "Assets/Plugins/x86_64/ShitDesignerHapNative/shitdesigner_hap.dll";
         private const string MacNativePath = "Assets/Plugins/macOS/ShitDesignerHapNative/shitdesigner_hap.dylib";
 
@@ -44,19 +44,13 @@ namespace ShitDesigner.Nodes.Editor
 
         private static Result GenerateAndValidate(BuildTarget target)
         {
-            var runtime = NodeDefinitionCatalog.CreateInitial();
+            var generated = ShaderNodeManifestAssetGenerator.GenerateAndValidate();
+            if (generated.IsFailure) return Result.Failure(generated.Diagnostic);
+            var asset = AssetDatabase.LoadAssetAtPath<NodeTypeCatalog>(AssetPath);
+            var runtime = asset == null ? null : asset.BuildRuntimeCatalog().Value;
+            if (asset == null || runtime == null) return Failure("nodes.catalog.asset_missing", "Generated NodeTypeCatalog asset is missing.");
             var valid = runtime.Validate();
             if (valid.IsFailure) return valid;
-
-            var asset = AssetDatabase.LoadAssetAtPath<NodeTypeCatalog>(AssetPath);
-            if (asset == null)
-            {
-                asset = ScriptableObject.CreateInstance<NodeTypeCatalog>();
-                AssetDatabase.CreateAsset(asset, AssetPath);
-            }
-            asset.ReplaceManifest(runtime.Entries);
-            var references = AttachDirectReferences(asset);
-            if (references.IsFailure) return references;
             var manifest = asset.ValidateManifest();
             if (manifest.IsFailure) return manifest;
             var exact = asset.ValidateAgainst(runtime);
@@ -69,9 +63,6 @@ namespace ShitDesigner.Nodes.Editor
             if (apiValidation.IsFailure) return apiValidation;
             var nativeValidation = ValidateNativePlugin(target);
             if (nativeValidation.IsFailure) return nativeValidation;
-            EditorUtility.SetDirty(asset);
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
             return Result.Success();
         }
 
@@ -109,9 +100,9 @@ namespace ShitDesigner.Nodes.Editor
                 if (shader == null) return Failure("nodes.catalog.shader_missing", "Shader asset is missing for " + entry.TypeId.Value + ".");
                 if (record.OutputPass < 0 || record.OutputPass >= shader.passCount) return Failure("nodes.catalog.shader_pass", "Shader output pass is not present for " + entry.TypeId.Value + ".");
                 foreach (var property in entry.ShaderBinding.InputProperties.Values)
-                    if (!HasShaderProperty(shader, property) && (record.TemplateMaterial == null || !record.TemplateMaterial.HasProperty(property))) return Failure("nodes.catalog.shader_property", "Shader input property is missing: " + property + ".");
+                    if (!HasShaderProperty(shader, property) && (record.TemplateMaterial == null || !record.TemplateMaterial.HasProperty(property))) return Failure("nodes.catalog.shader_property", "Shader input property is missing: " + property + " for " + entry.TypeId.Value + " (" + shader.name + ").");
                 foreach (var property in entry.ShaderBinding.ParameterProperties.Values)
-                    if (!HasShaderProperty(shader, property) && (record.TemplateMaterial == null || !record.TemplateMaterial.HasProperty(property))) return Failure("nodes.catalog.shader_property", "Shader parameter property is missing: " + property + ".");
+                    if (!HasShaderProperty(shader, property) && (record.TemplateMaterial == null || !record.TemplateMaterial.HasProperty(property))) return Failure("nodes.catalog.shader_property", "Shader parameter property is missing: " + property + " for " + entry.TypeId.Value + " (" + shader.name + ").");
                 if (shader.passCount == 0) return Failure("nodes.catalog.shader_variant", "Shader has no compiled pass/variant for " + entry.TypeId.Value + ".");
             }
             return Result.Success();

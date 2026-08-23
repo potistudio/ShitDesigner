@@ -100,16 +100,162 @@ namespace ShitDesigner.Nodes
 
     public interface INodeFactory : IRuntimeNodeFactory { }
 
+    /// <summary>Typed input metadata shared by catalog and rendering.</summary>
+    public sealed class ShaderInputBinding
+    {
+        public PortId PortId { get; }
+        public string Property { get; }
+        public NodePortType Type { get; }
+        public ShaderInputRole Role { get; }
+        public bool Required { get; }
+        public RuntimeDefaultImageKind? DefaultImage { get; }
+
+        public ShaderInputBinding(PortId portId, string property, ShaderInputRole role = ShaderInputRole.Primary,
+            bool required = true, RuntimeDefaultImageKind? defaultImage = null, NodePortType type = NodePortType.ImageFrame)
+        {
+            if (portId.IsEmpty || string.IsNullOrWhiteSpace(property)) throw new ArgumentException("Shader input binding identity is required.");
+            if (defaultImage.HasValue && (required || type != NodePortType.ImageFrame)) throw new ArgumentException("A default image requires an optional ImageFrame input.");
+            PortId = portId;
+            Property = property.Trim();
+            Type = type;
+            Role = role;
+            Required = required;
+            DefaultImage = defaultImage;
+        }
+    }
+
+    /// <summary>Typed parameter metadata, including explicit Enum mapping.</summary>
+    public sealed class ShaderParameterBinding
+    {
+        public ParameterId ParameterId { get; }
+        public string Property { get; }
+        public ParameterType Type { get; }
+        public IReadOnlyDictionary<string, int> EnumMapping { get; }
+
+        public ShaderParameterBinding(ParameterId parameterId, string property, ParameterType type,
+            IEnumerable<KeyValuePair<string, int>> enumMapping = null)
+        {
+            if (parameterId.IsEmpty || string.IsNullOrWhiteSpace(property)) throw new ArgumentException("Shader parameter binding identity is required.");
+            ParameterId = parameterId;
+            Property = property.Trim();
+            Type = type;
+            EnumMapping = new ReadOnlyDictionary<string, int>(new Dictionary<string, int>(
+                (enumMapping ?? Enumerable.Empty<KeyValuePair<string, int>>()).ToDictionary(x => x.Key, x => x.Value, StringComparer.Ordinal), StringComparer.Ordinal));
+        }
+    }
+
+    /// <summary>Fixed pass metadata. Runtime selects an index; the variant is
+    /// never inferred from a dynamic per-pixel branch.</summary>
+    public sealed class ShaderPassBinding
+    {
+        public string Id { get; }
+        public int Index { get; }
+        public ShaderPassKind Kind { get; }
+        public string VariantId { get; }
+        public string OutputRole { get; }
+        public ShaderFeatureFlags RequiredFeatures { get; }
+
+        public ShaderPassBinding(string id, int index, ShaderPassKind kind, string variantId,
+            string outputRole, ShaderFeatureFlags requiredFeatures = ShaderFeatureFlags.None)
+        {
+            if (string.IsNullOrWhiteSpace(id) || index < 0 || string.IsNullOrWhiteSpace(variantId) || string.IsNullOrWhiteSpace(outputRole))
+                throw new ArgumentException("Shader pass binding metadata is invalid.");
+            Id = id.Trim();
+            Index = index;
+            Kind = kind;
+            VariantId = variantId.Trim();
+            OutputRole = outputRole.Trim();
+            RequiredFeatures = requiredFeatures;
+        }
+    }
+
     public sealed class ShaderNodeBinding
     {
-        public string ShaderKey { get; }
-        public IReadOnlyDictionary<PortId, string> InputProperties { get; }
-        public IReadOnlyDictionary<ParameterId, string> ParameterProperties { get; }
-        public int OutputPass { get; }
+        private IReadOnlyList<ShaderInputBinding> _inputs;
+        private IReadOnlyList<ShaderParameterBinding> _parameters;
+        private IReadOnlyList<ShaderPassBinding> _passes;
+        private IReadOnlyList<string> _aliases;
+        private NodeTypeId _typeId;
+        private string _shaderKey;
+        private IReadOnlyDictionary<PortId, string> _inputProperties;
+        private IReadOnlyDictionary<ParameterId, string> _parameterProperties;
+        private int _outputPass;
+        private ShaderNodeFamily _family;
+        private string _variantId;
+        private int _sourceVariant;
+        private ShaderFeatureFlags _requiredFeatures;
+        private bool _stateful;
+        private int _historySlots;
+        private int _warmupFrames;
+        public NodeTypeId TypeId => _typeId;
+        public string ShaderKey => _shaderKey;
+        public IReadOnlyDictionary<PortId, string> InputProperties => _inputProperties;
+        public IReadOnlyDictionary<ParameterId, string> ParameterProperties => _parameterProperties;
+        public int OutputPass => _outputPass;
+        public ShaderNodeFamily Family => _family;
+        public string VariantId => _variantId;
+        /// <summary>Numeric variant selected by the authoritative ledger.
+        /// Family shaders consume this through their explicit variant uniform;
+        /// it is never inferred from the material/shader name.</summary>
+        public int SourceVariant => _sourceVariant;
+        public ShaderFeatureFlags RequiredFeatures => _requiredFeatures;
+        public bool Stateful => _stateful;
+        public int HistorySlots => _historySlots;
+        public int WarmupFrames => _warmupFrames;
+        public IReadOnlyList<ShaderInputBinding> Inputs => _inputs;
+        public IReadOnlyList<ShaderParameterBinding> Parameters => _parameters;
+        public IReadOnlyList<ShaderPassBinding> Passes => _passes;
+        public IReadOnlyList<string> Aliases => _aliases;
+
         public ShaderNodeBinding(string shaderKey, IDictionary<PortId, string> inputProperties = null, IDictionary<ParameterId, string> parameterProperties = null, int outputPass = 0)
         {
             if (string.IsNullOrWhiteSpace(shaderKey) || outputPass < 0) throw new ArgumentException("Shader binding metadata is invalid.");
-            ShaderKey = shaderKey.Trim(); InputProperties = new ReadOnlyDictionary<PortId, string>(new Dictionary<PortId, string>(inputProperties ?? new Dictionary<PortId, string>())); ParameterProperties = new ReadOnlyDictionary<ParameterId, string>(new Dictionary<ParameterId, string>(parameterProperties ?? new Dictionary<ParameterId, string>())); OutputPass = outputPass;
+            var inputs = (inputProperties ?? new Dictionary<PortId, string>()).Select(x => new ShaderInputBinding(x.Key, x.Value));
+            var parameters = (parameterProperties ?? new Dictionary<ParameterId, string>()).Select(x => new ShaderParameterBinding(x.Key, x.Value, ParameterType.Float));
+            var passes = new[] { new ShaderPassBinding("default", outputPass, ShaderPassKind.Draw, "default", "image") };
+            Initialize(shaderKey, inputProperties, parameterProperties, outputPass, default(NodeTypeId), ShaderNodeFamily.Custom, "default", passes, inputs, parameters, ShaderFeatureFlags.None, false, 0, null, 0, 0);
+        }
+
+        public ShaderNodeBinding(string shaderKey, IDictionary<PortId, string> inputProperties,
+            IDictionary<ParameterId, string> parameterProperties, int outputPass, NodeTypeId typeId,
+            ShaderNodeFamily family, string variantId, IEnumerable<ShaderPassBinding> passes,
+            IEnumerable<ShaderInputBinding> inputs, IEnumerable<ShaderParameterBinding> parameters,
+            ShaderFeatureFlags requiredFeatures = ShaderFeatureFlags.None, bool stateful = false,
+            int historySlots = 0, IEnumerable<string> aliases = null, int sourceVariant = 0, int warmupFrames = 0)
+        {
+            Initialize(shaderKey, inputProperties, parameterProperties, outputPass, typeId, family, variantId,
+                passes, inputs, parameters, requiredFeatures, stateful, historySlots, aliases, sourceVariant, warmupFrames);
+        }
+
+        public ShaderPassBinding FindPass(int index) => _passes.FirstOrDefault(x => x.Index == index);
+
+        private void Initialize(string shaderKey, IDictionary<PortId, string> inputProperties,
+            IDictionary<ParameterId, string> parameterProperties, int outputPass, NodeTypeId typeId,
+            ShaderNodeFamily family, string variantId, IEnumerable<ShaderPassBinding> passes,
+            IEnumerable<ShaderInputBinding> inputs, IEnumerable<ShaderParameterBinding> parameters,
+            ShaderFeatureFlags requiredFeatures, bool stateful, int historySlots, IEnumerable<string> aliases,
+            int sourceVariant, int warmupFrames)
+        {
+            if (string.IsNullOrWhiteSpace(shaderKey) || outputPass < 0 || string.IsNullOrWhiteSpace(variantId) || sourceVariant < 0 || warmupFrames < 0) throw new ArgumentException("Shader binding metadata is invalid.");
+            if (stateful && historySlots <= 0) throw new ArgumentException("Stateful shader bindings require history slots.");
+            if (!stateful && historySlots != 0) throw new ArgumentException("Stateless shader bindings cannot reserve history slots.");
+            _shaderKey = shaderKey.Trim();
+            _typeId = typeId;
+            _family = family;
+            _variantId = variantId.Trim();
+            _sourceVariant = sourceVariant;
+            _requiredFeatures = requiredFeatures;
+            _stateful = stateful;
+            _historySlots = historySlots;
+            _warmupFrames = warmupFrames;
+            _inputProperties = new ReadOnlyDictionary<PortId, string>(new Dictionary<PortId, string>(inputProperties ?? new Dictionary<PortId, string>()));
+            _parameterProperties = new ReadOnlyDictionary<ParameterId, string>(new Dictionary<ParameterId, string>(parameterProperties ?? new Dictionary<ParameterId, string>()));
+            _outputPass = outputPass;
+            _inputs = new ReadOnlyCollection<ShaderInputBinding>((inputs ?? Enumerable.Empty<ShaderInputBinding>()).ToList());
+            _parameters = new ReadOnlyCollection<ShaderParameterBinding>((parameters ?? Enumerable.Empty<ShaderParameterBinding>()).ToList());
+            _passes = new ReadOnlyCollection<ShaderPassBinding>((passes ?? Enumerable.Empty<ShaderPassBinding>()).ToList());
+            _aliases = new ReadOnlyCollection<string>((aliases ?? Enumerable.Empty<string>()).Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()).Distinct(StringComparer.Ordinal).ToList());
+            if (InputProperties.Any(x => string.IsNullOrWhiteSpace(x.Value)) || ParameterProperties.Any(x => string.IsNullOrWhiteSpace(x.Value))) throw new ArgumentException("Shader property names are required.");
         }
     }
 
@@ -149,10 +295,24 @@ namespace ShitDesigner.Nodes
 
     public sealed class NodeDefinitionCatalog
     {
-        public static readonly IReadOnlyList<string> SpecializedNodeTypeIds = new ReadOnlyCollection<string>(new[] { "shitdesigner.scene.3d", "shitdesigner.scene.2d", "shitdesigner.shader.generator", "shitdesigner.shader.effect", "shitdesigner.shader.blend2", "shitdesigner.video.player", "system.feedback" });
+        public static IReadOnlyList<string> SpecializedNodeTypeIds => new ReadOnlyCollection<string>(new[] { "shitdesigner.scene.3d", "shitdesigner.scene.2d" }
+            .Concat(ShaderNodeManifest.CreateBuiltIn().Entries.Select(x => x.TypeId.Value))
+            .Concat(new[] { "shitdesigner.video.player", "system.feedback" })
+            .Distinct(StringComparer.Ordinal)
+            .ToList());
         private readonly IReadOnlyList<NodeCatalogEntry> _entries;
+        private readonly IReadOnlyCollection<string> _specializedNodeTypeIds;
         public IReadOnlyList<NodeCatalogEntry> Entries => _entries;
-        public NodeDefinitionCatalog(IEnumerable<NodeCatalogEntry> entries) { _entries = new ReadOnlyCollection<NodeCatalogEntry>((entries ?? Enumerable.Empty<NodeCatalogEntry>()).ToList()); }
+        /// <summary>All production-owned scene/video/feedback/shader types
+        /// represented by this catalog instance.  The static legacy property
+        /// remains for callers that only know the original three shader IDs.</summary>
+        public IReadOnlyCollection<string> SpecializedNodeTypeIdsForCatalog => _specializedNodeTypeIds;
+        public NodeDefinitionCatalog(IEnumerable<NodeCatalogEntry> entries, IEnumerable<string> specializedNodeTypeIds = null)
+        {
+            _entries = new ReadOnlyCollection<NodeCatalogEntry>((entries ?? Enumerable.Empty<NodeCatalogEntry>()).ToList());
+            _specializedNodeTypeIds = new ReadOnlyCollection<string>((specializedNodeTypeIds ?? SpecializedNodeTypeIds)
+                .Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.Ordinal).ToList());
+        }
 
         public Result Validate()
         {
@@ -162,16 +322,29 @@ namespace ShitDesigner.Nodes
             {
                 if (entry.SchemaVersion != 1 || entry.Factory == null || entry.Factory.TypeId != entry.TypeId) return Failure("nodes.catalog.metadata", "Node definition schema or factory metadata is invalid.");
                 if (entry.Ports.GroupBy(x => x.Id).Any(x => x.Count() > 1) || entry.Parameters.GroupBy(x => x.Id).Any(x => x.Count() > 1)) return Failure("nodes.catalog.duplicate_member", "Port and parameter IDs must be unique.");
-                if (entry.Category.StartsWith("Shader/", StringComparison.Ordinal) && entry.ShaderBinding == null) return Failure("nodes.catalog.shader_binding_missing", "Shader definitions require explicit bindings.");
+                if (entry.ShaderBinding != null && string.IsNullOrWhiteSpace(entry.ShaderBinding.ShaderKey)) return Failure("nodes.catalog.shader_binding_missing", "Shader definitions require an explicit shader key.");
                 if ((entry.Category == "3D" || entry.Category == "2D") && (entry.SceneBinding == null || !entry.SceneBinding.RequiresExactlyOneCamera)) return Failure("nodes.catalog.scene_binding", "Scene definitions require one-camera prefab bindings.");
                 if (entry.ShaderBinding != null)
                 {
+                    if (entry.ShaderBinding.Passes.Count == 0 || entry.ShaderBinding.FindPass(entry.ShaderBinding.OutputPass) == null) return Failure("nodes.catalog.shader_pass", "Shader binding must declare its output pass.");
                     foreach (var binding in entry.ShaderBinding.InputProperties)
                     {
                         var port = entry.Definition.FindPort(binding.Key);
-                        if (port == null || port.Direction != NodePortDirection.Input || port.Type != NodePortType.ImageFrame) return Failure("nodes.catalog.shader_input_binding", "Shader binding names an unknown image input.");
+                        if (port == null || port.Direction != NodePortDirection.Input) return Failure("nodes.catalog.shader_input_binding", "Shader binding names an unknown input.");
                     }
                     foreach (var binding in entry.ShaderBinding.ParameterProperties) if (entry.Definition.FindParameter(binding.Key) == null) return Failure("nodes.catalog.shader_parameter_binding", "Shader binding names an unknown parameter.");
+                    foreach (var binding in entry.ShaderBinding.Inputs)
+                    {
+                        var port = entry.Definition.FindPort(binding.PortId);
+                        if (port == null || port.Direction != NodePortDirection.Input || port.Type != binding.Type || port.Required != binding.Required || port.DefaultImage != binding.DefaultImage)
+                            return Failure("nodes.catalog.shader_input_role", "Shader input role metadata does not match the node port.");
+                    }
+                    foreach (var binding in entry.ShaderBinding.Parameters)
+                    {
+                        var parameter = entry.Definition.FindParameter(binding.ParameterId);
+                        if (parameter == null || parameter.Type != binding.Type) return Failure("nodes.catalog.shader_parameter_type", "Shader parameter type metadata does not match the node parameter.");
+                        if (binding.Type == ParameterType.Enum && parameter.EnumOptions.Any(x => !binding.EnumMapping.ContainsKey(x))) return Failure("nodes.catalog.shader_enum_mapping", "Shader enum parameter mapping is incomplete.");
+                    }
                 }
             }
             var program = _entries.SingleOrDefault(x => x.TypeId.Value == "system.program_output");
@@ -187,7 +360,7 @@ namespace ShitDesigner.Nodes
         {
             if (runtimeSession == null) return Failure("nodes.catalog.runtime_missing", "Runtime session is required.");
             var valid = Validate(); if (valid.IsFailure) return valid;
-            if (_entries.Any(entry => SpecializedNodeTypeIds.Contains(entry.TypeId.Value, StringComparer.Ordinal) && entry.Factory is CatalogNodeFactory missingFactory && missingFactory.IsPlaceholder)) return Failure("nodes.catalog.binding_missing", "A production visual node factory was not injected.");
+            if (_entries.Any(entry => _specializedNodeTypeIds.Contains(entry.TypeId.Value, StringComparer.Ordinal) && entry.Factory is CatalogNodeFactory missingFactory && missingFactory.IsPlaceholder)) return Failure("nodes.catalog.binding_missing", "A production visual node factory was not injected.");
             foreach (var entry in _entries)
             {
                 var result = runtimeSession.RegisterFactory(entry.Factory); if (result.IsFailure) return result;
@@ -198,7 +371,7 @@ namespace ShitDesigner.Nodes
         public Result ValidateProductionBindings(NodeFactoryBindings bindings)
         {
             if (bindings == null) return Failure("nodes.catalog.bindings_missing", "Production node service bindings are required.");
-            foreach (var type in SpecializedNodeTypeIds)
+            foreach (var type in _specializedNodeTypeIds)
                 if (!bindings.Contains(new NodeTypeId(type))) return Failure("nodes.catalog.binding_missing", "A Scene, Shader, or Video runtime service binding is missing.");
             return Result.Success();
         }
@@ -212,14 +385,24 @@ namespace ShitDesigner.Nodes
 
         public static NodeDefinitionCatalog CreateInitial(NodeFactoryBindings bindings = null)
         {
+            return CreateInitial(ShaderNodeManifest.CreateBuiltIn(), bindings);
+        }
+
+        public static NodeDefinitionCatalog CreateInitial(ShaderNodeManifest shaderManifest, NodeFactoryBindings bindings = null)
+        {
+            var manifestValid = ShaderNodeManifestValidator.Validate(shaderManifest);
+            if (manifestValid.IsFailure) throw new ArgumentException(manifestValid.Diagnostic.Message, nameof(shaderManifest));
             bindings = bindings ?? new NodeFactoryBindings();
-            return new NodeDefinitionCatalog(InitialNodeDefinitions.Create().Select(definition =>
+            var specialized = new[] { "shitdesigner.scene.3d", "shitdesigner.scene.2d" }
+                .Concat(shaderManifest.Entries.Select(x => x.TypeId.Value))
+                .Concat(new[] { "shitdesigner.video.player", "system.feedback" });
+            return new NodeDefinitionCatalog(InitialNodeDefinitions.Create(shaderManifest).Select(definition =>
             {
                 var creator = bindings.Resolve(definition.TypeId);
                 var placeholder = creator == null;
                 creator = creator ?? ((node, generation) => Result<IRuntimeNode>.Success(new CatalogRuntimeNode(node, generation, definition)));
-                return new NodeCatalogEntry(definition, new CatalogNodeFactory(definition.TypeId, creator, placeholder), InitialNodeDefinitions.ShaderBinding(definition.TypeId), InitialNodeDefinitions.SceneBinding(definition.TypeId));
-            }));
+                return new NodeCatalogEntry(definition, new CatalogNodeFactory(definition.TypeId, creator, placeholder), InitialNodeDefinitions.ShaderBinding(shaderManifest, definition.TypeId), InitialNodeDefinitions.SceneBinding(definition.TypeId));
+            }), specialized);
         }
         private static Result Failure(string code, string message) => Result.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "nodes"));
     }
@@ -378,17 +561,24 @@ namespace ShitDesigner.Nodes
     {
         private static readonly NodePortDefinition ImageOut = new NodePortDefinition(new PortId("image"), "Image", NodePortDirection.Output, NodePortType.ImageFrame, false);
         private static readonly NodePortDefinition RequiredImage = new NodePortDefinition(new PortId("image"), "Image", NodePortDirection.Input, NodePortType.ImageFrame, true);
-        private static readonly NodePortDefinition EffectInput = new NodePortDefinition(new PortId("input"), "Input", NodePortDirection.Input, NodePortType.ImageFrame, true);
-        public static IReadOnlyList<NodeDefinition> Create() => new ReadOnlyCollection<NodeDefinition>(new List<NodeDefinition> {
-            new NodeDefinition(new NodeTypeId("system.program_output"), 1, "ProgramOutput", "System", new[] { RequiredImage }, systemOwned: true, userAddable: false),
-            new NodeDefinition(new NodeTypeId("system.preview"), 1, "Preview", "System", new[] { RequiredImage }, new[] { PreviewMode() }),
-            new NodeDefinition(new NodeTypeId("system.feedback"), 1, "Feedback", "Processing", new[] { new NodePortDefinition(new PortId("input"), "Input", NodePortDirection.Input, NodePortType.ImageFrame, false, RuntimeDefaultImageKind.TransparentBlack), ImageOut }),
-            new NodeDefinition(new NodeTypeId("shitdesigner.scene.3d"), 1, "3D", "3D", new[] { ImageOut }), new NodeDefinition(new NodeTypeId("shitdesigner.scene.2d"), 1, "2D", "2D", new[] { ImageOut }),
-            new NodeDefinition(new NodeTypeId("shitdesigner.shader.generator"), 1, "Shader Generator", "Shader/Generator", new[] { ImageOut }, new[] { new NodeParameterDefinition(new ParameterId("color"), "Color", ParameterType.Color, ParameterValue.FromColor(new ColorValue(0, 0, 0, 1)), group: "Shader", displayOrder: 0) }), new NodeDefinition(new NodeTypeId("shitdesigner.shader.effect"), 1, "Shader Effect", "Shader/Effect", new[] { EffectInput, ImageOut }), new NodeDefinition(new NodeTypeId("shitdesigner.shader.blend2"), 1, "Shader 2-input Blend", "Shader/Effect", new[] { new NodePortDefinition(new PortId("a"), "A", NodePortDirection.Input, NodePortType.ImageFrame, true), new NodePortDefinition(new PortId("b"), "B", NodePortDirection.Input, NodePortType.ImageFrame, true), ImageOut }),
-            new NodeDefinition(new NodeTypeId("shitdesigner.video.player"), 1, "VideoPlayer", "Video", new[] { ImageOut }, VideoParameters()),
-            FloatToInt(), IntToFloat(), FloatToBool(), BoolToFloat(), Compose("2"), Compose("3"), Compose("4"), Split("2"), Split("3"), Split("4"), VectorComponent(), ColorToLuminance(), FloatToColor()
-        });
-        public static ShaderNodeBinding ShaderBinding(NodeTypeId id) { if (id.Value == "shitdesigner.shader.generator") return new ShaderNodeBinding("builtin.shader.generator", parameterProperties: new Dictionary<ParameterId, string> { { new ParameterId("color"), "_Color" } }); if (id.Value == "shitdesigner.shader.effect") return new ShaderNodeBinding("builtin.shader.effect", new Dictionary<PortId, string> { { new PortId("input"), "_MainTex" } }); if (id.Value == "shitdesigner.shader.blend2") return new ShaderNodeBinding("builtin.shader.blend2", new Dictionary<PortId, string> { { new PortId("a"), "_TexA" }, { new PortId("b"), "_TexB" } }); return null; }
+        public static IReadOnlyList<NodeDefinition> Create(ShaderNodeManifest shaderManifest = null)
+        {
+            shaderManifest = shaderManifest ?? ShaderNodeManifest.CreateBuiltIn();
+            var definitions = new List<NodeDefinition>
+            {
+                new NodeDefinition(new NodeTypeId("system.program_output"), 1, "ProgramOutput", "System", new[] { RequiredImage }, systemOwned: true, userAddable: false),
+                new NodeDefinition(new NodeTypeId("system.preview"), 1, "Preview", "System", new[] { RequiredImage }, new[] { PreviewMode() }),
+                new NodeDefinition(new NodeTypeId("system.feedback"), 1, "Feedback", "Processing", new[] { new NodePortDefinition(new PortId("input"), "Input", NodePortDirection.Input, NodePortType.ImageFrame, false, RuntimeDefaultImageKind.TransparentBlack), ImageOut }),
+                new NodeDefinition(new NodeTypeId("shitdesigner.scene.3d"), 1, "3D", "3D", new[] { ImageOut }),
+                new NodeDefinition(new NodeTypeId("shitdesigner.scene.2d"), 1, "2D", "2D", new[] { ImageOut })
+            };
+            definitions.AddRange(shaderManifest.Entries.Select(x => x.ToNodeDefinition()));
+            definitions.Add(new NodeDefinition(new NodeTypeId("shitdesigner.video.player"), 1, "VideoPlayer", "Video", new[] { ImageOut }, VideoParameters()));
+            definitions.AddRange(new[] { FloatToInt(), IntToFloat(), FloatToBool(), BoolToFloat(), Compose("2"), Compose("3"), Compose("4"), Split("2"), Split("3"), Split("4"), VectorComponent(), ColorToLuminance(), FloatToColor() });
+            return new ReadOnlyCollection<NodeDefinition>(definitions);
+        }
+        public static ShaderNodeBinding ShaderBinding(NodeTypeId id) => ShaderBinding(ShaderNodeManifest.CreateBuiltIn(), id);
+        public static ShaderNodeBinding ShaderBinding(ShaderNodeManifest manifest, NodeTypeId id) => manifest?.Find(id)?.ToShaderBinding();
         public static SceneNodeBinding SceneBinding(NodeTypeId id) { if (id.Value == "shitdesigner.scene.3d") return new SceneNodeBinding("builtin.scene.3d"); if (id.Value == "shitdesigner.scene.2d") return new SceneNodeBinding("builtin.scene.2d", true, true); return null; }
         private static NodeParameterDefinition PreviewMode() => new NodeParameterDefinition(new ParameterId("display.mode"), "Display Mode", ParameterType.Enum, ParameterValue.FromEnum("fit"), enumOptions: new[] { "fit", "fill", "stretch" });
         private static IEnumerable<NodeParameterDefinition> VideoParameters() => new[] { new NodeParameterDefinition(new ParameterId("transport.media_asset"), "Media Asset", ParameterType.MediaAssetReference, ParameterValue.Default(ParameterType.MediaAssetReference)), new NodeParameterDefinition(new ParameterId("transport.playing"), "Playing", ParameterType.Bool, ParameterValue.FromBool(false)), new NodeParameterDefinition(new ParameterId("transport.playhead_seconds"), "Playhead", ParameterType.Float, ParameterValue.FromFloat(0), ParameterValue.FromFloat(0), ParameterValue.FromFloat(float.MaxValue), true), new NodeParameterDefinition(new ParameterId("transport.speed"), "Speed", ParameterType.Float, ParameterValue.FromFloat(1), ParameterValue.FromFloat(0), ParameterValue.FromFloat(4)), new NodeParameterDefinition(new ParameterId("transport.loop"), "Loop", ParameterType.Bool, ParameterValue.FromBool(true)) };

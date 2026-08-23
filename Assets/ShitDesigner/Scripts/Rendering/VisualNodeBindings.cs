@@ -3,11 +3,36 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using ShitDesigner.Core;
+using ShitDesigner.Nodes;
 using ShitDesigner.Runtime;
 using UnityEngine;
 
 namespace ShitDesigner.Rendering
 {
+    /// <summary>Stable property names supplied to every shader node each
+    /// frame. Family shaders may opt into only the values they need.</summary>
+    public static class ShaderFrameUniformNames
+    {
+        public const string Time = "_SD_Time";
+        public const string DeltaTime = "_SD_DeltaTime";
+        public const string Frame = "_SD_Frame";
+        public const string Resolution = "_SD_Resolution";
+        public const string Seed = "_SD_Seed";
+        public const string BeatPhase = "_SD_BeatPhase";
+        public const string BeatPulse = "_SD_BeatPulse";
+        public const string BarPhase = "_SD_BarPhase";
+        public const string Pointer = "_SD_Pointer";
+        // Family shader compatibility aliases.  The neutral runtime names
+        // above remain canonical, while Audio/Temporal/Raymarch families also
+        // expose these historical names in their fixed ShaderLab contracts.
+        public const string Variant = "_Variant";
+        public const string VjVariant = "_VJVariant";
+        public const string GraphTime = "_GraphTime";
+        public const string FrameAlias = "_Frame";
+        public const string ResolutionAlias = "_Resolution";
+        public const string SeedAlias = "_Seed";
+    }
+
     /// <summary>Explicit shader/material metadata. Runtime reflection is not
     /// used: every input and parameter property is registered by the catalog
     /// builder.</summary>
@@ -15,36 +40,67 @@ namespace ShitDesigner.Rendering
     {
         public string Key { get; }
         public Shader Shader { get; }
+        public ShaderNodeBinding Descriptor { get; }
         public IReadOnlyDictionary<PortId, string> InputProperties { get; }
         public IReadOnlyDictionary<ParameterId, string> ParameterProperties { get; }
         public int OutputPass { get; }
+        public IReadOnlyList<ShaderInputBinding> Inputs => Descriptor.Inputs;
+        public IReadOnlyList<ShaderParameterBinding> Parameters => Descriptor.Parameters;
+        public IReadOnlyList<ShaderPassBinding> Passes => Descriptor.Passes;
+        public ShaderNodeFamily Family => Descriptor.Family;
+        public string VariantId => Descriptor.VariantId;
+        public int SourceVariant => Descriptor.SourceVariant;
+        public ShaderFeatureFlags RequiredFeatures => Descriptor.RequiredFeatures;
+        public bool Stateful => Descriptor.Stateful;
+        public int HistorySlots => Descriptor.HistorySlots;
+        public int WarmupFrames => Descriptor.WarmupFrames;
 
         public ShaderMaterialBinding(string key, Shader shader,
             IDictionary<PortId, string> inputProperties = null,
             IDictionary<ParameterId, string> parameterProperties = null,
-            int outputPass = 0)
+            int outputPass = 0, ShaderNodeBinding descriptor = null)
         {
             if (string.IsNullOrWhiteSpace(key) || shader == null || outputPass < 0) throw new ArgumentException("Shader binding metadata is invalid.");
-            Key = key.Trim(); Shader = shader; OutputPass = outputPass;
-            InputProperties = new ReadOnlyDictionary<PortId, string>(new Dictionary<PortId, string>(inputProperties ?? new Dictionary<PortId, string>()));
-            ParameterProperties = new ReadOnlyDictionary<ParameterId, string>(new Dictionary<ParameterId, string>(parameterProperties ?? new Dictionary<ParameterId, string>()));
+            Key = key.Trim(); Shader = shader;
+            Descriptor = descriptor ?? new ShaderNodeBinding(Key, inputProperties, parameterProperties, outputPass);
+            if (!string.Equals(Descriptor.ShaderKey, Key, StringComparison.Ordinal)) throw new ArgumentException("Shader descriptor key does not match material binding key.");
+            InputProperties = Descriptor.InputProperties;
+            ParameterProperties = Descriptor.ParameterProperties;
+            OutputPass = Descriptor.OutputPass;
             if (InputProperties.Any(x => string.IsNullOrWhiteSpace(x.Value)) || ParameterProperties.Any(x => string.IsNullOrWhiteSpace(x.Value))) throw new ArgumentException("Shader property names are required.");
+            if (Descriptor.FindPass(OutputPass) == null) throw new ArgumentException("Shader output pass is not declared.");
         }
     }
 
     public sealed class ShaderMaterialRegistry
     {
         private readonly Dictionary<string, ShaderMaterialBinding> _bindings = new Dictionary<string, ShaderMaterialBinding>(StringComparer.Ordinal);
+        private readonly Dictionary<NodeTypeId, ShaderMaterialBinding> _typeBindings = new Dictionary<NodeTypeId, ShaderMaterialBinding>();
         public IReadOnlyCollection<string> Keys => new ReadOnlyCollection<string>(_bindings.Keys.OrderBy(x => x, StringComparer.Ordinal).ToList());
+        /// <summary>All registered descriptors, including multiple ledger
+        /// variants that intentionally share one family Shader key.</summary>
+        public IReadOnlyCollection<ShaderMaterialBinding> Bindings => new ReadOnlyCollection<ShaderMaterialBinding>(
+            _typeBindings.Values.Concat(_bindings.Values.Where(x => x.Descriptor == null || x.Descriptor.TypeId.IsEmpty))
+                .Distinct().OrderBy(x => x.Descriptor == null || x.Descriptor.TypeId.IsEmpty ? x.Key : x.Descriptor.TypeId.Value, StringComparer.Ordinal).ToList());
 
         public Result Register(ShaderMaterialBinding binding)
         {
             if (binding == null) return Failure("rendering.shader.binding", "Shader material binding is required.");
+            if (binding.Descriptor != null && !binding.Descriptor.TypeId.IsEmpty)
+            {
+                if (!_typeBindings.TryAdd(binding.Descriptor.TypeId, binding)) return Failure("rendering.shader.duplicate", "Shader material binding is already registered for this node type.");
+                // Keep one key-level fallback for legacy callers.  Variants in
+                // the same family are resolved by TypeId and therefore do not
+                // collide here.
+                if (!_bindings.ContainsKey(binding.Key)) _bindings.Add(binding.Key, binding);
+                return Result.Success();
+            }
             if (!_bindings.TryAdd(binding.Key, binding)) return Failure("rendering.shader.duplicate", "Shader material binding is already registered.");
             return Result.Success();
         }
 
         public bool TryGet(string key, out ShaderMaterialBinding binding) => _bindings.TryGetValue(key ?? string.Empty, out binding);
+        public bool TryGet(NodeTypeId typeId, out ShaderMaterialBinding binding) => _typeBindings.TryGetValue(typeId, out binding);
         private static Result Failure(string code, string message) => Result.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "rendering"));
     }
 
@@ -55,29 +111,95 @@ namespace ShitDesigner.Rendering
     {
         private readonly ShaderMaterialRegistry _registry;
         private readonly string _shaderKey;
+        private readonly RenderTexturePool _pool;
+        private readonly string _sessionId;
         private readonly bool _generator;
         private readonly bool _blend;
         public NodeTypeId TypeId { get; }
-        public bool IsAvailable => _registry != null && _registry.TryGet(_shaderKey, out _);
+        public bool IsAvailable => TryResolve(out _);
         public Diagnostic AvailabilityDiagnostic => IsAvailable ? null : new Diagnostic(new DiagnosticCode("rendering.shader.binding_missing"), Severity.Error, "The explicit shader/material binding is unavailable.", nodeTypeId: TypeId, module: "rendering");
 
-        public ShaderVisualNodeBinding(NodeTypeId typeId, string shaderKey, ShaderMaterialRegistry registry, bool generator = false, bool blend = false)
+        public ShaderVisualNodeBinding(NodeTypeId typeId, string shaderKey, ShaderMaterialRegistry registry, bool generator = false, bool blend = false,
+            RenderTexturePool pool = null, string sessionId = null)
         {
             if (typeId.IsEmpty || string.IsNullOrWhiteSpace(shaderKey)) throw new ArgumentException("Shader visual binding identity is required.");
-            TypeId = typeId; _shaderKey = shaderKey.Trim(); _registry = registry; _generator = generator; _blend = blend;
+            TypeId = typeId; _shaderKey = shaderKey.Trim(); _registry = registry; _generator = generator; _blend = blend; _pool = pool; _sessionId = sessionId;
         }
 
         public Result<IRuntimeNode> Create(RuntimeNodeCreateInfo node, ulong generationId)
         {
             if (node == null || node.TypeId != TypeId || generationId == 0) return FailureNode("rendering.shader.node", "Shader factory input does not match its binding.", node, generationId);
             if (!IsAvailable) return Result<IRuntimeNode>.Failure(AvailabilityDiagnostic);
-            if (!_registry.TryGet(_shaderKey, out var binding)) return Result<IRuntimeNode>.Failure(AvailabilityDiagnostic);
-            try { return Result<IRuntimeNode>.Success(new ShaderRuntimeNode(node, generationId, binding, _generator, _blend)); }
+            if (!TryResolve(out var binding)) return Result<IRuntimeNode>.Failure(AvailabilityDiagnostic);
+            // Manifest-driven bindings carry their role in the neutral
+            // descriptor. Preserve the explicit constructor flags for old
+            // callers, while deriving the generator/composite behavior for
+            // dynamically registered entries.
+            var generator = _generator || binding.Family == ShaderNodeFamily.Generator;
+            var blend = _blend || binding.Family == ShaderNodeFamily.Composite;
+            try
+            {
+                if ((binding.Passes.Count > 1 || binding.Stateful) && _pool != null && !string.IsNullOrWhiteSpace(_sessionId))
+                    return Result<IRuntimeNode>.Success(new ShaderPassGraphRuntimeNode(node, generationId, binding, _pool, _sessionId, generator, blend));
+                if (binding.Passes.Count > 1 || binding.Stateful)
+                    return FailureNode("rendering.shader_graph.resources", "A multi-pass/stateful shader requires the shared RenderTexturePool and session ID.", node, generationId);
+                return Result<IRuntimeNode>.Success(new ShaderRuntimeNode(node, generationId, binding, generator, blend));
+            }
             catch (Exception exception) { return FailureNode("rendering.shader.create", exception.Message, node, generationId, exception); }
         }
 
         private Result<IRuntimeNode> FailureNode(string code, string message, RuntimeNodeCreateInfo node, ulong generationId, Exception exception = null) =>
             Result<IRuntimeNode>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, nodeId: node?.Id ?? default(NodeInstanceId), nodeTypeId: TypeId, generationId: generationId, module: "rendering", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
+
+        private bool TryResolve(out ShaderMaterialBinding binding)
+        {
+            binding = null;
+            if (_registry == null) return false;
+            return _registry.TryGet(TypeId, out binding) || _registry.TryGet(_shaderKey, out binding);
+        }
+    }
+
+    /// <summary>Single material-uniform seam shared by ShaderRuntimeNode and
+    /// EditMode/GPU probes.  Keeping the alias writes here prevents one family
+    /// from silently missing paused-clock or variant state.</summary>
+    public static class ShaderRuntimeUniformApplier
+    {
+        public static void Apply(Material material, ShaderMaterialBinding binding, double graphTime,
+            double deltaTime, ulong frameNumber, int width, int height, float seed)
+        {
+            if (material == null) throw new ArgumentNullException(nameof(material));
+            if (binding == null) throw new ArgumentNullException(nameof(binding));
+            var safeWidth = Math.Max(1, width);
+            var safeHeight = Math.Max(1, height);
+            var time = FiniteFloat(graphTime);
+            var delta = FiniteFloat(deltaTime);
+            if (delta < 0f) delta = 0f;
+            var frame = FiniteFloat(frameNumber);
+            var resolution = new Vector4(safeWidth, safeHeight, 1f / safeWidth, 1f / safeHeight);
+            material.SetFloat(ShaderFrameUniformNames.Time, time);
+            material.SetFloat(ShaderFrameUniformNames.DeltaTime, delta);
+            material.SetFloat(ShaderFrameUniformNames.Frame, frame);
+            material.SetVector(ShaderFrameUniformNames.Resolution, resolution);
+            material.SetFloat(ShaderFrameUniformNames.Seed, seed);
+            material.SetFloat(ShaderFrameUniformNames.BeatPhase, 0f);
+            material.SetFloat(ShaderFrameUniformNames.BeatPulse, 0f);
+            material.SetFloat(ShaderFrameUniformNames.BarPhase, 0f);
+            material.SetVector(ShaderFrameUniformNames.Pointer, Vector4.zero);
+            material.SetFloat(ShaderFrameUniformNames.VjVariant, binding.SourceVariant);
+            material.SetFloat(ShaderFrameUniformNames.Variant, binding.SourceVariant);
+            material.SetFloat(ShaderFrameUniformNames.GraphTime, time);
+            material.SetFloat(ShaderFrameUniformNames.FrameAlias, frame);
+            material.SetVector(ShaderFrameUniformNames.ResolutionAlias, resolution);
+            material.SetFloat(ShaderFrameUniformNames.SeedAlias, seed);
+        }
+
+        private static float FiniteFloat(double value)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value)) return 0f;
+            if (value >= float.MaxValue) return float.MaxValue;
+            if (value <= float.MinValue) return float.MinValue;
+            return (float)value;
+        }
     }
 
     public sealed class ShaderRuntimeNode : IRuntimeNode, IRuntimeDemandAwareNode
@@ -90,6 +212,7 @@ namespace ShitDesigner.Rendering
         private IRuntimeImageFrame _lastFrame;
         private bool _disposed;
         private double _lastClock;
+        private bool _hasClock;
 
         public NodeInstanceId NodeId => _record.Id;
         public NodeTypeId TypeId => _record.TypeId;
@@ -140,15 +263,55 @@ namespace ShitDesigner.Rendering
             try
             {
                 ApplyParameters(context.Snapshot);
-                if (!_generator)
+                // Frame/clock/variant properties are automatic uniforms.  A
+                // few family ledgers also describe their legacy names as
+                // parameters (GraphTime, Frame, Seed, Resolution), so write
+                // the automatic contract after typed parameter application to
+                // prevent a stale default from masking live frame state.
+                ApplyFrameUniforms(context.Snapshot, demand);
+                Texture source = null;
+                if (_binding.Inputs.Count > 0)
                 {
-                    if (!TryInput(context, _blend ? new PortId("a") : new PortId("input"), out var first))
+                    foreach (var input in _binding.Inputs)
+                    {
+                        if (input.Type != NodePortType.ImageFrame)
+                        {
+                            if (!TryInputValue(context, input.PortId, out var value))
+                            {
+                                if (input.Required)
+                                {
+                                    WriteLastOrFailure(context, outputs, image, Failure("rendering.shader.input_missing", "A required shader value input is unavailable: " + input.PortId.Value + ".", context));
+                                    State = RuntimeNodeState.Preparing;
+                                    return;
+                                }
+                                continue;
+                            }
+                            ApplyTypedParameter(input.Property, null, value);
+                            continue;
+                        }
+                        var texture = TryInputTexture(context, input.PortId);
+                        if (texture == null && input.Required)
+                        {
+                            WriteLastOrFailure(context, outputs, image, Failure("rendering.shader.input_missing", "A required shader input is unavailable: " + input.PortId.Value + ".", context));
+                            State = RuntimeNodeState.Preparing;
+                            return;
+                        }
+                        texture = texture ?? DefaultTexture(input.DefaultImage);
+                        _material.SetTexture(input.Property, texture);
+                        if (source == null && (input.Role == ShaderInputRole.Primary || _binding.Inputs.Count == 1)) source = texture;
+                    }
+                }
+                else if (!_generator)
+                {
+                    var firstId = _blend ? new PortId("a") : new PortId("input");
+                    if (!TryInput(context, firstId, out var first))
                     {
                         WriteLastOrFailure(context, outputs, image, Failure("rendering.shader.input_missing", "Shader effect input is unavailable.", context));
                         State = RuntimeNodeState.Preparing;
                         return;
                     }
-                    _material.SetTexture(PropertyFor(_blend ? new PortId("a") : new PortId("input"), "_MainTex"), first);
+                    _material.SetTexture(PropertyFor(firstId, "_MainTex"), first);
+                    source = first;
                     if (_blend)
                     {
                         if (!TryInput(context, new PortId("b"), out var second))
@@ -160,7 +323,7 @@ namespace ShitDesigner.Rendering
                         _material.SetTexture(PropertyFor(new PortId("b"), "_TexB"), second);
                     }
                 }
-                var source = _generator ? Texture2D.blackTexture : (TryInputTexture(context, _blend ? new PortId("a") : new PortId("input")) ?? Texture2D.blackTexture);
+                source = source ?? Texture2D.blackTexture;
                 Graphics.Blit(source, target, _material, _binding.OutputPass);
                 if (prepared is IRuntimeOutputSurfaceCompletion completion) completion.MarkRendered();
                 var frame = new RenderingRuntimeImageFrame(prepared, context.Snapshot.FrameNumber);
@@ -184,33 +347,102 @@ namespace ShitDesigner.Rendering
             texture = TryInputTexture(context, id);
             return texture != null;
         }
+        private static bool TryInputValue(NodeExecutionContext context, PortId id, out ParameterValue value)
+        {
+            value = default(ParameterValue);
+            if (!context.Inputs.TryGetValue(id, out var input) || !input.HasValue) return false;
+            try
+            {
+                // PortValue already owns the type-safe conversion. Keeping the
+                // bridge here generic avoids duplicating the project-level
+                // PortType enum in the rendering assembly.
+                value = input.Value.AsParameterValue();
+                return true;
+            }
+            catch (InvalidOperationException) { return false; }
+        }
         private Texture TryInputTexture(NodeExecutionContext context, PortId id)
         {
             if (!context.Inputs.TryGetValue(id, out var input) || !input.HasValue || !input.Value.IsImageFrame) return null;
             return (input.Value.AsImageFrame() as IRuntimeImageFrameSurface)?.NativeSurface as Texture;
         }
+        private static Texture DefaultTexture(RuntimeDefaultImageKind? kind)
+        {
+            if (kind == RuntimeDefaultImageKind.OpaqueWhite) return Texture2D.whiteTexture;
+            return Texture2D.blackTexture;
+        }
         private string PropertyFor(PortId id, string fallback) => _binding.InputProperties.TryGetValue(id, out var property) ? property : fallback;
         private void ApplyParameters(FrameSnapshot snapshot)
         {
+            if (_binding.Parameters.Count > 0)
+            {
+                foreach (var binding in _binding.Parameters)
+                {
+                    if (!snapshot.EffectiveValues.TryGetValue(new ParameterKey(NodeId, binding.ParameterId), out var value)) continue;
+                    ApplyTypedParameter(binding.Property, binding, value);
+                }
+                return;
+            }
             foreach (var binding in _binding.ParameterProperties)
             {
                 if (!snapshot.EffectiveValues.TryGetValue(new ParameterKey(NodeId, binding.Key), out var value)) continue;
-                switch (value.Type)
-                {
-                    case ParameterType.Float: _material.SetFloat(binding.Value, value.AsFloat()); break;
-                    case ParameterType.Int: _material.SetInt(binding.Value, value.AsInt()); break;
-                    case ParameterType.Bool: _material.SetFloat(binding.Value, value.AsBool() ? 1f : 0f); break;
-                    case ParameterType.Color:
-                        // Color parameters are already Linear at the Runtime
-                        // boundary. SetVector avoids Unity's sRGB conversion
-                        // performed by SetColor for Color-typed properties.
-                        var c = value.AsColor();
-                        _material.SetVector(binding.Value, new Vector4(c.R, c.G, c.B, c.A));
-                        break;
-                    case ParameterType.Vector2: var v2 = value.AsVector2(); _material.SetVector(binding.Value, new Vector4(v2.X, v2.Y, 0, 0)); break;
-                    case ParameterType.Vector3: var v3 = value.AsVector3(); _material.SetVector(binding.Value, new Vector4(v3.X, v3.Y, v3.Z, 0)); break;
-                    case ParameterType.Vector4: var v4 = value.AsVector4(); _material.SetVector(binding.Value, new Vector4(v4.X, v4.Y, v4.Z, v4.W)); break;
-                }
+                ApplyTypedParameter(binding.Value, null, value);
+            }
+        }
+        private void ApplyTypedParameter(string property, ShaderParameterBinding binding, ParameterValue value)
+        {
+            switch (value.Type)
+            {
+                case ParameterType.Float: _material.SetFloat(property, value.AsFloat()); break;
+                case ParameterType.Int: _material.SetInt(property, value.AsInt()); break;
+                case ParameterType.Bool: _material.SetFloat(property, value.AsBool() ? 1f : 0f); break;
+                case ParameterType.Color:
+                    // Color parameters are already Linear at the Runtime
+                    // boundary. SetVector avoids Unity's sRGB conversion
+                    // performed by SetColor for Color-typed properties.
+                    var c = value.AsColor();
+                    _material.SetVector(property, new Vector4(c.R, c.G, c.B, c.A));
+                    break;
+                case ParameterType.Vector2: var v2 = value.AsVector2(); _material.SetVector(property, new Vector4(v2.X, v2.Y, 0, 0)); break;
+                case ParameterType.Vector3: var v3 = value.AsVector3(); _material.SetVector(property, new Vector4(v3.X, v3.Y, v3.Z, 0)); break;
+                case ParameterType.Vector4: var v4 = value.AsVector4(); _material.SetVector(property, new Vector4(v4.X, v4.Y, v4.Z, v4.W)); break;
+                case ParameterType.Enum:
+                    var option = value.AsString();
+                    var enumValue = 0;
+                    if (binding != null && binding.EnumMapping.TryGetValue(option, out var mapped)) enumValue = mapped;
+                    _material.SetInt(property, enumValue);
+                    break;
+            }
+        }
+        private void ApplyFrameUniforms(FrameSnapshot snapshot, RuntimeOutputResolutionDemand demand)
+        {
+            var graphTime = FiniteFloat(snapshot.GraphClockTime);
+            var delta = _hasClock && !snapshot.IsGraphClockPaused ? FiniteFloat(snapshot.GraphClockTime - _lastClock) : 0f;
+            if (delta < 0f) delta = 0f;
+            var width = Math.Max(1, demand == null ? 1 : demand.Width);
+            var height = Math.Max(1, demand == null ? 1 : demand.Height);
+            // Every generated family selects its implementation through an
+            // explicit numeric variant uniform.  The helper writes both the
+            // canonical _SD_* names and the aliases used by older families.
+            ShaderRuntimeUniformApplier.Apply(_material, _binding, graphTime, delta,
+                snapshot.FrameNumber, width, height, StableSeed(NodeId.Value));
+            _lastClock = snapshot.GraphClockTime;
+            _hasClock = true;
+        }
+        private static float FiniteFloat(double value)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value)) return 0f;
+            if (value >= float.MaxValue) return float.MaxValue;
+            if (value <= float.MinValue) return float.MinValue;
+            return (float)value;
+        }
+        private static float StableSeed(string value)
+        {
+            unchecked
+            {
+                uint hash = 2166136261u;
+                foreach (var character in value ?? string.Empty) { hash ^= character; hash *= 16777619u; }
+                return (hash % 1000003u) / 1000003f;
             }
         }
         private void WriteLastOrFailure(NodeExecutionContext context, NodeOutputWriter outputs, PortId image, Diagnostic diagnostic)

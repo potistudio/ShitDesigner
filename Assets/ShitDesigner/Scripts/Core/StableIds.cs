@@ -33,7 +33,11 @@ namespace ShitDesigner.Core
 
     internal static class StableIdRules
     {
-        private static readonly Regex NodeTypePattern = new Regex("^[a-z0-9_]+(?:\\.[a-z0-9_]+){2,}$", RegexOptions.CultureInvariant);
+        // Shader ledger IDs use stable lower-ascii hyphenated variant names
+        // (for example shader.generator.solid-color).  Keep the existing
+        // lowercase/vendor/category contract while allowing that persisted
+        // spelling instead of silently rewriting IDs on import.
+        private static readonly Regex NodeTypePattern = new Regex("^[a-z0-9_-]+(?:\\.[a-z0-9_-]+){2,}$", RegexOptions.CultureInvariant);
         private static readonly Regex ParameterPattern = new Regex("^[a-z0-9]+(?:_[a-z0-9]+)*(?:\\.[a-z0-9]+(?:_[a-z0-9]+)*)*$", RegexOptions.CultureInvariant);
         private static readonly Regex PortPattern = new Regex("^[a-z0-9]+(?:_[a-z0-9]+)*$", RegexOptions.CultureInvariant);
         public static bool IsUuidV4(string value)
