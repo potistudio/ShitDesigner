@@ -1,12 +1,7 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
-    <Style src="project://database/Assets/ShitDesigner/Scripts/Presentation/Demo/DemoUI.uss?fileID=7433441132597879392&amp;guid=b66fa258b8d24dbf9443099c4ae668aa&amp;type=3#DemoUI"/>
+    <Style src="project://database/Assets/ShitDesigner/Scenes/UiDemo/DemoUI.uss?fileID=7433441132597879392&amp;guid=b66fa258b8d24dbf9443099c4ae668aa&amp;type=3#DemoUI"/>
     <ui:VisualElement name="demo-root" class="demo-root">
         <ui:VisualElement class="demo-topbar">
-            <ui:VisualElement class="demo-brand-mark">
-                <ui:Label text="S"/>
-            </ui:VisualElement>
-            <ui:Label text="SHIT DESIGNER" class="demo-brand"/>
-            <ui:Label text="NEON DISTRICT / MAIN SET" class="demo-project"/>
             <ui:VisualElement class="demo-spacer"/>
             <ui:Button name="grid-button" text="GRID  ON" tooltip="Toggle grid borders" class="demo-button"/>
             <ui:Button name="live-button" text="●  LIVE" tooltip="Pause or resume the demo" class="demo-button demo-live-button"/>
@@ -18,13 +13,7 @@
                         <ui:Label text="PREVIEW" class="demo-panel-title"/>
                         <ui:Label name="preview-status" text="●  LIVE" class="demo-live-label"/>
                     </ui:VisualElement>
-                    <ui:VisualElement name="output-preview" class="demo-preview">
-                        <ui:VisualElement class="demo-preview-orb demo-preview-orb-left"/>
-                        <ui:VisualElement class="demo-preview-orb demo-preview-orb-right"/>
-                        <ui:VisualElement class="demo-preview-frame"/>
-                        <ui:Label text="NEON DISTRICT" class="demo-preview-title"/>
-                        <ui:Label text="PROGRAM / DISPLAY 2" class="demo-preview-subtitle"/>
-                    </ui:VisualElement>
+                    <ui:VisualElement name="output-preview" class="demo-preview"/>
                 </ui:VisualElement>
                 <ui:VisualElement name="grid-panel" class="demo-panel demo-grid-panel">
                     <ui:VisualElement class="demo-panel-header">
