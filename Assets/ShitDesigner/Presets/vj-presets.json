@@ -1,0 +1,615 @@
+{
+    "schemaVersion": 1,
+    "presets": [
+        {
+            "id": "preset.vjgenerator",
+            "name": "VJGenerator P0 Starter",
+            "variantId": "shitdesigner.shader.generator.solid-color",
+            "family": "VJGenerator",
+            "shader": "Hidden/ShitDesigner/VJ/Generator",
+            "variant": 0,
+            "values": [
+                {
+                    "id": "amount",
+                    "value": 0.5
+                },
+                {
+                    "id": "frequency",
+                    "value": 4.0
+                },
+                {
+                    "id": "detail",
+                    "value": 4.0
+                },
+                {
+                    "id": "softness",
+                    "value": 0.05000000074505806
+                },
+                {
+                    "id": "threshold",
+                    "value": 0.5
+                },
+                {
+                    "id": "gain",
+                    "value": 1.0
+                },
+                {
+                    "id": "mix",
+                    "value": 0.5
+                },
+                {
+                    "id": "speed",
+                    "value": 1.0
+                },
+                {
+                    "id": "scale",
+                    "value": 1.0
+                },
+                {
+                    "id": "radius",
+                    "value": 1.0
+                }
+            ],
+            "colors": [
+                "#FF3311",
+                "#1133FF",
+                "#22FF66"
+            ],
+            "tags": [
+                "starter",
+                "p0",
+                "linear-hdr",
+                "premultiplied-alpha"
+            ]
+        },
+        {
+            "id": "preset.vjcolor",
+            "name": "VJColor P0 Starter",
+            "variantId": "shitdesigner.shader.color.invert",
+            "family": "VJColor",
+            "shader": "Hidden/ShitDesigner/VJ/Color",
+            "variant": 0,
+            "values": [
+                {
+                    "id": "amount",
+                    "value": 0.5
+                },
+                {
+                    "id": "frequency",
+                    "value": 4.0
+                },
+                {
+                    "id": "detail",
+                    "value": 4.0
+                },
+                {
+                    "id": "softness",
+                    "value": 0.05000000074505806
+                },
+                {
+                    "id": "threshold",
+                    "value": 0.5
+                },
+                {
+                    "id": "gain",
+                    "value": 1.0
+                },
+                {
+                    "id": "mix",
+                    "value": 0.5
+                },
+                {
+                    "id": "speed",
+                    "value": 1.0
+                },
+                {
+                    "id": "scale",
+                    "value": 1.0
+                },
+                {
+                    "id": "radius",
+                    "value": 1.0
+                }
+            ],
+            "colors": [
+                "#FF3311",
+                "#1133FF",
+                "#22FF66"
+            ],
+            "tags": [
+                "starter",
+                "p0",
+                "linear-hdr",
+                "premultiplied-alpha"
+            ]
+        },
+        {
+            "id": "preset.vjgeometry",
+            "name": "VJGeometry P0 Starter",
+            "variantId": "shitdesigner.shader.geometry.transform-2d",
+            "family": "VJGeometry",
+            "shader": "Hidden/ShitDesigner/VJ/Geometry",
+            "variant": 0,
+            "values": [
+                {
+                    "id": "amount",
+                    "value": 0.5
+                },
+                {
+                    "id": "frequency",
+                    "value": 4.0
+                },
+                {
+                    "id": "detail",
+                    "value": 4.0
+                },
+                {
+                    "id": "softness",
+                    "value": 0.05000000074505806
+                },
+                {
+                    "id": "threshold",
+                    "value": 0.5
+                },
+                {
+                    "id": "gain",
+                    "value": 1.0
+                },
+                {
+                    "id": "mix",
+                    "value": 0.5
+                },
+                {
+                    "id": "speed",
+                    "value": 1.0
+                },
+                {
+                    "id": "scale",
+                    "value": 1.0
+                },
+                {
+                    "id": "radius",
+                    "value": 1.0
+                }
+            ],
+            "colors": [
+                "#FF3311",
+                "#1133FF",
+                "#22FF66"
+            ],
+            "tags": [
+                "starter",
+                "p0",
+                "linear-hdr",
+                "premultiplied-alpha"
+            ]
+        },
+        {
+            "id": "preset.vjglitch",
+            "name": "VJGlitch P0 Starter",
+            "variantId": "shitdesigner.shader.glitch.rgb-split",
+            "family": "VJGlitch",
+            "shader": "Hidden/ShitDesigner/VJ/Glitch",
+            "variant": 0,
+            "values": [
+                {
+                    "id": "amount",
+                    "value": 0.5
+                },
+                {
+                    "id": "frequency",
+                    "value": 4.0
+                },
+                {
+                    "id": "detail",
+                    "value": 4.0
+                },
+                {
+                    "id": "softness",
+                    "value": 0.05000000074505806
+                },
+                {
+                    "id": "threshold",
+                    "value": 0.5
+                },
+                {
+                    "id": "gain",
+                    "value": 1.0
+                },
+                {
+                    "id": "mix",
+                    "value": 0.5
+                },
+                {
+                    "id": "speed",
+                    "value": 1.0
+                },
+                {
+                    "id": "scale",
+                    "value": 1.0
+                },
+                {
+                    "id": "radius",
+                    "value": 1.0
+                }
+            ],
+            "colors": [
+                "#FF3311",
+                "#1133FF",
+                "#22FF66"
+            ],
+            "tags": [
+                "starter",
+                "p0",
+                "linear-hdr",
+                "premultiplied-alpha"
+            ]
+        },
+        {
+            "id": "preset.vjconvolution",
+            "name": "VJConvolution P0 Starter",
+            "variantId": "shitdesigner.shader.blur.box-blur",
+            "family": "VJConvolution",
+            "shader": "Hidden/ShitDesigner/VJ/Convolution",
+            "variant": 0,
+            "values": [
+                {
+                    "id": "amount",
+                    "value": 0.5
+                },
+                {
+                    "id": "frequency",
+                    "value": 4.0
+                },
+                {
+                    "id": "detail",
+                    "value": 4.0
+                },
+                {
+                    "id": "softness",
+                    "value": 0.05000000074505806
+                },
+                {
+                    "id": "threshold",
+                    "value": 0.5
+                },
+                {
+                    "id": "gain",
+                    "value": 1.0
+                },
+                {
+                    "id": "mix",
+                    "value": 0.5
+                },
+                {
+                    "id": "speed",
+                    "value": 1.0
+                },
+                {
+                    "id": "scale",
+                    "value": 1.0
+                },
+                {
+                    "id": "radius",
+                    "value": 1.0
+                }
+            ],
+            "colors": [
+                "#FF3311",
+                "#1133FF",
+                "#22FF66"
+            ],
+            "tags": [
+                "starter",
+                "p0",
+                "linear-hdr",
+                "premultiplied-alpha"
+            ]
+        },
+        {
+            "id": "preset.vjedge",
+            "name": "VJEdge P0 Starter",
+            "variantId": "shitdesigner.shader.edge.sobel-edge",
+            "family": "VJEdge",
+            "shader": "Hidden/ShitDesigner/VJ/Edge",
+            "variant": 0,
+            "values": [
+                {
+                    "id": "amount",
+                    "value": 0.5
+                },
+                {
+                    "id": "frequency",
+                    "value": 4.0
+                },
+                {
+                    "id": "detail",
+                    "value": 4.0
+                },
+                {
+                    "id": "softness",
+                    "value": 0.05000000074505806
+                },
+                {
+                    "id": "threshold",
+                    "value": 0.5
+                },
+                {
+                    "id": "gain",
+                    "value": 1.0
+                },
+                {
+                    "id": "mix",
+                    "value": 0.5
+                },
+                {
+                    "id": "speed",
+                    "value": 1.0
+                },
+                {
+                    "id": "scale",
+                    "value": 1.0
+                },
+                {
+                    "id": "radius",
+                    "value": 1.0
+                }
+            ],
+            "colors": [
+                "#FF3311",
+                "#1133FF",
+                "#22FF66"
+            ],
+            "tags": [
+                "starter",
+                "p0",
+                "linear-hdr",
+                "premultiplied-alpha"
+            ]
+        },
+        {
+            "id": "preset.vjkey",
+            "name": "VJKey P0 Starter",
+            "variantId": "shitdesigner.shader.key.luma-key",
+            "family": "VJKey",
+            "shader": "Hidden/ShitDesigner/VJ/Key",
+            "variant": 0,
+            "values": [
+                {
+                    "id": "amount",
+                    "value": 0.5
+                },
+                {
+                    "id": "frequency",
+                    "value": 4.0
+                },
+                {
+                    "id": "detail",
+                    "value": 4.0
+                },
+                {
+                    "id": "softness",
+                    "value": 0.05000000074505806
+                },
+                {
+                    "id": "threshold",
+                    "value": 0.5
+                },
+                {
+                    "id": "gain",
+                    "value": 1.0
+                },
+                {
+                    "id": "mix",
+                    "value": 0.5
+                },
+                {
+                    "id": "speed",
+                    "value": 1.0
+                },
+                {
+                    "id": "scale",
+                    "value": 1.0
+                },
+                {
+                    "id": "radius",
+                    "value": 1.0
+                }
+            ],
+            "colors": [
+                "#FF3311",
+                "#1133FF",
+                "#22FF66"
+            ],
+            "tags": [
+                "starter",
+                "p0",
+                "linear-hdr",
+                "premultiplied-alpha"
+            ]
+        },
+        {
+            "id": "preset.blend",
+            "name": "Blend P0 Starter",
+            "variantId": "blend.normal_alpha_over",
+            "family": "Blend",
+            "shader": "Hidden/ShitDesigner/VJ/BlendFamily",
+            "variant": 0,
+            "values": [
+                {
+                    "id": "amount",
+                    "value": 0.5
+                },
+                {
+                    "id": "frequency",
+                    "value": 4.0
+                },
+                {
+                    "id": "detail",
+                    "value": 4.0
+                },
+                {
+                    "id": "softness",
+                    "value": 0.05000000074505806
+                },
+                {
+                    "id": "threshold",
+                    "value": 0.5
+                },
+                {
+                    "id": "gain",
+                    "value": 1.0
+                },
+                {
+                    "id": "mix",
+                    "value": 0.5
+                },
+                {
+                    "id": "speed",
+                    "value": 1.0
+                },
+                {
+                    "id": "scale",
+                    "value": 1.0
+                },
+                {
+                    "id": "radius",
+                    "value": 1.0
+                }
+            ],
+            "colors": [
+                "#FF3311",
+                "#1133FF",
+                "#22FF66"
+            ],
+            "tags": [
+                "starter",
+                "p0",
+                "linear-hdr",
+                "premultiplied-alpha"
+            ]
+        },
+        {
+            "id": "preset.transition",
+            "name": "Transition P0 Starter",
+            "variantId": "transition.crossfade",
+            "family": "Transition",
+            "shader": "Hidden/ShitDesigner/VJ/TransitionFamily",
+            "variant": 0,
+            "values": [
+                {
+                    "id": "amount",
+                    "value": 0.5
+                },
+                {
+                    "id": "frequency",
+                    "value": 4.0
+                },
+                {
+                    "id": "detail",
+                    "value": 4.0
+                },
+                {
+                    "id": "softness",
+                    "value": 0.05000000074505806
+                },
+                {
+                    "id": "threshold",
+                    "value": 0.5
+                },
+                {
+                    "id": "gain",
+                    "value": 1.0
+                },
+                {
+                    "id": "mix",
+                    "value": 0.5
+                },
+                {
+                    "id": "speed",
+                    "value": 1.0
+                },
+                {
+                    "id": "scale",
+                    "value": 1.0
+                },
+                {
+                    "id": "radius",
+                    "value": 1.0
+                }
+            ],
+            "colors": [
+                "#FF3311",
+                "#1133FF",
+                "#22FF66"
+            ],
+            "tags": [
+                "starter",
+                "p0",
+                "linear-hdr",
+                "premultiplied-alpha"
+            ]
+        },
+        {
+            "id": "preset.temporal",
+            "name": "Temporal P0 Starter",
+            "variantId": "temporal.feedback_transform",
+            "family": "Temporal",
+            "shader": "Hidden/ShitDesigner/VJ/TemporalFamily",
+            "variant": 0,
+            "values": [
+                {
+                    "id": "amount",
+                    "value": 0.5
+                },
+                {
+                    "id": "frequency",
+                    "value": 4.0
+                },
+                {
+                    "id": "detail",
+                    "value": 4.0
+                },
+                {
+                    "id": "softness",
+                    "value": 0.05000000074505806
+                },
+                {
+                    "id": "threshold",
+                    "value": 0.5
+                },
+                {
+                    "id": "gain",
+                    "value": 1.0
+                },
+                {
+                    "id": "mix",
+                    "value": 0.5
+                },
+                {
+                    "id": "speed",
+                    "value": 1.0
+                },
+                {
+                    "id": "scale",
+                    "value": 1.0
+                },
+                {
+                    "id": "radius",
+                    "value": 1.0
+                }
+            ],
+            "colors": [
+                "#FF3311",
+                "#1133FF",
+                "#22FF66"
+            ],
+            "tags": [
+                "starter",
+                "p0",
+                "linear-hdr",
+                "premultiplied-alpha"
+            ]
+        }
+    ]
+}
