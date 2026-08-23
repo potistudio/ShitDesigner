@@ -132,6 +132,7 @@ GameObject:
   - component: {fileID: 114001}
   - component: {fileID: 114002}
   - component: {fileID: 114003}
+  - component: {fileID: 114004}
   m_Layer: 0
   m_Name: ShitDesigner Bootstrap
   m_TagString: Untagged
@@ -195,6 +196,7 @@ MonoBehaviour:
   _presentationRoot: {fileID: 114002}
   _assets: {fileID: 114000}
   _panelSettings: {fileID: 11400000, guid: acdb4ed592be84c4b8cf01d5947806f1, type: 2}
+  _midiInputManager: {fileID: 114004}
   _createOnAwake: 1
   _createDefaultProject: 1
   _defaultProjectName: Untitled
@@ -235,6 +237,21 @@ MonoBehaviour:
   m_PivotReferenceSize: 0
   m_Pivot: 0
   m_WorldSpaceCollider: {fileID: 0}
+--- !u!114 &114004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c52f4760adeb45ff980c5d0bc525fb9f, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _deviceId: 0
+  _openOnConfigure: 1
+  _bindings: []
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

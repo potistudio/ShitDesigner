@@ -65,6 +65,15 @@ namespace ShitDesigner.Input.Tests
             Assert.That(binding.Normalize(110), Is.EqualTo(0f));
         }
 
+        [Test]
+        public void InspectorBindingReportsUnselectedLiveControlClearly()
+        {
+            var binding = new MidiLiveControlBinding(string.Empty, MidiControlKind.ControlChange, 1, 0);
+
+            Assert.That(binding.TryResolve(out _, out var error), Is.False);
+            Assert.That(error, Is.EqualTo("Select a Live Control."));
+        }
+
         private static uint Pack(byte status, byte data1, byte data2) => (uint)(status | (data1 << 8) | (data2 << 16));
 
         private sealed class FakeSource : IMidiInputSource
