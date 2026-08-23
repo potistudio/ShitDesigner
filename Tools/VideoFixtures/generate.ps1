@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$Output = "Assets/ShitDesigner/Tests/Media/Fixtures",
+    [string]$Output = "Assets/ShitDesigner/Scripts/Tests/Media/Fixtures",
     [switch]$VerifyOnly
 )
 

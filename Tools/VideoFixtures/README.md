@@ -1,7 +1,7 @@
 # Deterministic Unity video fixtures
 
 `generate.ps1` creates the small local test corpus under
-`Assets/ShitDesigner/Tests/Media/Fixtures`:
+`Assets/ShitDesigner/Scripts/Tests/Media/Fixtures`:
 
 - H.264/MP4, including a two-track H.264 + AAC file. The runtime records the
   audio metadata but `UnityVideoBackend` uses `VideoAudioOutputMode.None`.

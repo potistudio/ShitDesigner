@@ -1099,7 +1099,7 @@ namespace ShitDesigner.TestHarness.Tests
         [Test]
         public void ProductBuild_HarnessAssemblyIsDefineConstrainedAndNotAutoReferenced()
         {
-            var asmdefPath = Path.Combine(UnityEngine.Application.dataPath, "ShitDesigner/TestHarness/ShitDesigner.TestHarness.asmdef");
+            var asmdefPath = Path.Combine(UnityEngine.Application.dataPath, "ShitDesigner/Scripts/TestHarness/ShitDesigner.TestHarness.asmdef");
             var asmdef = File.ReadAllText(asmdefPath);
             Assert.That(asmdef, Does.Contain("\"autoReferenced\": false"));
             Assert.That(asmdef, Does.Contain("\"defineConstraints\": [\"SHITDESIGNER_TEST_HARNESS\"]"));
@@ -1108,7 +1108,7 @@ namespace ShitDesigner.TestHarness.Tests
         [Test]
         public void HarnessContractTests_DeclareProductionReferencesUsedByTheirPublicContracts()
         {
-            var asmdefPath = Path.Combine(UnityEngine.Application.dataPath, "ShitDesigner/TestHarness/Tests/ShitDesigner.TestHarness.Tests.EditMode.asmdef");
+            var asmdefPath = Path.Combine(UnityEngine.Application.dataPath, "ShitDesigner/Scripts/TestHarness/Tests/ShitDesigner.TestHarness.Tests.EditMode.asmdef");
             var asmdef = File.ReadAllText(asmdefPath);
             Assert.That(asmdef, Does.Contain("\"ShitDesigner.Application\""));
             Assert.That(asmdef, Does.Contain("\"ShitDesigner.Media\""));

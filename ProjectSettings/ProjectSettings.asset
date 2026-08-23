@@ -839,7 +839,8 @@ PlayerSettings:
   scriptingDefineSymbols:
     Standalone: 
   additionalCompilerArguments: {}
-  platformArchitecture: {}
+  platformArchitecture:
+    Standalone: 0
   scriptingBackend:
     Android: 1
     Standalone: 1

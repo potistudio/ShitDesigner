@@ -149,11 +149,11 @@ namespace ShitDesigner.Tests.Media
 
         private static HapDecodedFrame Frame(bool isYCoCg, params HapDecodedPlane[] planes) => new HapDecodedFrame(4, 4, 0, 0, new byte[4 * 4 * 4], planes, isYCoCg: isYCoCg);
 
-        private static string FixtureRoot() => Path.Combine(Application.dataPath, "ShitDesigner", "Tests", "Media", "Fixtures");
+        private static string FixtureRoot() => Path.Combine(Application.dataPath, "ShitDesigner", "Scripts", "Tests", "Media", "Fixtures");
 
         private static HapDecodedFrame Fixture(VideoCodec codec)
         {
-            var path = Path.Combine("Assets", "ShitDesigner", "Tests", "Media", "Fixtures", codec == VideoCodec.Hap1 ? "hap1.mov" : codec == VideoCodec.Hap5 ? "hap5.mov" : codec == VideoCodec.HapY ? "hapy.mov" : "hapm.mov");
+            var path = Path.Combine("Assets", "ShitDesigner", "Scripts", "Tests", "Media", "Fixtures", codec == VideoCodec.Hap1 ? "hap1.mov" : codec == VideoCodec.Hap5 ? "hap5.mov" : codec == VideoCodec.HapY ? "hapy.mov" : "hapm.mov");
             Assert.That(File.Exists(path), Is.True, path + " is a required checked-in fixture.");
             Assert.That(HapMovie.TryOpen(path, out var movie, out var movieError), Is.True, movieError);
             var sample = movie.ReadSample(1);

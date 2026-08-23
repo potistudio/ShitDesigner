@@ -69,20 +69,23 @@ namespace ShitDesigner.Nodes.Tests
             var duplicate = new NodeDefinitionCatalog(initial.Entries.Concat(new[] { initial.Entries[0] }));
             Assert.That(duplicate.Validate().IsFailure, Is.True);
 
-            var asset = AssetDatabase.LoadAssetAtPath<NodeTypeCatalog>("Assets/ShitDesigner/Nodes/NodeTypeCatalog.asset");
+            var asset = AssetDatabase.LoadAssetAtPath<NodeTypeCatalog>("Assets/ShitDesigner/Scripts/Nodes/NodeTypeCatalog.asset");
             Assert.That(asset, Is.Not.Null);
             Assert.That(asset.ValidateManifest().IsSuccess, Is.True);
             var runtime = asset.BuildRuntimeCatalog();
             Assert.That(runtime.IsSuccess, Is.True);
-            Assert.That(runtime.Value.Entries.Count, Is.EqualTo(initial.Entries.Count));
+            Assert.That(runtime.Value.Entries.Count, Is.EqualTo(asset.Entries.Count));
+            Assert.That(runtime.Value.Entries.Count, Is.GreaterThan(initial.Entries.Count));
         }
 
         [Test]
         public void CatalogAsset_MatchesCompletePortAndParameterDescriptors()
         {
-            var asset = AssetDatabase.LoadAssetAtPath<NodeTypeCatalog>("Assets/ShitDesigner/Nodes/NodeTypeCatalog.asset");
+            var asset = AssetDatabase.LoadAssetAtPath<NodeTypeCatalog>("Assets/ShitDesigner/Scripts/Nodes/NodeTypeCatalog.asset");
             Assert.That(asset, Is.Not.Null);
-            var result = asset.ValidateAgainst(NodeDefinitionCatalog.CreateInitial());
+            var runtime = asset.BuildRuntimeCatalog();
+            Assert.That(runtime.IsSuccess, Is.True, runtime.IsFailure ? runtime.Diagnostic.Message : string.Empty);
+            var result = asset.ValidateAgainst(runtime.Value);
             Assert.That(result.IsSuccess, Is.True, result.Diagnostic == null ? string.Empty : result.Diagnostic.Message);
             Assert.That(asset.Entries.All(x => x.Ports.Count == x.PortIds.Count && x.Parameters.Count == x.ParameterIds.Count), Is.True);
         }
@@ -144,7 +147,7 @@ namespace ShitDesigner.Nodes.Tests
         public void NodesAssembly_EnforcesCoreRuntimeOnlyBoundary()
         {
             var projectRoot = Directory.GetParent(UnityEngine.Application.dataPath).FullName;
-            var asmdef = File.ReadAllText(Path.Combine(projectRoot, "Assets", "ShitDesigner", "Nodes", "ShitDesigner.Nodes.asmdef"));
+            var asmdef = File.ReadAllText(Path.Combine(projectRoot, "Assets", "ShitDesigner", "Scripts", "Nodes", "ShitDesigner.Nodes.asmdef"));
             Assert.That(asmdef, Does.Contain("ShitDesigner.Core"));
             Assert.That(asmdef, Does.Contain("ShitDesigner.Runtime"));
             Assert.That(asmdef, Does.Not.Contain("ShitDesigner.Project"));

@@ -645,9 +645,9 @@ namespace ShitDesigner.Tests.Media
 
         private static string FixtureRoot()
         {
-            var relative = Path.Combine(Directory.GetCurrentDirectory(), "Assets", "ShitDesigner", "Tests", "Media", "Fixtures");
+            var relative = Path.Combine(Directory.GetCurrentDirectory(), "Assets", "ShitDesigner", "Scripts", "Tests", "Media", "Fixtures");
             if (Directory.Exists(relative)) return relative;
-            return Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath) ?? Directory.GetCurrentDirectory(), "Assets", "ShitDesigner", "Tests", "Media", "Fixtures");
+            return Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath) ?? Directory.GetCurrentDirectory(), "Assets", "ShitDesigner", "Scripts", "Tests", "Media", "Fixtures");
         }
 
         private static string Hex(byte[] bytes) => BitConverter.ToString(bytes).Replace("-", string.Empty).ToLowerInvariant();

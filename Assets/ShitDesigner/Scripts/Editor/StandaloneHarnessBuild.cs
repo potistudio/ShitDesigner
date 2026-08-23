@@ -167,6 +167,8 @@ namespace ShitDesigner.Editor
                 var harnessType = AppDomain.CurrentDomain.GetAssemblies().Select(x => x.GetType("ShitDesigner.TestHarness.StandalonePerformanceHarness", false)).FirstOrDefault(x => x != null);
                 if (harnessType == null) throw new InvalidOperationException("ShitDesigner.TestHarness is not compiled. Run EnableHarnessDefine once before building.");
                 if (root.GetComponent(harnessType) == null) root.AddComponent(harnessType);
+                var temporaryDirectory = Path.GetDirectoryName(temporaryPath);
+                if (!string.IsNullOrEmpty(temporaryDirectory)) Directory.CreateDirectory(temporaryDirectory);
                 if (!EditorSceneManager.SaveScene(sourceScene, temporaryPath)) throw new InvalidOperationException("Could not save the temporary Harness scene.");
                 RestoreActiveSceneOrThrow(originalScene);
                 return temporaryPath;
