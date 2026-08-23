@@ -86,7 +86,7 @@ namespace ShitDesigner.TestHarness.Tests
         public void AcceptanceFixtures_SelectTheAudioH264EntryWhenItFollowsSilentH264()
         {
             var projectRoot = Directory.GetParent(UnityEngine.Application.dataPath)?.FullName ?? Directory.GetCurrentDirectory();
-            var fixtureRoot = Path.Combine(projectRoot, "Assets", "ShitDesigner", "Tests", "Media", "Fixtures");
+            var fixtureRoot = Path.Combine(projectRoot, "Assets", "ShitDesigner", "Scripts", "Tests", "Media", "Fixtures");
             var result = AcceptanceFixtureValidator.Validate(fixtureRoot);
 
             Assert.That(result.IsValid, Is.True, result.Error);
