@@ -1,0 +1,117 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/ShitDesigner/Scripts/Presentation/Demo/DemoUI.uss?fileID=7433441132597879392&amp;guid=b66fa258b8d24dbf9443099c4ae668aa&amp;type=3#DemoUI"/>
+    <ui:VisualElement name="demo-root" class="demo-root">
+        <ui:VisualElement class="demo-topbar">
+            <ui:VisualElement class="demo-brand-mark">
+                <ui:Label text="S"/>
+            </ui:VisualElement>
+            <ui:Label text="SHIT DESIGNER" class="demo-brand"/>
+            <ui:Label text="NEON DISTRICT / MAIN SET" class="demo-project"/>
+            <ui:VisualElement class="demo-spacer"/>
+            <ui:Button name="grid-button" text="GRID  ON" tooltip="Toggle grid borders" class="demo-button"/>
+            <ui:Button name="live-button" text="●  LIVE" tooltip="Pause or resume the demo" class="demo-button demo-live-button"/>
+        </ui:VisualElement>
+        <ui:VisualElement class="demo-content">
+            <ui:VisualElement class="demo-upper-row">
+                <ui:VisualElement class="demo-panel demo-preview-panel">
+                    <ui:VisualElement class="demo-panel-header">
+                        <ui:Label text="PREVIEW" class="demo-panel-title"/>
+                        <ui:Label name="preview-status" text="●  LIVE" class="demo-live-label"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="output-preview" class="demo-preview">
+                        <ui:VisualElement class="demo-preview-orb demo-preview-orb-left"/>
+                        <ui:VisualElement class="demo-preview-orb demo-preview-orb-right"/>
+                        <ui:VisualElement class="demo-preview-frame"/>
+                        <ui:Label text="NEON DISTRICT" class="demo-preview-title"/>
+                        <ui:Label text="PROGRAM / DISPLAY 2" class="demo-preview-subtitle"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="grid-panel" class="demo-panel demo-grid-panel">
+                    <ui:VisualElement class="demo-panel-header">
+                        <ui:Label text="GRID" class="demo-panel-title"/>
+                        <ui:Label text="3 × 2" class="demo-panel-meta"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="demo-grid">
+                        <ui:VisualElement class="demo-grid-row">
+                            <ui:VisualElement class="demo-grid-cell demo-cell-active">
+                                <ui:Label text="01" class="demo-cell-number"/>
+                                <ui:Label text="VIDEO" class="demo-cell-label"/>
+                            </ui:VisualElement>
+                            <ui:VisualElement class="demo-grid-cell">
+                                <ui:Label text="02" class="demo-cell-number"/>
+                                <ui:Label text="SHIFT" class="demo-cell-label"/>
+                            </ui:VisualElement>
+                            <ui:VisualElement class="demo-grid-cell">
+                                <ui:Label text="03" class="demo-cell-number"/>
+                                <ui:Label text="ECHO" class="demo-cell-label"/>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:VisualElement class="demo-grid-row">
+                            <ui:VisualElement class="demo-grid-cell">
+                                <ui:Label text="04" class="demo-cell-number"/>
+                                <ui:Label text="GRADE" class="demo-cell-label"/>
+                            </ui:VisualElement>
+                            <ui:VisualElement class="demo-grid-cell">
+                                <ui:Label text="05" class="demo-cell-number"/>
+                                <ui:Label text="MIX" class="demo-cell-label"/>
+                            </ui:VisualElement>
+                            <ui:VisualElement class="demo-grid-cell demo-cell-output">
+                                <ui:Label text="06" class="demo-cell-number"/>
+                                <ui:Label text="OUTPUT" class="demo-cell-label"/>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement class="demo-panel demo-fader-panel">
+                <ui:VisualElement class="demo-panel-header demo-fader-header">
+                    <ui:Label text="LIVE PARAMETERS" class="demo-panel-title"/>
+                    <ui:Label text="6 CONTROLS" class="demo-panel-meta"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="demo-fader-bank">
+                    <ui:VisualElement class="demo-fader-channel">
+                        <ui:Label name="master-fader-value" text="0.82" class="demo-fader-value"/>
+                        <ui:Slider name="master-fader" direction="Vertical" low-value="0" high-value="1" value="0.61" fill="true" show-input-field="false" class="demo-fader demo-fader-accent"/>
+                        <ui:Label text="MASTER" class="demo-fader-label"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="demo-fader-channel">
+                        <ui:Label name="speed-fader-value" text="1.12" class="demo-fader-value"/>
+                        <ui:Slider name="speed-fader" direction="Vertical" low-value="0" high-value="2" value="1.12" class="demo-fader"/>
+                        <ui:Label text="SPEED" class="demo-fader-label"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="demo-fader-channel">
+                        <ui:Label name="feedback-fader-value" text="0.74" class="demo-fader-value"/>
+                        <ui:Slider name="feedback-fader" direction="Vertical" low-value="0" high-value="1" value="0.74" class="demo-fader"/>
+                        <ui:Label text="FEEDBACK" class="demo-fader-label"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="demo-fader-channel">
+                        <ui:Label name="shift-fader-value" text="0.24" class="demo-fader-value"/>
+                        <ui:Slider name="shift-fader" direction="Vertical" low-value="0" high-value="1" value="0.24" class="demo-fader"/>
+                        <ui:Label text="SHIFT" class="demo-fader-label"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="demo-fader-channel">
+                        <ui:Label name="hue-fader-value" text="0.56" class="demo-fader-value"/>
+                        <ui:Slider name="hue-fader" direction="Vertical" low-value="0" high-value="1" value="0.56" class="demo-fader"/>
+                        <ui:Label text="HUE" class="demo-fader-label"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="demo-fader-channel">
+                        <ui:Label name="opacity-fader-value" text="1.00" class="demo-fader-value"/>
+                        <ui:Slider name="opacity-fader" direction="Vertical" low-value="0" high-value="1" value="1" class="demo-fader"/>
+                        <ui:Label text="OPACITY" class="demo-fader-label"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement class="demo-statusbar">
+            <ui:VisualElement class="demo-health-dot"/>
+            <ui:Label text="SYSTEM HEALTHY" class="demo-status-strong"/>
+            <ui:VisualElement class="demo-divider"/>
+            <ui:Label name="clock-value" text="GRAPH  00:42:16.284" class="demo-mono demo-status-copy"/>
+            <ui:VisualElement class="demo-spacer"/>
+            <ui:Label text="59.94 FPS" class="demo-mono demo-status-strong"/>
+            <ui:VisualElement class="demo-divider"/>
+            <ui:Label text="CPU  4.2 MS" class="demo-mono demo-status-copy"/>
+            <ui:Label text="GPU  6.8 MS" class="demo-mono demo-status-copy"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
