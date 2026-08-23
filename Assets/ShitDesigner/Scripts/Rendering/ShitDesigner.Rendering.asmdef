@@ -3,7 +3,8 @@
   "rootNamespace": "ShitDesigner.Rendering",
   "references": [
     "ShitDesigner.Core",
-    "ShitDesigner.Runtime"
+    "ShitDesigner.Runtime",
+    "ShitDesigner.Nodes"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

@@ -154,6 +154,98 @@ namespace ShitDesigner.Nodes
     }
 
     [Serializable]
+    public sealed class ShaderInputCatalogRecord
+    {
+        [SerializeField] private string portId;
+        [SerializeField] private string property;
+        [SerializeField] private ShaderInputRole role;
+        [SerializeField] private NodePortType type;
+        [SerializeField] private bool required;
+        [SerializeField] private bool hasDefaultImage;
+        [SerializeField] private RuntimeDefaultImageKind defaultImage;
+        public string PortId => portId ?? string.Empty;
+        public string Property => property ?? string.Empty;
+        public ShaderInputRole Role => role;
+        public NodePortType Type => type;
+        public bool Required => required;
+        public bool HasDefaultImage => hasDefaultImage;
+        public RuntimeDefaultImageKind DefaultImage => defaultImage;
+        public ShaderInputCatalogRecord() { }
+        internal ShaderInputCatalogRecord(ShaderInputBinding source)
+        {
+            portId = source.PortId.Value; property = source.Property; role = source.Role; type = source.Type;
+            required = source.Required; hasDefaultImage = source.DefaultImage.HasValue;
+            defaultImage = source.DefaultImage ?? RuntimeDefaultImageKind.TransparentBlack;
+        }
+        internal bool Matches(ShaderInputBinding source) => source != null
+            && string.Equals(PortId, source.PortId.Value, StringComparison.Ordinal)
+            && string.Equals(Property, source.Property, StringComparison.Ordinal)
+            && Role == source.Role && Type == source.Type && Required == source.Required
+            && HasDefaultImage == source.DefaultImage.HasValue
+            && (!HasDefaultImage || DefaultImage == source.DefaultImage.Value);
+    }
+
+    [Serializable]
+    public sealed class ShaderParameterCatalogRecord
+    {
+        [SerializeField] private string parameterId;
+        [SerializeField] private string property;
+        [SerializeField] private ParameterType type;
+        [SerializeField] private List<string> enumKeys = new List<string>();
+        [SerializeField] private List<int> enumValues = new List<int>();
+        public string ParameterId => parameterId ?? string.Empty;
+        public string Property => property ?? string.Empty;
+        public ParameterType Type => type;
+        public IReadOnlyList<string> EnumKeys => enumKeys ?? (IReadOnlyList<string>)Array.Empty<string>();
+        public IReadOnlyList<int> EnumValues => enumValues ?? (IReadOnlyList<int>)Array.Empty<int>();
+        public ShaderParameterCatalogRecord() { }
+        internal ShaderParameterCatalogRecord(ShaderParameterBinding source)
+        {
+            parameterId = source.ParameterId.Value; property = source.Property; type = source.Type;
+            enumKeys = source.EnumMapping.Keys.ToList(); enumValues = enumKeys.Select(x => source.EnumMapping[x]).ToList();
+        }
+        internal bool Matches(ShaderParameterBinding source)
+        {
+            if (source == null || !string.Equals(ParameterId, source.ParameterId.Value, StringComparison.Ordinal)
+                || !string.Equals(Property, source.Property, StringComparison.Ordinal) || Type != source.Type
+                || EnumKeys.Count != source.EnumMapping.Count) return false;
+            for (var index = 0; index < EnumKeys.Count; index++)
+            {
+                if (!source.EnumMapping.TryGetValue(EnumKeys[index], out var value) || EnumValues.Count <= index || EnumValues[index] != value) return false;
+            }
+            return true;
+        }
+    }
+
+    [Serializable]
+    public sealed class ShaderPassCatalogRecord
+    {
+        [SerializeField] private string id;
+        [SerializeField] private int index;
+        [SerializeField] private ShaderPassKind kind;
+        [SerializeField] private string variantId;
+        [SerializeField] private string outputRole;
+        [SerializeField] private ShaderFeatureFlags requiredFeatures;
+        public string Id => id ?? string.Empty;
+        public int Index => index;
+        public ShaderPassKind Kind => kind;
+        public string VariantId => variantId ?? string.Empty;
+        public string OutputRole => outputRole ?? string.Empty;
+        public ShaderFeatureFlags RequiredFeatures => requiredFeatures;
+        public ShaderPassCatalogRecord() { }
+        internal ShaderPassCatalogRecord(ShaderPassBinding source)
+        {
+            id = source.Id; index = source.Index; kind = source.Kind; variantId = source.VariantId;
+            outputRole = source.OutputRole; requiredFeatures = source.RequiredFeatures;
+        }
+        internal bool Matches(ShaderPassBinding source) => source != null
+            && string.Equals(Id, source.Id, StringComparison.Ordinal) && Index == source.Index && Kind == source.Kind
+            && string.Equals(VariantId, source.VariantId, StringComparison.Ordinal)
+            && string.Equals(OutputRole, source.OutputRole, StringComparison.Ordinal)
+            && RequiredFeatures == source.RequiredFeatures;
+    }
+
+    [Serializable]
     public sealed class NodeTypeCatalogRecord
     {
         // ID-only projections are retained to produce a useful migration
@@ -174,6 +266,16 @@ namespace ShitDesigner.Nodes
         [SerializeField] private Material templateMaterial;
         [SerializeField] private GameObject scenePrefab;
         [SerializeField] private int outputPass;
+        [SerializeField] private ShaderNodeFamily shaderFamily;
+        [SerializeField] private string shaderVariantId;
+        [SerializeField] private int shaderSourceVariant;
+        [SerializeField] private ShaderFeatureFlags shaderRequiredFeatures;
+        [SerializeField] private bool shaderStateful;
+        [SerializeField] private int shaderHistorySlots;
+        [SerializeField] private List<string> shaderAliases = new List<string>();
+        [SerializeField] private List<ShaderInputCatalogRecord> shaderInputs = new List<ShaderInputCatalogRecord>();
+        [SerializeField] private List<ShaderParameterCatalogRecord> shaderParameters = new List<ShaderParameterCatalogRecord>();
+        [SerializeField] private List<ShaderPassCatalogRecord> shaderPasses = new List<ShaderPassCatalogRecord>();
 
         public string TypeId => typeId ?? string.Empty;
         public int SchemaVersion => schemaVersion;
@@ -191,6 +293,16 @@ namespace ShitDesigner.Nodes
         public Material TemplateMaterial => templateMaterial;
         public GameObject ScenePrefab => scenePrefab;
         public int OutputPass => outputPass;
+        public ShaderNodeFamily ShaderFamily => shaderFamily;
+        public string ShaderVariantId => shaderVariantId ?? string.Empty;
+        public int ShaderSourceVariant => shaderSourceVariant;
+        public ShaderFeatureFlags ShaderRequiredFeatures => shaderRequiredFeatures;
+        public bool ShaderStateful => shaderStateful;
+        public int ShaderHistorySlots => shaderHistorySlots;
+        public IReadOnlyList<string> ShaderAliases => shaderAliases ?? (IReadOnlyList<string>)Array.Empty<string>();
+        public IReadOnlyList<ShaderInputCatalogRecord> ShaderInputs => shaderInputs ?? (IReadOnlyList<ShaderInputCatalogRecord>)Array.Empty<ShaderInputCatalogRecord>();
+        public IReadOnlyList<ShaderParameterCatalogRecord> ShaderParameters => shaderParameters ?? (IReadOnlyList<ShaderParameterCatalogRecord>)Array.Empty<ShaderParameterCatalogRecord>();
+        public IReadOnlyList<ShaderPassCatalogRecord> ShaderPasses => shaderPasses ?? (IReadOnlyList<ShaderPassCatalogRecord>)Array.Empty<ShaderPassCatalogRecord>();
 
         public NodeTypeCatalogRecord() { }
         public NodeTypeCatalogRecord(NodeCatalogEntry entry)
@@ -205,6 +317,16 @@ namespace ShitDesigner.Nodes
             shaderKey = entry.ShaderBinding?.ShaderKey ?? string.Empty;
             outputPass = entry.ShaderBinding?.OutputPass ?? 0;
             prefabKey = entry.SceneBinding?.PrefabKey ?? string.Empty;
+            shaderFamily = entry.ShaderBinding?.Family ?? ShaderNodeFamily.Custom;
+            shaderVariantId = entry.ShaderBinding?.VariantId ?? string.Empty;
+            shaderSourceVariant = entry.ShaderBinding?.SourceVariant ?? 0;
+            shaderRequiredFeatures = entry.ShaderBinding?.RequiredFeatures ?? ShaderFeatureFlags.None;
+            shaderStateful = entry.ShaderBinding?.Stateful ?? false;
+            shaderHistorySlots = entry.ShaderBinding?.HistorySlots ?? 0;
+            shaderAliases = (entry.ShaderBinding?.Aliases ?? Array.Empty<string>()).ToList();
+            shaderInputs = (entry.ShaderBinding?.Inputs ?? Array.Empty<ShaderInputBinding>()).Select(x => new ShaderInputCatalogRecord(x)).ToList();
+            shaderParameters = (entry.ShaderBinding?.Parameters ?? Array.Empty<ShaderParameterBinding>()).Select(x => new ShaderParameterCatalogRecord(x)).ToList();
+            shaderPasses = (entry.ShaderBinding?.Passes ?? Array.Empty<ShaderPassBinding>()).Select(x => new ShaderPassCatalogRecord(x)).ToList();
         }
         public Result Validate()
         {
@@ -219,13 +341,25 @@ namespace ShitDesigner.Nodes
             if (!ports.Select(x => x.Id).SequenceEqual(portIds, StringComparer.Ordinal) || !parameters.Select(x => x.Id).SequenceEqual(parameterIds, StringComparer.Ordinal))
                 return Failure("nodes.catalog.asset_detail_mismatch", "Catalog record ID projections do not match complete descriptors.");
             if (outputPass < 0) return Failure("nodes.catalog.asset_pass", "Catalog shader output pass cannot be negative.");
+            if (shaderSourceVariant < 0) return Failure("nodes.catalog.asset_variant", "Catalog shader source variant cannot be negative.");
+            if (!string.IsNullOrWhiteSpace(ShaderKey))
+            {
+                if (shaderInputs == null || shaderParameters == null || shaderPasses == null)
+                    return Failure("nodes.catalog.asset_shader_members", "Shader catalog metadata is missing.");
+                if (shaderPasses.Count == 0 || !shaderPasses.Any(x => x != null && x.Index == outputPass))
+                    return Failure("nodes.catalog.asset_shader_pass", "Shader catalog output pass is not declared.");
+                if (shaderInputs.Any(x => x == null) || shaderParameters.Any(x => x == null) || shaderPasses.Any(x => x == null))
+                    return Failure("nodes.catalog.asset_shader_members", "Shader catalog metadata contains a null descriptor.");
+                if (shaderStateful != (shaderHistorySlots > 0) || (!shaderStateful && shaderHistorySlots != 0))
+                    return Failure("nodes.catalog.asset_shader_history", "Shader catalog history metadata is inconsistent.");
+            }
             return Result.Success();
         }
         internal Result ValidateAssetReferenceRequirements()
         {
             if ((Category == "3D" || Category == "2D") && (ScenePrefab == null || string.IsNullOrWhiteSpace(PrefabKey)))
                 return Failure("nodes.catalog.prefab_missing", "Scene records require a direct prefab reference and key.");
-            if (Category.StartsWith("Shader/", StringComparison.Ordinal)
+            if (!string.IsNullOrWhiteSpace(ShaderKey)
                 && ((Shader == null && TemplateMaterial == null) || string.IsNullOrWhiteSpace(ShaderKey)))
                 return Failure("nodes.catalog.shader_missing", "Shader records require a direct Shader or template Material reference and key.");
             return Result.Success();
@@ -237,9 +371,22 @@ namespace ShitDesigner.Nodes
                 || SystemOwned != expected.SystemOwned || UserAddable != expected.UserAddable
                 || !string.Equals(ShaderKey, expected.ShaderBinding?.ShaderKey ?? string.Empty, StringComparison.Ordinal)
                 || OutputPass != (expected.ShaderBinding?.OutputPass ?? 0) || !string.Equals(PrefabKey, expected.SceneBinding?.PrefabKey ?? string.Empty, StringComparison.Ordinal)
+                || ShaderFamily != (expected.ShaderBinding?.Family ?? ShaderNodeFamily.Custom)
+                || !string.Equals(ShaderVariantId, expected.ShaderBinding?.VariantId ?? string.Empty, StringComparison.Ordinal)
+                || ShaderSourceVariant != (expected.ShaderBinding?.SourceVariant ?? 0)
+                || ShaderRequiredFeatures != (expected.ShaderBinding?.RequiredFeatures ?? ShaderFeatureFlags.None)
+                || ShaderStateful != (expected.ShaderBinding?.Stateful ?? false)
+                || ShaderHistorySlots != (expected.ShaderBinding?.HistorySlots ?? 0)
+                || !ShaderAliases.SequenceEqual(expected.ShaderBinding?.Aliases ?? Array.Empty<string>(), StringComparer.Ordinal)
                 || Ports.Count != expected.Ports.Count || Parameters.Count != expected.Parameters.Count) return false;
             for (var i = 0; i < Ports.Count; i++) if (!Ports[i].Matches(expected.Ports[i])) return false;
             for (var i = 0; i < Parameters.Count; i++) if (!Parameters[i].Matches(expected.Parameters[i])) return false;
+            if (ShaderInputs.Count != (expected.ShaderBinding?.Inputs.Count ?? 0)
+                || ShaderParameters.Count != (expected.ShaderBinding?.Parameters.Count ?? 0)
+                || ShaderPasses.Count != (expected.ShaderBinding?.Passes.Count ?? 0)) return false;
+            for (var i = 0; i < ShaderInputs.Count; i++) if (!ShaderInputs[i].Matches(expected.ShaderBinding.Inputs[i])) return false;
+            for (var i = 0; i < ShaderParameters.Count; i++) if (!ShaderParameters[i].Matches(expected.ShaderBinding.Parameters[i])) return false;
+            for (var i = 0; i < ShaderPasses.Count; i++) if (!ShaderPasses[i].Matches(expected.ShaderBinding.Passes[i])) return false;
             return true;
         }
         internal void SetAssetReferences(GameObject prefab, Shader shaderAsset, Material material, string prefabBindingKey, string shaderBindingKey, int pass)
@@ -254,8 +401,10 @@ namespace ShitDesigner.Nodes
     public sealed class NodeTypeCatalog : ScriptableObject
     {
         [SerializeField] private int catalogSchemaVersion = 1;
+        [SerializeField] private ShaderNodeManifestAsset shaderManifest;
         [SerializeField] private List<NodeTypeCatalogRecord> entries = new List<NodeTypeCatalogRecord>();
         public int CatalogSchemaVersion => catalogSchemaVersion;
+        public ShaderNodeManifestAsset ShaderManifest => shaderManifest;
         public IReadOnlyList<NodeTypeCatalogRecord> Entries => entries ?? (IReadOnlyList<NodeTypeCatalogRecord>)Array.Empty<NodeTypeCatalogRecord>();
 
         public Result ValidateManifest()
@@ -264,6 +413,14 @@ namespace ShitDesigner.Nodes
             if (entries == null || entries.Count == 0) return Failure("nodes.catalog.asset_empty", "Node catalog asset contains no entries.");
             if (entries.Any(x => x == null)) return Failure("nodes.catalog.asset_null", "Node catalog asset contains a null entry.");
             if (entries.GroupBy(x => x.TypeId, StringComparer.Ordinal).Any(x => x.Count() > 1)) return Failure("nodes.catalog.asset_duplicate", "Node catalog asset contains duplicate TypeIds.");
+            if (shaderManifest != null)
+            {
+                var shaderValid = shaderManifest.ValidateManifest();
+                if (shaderValid.IsFailure) return shaderValid;
+                var shaderIds = new HashSet<string>(shaderManifest.Entries.Select(x => x.TypeId), StringComparer.Ordinal);
+                var catalogShaderIds = new HashSet<string>(entries.Where(x => !string.IsNullOrWhiteSpace(x.ShaderKey)).Select(x => x.TypeId), StringComparer.Ordinal);
+                if (!shaderIds.SetEquals(catalogShaderIds)) return Failure("nodes.catalog.asset_manifest_mismatch", "Shader manifest and catalog shader TypeIds differ.");
+            }
             foreach (var entry in entries)
             {
                 var result = entry.Validate(); if (result.IsFailure) return result;
@@ -294,7 +451,8 @@ namespace ShitDesigner.Nodes
 
         public Result<NodeDefinitionCatalog> BuildRuntimeCatalog(NodeFactoryBindings bindings = null)
         {
-            var expected = NodeDefinitionCatalog.CreateInitial(bindings);
+            var manifest = shaderManifest == null ? ShaderNodeManifest.CreateBuiltIn() : shaderManifest.BuildRuntimeManifest();
+            var expected = NodeDefinitionCatalog.CreateInitial(manifest, bindings);
             var validation = ValidateAgainst(expected);
             return validation.IsFailure ? Result<NodeDefinitionCatalog>.Failure(validation.Diagnostic) : Result<NodeDefinitionCatalog>.Success(expected);
         }
@@ -304,14 +462,32 @@ namespace ShitDesigner.Nodes
             entries = (source ?? Enumerable.Empty<NodeCatalogEntry>()).Select(x => new NodeTypeCatalogRecord(x)).ToList(); catalogSchemaVersion = 1;
         }
 
+        public void SetShaderManifest(ShaderNodeManifestAsset manifest)
+        {
+            shaderManifest = manifest;
+        }
+
         /// <summary>Editor generation attaches direct Unity asset references
         /// without changing the neutral descriptor or its save contract.</summary>
         public Result ConfigureReference(string typeId, GameObject prefab = null, Shader shader = null, Material templateMaterial = null)
         {
             var entry = Find(typeId); if (entry == null) return Failure("nodes.catalog.reference_type", "Catalog reference type is not present.");
-            var expected = NodeDefinitionCatalog.CreateInitial().Entries.FirstOrDefault(x => x.TypeId.Value == typeId);
-            if (expected == null) return Failure("nodes.catalog.reference_type", "Catalog reference type is not a built-in definition.");
-            entry.SetAssetReferences(prefab, shader, templateMaterial, expected.SceneBinding?.PrefabKey, expected.ShaderBinding?.ShaderKey, expected.ShaderBinding?.OutputPass ?? 0);
+            var expected = (shaderManifest == null ? ShaderNodeManifest.CreateBuiltIn() : shaderManifest.BuildRuntimeManifest()).Find(typeId);
+            var expectedNode = NodeDefinitionCatalog.CreateInitial(shaderManifest: shaderManifest == null ? ShaderNodeManifest.CreateBuiltIn() : shaderManifest.BuildRuntimeManifest(), bindings: null).Entries.FirstOrDefault(x => x.TypeId.Value == typeId);
+            if (expected == null && expectedNode == null) return Failure("nodes.catalog.reference_type", "Catalog reference type is not a generated definition.");
+            entry.SetAssetReferences(prefab, shader, templateMaterial,
+                expectedNode?.SceneBinding?.PrefabKey,
+                expected?.ShaderKey ?? expectedNode?.ShaderBinding?.ShaderKey,
+                expected?.OutputPass ?? expectedNode?.ShaderBinding?.OutputPass ?? 0);
+            return Result.Success();
+        }
+
+        public Result ConfigureShaderReference(string typeId, Shader shader)
+        {
+            var entry = Find(typeId);
+            if (entry == null) return Failure("nodes.catalog.reference_type", "Catalog reference type is not present: " + typeId + ".");
+            if (shader == null) return Failure("nodes.catalog.shader_missing", "A direct Shader reference is required: " + typeId + ".");
+            entry.SetAssetReferences(null, shader, null, string.Empty, entry.ShaderKey, entry.OutputPass);
             return Result.Success();
         }
         private NodeTypeCatalogRecord Find(string typeId) => Entries.FirstOrDefault(x => x != null && string.Equals(x.TypeId, typeId, StringComparison.Ordinal));

@@ -179,6 +179,7 @@ MonoBehaviour:
   _hapAlphaMaterial: {fileID: 2100003, guid: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, type: 2}
   _hapDecodeShader: {fileID: 7200000, guid: 4cbecb5908686794884e1f93a7bbefd0, type: 3}
   _nodeTypeCatalog: {fileID: 11400000, guid: 557deaee6f41a4c4a9ca4f9a0fdbb8bf, type: 2}
+  _shaderManifest: {fileID: 0}
 --- !u!114 &114001
 MonoBehaviour:
   m_ObjectHideFlags: 0

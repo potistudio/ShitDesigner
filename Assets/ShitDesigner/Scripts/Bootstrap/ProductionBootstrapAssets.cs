@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using ShitDesigner.Core;
 using ShitDesigner.Graph;
 using ShitDesigner.Media;
@@ -33,12 +34,14 @@ namespace ShitDesigner.Bootstrap
         [SerializeField] private ComputeShader _hapDecodeShader;
         [Header("Generated runtime catalog")]
         [SerializeField] private NodeTypeCatalog _nodeTypeCatalog;
+        [SerializeField] private ShaderNodeManifestAsset _shaderManifest;
 
         // Read-only seams keep production asset verification deterministic without
         // reflection.  The composition root still consumes the serialized fields.
         public GameObject Scene3dPrefab => _scene3dPrefab;
         public GameObject Scene2dPrefab => _scene2dPrefab;
         public NodeTypeCatalog NodeTypeCatalog => _nodeTypeCatalog;
+        public ShaderNodeManifestAsset ShaderManifest => _shaderManifest != null ? _shaderManifest : _nodeTypeCatalog?.ShaderManifest;
         public Shader DisplayTransformShader => _displayTransformShader;
 
         public Result<IProductionVisualBindingProvider> BuildProvider(IProjectFileSystem fileSystem, RenderTexturePool pool)
@@ -55,6 +58,13 @@ namespace ShitDesigner.Bootstrap
             if (_videoConversionMaterial == null) return Failure("bootstrap.assets.video_material_missing", "The explicit VideoToLinearPremultiplied material is required.");
 
             var shaders = new ShaderMaterialRegistry();
+            var shaderManifestAsset = ShaderManifest;
+            if (shaderManifestAsset == null) return Failure("bootstrap.assets.shader_manifest_missing", "The generated ShaderNodeManifest asset is required.");
+            var shaderAssetValidation = shaderManifestAsset.ValidateShaderReferences();
+            if (shaderAssetValidation.IsFailure) return Result<IProductionVisualBindingProvider>.Failure(shaderAssetValidation.Diagnostic);
+            var shaderManifest = shaderManifestAsset.BuildRuntimeManifest();
+            var shaderManifestValidation = ShaderNodeManifestValidator.Validate(shaderManifest);
+            if (shaderManifestValidation.IsFailure) return Result<IProductionVisualBindingProvider>.Failure(shaderManifestValidation.Diagnostic);
             foreach (var pair in new[]
             {
                 new System.Collections.Generic.KeyValuePair<string, Shader>("builtin.shader.generator", _shaderGenerator),
@@ -62,19 +72,20 @@ namespace ShitDesigner.Bootstrap
                 new System.Collections.Generic.KeyValuePair<string, Shader>("builtin.shader.blend2", _shaderBlend2)
             })
             {
-                System.Collections.Generic.IDictionary<PortId, string> inputs = null;
-                if (pair.Key == "builtin.shader.effect")
-                    inputs = new System.Collections.Generic.Dictionary<PortId, string> { { new PortId("input"), "_MainTex" } };
-                else if (pair.Key == "builtin.shader.blend2")
-                    inputs = new System.Collections.Generic.Dictionary<PortId, string>
-                    {
-                        { new PortId("a"), "_TexA" },
-                        { new PortId("b"), "_TexB" }
-                    };
-                var parameters = pair.Key == "builtin.shader.generator"
-                    ? new System.Collections.Generic.Dictionary<ParameterId, string> { { new ParameterId("color"), "_Color" } }
-                    : null;
-                var registered = shaders.Register(new ShaderMaterialBinding(pair.Key, pair.Value, inputs, parameters));
+                var entry = shaderManifest.Entries.Single(x => string.Equals(x.ShaderKey, pair.Key, StringComparison.Ordinal));
+                var registered = shaders.Register(new ShaderMaterialBinding(pair.Key, pair.Value, descriptor: entry.ToShaderBinding()));
+                if (registered.IsFailure) return Result<IProductionVisualBindingProvider>.Failure(registered.Diagnostic);
+            }
+            // Every generated ledger entry keeps a direct Shader reference in
+            // the manifest asset.  Register by TypeId as well as family key so
+            // all variants can share a family shader without collapsing to the
+            // first variant in a key-only dictionary.
+            foreach (var entry in shaderManifest.Entries.Where(x => !x.ShaderKey.StartsWith("builtin.", StringComparison.Ordinal)))
+            {
+                var assetEntry = shaderManifestAsset.Find(entry.TypeId.Value);
+                if (assetEntry == null || assetEntry.Shader == null)
+                    return Failure("bootstrap.assets.shader_reference_missing", "A generated shader entry is missing its direct Shader reference: " + entry.TypeId.Value + ".");
+                var registered = shaders.Register(new ShaderMaterialBinding(entry.ShaderKey, assetEntry.Shader, descriptor: entry.ToShaderBinding()));
                 if (registered.IsFailure) return Result<IProductionVisualBindingProvider>.Failure(registered.Diagnostic);
             }
 

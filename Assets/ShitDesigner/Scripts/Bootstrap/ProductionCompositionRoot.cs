@@ -191,9 +191,25 @@ namespace ShitDesigner.Bootstrap
                     : node.TypeId.Value == "shitdesigner.scene.2d" ? _scene2dPrefab : null;
                 bindings.Add(new SceneVisualNodeBinding(new NodeTypeId("shitdesigner.scene.3d"), SceneNodeKind.ThreeD, scenes, prefab));
                 bindings.Add(new SceneVisualNodeBinding(new NodeTypeId("shitdesigner.scene.2d"), SceneNodeKind.TwoD, scenes, prefab));
-                bindings.Add(new ShaderVisualNodeBinding(new NodeTypeId("shitdesigner.shader.generator"), "builtin.shader.generator", _shaders, generator: true));
-                bindings.Add(new ShaderVisualNodeBinding(new NodeTypeId("shitdesigner.shader.effect"), "builtin.shader.effect", _shaders));
-                bindings.Add(new ShaderVisualNodeBinding(new NodeTypeId("shitdesigner.shader.blend2"), "builtin.shader.blend2", _shaders, blend: true));
+                var manifestShaderBindings = _shaders.Bindings
+                    .Select(x => x.Descriptor)
+                    .Where(x => x != null && !x.TypeId.IsEmpty)
+                    .OrderBy(x => x.TypeId.Value, StringComparer.Ordinal)
+                    .ToList();
+                if (manifestShaderBindings.Count > 0)
+                {
+                    foreach (var shader in manifestShaderBindings)
+                        bindings.Add(new ShaderVisualNodeBinding(shader.TypeId, shader.ShaderKey, _shaders,
+                            pool: _pool, sessionId: sessionId));
+                }
+                else
+                {
+                    // Keep the old explicit path for callers that construct a
+                    // registry manually with legacy ShaderMaterialBinding data.
+                    bindings.Add(new ShaderVisualNodeBinding(new NodeTypeId("shitdesigner.shader.generator"), "builtin.shader.generator", _shaders, generator: true));
+                    bindings.Add(new ShaderVisualNodeBinding(new NodeTypeId("shitdesigner.shader.effect"), "builtin.shader.effect", _shaders));
+                    bindings.Add(new ShaderVisualNodeBinding(new NodeTypeId("shitdesigner.shader.blend2"), "builtin.shader.blend2", _shaders, blend: true));
+                }
                 bindings.Add(new VideoPlayerVisualNodeBinding(_videoBackends, _videoFrameAdapter, _videoResolver, _videoGraphics));
                 var feedback = new FeedbackVisualNodeBinding(_pool, sessionId, _formatPolicy);
                 if (!feedback.IsAvailable) return Failure("bootstrap.binding.feedback_missing", "Feedback requires the shared RenderTexturePool.");

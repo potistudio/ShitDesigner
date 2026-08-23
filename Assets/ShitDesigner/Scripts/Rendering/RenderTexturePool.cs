@@ -422,6 +422,10 @@ namespace ShitDesigner.Rendering
         private static void DestroyTexture(RenderTexture texture)
         {
             if (texture == null) return;
+            // Unity logs an error when an active render target is released or destroyed.
+            // Pool disposal can run from node teardown while the last pass still owns
+            // the active surface, so detach it before returning the texture to Unity.
+            if (RenderTexture.active == texture) RenderTexture.active = null;
             if (UnityEngine.Application.isPlaying) UnityEngine.Object.Destroy(texture);
             else UnityEngine.Object.DestroyImmediate(texture);
         }

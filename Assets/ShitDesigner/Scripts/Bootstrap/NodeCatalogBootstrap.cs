@@ -83,10 +83,20 @@ namespace ShitDesigner.Bootstrap
             var list = (bindings ?? Enumerable.Empty<IRuntimeVisualNodeBinding>()).ToList();
             var byType = list.Where(x => x != null).GroupBy(x => x.TypeId).ToDictionary(x => x.Key, x => x.First());
             IRuntimeVisualNodeBinding Find(string typeId) => byType.TryGetValue(new NodeTypeId(typeId), out var value) ? value : null;
-            return BuildProductionBindings(
+            var baseResult = BuildProductionBindings(
                 Find("shitdesigner.scene.3d"), Find("shitdesigner.scene.2d"),
                 Find("shitdesigner.shader.generator"), Find("shitdesigner.shader.effect"),
                 Find("shitdesigner.shader.blend2"), Find("shitdesigner.video.player"), Find("system.feedback"));
+            if (baseResult.IsFailure || list.Count <= 7) return baseResult;
+            var result = baseResult.Value;
+            foreach (var binding in list.Where(x => x != null && !result.Contains(x.TypeId)))
+            {
+                if (!binding.IsAvailable)
+                    return Result<NodeFactoryBindings>.Failure(binding.AvailabilityDiagnostic ?? Failure("bootstrap.nodes.binding_unavailable", "A specialized visual node binding is unavailable.").Diagnostic);
+                var registered = result.Register(binding);
+                if (registered.IsFailure) return Result<NodeFactoryBindings>.Failure(registered.Diagnostic);
+            }
+            return Result<NodeFactoryBindings>.Success(result);
         }
 
         public static Result RegisterProduction(NodeDefinitionCatalog catalog, NodeTypeRegistry registry, RuntimeSession session)
@@ -95,7 +105,7 @@ namespace ShitDesigner.Bootstrap
             if (!ReferenceEquals(registry, session.Registry)) return Failure("bootstrap.nodes.registry_mismatch", "Graph registry and RuntimeSession registry must be the same instance.");
             var valid = catalog.Validate();
             if (valid.IsFailure) return valid;
-            if (catalog.Entries.Any(entry => NodeDefinitionCatalog.SpecializedNodeTypeIds.Contains(entry.TypeId.Value, StringComparer.Ordinal) && entry.Factory is CatalogNodeFactory factory && factory.IsPlaceholder))
+            if (catalog.Entries.Any(entry => catalog.SpecializedNodeTypeIdsForCatalog.Contains(entry.TypeId.Value, StringComparer.Ordinal) && entry.Factory is CatalogNodeFactory factory && factory.IsPlaceholder))
                 return Failure("bootstrap.nodes.binding_missing", "Production node service bindings must be injected before graph registration.");
             foreach (var entry in catalog.Entries)
             {
