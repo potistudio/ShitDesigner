@@ -482,13 +482,14 @@ namespace ShitDesigner.Application
     public enum ApplicationLogicalControlKind { Value, PresetTrigger }
     public sealed class ApplicationControlMappingRequest
     {
+        public ApplicationPhysicalInputKind Kind { get; }
         public string PhysicalId { get; }
         public string ControlPath { get; }
         public float RawMin { get; }
         public float RawMax { get; }
         public bool Invert { get; }
-        public ApplicationControlMappingRequest(string physicalId, string controlPath, float rawMin = 0, float rawMax = 1, bool invert = false)
-        { PhysicalId = physicalId ?? string.Empty; ControlPath = controlPath ?? string.Empty; RawMin = rawMin; RawMax = rawMax; Invert = invert; }
+        public ApplicationControlMappingRequest(string physicalId, string controlPath, float rawMin = 0, float rawMax = 1, bool invert = false, ApplicationPhysicalInputKind kind = ApplicationPhysicalInputKind.Keyboard)
+        { Kind = kind; PhysicalId = physicalId ?? string.Empty; ControlPath = controlPath ?? string.Empty; RawMin = rawMin; RawMax = rawMax; Invert = invert; }
     }
 
     public sealed class ApplicationLogicalControlRequest

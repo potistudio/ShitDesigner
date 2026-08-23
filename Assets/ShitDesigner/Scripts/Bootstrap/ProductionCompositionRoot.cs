@@ -926,6 +926,70 @@ namespace ShitDesigner.Bootstrap
     }
 #endif
 
+    /// <summary>Production desktop input boundary. MIDI callbacks are drained
+    /// before the Application frame and the native device is owned here.</summary>
+    public sealed class UnityProductionInputPoller : IApplicationInputPoller, IDisposable
+    {
+#if ENABLE_INPUT_SYSTEM
+        private readonly UnityKeyboardAdapter _keyboard;
+#endif
+        private readonly IMidiInputSource _midiSource;
+        private readonly MidiInputRouter _midi;
+        private readonly MidiInputManager _midiManager;
+        private bool _disposed;
+
+        public string MidiDeviceName => _midiManager?.DeviceName ?? _midiSource?.DeviceName ?? string.Empty;
+
+        public UnityProductionInputPoller(ProjectApplication application, IMidiInputSource midiSource = null, MidiInputManager midiManager = null)
+        {
+            if (application == null) throw new ArgumentNullException(nameof(application));
+#if ENABLE_INPUT_SYSTEM
+            _keyboard = new UnityKeyboardAdapter(application);
+#endif
+            if (midiManager != null)
+            {
+                _midiManager = midiManager;
+                _midiManager.Configure(application, application, midiSource);
+            }
+            else if (midiSource != null)
+            {
+                _midiSource = midiSource;
+            }
+            else
+            {
+                try
+                {
+                    var devices = WindowsMidiInputSource.GetDevices();
+                    if (devices.Count > 0)
+                    {
+                        if (WindowsMidiInputSource.TryOpenDefault(out var opened, out var error)) _midiSource = opened;
+                        else Debug.LogWarning("MIDI input device 0 could not be opened: " + error);
+                    }
+                }
+                catch (Exception exception) { Debug.LogWarning("MIDI input discovery failed: " + exception.Message); }
+            }
+            if (_midiSource != null) _midi = new MidiInputRouter(application, _midiSource);
+        }
+
+        public void Poll()
+        {
+            if (_disposed) return;
+#if ENABLE_INPUT_SYSTEM
+            _keyboard.Poll();
+#endif
+            if (_midiManager != null) _midiManager.Poll();
+            else _midi?.Poll();
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            if (_midiManager != null) _midiManager.Shutdown();
+            else _midiSource?.Dispose();
+        }
+    }
+
     /// <summary>Pure driver used by both MonoBehaviour production and EditMode
     /// Harnesses. It guards re-entry and performs one Application Tick for
     /// each normal LateUpdate callback. Unity host pacing is configured at
@@ -1598,6 +1662,7 @@ namespace ShitDesigner.Bootstrap
             if (_disposed) return;
             _disposed = true;
             Loop.Dispose();
+            (Input as IDisposable)?.Dispose();
             Application.Dispose();
             PresentationAdapter.Dispose();
             OutputSurfaces.Dispose();
@@ -1611,11 +1676,7 @@ namespace ShitDesigner.Bootstrap
 
         private static IApplicationInputPoller CreateDefaultInputPoller(ProjectApplication application)
         {
-#if ENABLE_INPUT_SYSTEM
-            return new UnityKeyboardInputPoller(application);
-#else
-            return new NullApplicationInputPoller();
-#endif
+            return new UnityProductionInputPoller(application);
         }
     }
 

@@ -10,7 +10,7 @@ namespace ShitDesigner.Project
     public enum PortType { ImageFrame, Float, Int, Bool, Vector2, Vector3, Vector4, Color }
     public enum LogicalControlKind { Value, PresetTrigger }
     public enum LogicalOperator { Min, Max }
-    public enum PhysicalInputKind { Keyboard }
+    public enum PhysicalInputKind { Keyboard, Midi }
     public enum DefaultImageKind { TransparentBlack, OpaqueBlack, OpaqueWhite }
     public enum MediaAssetKind { Image, Video, Audio, Experimental }
     public enum MediaColorSpace { SRgb, Rec709, Linear }

@@ -34,7 +34,7 @@
 - `String`、`Enum`、`MediaAssetReference` は論理コントロールの直接対象外。
 - `PresetTrigger` はプリセット呼び出し専用で、1つにつき割り当て先は最大1つ。
 - Buttonの立ち上がり、またはアナログの0.5到達で発火し、0.4未満へ戻ると再発火可能になる。
-- 初期物理入力はKeyboardだけとし、KeyをValueの0／1またはPresetTriggerへ割り当てる。
+- 物理入力はKeyboardとWindows MIDIに対応し、KeyまたはMIDI LearnでValue／PresetTriggerへ割り当てる。
 
 ## プリセット
 
@@ -83,7 +83,7 @@
 
 ## 初期対象外
 
-- Mouse、Gamepad、MIDI、OSC、DMX、NDI、Spout、録画、動画音声、HDRディスプレイ直接出力。
+- Mouse、Gamepad、OSC、DMX、NDI、Spout、録画、動画音声、HDRディスプレイ直接出力。
 - 複数Program、可変Program解像度、ランタイムノードプラグイン、動的ポート数。
 - 負の動画再生速度、動画In／Out点、フレーム送り。
 

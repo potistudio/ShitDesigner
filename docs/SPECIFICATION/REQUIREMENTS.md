@@ -107,7 +107,7 @@ Unity上で継続的に拡張できる個人用汎用VJシステムを構築す�
 | Topic | Resolution | Owning Specification |
 |---|---|---|
 | FHD・60fps基準PC | WindowsはRyzen 5 5600X／RTX 3060 12GB／32GB、macOSはMacBook Pro M4／16GBを基準とする | [PerformanceBaseline](NODES/PerformanceBaseline.md) |
-| 初期物理入力 | Unity Input SystemのKeyboardだけを初期保証とし、Mouse、Gamepad、MIDI、OSC、DMX、NDI、Spoutは初期対象外とする | [PhysicalInputScope](NODES/PhysicalInputScope.md) |
+| 物理入力 | Unity Input SystemのKeyboardとWindows WinMMのMIDI入力に対応し、Mouse、Gamepad、OSC、DMX、NDI、Spoutは初期対象外とする | [PhysicalInputScope](NODES/PhysicalInputScope.md) |
 | プロジェクト形式と復旧 | UTF-8 `project.json`、ProjectFormatVersion、原子的置換、`.bak`、移行前バックアップおよびUnknownNode復旧を使用する | [VJProjectPersistence](NODES/VJProjectPersistence.md)、[NodeSchemaMigrationAndUnknown](NODES/NodeSchemaMigrationAndUnknown.md) |
 | グラフ循環 | `Feedback` ノードを経由するフレーム間循環だけを許可し、同一フレームの評価グラフは非循環に保つ | [Feedback](NODES/Feedback.md)、[GraphEvaluation](NODES/GraphEvaluation.md) |
 | 映像共通形式 | Linear、HDR RGBA16F、Premultiplied Alphaを内部形式とし、Programは固定1920×1080、表示時にACESでLDRへ変換する | [InternalColorSpace](NODES/InternalColorSpace.md)、[InternalDynamicRange](NODES/InternalDynamicRange.md)、[InternalAlpha](NODES/InternalAlpha.md)、[ResolutionAndOutputPolicy](NODES/ResolutionAndOutputPolicy.md) |
@@ -121,7 +121,7 @@ Unity上で継続的に拡張できる個人用汎用VJシステムを構築す�
 - `Assets/Settings/PC_RPAsset.asset`: PC向けForward+、HDR、Depth/Opaque Texture有効。
 - `Assets/Settings/Mobile_RPAsset.asset`: Mobile向けForward構成。モバイルは初期本番対象外。
 - 独自C#、Shader、Prefab、Material、VFX Graph、RenderTexture、テストは現時点で存在しない。
-- MIDI、OSC、DMX、NDI、Spoutなどの外部連携は未導入。
+- MIDI入力はWindows WinMMで導入済み。OSC、DMX、NDI、Spoutなどの外部連携は未導入。
 - `ProjectSettings/ProjectSettings.asset`は現在1024×768、`runInBackground: 0`、`resizableWindow: 0`であり、本仕様へ合わせた変更が必要。
 
 ## Ontology (Key Entities)

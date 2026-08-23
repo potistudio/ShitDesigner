@@ -73,9 +73,9 @@
 - 同時表示Previewは最大8個。
 - 3D／2D Sceneノードは専用Unity Layer数に合わせて合計24個まで。
 - プロジェクト全体の接続数は4096まで。
-- `Value` と `PresetTrigger` の初期物理入力はKeyboardだけとする。
+- `Value` と `PresetTrigger` の物理入力はKeyboardとWindows MIDIに対応する。
 - `PresetTrigger` はプリセット呼び出し専用。
-- Mouse、Gamepad、MIDI、OSC、DMX、NDI、Spout、録画、音声再生、ランタイムノードプラグイン、HDRディスプレイ直接出力は初期版の対象外。
+- Mouse、Gamepad、OSC、DMX、NDI、Spout、録画、音声再生、ランタイムノードプラグイン、HDRディスプレイ直接出力は初期版の対象外。
 
 ## 設計原則
 
