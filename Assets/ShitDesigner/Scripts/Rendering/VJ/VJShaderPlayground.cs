@@ -276,18 +276,18 @@ namespace ShitDesigner.Rendering
             if (_outputTexture == null) return;
             if (RenderTexture.active == _outputTexture) RenderTexture.active = null;
             _outputTexture.Release();
-            DestroyObject(_outputTexture);
+            DestroyUnityObject(_outputTexture);
             _outputTexture = null;
         }
 
         private static void DestroyMaterial(ref Material material)
         {
             if (material == null) return;
-            DestroyObject(material);
+            DestroyUnityObject(material);
             material = null;
         }
 
-        private static void DestroyObject(UnityEngine.Object value)
+        private static void DestroyUnityObject(UnityEngine.Object value)
         {
             if (value == null) return;
             if (Application.isPlaying) Destroy(value); else DestroyImmediate(value);

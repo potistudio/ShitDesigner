@@ -7,10 +7,12 @@
 1. Open the project in Unity 6000.5.9f1.
 2. Open `Assets/ShitDesigner/Scenes/VJShaderPlayground.unity`.
 3. Select **VJ Shader Playground Output** in the Hierarchy and press Play.
-4. In the Inspector, change **Selected Type Id** to another generated ID, such as `shitdesigner.shader.generator.plasma`, `shitdesigner.shader.color.invert`, or `shitdesigner.shader.transition.crossfade`.
+4. In the Inspector, choose another entry from the **Shader Node** dropdown. Entries show display name, family/category, and Type ID; examples include `shitdesigner.shader.generator.plasma`, `shitdesigner.shader.color.invert`, and `shitdesigner.shader.transition.crossfade`.
 5. Adjust **Output Width/Height**, **Seed**, **Time Speed**, **Paused**, and the common VJ parameters. Use the component context menu **Reset Playground Output** after changing a history/stateful input.
 
 The scene already references the generated `ShaderNodeManifest.asset` and `NodeTypeCatalog.asset`. The selected manifest entry supplies the direct strip-safe Shader reference and SourceVariant; the playground writes the same `_SD_*`, `_VJVariant`, `_Variant`, clock alias, input, and history properties used by the runtime shader bindings.
+
+If the manifest has not imported yet, the Inspector shows an assignment hint instead of a free-form Type ID field. Assign either generated asset (or use **Shader Override**) and the node dropdown will appear.
 
 ## Inputs
 
