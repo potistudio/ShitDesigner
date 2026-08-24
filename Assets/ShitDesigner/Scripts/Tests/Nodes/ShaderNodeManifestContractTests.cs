@@ -11,7 +11,7 @@ namespace ShitDesigner.Nodes.Tests {
 			var manifest = ShaderNodeManifest.CreateBuiltIn();
 			var valid = ShaderNodeManifestValidator.Validate(manifest);
 
-			Assert.That(valid.IsSuccess, Is.True, valid.IsFailure ? valid.Diagnostic.Message : string.Empty);
+			Assert.That(valid.IsSuccess, Is.True, valid.IsFailure ? valid.Error.Message : string.Empty);
 			Assert.That(manifest.Entries.Count, Is.EqualTo(3));
 			Assert.That(manifest.Entries.Select(x => x.TypeId.Value), Is.EqualTo(new[]
 			{
@@ -25,7 +25,7 @@ namespace ShitDesigner.Nodes.Tests {
 		public void ManifestGenerator_ProducesCatalogBindingsWithTypedRoles() {
 			var result = ShaderNodeManifestGenerator.GenerateCatalog(ShaderNodeManifest.CreateBuiltIn());
 
-			Assert.That(result.IsSuccess, Is.True, result.IsFailure ? result.Diagnostic.Message : string.Empty);
+			Assert.That(result.IsSuccess, Is.True, result.IsFailure ? result.Error.Message : string.Empty);
 			var generator = result.Value.Entries.Single(x => x.TypeId.Value == "shitdesigner.shader.generator");
 			var blend = result.Value.Entries.Single(x => x.TypeId.Value == "shitdesigner.shader.blend2");
 			Assert.That(generator.ShaderBinding.Family, Is.EqualTo(ShaderNodeFamily.Generator));
@@ -43,7 +43,7 @@ namespace ShitDesigner.Nodes.Tests {
 			var result = ShaderNodeManifestValidator.Validate(new ShaderNodeManifest(new[] { entry }));
 
 			Assert.That(result.IsFailure, Is.True);
-			Assert.That(result.Diagnostic.Code.Value, Is.EqualTo("nodes.shader_manifest_pass_range"));
+			Assert.That(result.Error.Code.Value, Is.EqualTo("nodes.shader_manifest_pass_range"));
 		}
 
 		[Test]
@@ -57,7 +57,7 @@ namespace ShitDesigner.Nodes.Tests {
 
 			var result = ShaderNodeManifestValidator.Validate(new ShaderNodeManifest(new[] { entry }));
 
-			Assert.That(result.IsSuccess, Is.True, result.IsFailure ? result.Diagnostic.Message : string.Empty);
+			Assert.That(result.IsSuccess, Is.True, result.IsFailure ? result.Error.Message : string.Empty);
 			Assert.That(entry.ToShaderBinding().Parameters.Single().EnumMapping["low"], Is.EqualTo(0));
 			Assert.That(entry.ToShaderBinding().Parameters.Single().EnumMapping["high"], Is.EqualTo(1));
 		}

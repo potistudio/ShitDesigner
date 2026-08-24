@@ -390,10 +390,10 @@ namespace ShitDesigner.TestHarness.Tests
 		{
 			public RuntimeSession Session { get; private set; }
 
-			public Result<ApplicationRuntimeComposition> Create(ProjectDocument document, NodeTypeRegistry registry)
+			public CSharpFunctionalExtensions.Result<ApplicationRuntimeComposition, Diagnostic> Create(ProjectDocument document, NodeTypeRegistry registry)
 			{
 				Session = new RuntimeSession(document, registry, new DiagnosticHub("test.measurement"));
-				return Result<ApplicationRuntimeComposition>.Success(new ApplicationRuntimeComposition(
+				return CSharpFunctionalExtensions.Result.Success<ApplicationRuntimeComposition, Diagnostic>(new ApplicationRuntimeComposition(
 					Session, new FrameCoordinator(Session), true));
 			}
 		}

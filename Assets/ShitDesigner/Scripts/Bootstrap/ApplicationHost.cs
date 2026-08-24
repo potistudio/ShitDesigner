@@ -60,13 +60,13 @@ namespace ShitDesigner.Bootstrap {
 		/// configured in code before startup. The host can be started only once per
 		/// scene load; it cannot be restarted after shutdown.
 		/// </summary>
-		private Result StartHost() {
+		private CSharpFunctionalExtensions.UnitResult<Diagnostic> StartHost() {
 			m_WindowAdapter ??= new WindowAdapter();
 			m_WindowLifecycle = new WindowLifecycle(m_WindowAdapter);
 			m_Startup ??= new StartupSequence();
 			var started = m_Startup.Run(Preflight, Compose, Handshake, Activate);
 			if (started.IsFailure) {
-				Debug.LogError(started.Diagnostic == null ? "Production startup failed." : started.Diagnostic.Code + ": " + started.Diagnostic.Message, this);
+				Debug.LogError(started.Error == null ? "Production startup failed." : started.Error.Code + ": " + started.Error.Message, this);
 			}
 			else Debug.Log(State == SystemState.Degraded ? "[System] Degraded" : "[System] Online", this);
 			return started;
@@ -84,16 +84,16 @@ namespace ShitDesigner.Bootstrap {
 
 
 
-		private Result Preflight() {
+		private CSharpFunctionalExtensions.UnitResult<Diagnostic> Preflight() {
 			if (_assets == null)
-				return Result.Failure(new Diagnostic(new DiagnosticCode("bootstrap.preflight.assets_missing"), Severity.Error,
+				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.preflight.assets_missing"), Severity.Error,
 					"An explicit BootstrapAssets component is required.", module: "bootstrap"));
 			var result = _assets.Preflight();
 			if (result.IsSuccess) Debug.Log("[Preflight] Production assets verified", this);
 			return result;
 		}
 
-		private Result Compose() {
+		private CSharpFunctionalExtensions.UnitResult<Diagnostic> Compose() {
 			if (_midiInputManager == null) _midiInputManager = GetComponent<MidiInputManager>();
 			_presentationHost = new PresentationHost(gameObject, _presentationRoot, _panelSettings);
 			m_Startup.RegisterShutdown(ShutdownStage.Teardown, () => {
@@ -105,25 +105,25 @@ namespace ShitDesigner.Bootstrap {
 			_presentationRoot = _presentationHost.Root;
 
 			var created = new CompositionFactory(_assets, _presentationRoot, _midiInputManager).Create();
-			if (created.IsFailure) return Result.Failure(created.Diagnostic);
+			if (created.IsFailure) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(created.Error);
 			m_Composition = created.Value;
 			m_Startup.RegisterShutdown(ShutdownStage.Stop, () => {
 				m_Composition?.Dispose();
 				m_Composition = null;
 			});
 			Debug.Log("[Compose] Application services composed", this);
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
-		private Result<HandshakeReport> Handshake() {
+		private CSharpFunctionalExtensions.Result<HandshakeReport, Diagnostic> Handshake() {
 			var result = m_Composition == null
-				? Result<HandshakeReport>.Failure(new Diagnostic(new DiagnosticCode("bootstrap.handshake.composition_missing"), Severity.Error, "Production composition is unavailable.", module: "bootstrap"))
+				? CSharpFunctionalExtensions.Result.Failure<HandshakeReport, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.handshake.composition_missing"), Severity.Error, "Production composition is unavailable.", module: "bootstrap"))
 				: m_Composition.Handshake();
 			if (result.IsSuccess) Debug.Log(result.Value.IsDegraded ? "[Handshake] Optional capabilities unavailable" : "[Handshake] Capabilities ready", this);
 			return result;
 		}
 
-		private Result Activate() {
+		private CSharpFunctionalExtensions.UnitResult<Diagnostic> Activate() {
 			var window = m_WindowLifecycle.Activate();
 			if (window.IsFailure) return window;
 			var presentation = _presentationHost.Activate(m_Composition.Presentation);
@@ -137,7 +137,7 @@ namespace ShitDesigner.Bootstrap {
 			});
 			_driver.Configure(m_Composition.Loop);
 			Debug.Log("[Activate] Application loop started", this);
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
 		private void OnCapabilitiesChanged(HandshakeReport report) {

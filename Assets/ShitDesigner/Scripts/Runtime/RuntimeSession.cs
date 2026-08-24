@@ -33,14 +33,14 @@ namespace ShitDesigner.Runtime {
 	internal sealed class ProjectDocumentMutationPort : IRuntimeProjectMutationPort {
 		private readonly ProjectCommandProcessor _commands;
 		internal ProjectDocumentMutationPort(ProjectDocument document) { _commands = new ProjectCommandProcessor(document ?? throw new ArgumentNullException(nameof(document))); }
-		public Result ApplyGraphPatch(GraphPatch patch) {
-			if (patch == null) return Result.Failure(Failure("runtime.persistence.graph_missing", "Graph patch is required."));
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ApplyGraphPatch(GraphPatch patch) {
+			if (patch == null) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("runtime.persistence.graph_missing", "Graph patch is required."));
 			return patch.Commands.Count == 0
 				? _commands.CommitGraphRepair(patch.After.Nodes, patch.After.Connections)
 				: _commands.CommitGraphState(patch.After.Nodes, patch.After.Connections);
 		}
-		public Result ApplyParameterTransaction(IReadOnlyList<BaseValueUpdate> updates) {
-			if (updates == null || updates.Count == 0) return Result.Success();
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ApplyParameterTransaction(IReadOnlyList<BaseValueUpdate> updates) {
+			if (updates == null || updates.Count == 0) return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 			return _commands.ApplyBaseValues(updates);
 		}
 		private static Diagnostic Failure(string code, string message) => new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "runtime");
@@ -222,21 +222,21 @@ namespace ShitDesigner.Runtime {
 			Parameters.Synchronize(GraphEditor.State, Document);
 		}
 
-		public Result EnqueueCompletion(RuntimeCompletion completion) {
-			if (completion == null) return Result.Failure(FailureDiagnostic("runtime.queue.invalid", "Completion is required."));
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> EnqueueCompletion(RuntimeCompletion completion) {
+			if (completion == null) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(FailureDiagnostic("runtime.queue.invalid", "Completion is required."));
 			if (_disposed) {
 				try { completion.Discard(this); } catch { Diagnostics.IncrementEmergency(); }
-				return Result.Failure(FailureDiagnostic("runtime.session.disposed", "RuntimeSession is disposed."));
+				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(FailureDiagnostic("runtime.session.disposed", "RuntimeSession is disposed."));
 			}
-			if (_completionQueue.TryEnqueue(completion)) return Result.Success();
+			if (_completionQueue.TryEnqueue(completion)) return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 			try { completion?.Discard(this); } catch { /* emergency cleanup cannot throw across the queue boundary */ }
 			Diagnostics.IncrementEmergency();
-			return Result.Failure(FailureDiagnostic("runtime.queue.overloaded", "Completion queue is full."));
+			return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(FailureDiagnostic("runtime.queue.overloaded", "Completion queue is full."));
 		}
 
 		internal List<RuntimeCompletion> DrainCompletions() => _completionQueue.Drain();
 
-		public Result RegisterFactory(IRuntimeNodeFactory factory) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> RegisterFactory(IRuntimeNodeFactory factory) {
 			if (_disposed) return Failure("runtime.session.disposed", "RuntimeSession is disposed.");
 			if (factory == null) return Failure("runtime.factory.invalid", "Runtime node factory is required.");
 			if (_factories.ContainsKey(factory.TypeId)) return Failure("runtime.factory.duplicate", "Runtime node factory is already registered.");
@@ -244,7 +244,7 @@ namespace ShitDesigner.Runtime {
 			return SynchronizeNodes();
 		}
 
-		public Result SetOutputDemands(IEnumerable<OutputDemand> demands) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SetOutputDemands(IEnumerable<OutputDemand> demands) {
 			if (_disposed) return Failure("runtime.session.disposed", "RuntimeSession is disposed.");
 			var list = (demands ?? Enumerable.Empty<OutputDemand>()).ToList();
 			// Output demand is a complete desired-state snapshot, not an
@@ -252,24 +252,24 @@ namespace ShitDesigner.Runtime {
 			// from being replayed after a close/hide and avoids an artificial
 			// 64-request backlog during rapid Viewer interaction.
 			ReplaceDesiredDemands(list);
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
 		/// <summary>Queues an explicit Viewer-host hide for one Preview. The
 		/// quality-controller state remains allocated so a later host show
 		/// resumes the same Preview assignment and quality stage.</summary>
-		public Result HidePreview(NodeInstanceId previewNodeId) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> HidePreview(NodeInstanceId previewNodeId) {
 			if (_disposed) return Failure("runtime.session.disposed", "RuntimeSession is disposed.");
 			if (previewNodeId.IsEmpty) return Failure("runtime.preview.invalid", "Preview node ID is required.");
 			lock (_demandStateGate)
 				ReplaceDesiredDemandsLocked(_desiredDemands.Where(x => x != null && x.NodeId != previewNodeId).ToList());
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
 		/// <summary>Queues removal of a closed Preview and releases its
 		/// quality-controller slot. This is deliberately distinct from
 		/// HidePreview: closing a tab must permit the slot to be reused.</summary>
-		public Result RemovePreview(NodeInstanceId previewNodeId) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> RemovePreview(NodeInstanceId previewNodeId) {
 			var hidden = HidePreview(previewNodeId);
 			if (hidden.IsFailure) return hidden;
 			_previewQualityPolicy.Remove(previewNodeId);
@@ -278,10 +278,10 @@ namespace ShitDesigner.Runtime {
 
 		/// <summary>Queues a host-wide hide while retaining all Preview
 		/// assignments and quality-controller state.</summary>
-		public Result HideAllPreviews() {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> HideAllPreviews() {
 			if (_disposed) return Failure("runtime.session.disposed", "RuntimeSession is disposed.");
 			ReplaceDesiredDemands(Array.Empty<OutputDemand>());
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
 		private void ReplaceDesiredDemands(IReadOnlyList<OutputDemand> demands) {
@@ -401,13 +401,13 @@ namespace ShitDesigner.Runtime {
 			_programWarningWasActive = false;
 		}
 
-		public Result RebuildPlan() {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> RebuildPlan() {
 			if (_disposed) return Failure("runtime.session.disposed", "RuntimeSession is disposed.");
 			var current = GraphEditor.State;
 			if (!EvaluationPlan.TryBuild(current, Registry, _demands, out var plan, out var diagnostic, out var normalized)) {
 				Plan = null;
 				ResolutionProjection = null;
-				return Result.Failure(diagnostic ?? FailureDiagnostic("runtime.plan.invalid", "EvaluationPlan could not be built."));
+				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(diagnostic ?? FailureDiagnostic("runtime.plan.invalid", "EvaluationPlan could not be built."));
 			}
 			if (!GraphStatesEqual(current, normalized)) {
 				// EvaluationPlan never mutates its input. Persist the Broken
@@ -415,7 +415,7 @@ namespace ShitDesigner.Runtime {
 				// deliberately outside ordinary user undo history, while the
 				// structural revision still advances and Project is marked dirty.
 				var normalization = GraphEditor.PrepareNormalized(normalized);
-				if (normalization.IsFailure) return Result.Failure(normalization.Diagnostic);
+				if (normalization.IsFailure) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(normalization.Error);
 				var persisted = Persistence.ApplyGraphPatch(normalization.Value);
 				if (persisted.IsFailure) {
 					Plan = null;
@@ -442,10 +442,10 @@ namespace ShitDesigner.Runtime {
 			SynchronizeNodes();
 		}
 
-		public Result ApplyGraphCommand(GraphEditCommand command) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ApplyGraphCommand(GraphEditCommand command) {
 			if (_disposed) return Failure("runtime.session.disposed", "RuntimeSession is disposed.");
 			var detailed = GraphEditor.PrepareBatchDetailed(new[] { command }, _demands);
-			if (detailed.Patch == null) return Result.Failure(detailed.Diagnostic);
+			if (detailed.Patch == null) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(detailed.Diagnostic);
 			var persisted = Persistence.ApplyGraphPatch(detailed.Patch);
 			if (persisted.IsFailure) {
 				return persisted;
@@ -455,7 +455,7 @@ namespace ShitDesigner.Runtime {
 				return committed;
 			}
 			InstallPlan(detailed.Plan);
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
 		public RuntimeNodeHandle FindNode(NodeInstanceId id) => _nodes.TryGetValue(id, out var handle) ? handle : null;
@@ -491,7 +491,7 @@ namespace ShitDesigner.Runtime {
 			}
 		}
 
-		internal Result SynchronizeNodes() {
+		internal CSharpFunctionalExtensions.UnitResult<Diagnostic> SynchronizeNodes() {
 			// Disabled nodes are outside the evaluation plan but retain their
 			// runtime generation and leases so re-enabling does not thrash GPU
 			// resources. Only deletion/unknown replacement retires a handle.
@@ -516,19 +516,19 @@ namespace ShitDesigner.Runtime {
 				}
 				if (!_factories.TryGetValue(record.TypeId, out var factory)) continue;
 				var generation = ++_nextGeneration;
-				Result<IRuntimeNode> created;
+				CSharpFunctionalExtensions.Result<IRuntimeNode, Diagnostic> created;
 				try { created = factory.Create(RuntimeNodeCreateInfo.FromProject(record), generation); }
 				catch (Exception exception) {
 					Diagnostics.Report(new Diagnostic(new DiagnosticCode("runtime.node.create_failed"), Severity.Error, "Runtime node creation failed.", nodeId: record.Id, nodeTypeId: record.TypeId, generationId: generation, exception: DiagnosticExceptionInfo.FromException(exception)));
 					continue;
 				}
 				if (created.IsFailure) {
-					Diagnostics.Report(created.Diagnostic);
+					Diagnostics.Report(created.Error);
 					continue;
 				}
 				_nodes.Add(record.Id, new RuntimeNodeHandle(created.Value));
 			}
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
 		/// <summary>Phase 9 disposal boundary for nodes removed from the plan.</summary>
@@ -552,7 +552,7 @@ namespace ShitDesigner.Runtime {
 			if (ResourceFinalization is IDisposable disposableFinalization && !ReferenceEquals(disposableFinalization, ResourcePreparation)) disposableFinalization.Dispose();
 		}
 
-		private static Result Failure(string code, string message) => Result.Failure(FailureDiagnostic(code, message));
+		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(FailureDiagnostic(code, message));
 		private static Diagnostic FailureDiagnostic(string code, string message) => new Diagnostic(new DiagnosticCode(code), Severity.Error, message);
 
 		private static bool GraphStatesEqual(GraphState left, GraphState right) {

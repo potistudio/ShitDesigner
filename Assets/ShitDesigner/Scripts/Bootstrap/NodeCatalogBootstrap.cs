@@ -49,7 +49,7 @@ namespace ShitDesigner.Bootstrap {
 		/// objects.  A missing or unavailable binding fails before any Graph
 		/// registration can take place.
 		/// </summary>
-		public static Result<NodeFactoryBindings> BuildProductionBindings(
+		public static CSharpFunctionalExtensions.Result<NodeFactoryBindings, Diagnostic> BuildProductionBindings(
 			IRuntimeVisualNodeBinding scene3d,
 			IRuntimeVisualNodeBinding scene2d,
 			IRuntimeVisualNodeBinding shaderGenerator,
@@ -58,21 +58,21 @@ namespace ShitDesigner.Bootstrap {
 			IRuntimeVisualNodeBinding videoPlayer,
 			IRuntimeVisualNodeBinding feedback) {
 			var required = new[] { scene3d, scene2d, shaderGenerator, shaderEffect, shaderBlend2, videoPlayer, feedback };
-			if (required.Any(x => x == null)) return Result<NodeFactoryBindings>.Failure(Failure("bootstrap.nodes.binding_missing", "All seven specialized visual node bindings are required.").Diagnostic);
+			if (required.Any(x => x == null)) return CSharpFunctionalExtensions.Result.Failure<NodeFactoryBindings, Diagnostic>(Failure("bootstrap.nodes.binding_missing", "All seven specialized visual node bindings are required.").Error);
 			var bindings = new NodeFactoryBindings();
 			foreach (var binding in required) {
 				if (!binding.IsAvailable)
-					return Result<NodeFactoryBindings>.Failure(binding.AvailabilityDiagnostic ?? Failure("bootstrap.nodes.binding_unavailable", "A specialized visual node binding is unavailable.").Diagnostic);
+					return CSharpFunctionalExtensions.Result.Failure<NodeFactoryBindings, Diagnostic>(binding.AvailabilityDiagnostic ?? Failure("bootstrap.nodes.binding_unavailable", "A specialized visual node binding is unavailable.").Error);
 				var registered = bindings.Register(binding);
-				if (registered.IsFailure) return Result<NodeFactoryBindings>.Failure(registered.Diagnostic);
+				if (registered.IsFailure) return CSharpFunctionalExtensions.Result.Failure<NodeFactoryBindings, Diagnostic>(registered.Error);
 			}
 			var availability = bindings.Availability;
 			if (!availability.IsComplete)
-				return Result<NodeFactoryBindings>.Failure(Failure("bootstrap.nodes.binding_incomplete", "The production visual binding table is incomplete.").Diagnostic);
-			return Result<NodeFactoryBindings>.Success(bindings);
+				return CSharpFunctionalExtensions.Result.Failure<NodeFactoryBindings, Diagnostic>(Failure("bootstrap.nodes.binding_incomplete", "The production visual binding table is incomplete.").Error);
+			return CSharpFunctionalExtensions.Result.Success<NodeFactoryBindings, Diagnostic>(bindings);
 		}
 
-		public static Result<NodeFactoryBindings> BuildProductionBindings(IEnumerable<IRuntimeVisualNodeBinding> bindings) {
+		public static CSharpFunctionalExtensions.Result<NodeFactoryBindings, Diagnostic> BuildProductionBindings(IEnumerable<IRuntimeVisualNodeBinding> bindings) {
 			var list = (bindings ?? Enumerable.Empty<IRuntimeVisualNodeBinding>()).ToList();
 			var byType = list.Where(x => x != null).GroupBy(x => x.TypeId).ToDictionary(x => x.Key, x => x.First());
 			IRuntimeVisualNodeBinding Find(string typeId) => byType.TryGetValue(new NodeTypeId(typeId), out var value) ? value : null;
@@ -84,14 +84,14 @@ namespace ShitDesigner.Bootstrap {
 			var result = baseResult.Value;
 			foreach (var binding in list.Where(x => x != null && !result.Contains(x.TypeId))) {
 				if (!binding.IsAvailable)
-					return Result<NodeFactoryBindings>.Failure(binding.AvailabilityDiagnostic ?? Failure("bootstrap.nodes.binding_unavailable", "A specialized visual node binding is unavailable.").Diagnostic);
+					return CSharpFunctionalExtensions.Result.Failure<NodeFactoryBindings, Diagnostic>(binding.AvailabilityDiagnostic ?? Failure("bootstrap.nodes.binding_unavailable", "A specialized visual node binding is unavailable.").Error);
 				var registered = result.Register(binding);
-				if (registered.IsFailure) return Result<NodeFactoryBindings>.Failure(registered.Diagnostic);
+				if (registered.IsFailure) return CSharpFunctionalExtensions.Result.Failure<NodeFactoryBindings, Diagnostic>(registered.Error);
 			}
-			return Result<NodeFactoryBindings>.Success(result);
+			return CSharpFunctionalExtensions.Result.Success<NodeFactoryBindings, Diagnostic>(result);
 		}
 
-		public static Result RegisterProduction(NodeDefinitionCatalog catalog, NodeTypeRegistry registry, RuntimeSession session) {
+		public static CSharpFunctionalExtensions.UnitResult<Diagnostic> RegisterProduction(NodeDefinitionCatalog catalog, NodeTypeRegistry registry, RuntimeSession session) {
 			if (catalog == null || registry == null || session == null) return Failure("bootstrap.nodes.arguments", "Node catalog, registry, and runtime session are required.");
 			if (!ReferenceEquals(registry, session.Registry)) return Failure("bootstrap.nodes.registry_mismatch", "Graph registry and RuntimeSession registry must be the same instance.");
 			var valid = catalog.Validate();
@@ -100,7 +100,7 @@ namespace ShitDesigner.Bootstrap {
 				return Failure("bootstrap.nodes.binding_missing", "Production node service bindings must be injected before graph registration.");
 			foreach (var entry in catalog.Entries) {
 				var adapted = Adapt(entry);
-				if (adapted.IsFailure) return Result.Failure(adapted.Diagnostic);
+				if (adapted.IsFailure) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(adapted.Error);
 				if (registry.TryGet(adapted.Value.TypeId, out var existing)) {
 					if (existing.SchemaVersion != adapted.Value.SchemaVersion || !string.Equals(existing.DisplayName, adapted.Value.DisplayName, StringComparison.Ordinal)
 						|| existing.Ports.Count != adapted.Value.Ports.Count || existing.Parameters.Count != adapted.Value.Parameters.Count)
@@ -118,13 +118,13 @@ namespace ShitDesigner.Bootstrap {
 		/// registry before a ProjectDocument is opened. Runtime registration
 		/// remains a separate operation because the RuntimeSession owns the
 		/// factory lifetime.</summary>
-		public static Result EnsureDefinitions(NodeDefinitionCatalog catalog, NodeTypeRegistry registry) {
+		public static CSharpFunctionalExtensions.UnitResult<Diagnostic> EnsureDefinitions(NodeDefinitionCatalog catalog, NodeTypeRegistry registry) {
 			if (catalog == null || registry == null) return Failure("bootstrap.nodes.arguments", "Node catalog and registry are required.");
 			var valid = catalog.Validate();
 			if (valid.IsFailure) return valid;
 			foreach (var entry in catalog.Entries) {
 				var adapted = Adapt(entry);
-				if (adapted.IsFailure) return Result.Failure(adapted.Diagnostic);
+				if (adapted.IsFailure) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(adapted.Error);
 				if (registry.TryGet(adapted.Value.TypeId, out var existing)) {
 					if (existing.SchemaVersion != adapted.Value.SchemaVersion || existing.Ports.Count != adapted.Value.Ports.Count || existing.Parameters.Count != adapted.Value.Parameters.Count)
 						return Failure("bootstrap.nodes.registry_mismatch", "The Application registry does not match the production catalog.");
@@ -133,13 +133,13 @@ namespace ShitDesigner.Bootstrap {
 				var registered = registry.Register(adapted.Value);
 				if (registered.IsFailure) return registered;
 			}
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
 		/// <summary>Production overload that also wires the explicit
 		/// Rendering-owned Feedback committer into Runtime. No generic node
 		/// reference is used for temporal history.</summary>
-		public static Result RegisterProduction(NodeDefinitionCatalog catalog, NodeTypeRegistry registry, RuntimeSession session, NodeFactoryBindings bindings) {
+		public static CSharpFunctionalExtensions.UnitResult<Diagnostic> RegisterProduction(NodeDefinitionCatalog catalog, NodeTypeRegistry registry, RuntimeSession session, NodeFactoryBindings bindings) {
 			if (bindings == null) return Failure("bootstrap.nodes.bindings_missing", "Production node bindings are required.");
 			if (catalog == null) return Failure("bootstrap.nodes.catalog_missing", "Node catalog is required.");
 			var complete = catalog.ValidateProductionBindings(bindings);
@@ -153,17 +153,17 @@ namespace ShitDesigner.Bootstrap {
 		/// binding-owned preparation (Feedback history) to one Runtime
 		/// session. This is the only composition point that knows both
 		/// services; visual modules remain independent.</summary>
-		public static Result AttachRuntimeVisualServices(RuntimeSession session, RuntimeOutputSurfaceService outputs, IRuntimeResourcePreparation additionalPreparation = null) {
+		public static CSharpFunctionalExtensions.UnitResult<Diagnostic> AttachRuntimeVisualServices(RuntimeSession session, RuntimeOutputSurfaceService outputs, IRuntimeResourcePreparation additionalPreparation = null) {
 			if (session == null || outputs == null) return Failure("bootstrap.runtime.services", "Runtime session and output surface service are required.");
 			session.OutputSurfaces = outputs;
 			session.ResourcePreparation = additionalPreparation == null
 				? (IRuntimeResourcePreparation)outputs
 				: new CompositeResourcePreparation(outputs, additionalPreparation);
 			session.ResourceFinalization = outputs;
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
-		public static Result RegisterProduction(NodeDefinitionCatalog catalog, NodeTypeRegistry registry, RuntimeSession session, NodeFactoryBindings bindings, RuntimeOutputSurfaceService outputs) {
+		public static CSharpFunctionalExtensions.UnitResult<Diagnostic> RegisterProduction(NodeDefinitionCatalog catalog, NodeTypeRegistry registry, RuntimeSession session, NodeFactoryBindings bindings, RuntimeOutputSurfaceService outputs) {
 			var registered = RegisterProduction(catalog, registry, session, bindings);
 			if (registered.IsFailure) return registered;
 			IRuntimeResourcePreparation feedbackPreparation = null;
@@ -175,22 +175,22 @@ namespace ShitDesigner.Bootstrap {
 		private sealed class CompositeResourcePreparation : IRuntimeResourcePreparationWithPlan, IDisposable {
 			private readonly IRuntimeResourcePreparation[] _services;
 			public CompositeResourcePreparation(params IRuntimeResourcePreparation[] services) { _services = services ?? Array.Empty<IRuntimeResourcePreparation>(); }
-			public Result Prepare(FrameSnapshot snapshot) {
+			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Prepare(FrameSnapshot snapshot) {
 				foreach (var service in _services) { var result = service.Prepare(snapshot); if (result.IsFailure) return result; }
-				return Result.Success();
+				return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 			}
-			public Result Prepare(FrameSnapshot snapshot, FrameEvaluationContext evaluation) {
+			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Prepare(FrameSnapshot snapshot, FrameEvaluationContext evaluation) {
 				foreach (var service in _services) {
 					var result = service is IRuntimeResourcePreparationWithPlan planAware ? planAware.Prepare(snapshot, evaluation) : service.Prepare(snapshot);
 					if (result.IsFailure) return result;
 				}
-				return Result.Success();
+				return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 			}
 			public void Dispose() { foreach (var service in _services.OfType<IDisposable>()) service.Dispose(); }
 		}
 
-		public static Result<NodeTypeDefinition> Adapt(NodeCatalogEntry entry) {
-			if (entry == null) return Result<NodeTypeDefinition>.Failure(new Diagnostic(new DiagnosticCode("bootstrap.nodes.entry"), Severity.Error, "Node catalog entry is required.", module: "bootstrap"));
+		public static CSharpFunctionalExtensions.Result<NodeTypeDefinition, Diagnostic> Adapt(NodeCatalogEntry entry) {
+			if (entry == null) return CSharpFunctionalExtensions.Result.Failure<NodeTypeDefinition, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.nodes.entry"), Severity.Error, "Node catalog entry is required.", module: "bootstrap"));
 			var ports = entry.Ports.Select(port => new PortDefinition(new PortId(port.Id.Value), port.DisplayName, port.Direction == NodePortDirection.Input ? PortDirection.Input : PortDirection.Output, ToProjectType(port.Type), port.Required, port.DefaultImage.HasValue ? (DefaultImageKind?)ToProjectDefault(port.DefaultImage.Value) : null));
 			var parameters = entry.Parameters.Select(parameter => {
 				ParameterRange? range = null;
@@ -204,12 +204,12 @@ namespace ShitDesigner.Bootstrap {
 						parameter.Group, parameter.DisplayOrder, parameter.Description, parameter.Unit, parameter.Step,
 						parameter.IsHidden ? ParameterVisibility.Hidden : parameter.IsReadOnly ? ParameterVisibility.ReadOnly : ParameterVisibility.Editable);
 			});
-			try { return Result<NodeTypeDefinition>.Success(new NodeTypeDefinition(new NodeTypeId(entry.TypeId.Value), entry.SchemaVersion, entry.DisplayName, entry.Category, ports, parameters, entry.SystemOwned, entry.UserAddable)); }
-			catch (Exception exception) { return Result<NodeTypeDefinition>.Failure(new Diagnostic(new DiagnosticCode("bootstrap.nodes.definition"), Severity.Error, "Node catalog definition could not be adapted.", nodeTypeId: entry.TypeId, module: "bootstrap", exception: DiagnosticExceptionInfo.FromException(exception))); }
+			try { return CSharpFunctionalExtensions.Result.Success<NodeTypeDefinition, Diagnostic>(new NodeTypeDefinition(new NodeTypeId(entry.TypeId.Value), entry.SchemaVersion, entry.DisplayName, entry.Category, ports, parameters, entry.SystemOwned, entry.UserAddable)); }
+			catch (Exception exception) { return CSharpFunctionalExtensions.Result.Failure<NodeTypeDefinition, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.nodes.definition"), Severity.Error, "Node catalog definition could not be adapted.", nodeTypeId: entry.TypeId, module: "bootstrap", exception: DiagnosticExceptionInfo.FromException(exception))); }
 		}
 
 		private static PortType ToProjectType(NodePortType type) => (PortType)Enum.Parse(typeof(PortType), type.ToString(), true);
 		private static DefaultImageKind ToProjectDefault(RuntimeDefaultImageKind kind) => kind == RuntimeDefaultImageKind.OpaqueWhite ? DefaultImageKind.OpaqueWhite : kind == RuntimeDefaultImageKind.OpaqueBlack ? DefaultImageKind.OpaqueBlack : DefaultImageKind.TransparentBlack;
-		private static Result Failure(string code, string message) => Result.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap"));
+		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap"));
 	}
 }

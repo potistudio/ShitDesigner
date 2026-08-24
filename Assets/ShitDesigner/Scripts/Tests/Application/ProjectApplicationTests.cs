@@ -568,7 +568,7 @@ namespace ShitDesigner.Application.Tests {
 			var target = Path.Combine(_root, "PreviewProject");
 			var previews = Enumerable.Range(0, 9).Select(index => new NodeRecord(NodeInstanceId.New(), new NodeTypeId(GraphConstants.PreviewTypeId), 1, "Preview " + index, true, new ProjectPosition(index, 0), ports: new[] { new PortSnapshotRecord(new PortId("image"), PortDirection.Input, PortType.ImageFrame, true) }, rawState: "{\"futureField\":123}", systemOwned: true, userAddable: false)).ToList();
 			var created = ProjectDocumentFactory.TryCreate("PreviewProject", 1, nodes: previews, connections: Enumerable.Empty<ConnectionRecord>(), logicalControls: Enumerable.Empty<LogicalControlRecord>(), expressions: Enumerable.Empty<ParameterExpressionRecord>(), presets: Enumerable.Empty<PresetRecord>(), mediaAssets: Enumerable.Empty<MediaAssetRecord>(), ui: new ProjectUiStateRecord(new[] { new DashboardPageRecord("main", "Main") }), markDirty: false);
-			Assert.That(created.IsSuccess, Is.True, created.Diagnostic == null ? string.Empty : created.Diagnostic.Message);
+			Assert.That(created.IsSuccess, Is.True, created.Error == null ? string.Empty : created.Error.Message);
 			Assert.That(new ProjectSaver().Save(created.Value, target, new LocalProjectFileSystem()).IsSuccess, Is.True);
 			using (var application = new ProjectApplication(new LocalProjectFileSystem())) {
 				Assert.That(application.OpenProject(target).IsSuccess, Is.True);
@@ -580,7 +580,7 @@ namespace ShitDesigner.Application.Tests {
 				Assert.That(application.ReadModel.Output.Model.Previews.First(x => x.Id == previewIds[0]).Height, Is.EqualTo(360));
 				var ninth = application.OpenPreview(previewIds[8]);
 				Assert.That(ninth.Status, Is.EqualTo(ApplicationCommandStatus.Rejected));
-				Assert.That(ninth.Diagnostic.Message, Does.Contain("Preview"));
+			Assert.That(ninth.Diagnostic.Message, Does.Contain("Preview"));
 				foreach (var id in previewIds.Take(3)) Assert.That(application.RequestPreviewDemand(new ApplicationOutputDemandRequest(id, width: 320, height: 180)).IsSuccess, Is.True);
 				application.Tick(0d);
 				Assert.That(application.ReadModel.Output.Model.Program.IsDemanded, Is.True);
@@ -629,7 +629,7 @@ namespace ShitDesigner.Application.Tests {
 				new NodeRecord(second, new NodeTypeId(GraphConstants.PreviewTypeId), 1, "Second", true, new ProjectPosition(1, 0), ports: new[] { new PortSnapshotRecord(new PortId("image"), PortDirection.Input, PortType.ImageFrame, true) })
 			};
 			var created = ProjectDocumentFactory.TryCreate("PreviewTabOrder", 1, nodes: nodes, connections: Enumerable.Empty<ConnectionRecord>(), logicalControls: Enumerable.Empty<LogicalControlRecord>(), expressions: Enumerable.Empty<ParameterExpressionRecord>(), presets: Enumerable.Empty<PresetRecord>(), mediaAssets: Enumerable.Empty<MediaAssetRecord>(), ui: new ProjectUiStateRecord(new[] { new DashboardPageRecord("main", "Main") }), markDirty: false);
-			Assert.That(created.IsSuccess, Is.True, created.Diagnostic?.Message);
+			Assert.That(created.IsSuccess, Is.True, created.Error?.Message);
 			Assert.That(new ProjectSaver().Save(created.Value, target, new LocalProjectFileSystem()).IsSuccess, Is.True);
 
 			string firstThenSecondFingerprint;
@@ -639,7 +639,7 @@ namespace ShitDesigner.Application.Tests {
 				Assert.That(application.OpenPreview(second.Value).IsSuccess, Is.True);
 				Assert.That(application.ReadModel.Output.Model.Previews.Select(x => x.Id), Is.EqualTo(new[] { first.Value, second.Value }));
 				var captured = application.CaptureCanonicalProjectFingerprint();
-				Assert.That(captured.IsSuccess, Is.True, captured.Diagnostic?.Message);
+				Assert.That(captured.IsSuccess, Is.True, captured.Error?.Message);
 				firstThenSecondFingerprint = captured.Value;
 				Assert.That(application.SaveProject().IsSuccess, Is.True);
 			}
@@ -648,7 +648,7 @@ namespace ShitDesigner.Application.Tests {
 				Assert.That(reopened.OpenProject(target).IsSuccess, Is.True);
 				Assert.That(reopened.ReadModel.Output.Model.Previews.Select(x => x.Id), Is.EqualTo(new[] { first.Value, second.Value }));
 				var reopenedFingerprint = reopened.CaptureCanonicalProjectFingerprint();
-				Assert.That(reopenedFingerprint.IsSuccess, Is.True, reopenedFingerprint.Diagnostic?.Message);
+				Assert.That(reopenedFingerprint.IsSuccess, Is.True, reopenedFingerprint.Error?.Message);
 				Assert.That(reopenedFingerprint.Value, Is.EqualTo(firstThenSecondFingerprint));
 
 				Assert.That(reopened.ClosePreview(first.Value).IsSuccess, Is.True);
@@ -657,7 +657,7 @@ namespace ShitDesigner.Application.Tests {
 				Assert.That(reopened.OpenPreview(first.Value).IsSuccess, Is.True);
 				Assert.That(reopened.ReadModel.Output.Model.Previews.Select(x => x.Id), Is.EqualTo(new[] { second.Value, first.Value }));
 				var reversedFingerprint = reopened.CaptureCanonicalProjectFingerprint();
-				Assert.That(reversedFingerprint.IsSuccess, Is.True, reversedFingerprint.Diagnostic?.Message);
+				Assert.That(reversedFingerprint.IsSuccess, Is.True, reversedFingerprint.Error?.Message);
 				Assert.That(reversedFingerprint.Value, Is.Not.EqualTo(firstThenSecondFingerprint));
 			}
 		}
@@ -682,7 +682,7 @@ namespace ShitDesigner.Application.Tests {
 				Assert.That(application.EditParameter(new ApplicationParameterEditRequest(first, "display.mode", ParameterValue.FromEnum("fill"))).Status, Is.EqualTo(ApplicationCommandStatus.Accepted));
 				application.Tick(2d / 60d);
 				var captured = application.CaptureCanonicalProjectFingerprint();
-				Assert.That(captured.IsSuccess, Is.True, captured.Diagnostic?.Message);
+				Assert.That(captured.IsSuccess, Is.True, captured.Error?.Message);
 				expectedFingerprint = captured.Value;
 				Assert.That(application.SaveProject().IsSuccess, Is.True);
 			}
@@ -693,7 +693,7 @@ namespace ShitDesigner.Application.Tests {
 				Assert.That(reopened.ReadModel.Graph.Model.Nodes.Single(x => x.Id == second).DisplayName, Is.EqualTo("Acceptance Preview 2"));
 				Assert.That(reopened.ReadModel.Parameters.Model.Single(x => x.NodeId == first && x.ParameterId == "display.mode").BaseValue, Is.EqualTo("fill"));
 				var actual = reopened.CaptureCanonicalProjectFingerprint();
-				Assert.That(actual.IsSuccess, Is.True, actual.Diagnostic?.Message);
+				Assert.That(actual.IsSuccess, Is.True, actual.Error?.Message);
 				Assert.That(actual.Value, Is.EqualTo(expectedFingerprint));
 			}
 		}
@@ -703,7 +703,7 @@ namespace ShitDesigner.Application.Tests {
 			var target = Path.Combine(_root, "PreviewLatestWins");
 			var previews = Enumerable.Range(0, 3).Select(index => new NodeRecord(NodeInstanceId.New(), new NodeTypeId(GraphConstants.PreviewTypeId), 1, "Preview " + index, true, new ProjectPosition(index, 0), ports: new[] { new PortSnapshotRecord(new PortId("image"), PortDirection.Input, PortType.ImageFrame, true) })).ToList();
 			var created = ProjectDocumentFactory.TryCreate("PreviewLatestWins", 1, nodes: previews, connections: Enumerable.Empty<ConnectionRecord>(), logicalControls: Enumerable.Empty<LogicalControlRecord>(), expressions: Enumerable.Empty<ParameterExpressionRecord>(), presets: Enumerable.Empty<PresetRecord>(), mediaAssets: Enumerable.Empty<MediaAssetRecord>(), ui: new ProjectUiStateRecord(new[] { new DashboardPageRecord("main", "Main") }), markDirty: false);
-			Assert.That(created.IsSuccess, Is.True, created.Diagnostic?.Message);
+			Assert.That(created.IsSuccess, Is.True, created.Error?.Message);
 			Assert.That(new ProjectSaver().Save(created.Value, target, new LocalProjectFileSystem()).IsSuccess, Is.True);
 			using (var application = new ProjectApplication(new LocalProjectFileSystem())) {
 				Assert.That(application.OpenProject(target).IsSuccess, Is.True);
@@ -1044,19 +1044,19 @@ namespace ShitDesigner.Application.Tests {
 
 		private sealed class TrackingRuntimeFactory : IApplicationRuntimeSessionFactory {
 			public readonly System.Collections.Generic.List<ApplicationRuntimeComposition> Compositions = new System.Collections.Generic.List<ApplicationRuntimeComposition>();
-			public Result<ApplicationRuntimeComposition> Create(ProjectDocument document, NodeTypeRegistry registry) {
+			public CSharpFunctionalExtensions.Result<ApplicationRuntimeComposition, Diagnostic> Create(ProjectDocument document, NodeTypeRegistry registry) {
 				var session = new RuntimeSession(document, registry, new DiagnosticHub("test.runtime"));
 				var composition = new ApplicationRuntimeComposition(session, new FrameCoordinator(session), true);
 				Compositions.Add(composition);
-				return Result<ApplicationRuntimeComposition>.Success(composition);
+				return CSharpFunctionalExtensions.Result.Success<ApplicationRuntimeComposition, Diagnostic>(composition);
 			}
 		}
 
 		private sealed class ReadyRuntimeFactory : IRuntimeNodeFactory {
 			public NodeTypeId TypeId { get; }
 			public ReadyRuntimeFactory(NodeTypeId typeId) { TypeId = typeId; }
-			public Result<IRuntimeNode> Create(RuntimeNodeCreateInfo node, ulong generationId)
-				=> Result<IRuntimeNode>.Success(new ReadyRuntimeNode(node.Id, node.TypeId, generationId));
+			public CSharpFunctionalExtensions.Result<IRuntimeNode, Diagnostic> Create(RuntimeNodeCreateInfo node, ulong generationId)
+				=> CSharpFunctionalExtensions.Result.Success<IRuntimeNode, Diagnostic>(new ReadyRuntimeNode(node.Id, node.TypeId, generationId));
 		}
 
 		private sealed class ReadyRuntimeNode : IRuntimeNode {
@@ -1084,17 +1084,17 @@ namespace ShitDesigner.Application.Tests {
 		}
 
 		private sealed class WarningProbe : IMediaAssetProbe {
-			public Result Probe(Stream stagedStream, string extension) {
-				return Result.Failure(new Diagnostic(new DiagnosticCode("media.probe.unsupported"), Severity.Warning, "Format requires confirmation."));
+			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Probe(Stream stagedStream, string extension) {
+				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("media.probe.unsupported"), Severity.Warning, "Format requires confirmation."));
 			}
 		}
 
 		private sealed class RejectingProbe : IMediaAssetProbe {
-			public Result Probe(Stream stagedStream, string extension) => Result.Failure(new Diagnostic(new DiagnosticCode("media.probe.rejected"), Severity.Error, "Probe rejected content."));
+			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Probe(Stream stagedStream, string extension) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("media.probe.rejected"), Severity.Error, "Probe rejected content."));
 		}
 
 		private sealed class ThrowingProbe : IMediaAssetProbe {
-			public Result Probe(Stream stagedStream, string extension) => throw new InvalidDataException("Probe failed.");
+			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Probe(Stream stagedStream, string extension) => throw new InvalidDataException("Probe failed.");
 		}
 	}
 }

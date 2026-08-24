@@ -29,7 +29,7 @@ namespace ShitDesigner.Tests.Scene {
 				camera.rect = new Rect(0f, 0f, 0f, 1f);
 				var emptyViewport = SceneIsolationManager.ValidatePrefab(root, SceneNodeKind.ThreeD, 12, camera);
 				Assert.That(emptyViewport.IsFailure, Is.True);
-				Assert.That(emptyViewport.Diagnostic.Code.Value, Is.EqualTo("scene.prefab.camera_rect"));
+				Assert.That(emptyViewport.Error.Code.Value, Is.EqualTo("scene.prefab.camera_rect"));
 				camera.rect = new Rect(0f, 0f, 1f, 1f);
 
 				var secondCameraObject = new GameObject("SecondCamera");
@@ -65,13 +65,13 @@ namespace ShitDesigner.Tests.Scene {
 
 				var missingAdditionalData = SceneIsolationManager.ValidatePrefab(root, kind, 12, camera);
 				Assert.That(missingAdditionalData.IsFailure, Is.True);
-				Assert.That(missingAdditionalData.Diagnostic.Code.Value, Is.EqualTo("scene.prefab.camera_urp"));
+				Assert.That(missingAdditionalData.Error.Code.Value, Is.EqualTo("scene.prefab.camera_urp"));
 
 				var additionalCameraData = root.AddComponent<UniversalAdditionalCameraData>();
 				additionalCameraData.renderType = CameraRenderType.Overlay;
 				var overlayResult = SceneIsolationManager.ValidatePrefab(root, kind, 12, camera);
 				Assert.That(overlayResult.IsFailure, Is.True);
-				Assert.That(overlayResult.Diagnostic.Code.Value, Is.EqualTo("scene.prefab.camera_render_type"));
+				Assert.That(overlayResult.Error.Code.Value, Is.EqualTo("scene.prefab.camera_render_type"));
 
 				additionalCameraData.renderType = CameraRenderType.Base;
 				Assert.That(SceneIsolationManager.ValidatePrefab(root, kind, 12, camera).IsSuccess, Is.True);
@@ -82,7 +82,7 @@ namespace ShitDesigner.Tests.Scene {
 				additionalCameraData.cameraStack.Add(overlayCamera);
 				var stackedResult = SceneIsolationManager.ValidatePrefab(root, kind, 12, camera);
 				Assert.That(stackedResult.IsFailure, Is.True);
-				Assert.That(stackedResult.Diagnostic.Code.Value, Is.EqualTo("scene.prefab.camera_stack"));
+				Assert.That(stackedResult.Error.Code.Value, Is.EqualTo("scene.prefab.camera_stack"));
 				additionalCameraData.cameraStack.Clear();
 			}
 			finally {
@@ -136,7 +136,7 @@ namespace ShitDesigner.Tests.Scene {
 				var sceneName = "SceneIsolation.InvalidUrpCamera." + kinds[index];
 				var rejected = manager.Create(new SceneCreateRequest(Node(20 + index), kinds[index], sceneName, prefab: prefab));
 				Assert.That(rejected.IsFailure, Is.True);
-				Assert.That(rejected.Diagnostic.Code.Value, Is.EqualTo("scene.create.failed"));
+				Assert.That(rejected.Error.Code.Value, Is.EqualTo("scene.create.failed"));
 				Object.DestroyImmediate(prefab);
 
 				yield return WaitForLayers(manager);
@@ -259,9 +259,9 @@ namespace ShitDesigner.Tests.Scene {
 
 		private sealed class RecordingPhysicsStepper : IScenePhysicsStepper {
 			public int Calls { get; private set; }
-			public Result Simulate(SceneNodeRuntime node, float stepSeconds) {
+			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Simulate(SceneNodeRuntime node, float stepSeconds) {
 				Calls++;
-				return Result.Success();
+				return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 			}
 		}
 	}

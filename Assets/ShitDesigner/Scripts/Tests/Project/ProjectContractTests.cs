@@ -55,7 +55,7 @@ namespace ShitDesigner.Tests.Project {
 
 			var created = ProjectDocumentFactory.TryCreateDetailed("Preview", 1, new[] { preview, ProgramNode("node_b") }, Enumerable.Empty<ConnectionRecord>(), Enumerable.Empty<LogicalControlRecord>(), Enumerable.Empty<ParameterExpressionRecord>(), Enumerable.Empty<PresetRecord>(), Enumerable.Empty<MediaAssetRecord>(), new ProjectUiStateRecord(new[] { new DashboardPageRecord("main", "Main") }));
 
-			Assert.That(created.IsSuccess, Is.True, created.Diagnostic?.Message);
+			Assert.That(created.IsSuccess, Is.True, created.Error?.Message);
 			Assert.That(created.Value.WasRepaired, Is.False);
 			var preserved = created.Value.Document.FindNode(preview.Id);
 			Assert.That(preserved.DisplayName, Is.EqualTo("Camera A"));
@@ -74,7 +74,7 @@ namespace ShitDesigner.Tests.Project {
 
 			var created = ProjectDocumentFactory.TryCreateDetailed("Preview", 1, new[] { preview }, Enumerable.Empty<ConnectionRecord>(), Enumerable.Empty<LogicalControlRecord>(), Enumerable.Empty<ParameterExpressionRecord>(), Enumerable.Empty<PresetRecord>(), Enumerable.Empty<MediaAssetRecord>());
 
-			Assert.That(created.IsSuccess, Is.True, created.Diagnostic?.Message);
+			Assert.That(created.IsSuccess, Is.True, created.Error?.Message);
 			Assert.That(created.Value.WasRepaired, Is.True);
 			var repaired = created.Value.Document.FindNode(preview.Id);
 			Assert.That(repaired.DisplayName, Is.EqualTo("Camera A"));
@@ -96,7 +96,7 @@ namespace ShitDesigner.Tests.Project {
 
 			var created = ProjectDocumentFactory.TryCreateDetailed("Preview", 1, new[] { preview }, Enumerable.Empty<ConnectionRecord>(), Enumerable.Empty<LogicalControlRecord>(), Enumerable.Empty<ParameterExpressionRecord>(), Enumerable.Empty<PresetRecord>(), Enumerable.Empty<MediaAssetRecord>());
 
-			Assert.That(created.IsSuccess, Is.True, created.Diagnostic?.Message);
+			Assert.That(created.IsSuccess, Is.True, created.Error?.Message);
 			Assert.That(created.Value.WasRepaired, Is.True);
 			var repaired = created.Value.Document.FindNode(preview.Id);
 			Assert.That(repaired.DisplayName, Is.EqualTo("Camera A"));

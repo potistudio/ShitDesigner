@@ -24,7 +24,7 @@ namespace ShitDesigner.Persistence {
 	}
 
 	public static class MediaPathRules {
-		public static Result<string> Normalize(MediaAssetId assetId, string path) {
+		public static CSharpFunctionalExtensions.Result<string, Diagnostic> Normalize(MediaAssetId assetId, string path) {
 			if (assetId.IsEmpty || !assetId.IsUuidV4 || string.IsNullOrWhiteSpace(path)) return Failure("persistence.media.path_invalid", "Media path must identify a UUID v4 asset.");
 			var normalized = path.Replace('\\', '/');
 			if (normalized.IndexOf('\0') >= 0 || normalized.StartsWith("/", StringComparison.Ordinal) || normalized.Contains(":") || normalized.Contains("..", StringComparison.Ordinal) || normalized.IndexOfAny(Path.GetInvalidPathChars()) >= 0) return Failure("persistence.media.path_invalid", "Media path must be a relative path without traversal.");
@@ -32,10 +32,10 @@ namespace ShitDesigner.Persistence {
 			if (segments.Any(x => string.IsNullOrEmpty(x) || x == "." || x == "..")) return Failure("persistence.media.path_invalid", "Media path contains an invalid segment.");
 			var prefix = "Assets/" + assetId.Value + "/source.";
 			if (!normalized.StartsWith(prefix, StringComparison.Ordinal) || normalized.Length <= prefix.Length || normalized.Substring(prefix.Length).Contains('/')) return Failure("persistence.media.path_invalid", "Media path must be Assets/{MediaAssetId}/source.ext.");
-			return Result<string>.Success(normalized);
+			return CSharpFunctionalExtensions.Result.Success<string, Diagnostic>(normalized);
 		}
 
-		private static Result<string> Failure(string code, string message) => Result<string>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static CSharpFunctionalExtensions.Result<string, Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.Result.Failure<string, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
 	}
 
 	public static class AssetIntegrity {
@@ -286,7 +286,7 @@ namespace ShitDesigner.Persistence {
 	}
 
 	public static class ProjectSerializer {
-		public static Result<string> Serialize(ProjectSaveSnapshot snapshot) {
+		public static CSharpFunctionalExtensions.Result<string, Diagnostic> Serialize(ProjectSaveSnapshot snapshot) {
 			if (snapshot == null) return Failure("persistence.snapshot.invalid", "Save snapshot is required.");
 			try {
 				var dto = ToDto(snapshot);
@@ -299,23 +299,23 @@ namespace ShitDesigner.Persistence {
 				if (wire == null) return Failure("persistence.serialize_failed", "Generated manifest metadata could not read the canonical output.");
 				_ = JsonSerializer.SerializeToUtf8Bytes(wire, ProjectPersistenceJsonContext.Default.GeneratedProjectEnvelopeDto);
 				if (bytes.Length > PersistenceConstants.MaxManifestBytes) return Failure("persistence.manifest_too_large", "project.json exceeds the 64 MiB limit.");
-				return Result<string>.Success(json);
+				return CSharpFunctionalExtensions.Result.Success<string, Diagnostic>(json);
 			}
 			catch (Exception exception) {
-				return Result<string>.Failure(new Diagnostic(new DiagnosticCode("persistence.serialize_failed"), Severity.Error, exception.Message, exception: DiagnosticExceptionInfo.FromException(exception)));
+				return CSharpFunctionalExtensions.Result.Failure<string, Diagnostic>(new Diagnostic(new DiagnosticCode("persistence.serialize_failed"), Severity.Error, exception.Message, exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 		}
 
-		public static Result<ProjectDocumentDto> Deserialize(string json) => DeserializeCore(json, true);
+		public static CSharpFunctionalExtensions.Result<ProjectDocumentDto, Diagnostic> Deserialize(string json) => DeserializeCore(json, true);
 
 		/// <summary>
 		/// Reads the strict JSON envelope without applying the current-format gate.
 		/// The project-format migration coordinator is the only caller that should
 		/// use this entry point for a future version.
 		/// </summary>
-		public static Result<ProjectDocumentDto> DeserializeAnyVersion(string json) => DeserializeCore(json, false);
+		public static CSharpFunctionalExtensions.Result<ProjectDocumentDto, Diagnostic> DeserializeAnyVersion(string json) => DeserializeCore(json, false);
 
-		private static Result<ProjectDocumentDto> DeserializeCore(string json, bool requireCurrentVersion) {
+		private static CSharpFunctionalExtensions.Result<ProjectDocumentDto, Diagnostic> DeserializeCore(string json, bool requireCurrentVersion) {
 			if (json == null) return FailureDto("persistence.read.empty", "Manifest content is required.");
 			try {
 				if (json.Length > 0 && json[0] == '\uFEFF') json = json.Substring(1);
@@ -332,7 +332,7 @@ namespace ShitDesigner.Persistence {
 				var dto = ParseDocument(document.RootElement);
 				if (requireCurrentVersion && dto.ProjectFormatVersion != PersistenceConstants.CurrentProjectFormatVersion)
 					return FailureDto("persistence.format_unsupported", "The project format version is not supported by this build.");
-				return Result<ProjectDocumentDto>.Success(dto);
+				return CSharpFunctionalExtensions.Result.Success<ProjectDocumentDto, Diagnostic>(dto);
 			}
 			catch (JsonException exception) {
 				return FailureDto("persistence.json_invalid", exception.Message);
@@ -345,7 +345,7 @@ namespace ShitDesigner.Persistence {
 			}
 		}
 
-		public static Result<ProjectDocumentDto> Deserialize(byte[] bytes) {
+		public static CSharpFunctionalExtensions.Result<ProjectDocumentDto, Diagnostic> Deserialize(byte[] bytes) {
 			if (bytes == null) return FailureDto("persistence.read.empty", "Manifest content is required.");
 			if (bytes.Length > PersistenceConstants.MaxManifestBytes) return FailureDto("persistence.manifest_too_large", "project.json exceeds the 64 MiB limit.");
 			var offset = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF ? 3 : 0;
@@ -358,7 +358,7 @@ namespace ShitDesigner.Persistence {
 			}
 		}
 
-		public static Result<ProjectDocumentDto> DeserializeAnyVersion(byte[] bytes) {
+		public static CSharpFunctionalExtensions.Result<ProjectDocumentDto, Diagnostic> DeserializeAnyVersion(byte[] bytes) {
 			if (bytes == null) return FailureDto("persistence.read.empty", "Manifest content is required.");
 			if (bytes.Length > PersistenceConstants.MaxManifestBytes) return FailureDto("persistence.manifest_too_large", "project.json exceeds the 64 MiB limit.");
 			var offset = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF ? 3 : 0;
@@ -389,7 +389,7 @@ namespace ShitDesigner.Persistence {
 			if (source == null) return null;
 			var json = WriteCanonical(source);
 			var parsed = DeserializeAnyVersion(json);
-			if (parsed.IsFailure) throw new InvalidDataException(parsed.Diagnostic.Message);
+			if (parsed.IsFailure) throw new InvalidDataException(parsed.Error.Message);
 			return parsed.Value;
 		}
 
@@ -593,8 +593,8 @@ namespace ShitDesigner.Persistence {
 			foreach (var property in element.EnumerateObject())
 				if (!known.Contains(property.Name)) throw new JsonException("Unknown property: " + property.Name);
 		}
-		private static Result<string> Failure(string code, string message) => Result<string>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
-		private static Result<ProjectDocumentDto> FailureDto(string code, string message) => Result<ProjectDocumentDto>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static CSharpFunctionalExtensions.Result<string, Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.Result.Failure<string, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static CSharpFunctionalExtensions.Result<ProjectDocumentDto, Diagnostic> FailureDto(string code, string message) => CSharpFunctionalExtensions.Result.Failure<ProjectDocumentDto, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
 	}
 
 	public interface IProjectFileSystem {
@@ -766,7 +766,7 @@ namespace ShitDesigner.Persistence {
 	/// path never crosses into diagnostics or project state.
 	/// </summary>
 	public interface IMediaAssetProbe {
-		Result Probe(Stream stagedStream, string extension);
+		CSharpFunctionalExtensions.UnitResult<Diagnostic> Probe(Stream stagedStream, string extension);
 	}
 
 	internal sealed class StreamDigest {
@@ -870,7 +870,7 @@ namespace ShitDesigner.Persistence {
 			if (string.IsNullOrWhiteSpace(_extension) || _extension.Length > 16 || _extension.IndexOfAny(new[] { '/', '\\', '\0', ':' }) >= 0) throw new ArgumentException("Media source extension is invalid.", nameof(sourcePath));
 			_id = MediaAssetId.New();
 			var normalized = MediaPathRules.Normalize(_id, "Assets/" + _id.Value + "/source" + _extension.ToLowerInvariant());
-			if (normalized.IsFailure) throw new InvalidDataException(normalized.Diagnostic.Message);
+			if (normalized.IsFailure) throw new InvalidDataException(normalized.Error.Message);
 			_relativePath = normalized.Value;
 			_assetDirectory = Path.Combine(projectRoot, "Assets", _id.Value);
 			fileSystem.EnsureDirectory(_assetDirectory);
@@ -903,10 +903,10 @@ namespace ShitDesigner.Persistence {
 							using (var staged = _streaming.OpenRead(_temporaryPath)) {
 								var result = _probe.Probe(staged, _extension);
 								if (result.IsFailure) {
-									if (result.Diagnostic != null && result.Diagnostic.Severity == Severity.Warning) {
-										_probeWarning = result.Diagnostic;
+									if (result.Error != null && result.Error.Severity == Severity.Warning) {
+										_probeWarning = result.Error;
 										_stage = MediaAssetImportTransactionStage.AwaitingProbeConfirmation;
-										return new MediaAssetImportProgress(MediaAssetImportTransactionStage.AwaitingProbeConfirmation, diagnostic: result.Diagnostic);
+										return new MediaAssetImportProgress(MediaAssetImportTransactionStage.AwaitingProbeConfirmation, diagnostic: result.Error);
 									}
 									throw new InvalidDataException("Media probe rejected staged content.");
 								}
@@ -934,10 +934,10 @@ namespace ShitDesigner.Persistence {
 			}
 		}
 
-		public Result ConfirmProbe(bool approved) {
-			if (_stage != MediaAssetImportTransactionStage.AwaitingProbeConfirmation) return Result.Failure(Failure("persistence.media.probe_confirmation_invalid", "This media import is not awaiting probe confirmation."));
-			if (!approved) { _stage = MediaAssetImportTransactionStage.Failed; Cleanup(); return Result.Failure(_probeWarning ?? Failure("persistence.media.probe_rejected", "Media probe confirmation was rejected.")); }
-			_probeWarning = null; _stage = MediaAssetImportTransactionStage.Rename; return Result.Success();
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ConfirmProbe(bool approved) {
+			if (_stage != MediaAssetImportTransactionStage.AwaitingProbeConfirmation) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("persistence.media.probe_confirmation_invalid", "This media import is not awaiting probe confirmation."));
+			if (!approved) { _stage = MediaAssetImportTransactionStage.Failed; Cleanup(); return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(_probeWarning ?? Failure("persistence.media.probe_rejected", "Media probe confirmation was rejected.")); }
+			_probeWarning = null; _stage = MediaAssetImportTransactionStage.Rename; return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
 		public void Cancel() {
@@ -962,11 +962,11 @@ namespace ShitDesigner.Persistence {
 		/// Imports a source file as an isolated copy transaction.  The source
 		/// path is never included in the returned record or diagnostics.
 		/// </summary>
-		public static Result<MediaAssetImportResult> Import(string sourcePath, string projectRoot, IProjectFileSystem fileSystem, string displayName, MediaAssetKind kind = MediaAssetKind.Experimental, MediaColorSpace colorSpace = MediaColorSpace.SRgb, MediaAlphaMode alphaMode = MediaAlphaMode.Opaque) {
+		public static CSharpFunctionalExtensions.Result<MediaAssetImportResult, Diagnostic> Import(string sourcePath, string projectRoot, IProjectFileSystem fileSystem, string displayName, MediaAssetKind kind = MediaAssetKind.Experimental, MediaColorSpace colorSpace = MediaColorSpace.SRgb, MediaAlphaMode alphaMode = MediaAlphaMode.Opaque) {
 			return Import(sourcePath, projectRoot, fileSystem, displayName, kind, colorSpace, alphaMode, null);
 		}
 
-		public static Result<MediaAssetImportResult> Import(string sourcePath, string projectRoot, IProjectFileSystem fileSystem, string displayName, MediaAssetKind kind, MediaColorSpace colorSpace, MediaAlphaMode alphaMode, IMediaAssetProbe probe) {
+		public static CSharpFunctionalExtensions.Result<MediaAssetImportResult, Diagnostic> Import(string sourcePath, string projectRoot, IProjectFileSystem fileSystem, string displayName, MediaAssetKind kind, MediaColorSpace colorSpace, MediaAlphaMode alphaMode, IMediaAssetProbe probe) {
 			if (string.IsNullOrWhiteSpace(sourcePath) || string.IsNullOrWhiteSpace(projectRoot) || fileSystem == null) return Failure("persistence.media.import_invalid", "Source path, project root and file system are required.");
 			var temporaryPath = (string)null;
 			var finalPath = (string)null;
@@ -978,7 +978,7 @@ namespace ShitDesigner.Persistence {
 				var id = MediaAssetId.New();
 				var relative = "Assets/" + id.Value + "/source" + extension.ToLowerInvariant();
 				var normalized = MediaPathRules.Normalize(id, relative);
-				if (normalized.IsFailure) return Result<MediaAssetImportResult>.Failure(normalized.Diagnostic);
+				if (normalized.IsFailure) return CSharpFunctionalExtensions.Result.Failure<MediaAssetImportResult, Diagnostic>(normalized.Error);
 				var directory = Path.Combine(projectRoot, "Assets", id.Value);
 				fileSystem.EnsureDirectory(directory);
 				finalPath = Path.Combine(projectRoot, normalized.Value.Replace('/', Path.DirectorySeparatorChar));
@@ -1007,14 +1007,14 @@ namespace ShitDesigner.Persistence {
 					if (committedDigest.Length != sourceDigest.Length || !string.Equals(committedDigest.Hash, sourceDigest.Hash, StringComparison.Ordinal)) throw new IOException("Committed media copy failed integrity verification.");
 				}
 				var asset = new MediaAssetRecord(id, displayName, normalized.Value, sourceDigest.Length, sourceDigest.Hash, kind, colorSpace, alphaMode);
-				return Result<MediaAssetImportResult>.Success(new MediaAssetImportResult(asset, null));
+				return CSharpFunctionalExtensions.Result.Success<MediaAssetImportResult, Diagnostic>(new MediaAssetImportResult(asset, null));
 			}
 			catch {
 				try { if (temporaryPath != null) fileSystem.Delete(temporaryPath); if (finalPath != null) fileSystem.Delete(finalPath); } catch { }
 				// Do not surface the user-selected absolute source path in a
 				// persisted/exported diagnostic.  The operation remains
 				// identifiable by its stable diagnostic code.
-				return Result<MediaAssetImportResult>.Failure(new Diagnostic(new DiagnosticCode("persistence.media.import_failed"), Severity.Error, "Media import transaction failed."));
+				return CSharpFunctionalExtensions.Result.Failure<MediaAssetImportResult, Diagnostic>(new Diagnostic(new DiagnosticCode("persistence.media.import_failed"), Severity.Error, "Media import transaction failed."));
 			}
 		}
 
@@ -1023,19 +1023,19 @@ namespace ShitDesigner.Persistence {
 		/// path.  If the command is rejected, the already-renamed asset is
 		/// removed and no catalog entry remains.
 		/// </summary>
-		public static Result<MediaAssetRecord> ImportAndAdd(string sourcePath, string projectRoot, IProjectFileSystem fileSystem, ProjectDocument document, string displayName, MediaAssetKind kind = MediaAssetKind.Experimental, MediaColorSpace colorSpace = MediaColorSpace.SRgb, MediaAlphaMode alphaMode = MediaAlphaMode.Opaque, IMediaAssetProbe probe = null) {
-			if (document == null) return Result<MediaAssetRecord>.Failure(new Diagnostic(new DiagnosticCode("persistence.media.command_invalid"), Severity.Error, "A project document is required."));
+		public static CSharpFunctionalExtensions.Result<MediaAssetRecord, Diagnostic> ImportAndAdd(string sourcePath, string projectRoot, IProjectFileSystem fileSystem, ProjectDocument document, string displayName, MediaAssetKind kind = MediaAssetKind.Experimental, MediaColorSpace colorSpace = MediaColorSpace.SRgb, MediaAlphaMode alphaMode = MediaAlphaMode.Opaque, IMediaAssetProbe probe = null) {
+			if (document == null) return CSharpFunctionalExtensions.Result.Failure<MediaAssetRecord, Diagnostic>(new Diagnostic(new DiagnosticCode("persistence.media.command_invalid"), Severity.Error, "A project document is required."));
 			var imported = Import(sourcePath, projectRoot, fileSystem, displayName, kind, colorSpace, alphaMode, probe);
-			if (imported.IsFailure) return Result<MediaAssetRecord>.Failure(imported.Diagnostic);
+			if (imported.IsFailure) return CSharpFunctionalExtensions.Result.Failure<MediaAssetRecord, Diagnostic>(imported.Error);
 			var command = new ProjectCommandProcessor(document).AddMediaAsset(imported.Value.Asset);
 			if (command.IsFailure) {
 				try { fileSystem.Delete(Path.Combine(projectRoot, imported.Value.Asset.RelativePath.Replace('/', Path.DirectorySeparatorChar))); } catch { }
-				return Result<MediaAssetRecord>.Failure(command.Diagnostic);
+				return CSharpFunctionalExtensions.Result.Failure<MediaAssetRecord, Diagnostic>(command.Error);
 			}
-			return Result<MediaAssetRecord>.Success(imported.Value.Asset);
+			return CSharpFunctionalExtensions.Result.Success<MediaAssetRecord, Diagnostic>(imported.Value.Asset);
 		}
 
-		private static Result<MediaAssetImportResult> Failure(string code, string message) => Result<MediaAssetImportResult>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static CSharpFunctionalExtensions.Result<MediaAssetImportResult, Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.Result.Failure<MediaAssetImportResult, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
 	}
 
 	public enum ProjectLoadStatus { Loaded, Recovered, Migrated, Repaired }
@@ -1050,21 +1050,21 @@ namespace ShitDesigner.Persistence {
 
 	public sealed class ProjectSaver {
 		private int _saving;
-		public Result Save(ProjectDocument document, string projectRoot, IProjectFileSystem fileSystem, Action beforeReplace = null) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Save(ProjectDocument document, string projectRoot, IProjectFileSystem fileSystem, Action beforeReplace = null) {
 			if (document == null || string.IsNullOrWhiteSpace(projectRoot) || fileSystem == null) return Failure("persistence.save_invalid", "Document, project root and file system are required.");
 			if (IsReparsePoint(fileSystem, projectRoot)) return Failure("persistence.project_root_reparse_point", "Project root may not be a reparse point.");
 			if (Interlocked.CompareExchange(ref _saving, 1, 0) != 0) return Failure("persistence.save_in_progress", "A save for this project is already running.");
 			try {
 				var savingToken = document.BeginSave();
 				var snapshot = document.TryCreateSaveSnapshot();
-				if (snapshot.IsFailure) return Result.Failure(snapshot.Diagnostic);
+				if (snapshot.IsFailure) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(snapshot.Error);
 				var saved = SaveSnapshot(snapshot.Value, projectRoot, fileSystem, beforeReplace);
 				if (saved.IsFailure) return saved;
 				document.TryMarkSaved(savingToken);
 				return saved;
 			}
 			catch (Exception exception) {
-				return Result.Failure(new Diagnostic(new DiagnosticCode("persistence.save_failed"), Severity.Error, exception.Message, exception: DiagnosticExceptionInfo.FromException(exception)));
+				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("persistence.save_failed"), Severity.Error, exception.Message, exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 			finally { Volatile.Write(ref _saving, 0); }
 		}
@@ -1074,7 +1074,7 @@ namespace ShitDesigner.Persistence {
 		/// document's SavedToken.  Save As uses this boundary while its
 		/// staging directory is not yet the current project.
 		/// </summary>
-		internal Result SaveSnapshot(ProjectSaveSnapshot snapshot, string projectRoot, IProjectFileSystem fileSystem, Action beforeReplace = null) {
+		internal CSharpFunctionalExtensions.UnitResult<Diagnostic> SaveSnapshot(ProjectSaveSnapshot snapshot, string projectRoot, IProjectFileSystem fileSystem, Action beforeReplace = null) {
 			if (snapshot == null || string.IsNullOrWhiteSpace(projectRoot) || fileSystem == null) return Failure("persistence.save_invalid", "Snapshot, project root and file system are required.");
 			if (IsReparsePoint(fileSystem, projectRoot)) return Failure("persistence.project_root_reparse_point", "Project root may not be a reparse point.");
 			var stage = "manifest.paths";
@@ -1087,7 +1087,7 @@ namespace ShitDesigner.Persistence {
 				stage = "serialize";
 				stagePath = main;
 				var json = ProjectSerializer.Serialize(snapshot);
-				if (json.IsFailure) return FailureAt(stage, stagePath, json.Diagnostic);
+				if (json.IsFailure) return FailureAt(stage, stagePath, json.Error);
 				stage = "directory.ensure";
 				stagePath = projectRoot;
 				fileSystem.EnsureDirectory(projectRoot);
@@ -1100,7 +1100,7 @@ namespace ShitDesigner.Persistence {
 				stage = "tmp.readback";
 				stagePath = temp;
 				var readback = ProjectSerializer.Deserialize(fileSystem.ReadAllBytes(temp));
-				if (readback.IsFailure) return FailureAt(stage, stagePath, readback.Diagnostic);
+				if (readback.IsFailure) return FailureAt(stage, stagePath, readback.Error);
 				stage = "main.validate";
 				stagePath = main;
 				beforeReplace?.Invoke();
@@ -1108,26 +1108,26 @@ namespace ShitDesigner.Persistence {
 				stage = "manifest.replace";
 				stagePath = main;
 				manifestWriter.Replace(fileSystem, temp, main, backup, mainIsValid);
-				return Result.Success();
+				return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 			}
 			catch (Exception exception) {
 				return FailureAt(stage, stagePath, exception);
 			}
 		}
-		private static Result Failure(string code, string message) => Result.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
-		private static Result FailureAt(string stage, string path, Diagnostic diagnostic) {
+		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> FailureAt(string stage, string path, Diagnostic diagnostic) {
 			var message = "Save stage '" + stage + "' path '" + path + "' failed: " + (diagnostic == null ? "operation failed." : diagnostic.Message);
-			return Result.Failure(new Diagnostic(new DiagnosticCode("persistence.save_failed"), Severity.Error, message, exception: diagnostic?.Exception));
+			return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("persistence.save_failed"), Severity.Error, message, exception: diagnostic?.Exception));
 		}
-		private static Result FailureAt(string stage, string path, Exception exception) {
+		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> FailureAt(string stage, string path, Exception exception) {
 			var message = "Save stage '" + stage + "' path '" + path + "' failed: " + (exception == null ? "operation failed." : exception.Message);
-			return Result.Failure(new Diagnostic(new DiagnosticCode("persistence.save_failed"), Severity.Error, message, exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
+			return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("persistence.save_failed"), Severity.Error, message, exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
 		}
 		private static bool IsReparsePoint(IProjectFileSystem fileSystem, string path) { try { return (fileSystem.GetAttributes(path) & FileAttributes.ReparsePoint) != 0; } catch { return false; } }
 	}
 
 	public sealed class PortableProjectSaver {
-		public Result SaveAs(ProjectDocument document, string sourceRoot, string targetRoot, IProjectFileSystem fileSystem) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SaveAs(ProjectDocument document, string sourceRoot, string targetRoot, IProjectFileSystem fileSystem) {
 			if (document == null || string.IsNullOrWhiteSpace(sourceRoot) || string.IsNullOrWhiteSpace(targetRoot) || fileSystem == null) return Failure("persistence.save_as_invalid", "Document, source root, target root and file system are required.");
 			var directories = fileSystem as IProjectDirectoryOperations;
 			if (directories == null) return Failure("persistence.save_as_atomic_unsupported", "The file system cannot atomically finalize a portable project directory.");
@@ -1147,11 +1147,11 @@ namespace ShitDesigner.Persistence {
 				// document look saved until the final directory rename wins.
 				var savingToken = document.BeginSave();
 				var snapshot = document.TryCreateSaveSnapshot();
-				if (snapshot.IsFailure) return Result.Failure(snapshot.Diagnostic);
+				if (snapshot.IsFailure) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(snapshot.Error);
 				fileSystem.EnsureDirectory(Path.Combine(staging, "Assets"));
 				foreach (var asset in document.MediaAssets.OrderBy(x => x.Id.Value, StringComparer.Ordinal)) {
 					var path = MediaPathRules.Normalize(asset.Id, asset.RelativePath);
-					if (path.IsFailure) return Result.Failure(path.Diagnostic);
+					if (path.IsFailure) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(path.Error);
 					var source = Path.Combine(sourceRoot, path.Value.Replace('/', Path.DirectorySeparatorChar));
 					var destination = Path.Combine(staging, path.Value.Replace('/', Path.DirectorySeparatorChar));
 					var destinationDirectory = Path.GetDirectoryName(destination);
@@ -1176,10 +1176,10 @@ namespace ShitDesigner.Persistence {
 				directories.MoveDirectory(staging, targetRoot);
 				finalized = true;
 				document.TryMarkSaved(savingToken);
-				return Result.Success();
+				return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 			}
 			catch (Exception exception) {
-				return Result.Failure(new Diagnostic(new DiagnosticCode("persistence.save_as_failed"), Severity.Error, exception.Message, exception: DiagnosticExceptionInfo.FromException(exception)));
+				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("persistence.save_as_failed"), Severity.Error, exception.Message, exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 			finally {
 				// Only remove the private staging directory we generated;
@@ -1190,7 +1190,7 @@ namespace ShitDesigner.Persistence {
 			}
 		}
 
-		private static Result Failure(string code, string message) => Result.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
 		private static bool IsReparsePoint(IProjectFileSystem fileSystem, string path) { try { return (fileSystem.GetAttributes(path) & FileAttributes.ReparsePoint) != 0; } catch { return false; } }
 	}
 
@@ -1206,7 +1206,7 @@ namespace ShitDesigner.Persistence {
 	/// directory rename have both succeeded.
 	/// </summary>
 	public sealed class NewProjectStager {
-		public Result<NewProjectResult> Create(string projectName, string targetRoot, IProjectFileSystem fileSystem, IProjectIdFactory idFactory = null) {
+		public CSharpFunctionalExtensions.Result<NewProjectResult, Diagnostic> Create(string projectName, string targetRoot, IProjectFileSystem fileSystem, IProjectIdFactory idFactory = null) {
 			if (string.IsNullOrWhiteSpace(projectName) || string.IsNullOrWhiteSpace(targetRoot) || fileSystem == null) return Failure("persistence.new.invalid", "Project name, target root and file system are required.");
 			var directories = fileSystem as IProjectDirectoryOperations;
 			var cleanup = fileSystem as IProjectDirectoryCleanup;
@@ -1220,20 +1220,20 @@ namespace ShitDesigner.Persistence {
 			var finalized = false;
 			try {
 				var candidate = ProjectDocumentFactory.CreateNew(projectName, idFactory);
-				if (candidate.IsFailure) return Result<NewProjectResult>.Failure(candidate.Diagnostic);
+				if (candidate.IsFailure) return CSharpFunctionalExtensions.Result.Failure<NewProjectResult, Diagnostic>(candidate.Error);
 				fileSystem.EnsureDirectory(Path.Combine(staging, "Assets"));
 				fileSystem.EnsureDirectory(Path.Combine(staging, "Backups"));
 				var save = new ProjectSaver().Save(candidate.Value, staging, fileSystem);
-				if (save.IsFailure) return Result<NewProjectResult>.Failure(save.Diagnostic);
+				if (save.IsFailure) return CSharpFunctionalExtensions.Result.Failure<NewProjectResult, Diagnostic>(save.Error);
 				var readback = new ProjectLoader().Load(staging, fileSystem);
 				if (readback.IsFailure) return Failure("persistence.new.readback_failed", "New Project manifest read-back failed.");
 				if (directories.DirectoryExists(targetRoot) || fileSystem.Exists(targetRoot)) return Failure("persistence.new.target_exists", "New Project target appeared during staging.");
 				directories.MoveDirectory(staging, targetRoot);
 				finalized = true;
-				return Result<NewProjectResult>.Success(new NewProjectResult(readback.Value.Document, targetRoot));
+				return CSharpFunctionalExtensions.Result.Success<NewProjectResult, Diagnostic>(new NewProjectResult(readback.Value.Document, targetRoot));
 			}
 			catch (Exception exception) {
-				return Result<NewProjectResult>.Failure(new Diagnostic(new DiagnosticCode("persistence.new.failed"), Severity.Error, "New Project staging failed.", exception: DiagnosticExceptionInfo.FromException(exception)));
+				return CSharpFunctionalExtensions.Result.Failure<NewProjectResult, Diagnostic>(new Diagnostic(new DiagnosticCode("persistence.new.failed"), Severity.Error, "New Project staging failed.", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 			finally {
 				if (!finalized) {
@@ -1242,7 +1242,7 @@ namespace ShitDesigner.Persistence {
 			}
 		}
 
-		private static Result<NewProjectResult> Failure(string code, string message) => Result<NewProjectResult>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static CSharpFunctionalExtensions.Result<NewProjectResult, Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.Result.Failure<NewProjectResult, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
 		private static bool IsReparsePoint(IProjectFileSystem fileSystem, string path) { try { return (fileSystem.GetAttributes(path) & FileAttributes.ReparsePoint) != 0; } catch { return false; } }
 	}
 
@@ -1270,7 +1270,7 @@ namespace ShitDesigner.Persistence {
 		public IReadOnlyList<PendingMediaDeletion> Pending { get { RefreshSnapshots(); return _pendingSnapshot; } }
 		public IReadOnlyList<PendingMediaDeletion> Orphans { get { RefreshSnapshots(); return _orphanSnapshot; } }
 
-		public Result RequestDeletion(ProjectDocument document, MediaAssetId assetId, string projectRoot, IProjectFileSystem fileSystem) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> RequestDeletion(ProjectDocument document, MediaAssetId assetId, string projectRoot, IProjectFileSystem fileSystem) {
 			if (document == null || assetId.IsEmpty || string.IsNullOrWhiteSpace(projectRoot) || fileSystem == null) return Failure("persistence.media.delete_invalid", "Media deletion inputs are required.");
 			var asset = document.FindMediaAsset(assetId);
 			if (asset == null) return Failure("persistence.media.delete_missing", "Media asset does not exist.");
@@ -1278,27 +1278,27 @@ namespace ShitDesigner.Persistence {
 		}
 
 		/// <summary>Tracks an asset captured before the delete command commits.</summary>
-		public Result Track(MediaAssetRecord asset, string projectRoot) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Track(MediaAssetRecord asset, string projectRoot) {
 			if (asset == null || asset.Id.IsEmpty || string.IsNullOrWhiteSpace(projectRoot)) return Failure("persistence.media.delete_invalid", "Media deletion inputs are required.");
 			var normalized = MediaPathRules.Normalize(asset.Id, asset.RelativePath);
-			if (normalized.IsFailure) return Result.Failure(normalized.Diagnostic);
+			if (normalized.IsFailure) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(normalized.Error);
 			if (!_pending.ContainsKey(asset.Id)) { _pending.Add(asset.Id, new PendingMediaDeletion(asset.Id, normalized.Value, projectRoot)); _revision++; }
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
-		public Result Cancel(MediaAssetId assetId) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Cancel(MediaAssetId assetId) {
 			if (_pending.Remove(assetId)) _revision++;
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
-		public Result OnUndo(ProjectDocument document, MediaAssetId assetId) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> OnUndo(ProjectDocument document, MediaAssetId assetId) {
 			if (document != null && document.FindMediaAsset(assetId) != null) return Cancel(assetId);
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
-		public Result FinalizeAfterSave(ProjectDocument document, IProjectFileSystem fileSystem) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> FinalizeAfterSave(ProjectDocument document, IProjectFileSystem fileSystem) {
 			if (document == null || fileSystem == null) return Failure("persistence.media.delete_invalid", "Media deletion finalization inputs are required.");
-			var results = Result.Success();
+			var results = CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 			foreach (var item in _pending.Values.ToList()) {
 				if (document.FindMediaAsset(item.AssetId) != null) { if (_pending.Remove(item.AssetId)) _revision++; continue; }
 				var result = TryDelete(item, document, fileSystem);
@@ -1308,7 +1308,7 @@ namespace ShitDesigner.Persistence {
 			return results;
 		}
 
-		public Result CleanupOrphan(MediaAssetId assetId, ProjectDocument document, IProjectFileSystem fileSystem) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> CleanupOrphan(MediaAssetId assetId, ProjectDocument document, IProjectFileSystem fileSystem) {
 			if (!_pending.TryGetValue(assetId, out var item) || !item.IsOrphan) return Failure("persistence.media.orphan_missing", "Orphan media deletion is not pending.");
 			var result = TryDelete(item, document, fileSystem);
 			if (result.IsSuccess && _pending.Remove(assetId)) _revision++;
@@ -1322,7 +1322,7 @@ namespace ShitDesigner.Persistence {
 			_snapshotRevision = _revision;
 		}
 
-		private static Result TryDelete(PendingMediaDeletion item, ProjectDocument document, IProjectFileSystem fileSystem) {
+		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> TryDelete(PendingMediaDeletion item, ProjectDocument document, IProjectFileSystem fileSystem) {
 			if (document == null || document.FindMediaAsset(item.AssetId) != null) return Failure("persistence.media.delete_still_referenced", "Media asset is still referenced by the current project.");
 			var main = Path.Combine(item.ProjectRoot, PersistenceConstants.MainFileName);
 			if (!fileSystem.Exists(main)) return Failure("persistence.media.delete_manifest_missing", "The committed project manifest is missing.");
@@ -1333,87 +1333,87 @@ namespace ShitDesigner.Persistence {
 			if (cleanup == null) return Failure("persistence.media.delete_cleanup_unsupported", "The file system cannot safely remove an asset directory.");
 			try {
 				cleanup.DeleteDirectory(Path.Combine(item.ProjectRoot, "Assets", item.AssetId.Value));
-				return Result.Success();
+				return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 			}
 			catch (Exception exception) {
-				return Result.Failure(new Diagnostic(new DiagnosticCode("persistence.media.orphan"), Severity.Warning, "Media directory deletion failed; the asset is retained as an orphan.", exception: DiagnosticExceptionInfo.FromException(exception)));
+				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("persistence.media.orphan"), Severity.Warning, "Media directory deletion failed; the asset is retained as an orphan.", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 		}
 
-		private static Result Failure(string code, string message) => Result.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
 	}
 
 	public interface INodeStateMigrator {
 		NodeTypeId NodeTypeId { get; }
 		int FromVersion { get; }
 		int ToVersion { get; }
-		Result<string> Migrate(string rawJson);
+		CSharpFunctionalExtensions.Result<string, Diagnostic> Migrate(string rawJson);
 	}
 
 	public sealed class NodeMigrationRegistry {
 		private readonly Dictionary<Tuple<NodeTypeId, int>, INodeStateMigrator> _migrators = new Dictionary<Tuple<NodeTypeId, int>, INodeStateMigrator>();
-		public Result Register(INodeStateMigrator migrator) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Register(INodeStateMigrator migrator) {
 			if (migrator == null || migrator.NodeTypeId.IsEmpty || migrator.FromVersion < 1 || migrator.ToVersion != migrator.FromVersion + 1) return Failure("persistence.migration.invalid", "Node migrator must advance exactly one schema version.");
-			var key = Tuple.Create(migrator.NodeTypeId, migrator.FromVersion); if (_migrators.ContainsKey(key)) return Failure("persistence.migration.duplicate", "Node migrator is already registered."); _migrators.Add(key, migrator); return Result.Success();
+			var key = Tuple.Create(migrator.NodeTypeId, migrator.FromVersion); if (_migrators.ContainsKey(key)) return Failure("persistence.migration.duplicate", "Node migrator is already registered."); _migrators.Add(key, migrator); return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
-		public Result<string> Migrate(NodeTypeId typeId, int fromVersion, int targetVersion, string rawJson) {
+		public CSharpFunctionalExtensions.Result<string, Diagnostic> Migrate(NodeTypeId typeId, int fromVersion, int targetVersion, string rawJson) {
 			var current = rawJson;
 			for (var version = fromVersion; version < targetVersion; version++) {
-				if (!_migrators.TryGetValue(Tuple.Create(typeId, version), out var migrator)) return Result<string>.Failure(new Diagnostic(new DiagnosticCode("persistence.migration.missing"), Severity.Error, "A sequential node migrator is missing."));
-				Result<string> result;
+				if (!_migrators.TryGetValue(Tuple.Create(typeId, version), out var migrator)) return CSharpFunctionalExtensions.Result.Failure<string, Diagnostic>(new Diagnostic(new DiagnosticCode("persistence.migration.missing"), Severity.Error, "A sequential node migrator is missing."));
+				CSharpFunctionalExtensions.Result<string, Diagnostic> result;
 				try { result = migrator.Migrate(current); }
-				catch (Exception exception) { return Result<string>.Failure(new Diagnostic(new DiagnosticCode("persistence.migration.failed"), Severity.Error, "Node migration failed.", exception: DiagnosticExceptionInfo.FromException(exception))); }
+				catch (Exception exception) { return CSharpFunctionalExtensions.Result.Failure<string, Diagnostic>(new Diagnostic(new DiagnosticCode("persistence.migration.failed"), Severity.Error, "Node migration failed.", exception: DiagnosticExceptionInfo.FromException(exception))); }
 				if (result.IsFailure) return result;
 				current = result.Value;
 			}
-			return Result<string>.Success(current);
+			return CSharpFunctionalExtensions.Result.Success<string, Diagnostic>(current);
 		}
-		private static Result Failure(string code, string message) => Result.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
 	}
 
 	public interface IProjectFormatMigrator {
 		int FromVersion { get; }
 		int ToVersion { get; }
-		Result<ProjectDocumentDto> Migrate(ProjectDocumentDto sourceCopy);
+		CSharpFunctionalExtensions.Result<ProjectDocumentDto, Diagnostic> Migrate(ProjectDocumentDto sourceCopy);
 	}
 
 	public sealed class ProjectFormatMigrationRegistry {
 		private readonly Dictionary<int, IProjectFormatMigrator> _migrators = new Dictionary<int, IProjectFormatMigrator>();
 
-		public Result Register(IProjectFormatMigrator migrator) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Register(IProjectFormatMigrator migrator) {
 			if (migrator == null || migrator.FromVersion < 1 || migrator.ToVersion != migrator.FromVersion + 1)
 				return Failure("persistence.project_migration.invalid", "Project migrators must advance exactly one format version.");
 			if (_migrators.ContainsKey(migrator.FromVersion)) return Failure("persistence.project_migration.duplicate", "A project migrator is already registered for this source version.");
 			_migrators.Add(migrator.FromVersion, migrator);
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
-		public Result<ProjectDocumentDto> Migrate(ProjectDocumentDto source, int targetVersion = PersistenceConstants.CurrentProjectFormatVersion) {
+		public CSharpFunctionalExtensions.Result<ProjectDocumentDto, Diagnostic> Migrate(ProjectDocumentDto source, int targetVersion = PersistenceConstants.CurrentProjectFormatVersion) {
 			if (source == null) return FailureDto("persistence.project_migration.source_invalid", "A project DTO is required.");
 			if (source.ProjectFormatVersion > targetVersion) return FailureDto("persistence.format_unsupported", "The project format is newer than this build.");
 			var current = Clone(source);
 			for (var version = current.ProjectFormatVersion; version < targetVersion; version++) {
 				if (!_migrators.TryGetValue(version, out var migrator)) return FailureDto("persistence.project_migration.missing", "A sequential project migrator is missing.");
-				Result<ProjectDocumentDto> migrated;
+				CSharpFunctionalExtensions.Result<ProjectDocumentDto, Diagnostic> migrated;
 				try { migrated = migrator.Migrate(Clone(current)); }
 				catch (Exception exception) { return FailureDto("persistence.project_migration.failed", "Project migration failed: " + exception.Message); }
 				if (migrated.IsFailure) return migrated;
 				if (migrated.Value == null || migrated.Value.ProjectFormatVersion != version + 1) return FailureDto("persistence.project_migration.invalid_result", "A project migrator returned the wrong version.");
 				current = Clone(migrated.Value);
 			}
-			return Result<ProjectDocumentDto>.Success(current);
+			return CSharpFunctionalExtensions.Result.Success<ProjectDocumentDto, Diagnostic>(current);
 		}
 
 		private static ProjectDocumentDto Clone(ProjectDocumentDto source) {
 			return ProjectSerializer.CloneDto(source);
 		}
-		private static Result Failure(string code, string message) => Result.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
-		private static Result<ProjectDocumentDto> FailureDto(string code, string message) => Result<ProjectDocumentDto>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static CSharpFunctionalExtensions.Result<ProjectDocumentDto, Diagnostic> FailureDto(string code, string message) => CSharpFunctionalExtensions.Result.Failure<ProjectDocumentDto, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
 	}
 
 	public static class ProjectMigrationBackup {
-		public static Result<string> Write(IProjectFileSystem fileSystem, string projectRoot, byte[] originalBytes, int originalVersion) {
-			if (fileSystem == null || string.IsNullOrWhiteSpace(projectRoot) || originalBytes == null) return Result<string>.Failure(new Diagnostic(new DiagnosticCode("persistence.migration.backup_invalid"), Severity.Error, "Migration backup inputs are required."));
+		public static CSharpFunctionalExtensions.Result<string, Diagnostic> Write(IProjectFileSystem fileSystem, string projectRoot, byte[] originalBytes, int originalVersion) {
+			if (fileSystem == null || string.IsNullOrWhiteSpace(projectRoot) || originalBytes == null) return CSharpFunctionalExtensions.Result.Failure<string, Diagnostic>(new Diagnostic(new DiagnosticCode("persistence.migration.backup_invalid"), Severity.Error, "Migration backup inputs are required."));
 			var path = (string)null;
 			try {
 				var digest = AssetIntegrity.Hash(originalBytes);
@@ -1424,16 +1424,16 @@ namespace ShitDesigner.Persistence {
 				if (fileSystem.Exists(path)) path = Path.Combine(directory, stem + "-" + Guid.NewGuid().ToString("N") + ".json");
 				fileSystem.WriteAllBytes(path, originalBytes);
 				ProjectFileSystemPorts.Flush(fileSystem, path);
-				if (!fileSystem.Exists(path) || !originalBytes.SequenceEqual(fileSystem.ReadAllBytes(path))) { try { fileSystem.Delete(path); } catch { } return Result<string>.Failure(new Diagnostic(new DiagnosticCode("persistence.migration.backup_verify"), Severity.Error, "Migration backup readback did not match.")); }
+				if (!fileSystem.Exists(path) || !originalBytes.SequenceEqual(fileSystem.ReadAllBytes(path))) { try { fileSystem.Delete(path); } catch { } return CSharpFunctionalExtensions.Result.Failure<string, Diagnostic>(new Diagnostic(new DiagnosticCode("persistence.migration.backup_verify"), Severity.Error, "Migration backup readback did not match.")); }
 				var backups = fileSystem.EnumerateFiles(directory).Where(x => Path.GetFileName(x).StartsWith("pre-migration-", StringComparison.Ordinal)).OrderBy(x => x, StringComparer.Ordinal).ToList();
 				foreach (var old in backups.Take(Math.Max(0, backups.Count - 5))) {
 					try { fileSystem.Delete(old); } catch { /* pruning is advisory after a verified backup */ }
 				}
-				return Result<string>.Success(path);
+				return CSharpFunctionalExtensions.Result.Success<string, Diagnostic>(path);
 			}
 			catch (Exception exception) {
 				try { if (path != null) fileSystem.Delete(path); } catch { }
-				return Result<string>.Failure(new Diagnostic(new DiagnosticCode("persistence.migration.backup_failed"), Severity.Error, exception.Message, exception: DiagnosticExceptionInfo.FromException(exception)));
+				return CSharpFunctionalExtensions.Result.Failure<string, Diagnostic>(new Diagnostic(new DiagnosticCode("persistence.migration.backup_failed"), Severity.Error, exception.Message, exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 		}
 	}
@@ -1448,16 +1448,16 @@ namespace ShitDesigner.Persistence {
 	}
 
 	public sealed class ProjectLoader {
-		public Result<ProjectLoadResult> Load(string projectRoot, IProjectFileSystem fileSystem, ProjectDocument currentProject = null, INodeSchemaCatalog catalog = null, NodeMigrationRegistry migrations = null) {
+		public CSharpFunctionalExtensions.Result<ProjectLoadResult, Diagnostic> Load(string projectRoot, IProjectFileSystem fileSystem, ProjectDocument currentProject = null, INodeSchemaCatalog catalog = null, NodeMigrationRegistry migrations = null) {
 			return Load(projectRoot, fileSystem, currentProject, catalog, migrations, null);
 		}
 
-		public Result<ProjectLoadResult> Load(string projectRoot, IProjectFileSystem fileSystem, ProjectDocument currentProject, INodeSchemaCatalog catalog, NodeMigrationRegistry migrations, ProjectFormatMigrationRegistry projectMigrations) {
+		public CSharpFunctionalExtensions.Result<ProjectLoadResult, Diagnostic> Load(string projectRoot, IProjectFileSystem fileSystem, ProjectDocument currentProject, INodeSchemaCatalog catalog, NodeMigrationRegistry migrations, ProjectFormatMigrationRegistry projectMigrations) {
 			if (string.IsNullOrWhiteSpace(projectRoot) || fileSystem == null) return Failure("persistence.load_invalid", "Project root and file system are required.");
 			if (IsReparsePoint(fileSystem, projectRoot)) return Failure("persistence.project_root_reparse_point", "Project root may not be a reparse point.");
 			var main = Path.Combine(projectRoot, PersistenceConstants.MainFileName); var backup = Path.Combine(projectRoot, PersistenceConstants.BackupFileName); var temporary = Path.Combine(projectRoot, PersistenceConstants.TemporaryFileName);
 			var mainBytesResult = ReadOptional(fileSystem, main);
-			if (mainBytesResult.IsFailure) return Result<ProjectLoadResult>.Failure(mainBytesResult.Diagnostic);
+			if (mainBytesResult.IsFailure) return CSharpFunctionalExtensions.Result.Failure<ProjectLoadResult, Diagnostic>(mainBytesResult.Error);
 			var mainBytes = mainBytesResult.Value;
 			var mainRead = mainBytes != null ? ProjectSerializer.DeserializeAnyVersion(mainBytes) : FailureDto("persistence.main_missing", "project.json is missing.");
 			ProjectDocumentDto dto = null; var status = ProjectLoadStatus.Loaded; var diagnostics = new List<Diagnostic>();
@@ -1466,45 +1466,45 @@ namespace ShitDesigner.Persistence {
 				if (fileSystem.Exists(temporary)) diagnostics.Add(new Diagnostic(new DiagnosticCode("persistence.temporary_present"), Severity.Warning, "A previous temporary manifest was found; it was not adopted."));
 			}
 			catch (Exception exception) {
-				return Result<ProjectLoadResult>.Failure(new Diagnostic(new DiagnosticCode("persistence.temporary_probe_failed"), Severity.Error, "The temporary manifest could not be inspected.", exception: DiagnosticExceptionInfo.FromException(exception)));
+				return CSharpFunctionalExtensions.Result.Failure<ProjectLoadResult, Diagnostic>(new Diagnostic(new DiagnosticCode("persistence.temporary_probe_failed"), Severity.Error, "The temporary manifest could not be inspected.", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 			if (mainRead.IsSuccess) dto = mainRead.Value;
 			else {
-				diagnostics.Add(mainRead.Diagnostic);
+				diagnostics.Add(mainRead.Error);
 				var backupBytesResult = ReadOptional(fileSystem, backup);
-				if (backupBytesResult.IsFailure) return Result<ProjectLoadResult>.Failure(backupBytesResult.Diagnostic);
+				if (backupBytesResult.IsFailure) return CSharpFunctionalExtensions.Result.Failure<ProjectLoadResult, Diagnostic>(backupBytesResult.Error);
 				var backupBytes = backupBytesResult.Value;
 				var backupRead = backupBytes != null ? ProjectSerializer.DeserializeAnyVersion(backupBytes) : FailureDto("persistence.backup_missing", "project.json.bak is missing.");
 				if (backupRead.IsFailure) {
-					diagnostics.Add(backupRead.Diagnostic);
-					return Result<ProjectLoadResult>.Failure(new Diagnostic(new DiagnosticCode("persistence.main_and_backup_invalid"), Severity.Error, "Neither project.json nor project.json.bak is valid."));
+					diagnostics.Add(backupRead.Error);
+					return CSharpFunctionalExtensions.Result.Failure<ProjectLoadResult, Diagnostic>(new Diagnostic(new DiagnosticCode("persistence.main_and_backup_invalid"), Severity.Error, "Neither project.json nor project.json.bak is valid."));
 				}
 				dto = backupRead.Value; sourceBytes = backupBytes; status = ProjectLoadStatus.Recovered;
 			}
 			try {
 				var migrationNeeded = dto.ProjectFormatVersion < PersistenceConstants.CurrentProjectFormatVersion || NeedsNodeMigration(dto, catalog);
-				if (dto.ProjectFormatVersion > PersistenceConstants.CurrentProjectFormatVersion) return Result<ProjectLoadResult>.Failure(new Diagnostic(new DiagnosticCode("persistence.format_unsupported"), Severity.Error, "The project format version is newer than this build."));
+				if (dto.ProjectFormatVersion > PersistenceConstants.CurrentProjectFormatVersion) return CSharpFunctionalExtensions.Result.Failure<ProjectLoadResult, Diagnostic>(new Diagnostic(new DiagnosticCode("persistence.format_unsupported"), Severity.Error, "The project format version is newer than this build."));
 				if (migrationNeeded) {
-					if (sourceBytes == null) return Result<ProjectLoadResult>.Failure(new Diagnostic(new DiagnosticCode("persistence.migration.source_missing"), Severity.Error, "Migration source bytes are missing."));
+					if (sourceBytes == null) return CSharpFunctionalExtensions.Result.Failure<ProjectLoadResult, Diagnostic>(new Diagnostic(new DiagnosticCode("persistence.migration.source_missing"), Severity.Error, "Migration source bytes are missing."));
 					var backupResult = ProjectMigrationBackup.Write(fileSystem, projectRoot, sourceBytes, dto.ProjectFormatVersion);
-					if (backupResult.IsFailure) return Result<ProjectLoadResult>.Failure(backupResult.Diagnostic);
+					if (backupResult.IsFailure) return CSharpFunctionalExtensions.Result.Failure<ProjectLoadResult, Diagnostic>(backupResult.Error);
 					if (dto.ProjectFormatVersion < PersistenceConstants.CurrentProjectFormatVersion) {
-						if (projectMigrations == null) return Result<ProjectLoadResult>.Failure(new Diagnostic(new DiagnosticCode("persistence.project_migration.missing"), Severity.Error, "A project format migrator is required."));
+						if (projectMigrations == null) return CSharpFunctionalExtensions.Result.Failure<ProjectLoadResult, Diagnostic>(new Diagnostic(new DiagnosticCode("persistence.project_migration.missing"), Severity.Error, "A project format migrator is required."));
 						var migrated = projectMigrations.Migrate(dto, PersistenceConstants.CurrentProjectFormatVersion);
-						if (migrated.IsFailure) return Result<ProjectLoadResult>.Failure(migrated.Diagnostic);
+						if (migrated.IsFailure) return CSharpFunctionalExtensions.Result.Failure<ProjectLoadResult, Diagnostic>(migrated.Error);
 						dto = migrated.Value;
 					}
 					status = status == ProjectLoadStatus.Recovered ? status : ProjectLoadStatus.Migrated;
 				}
 				var candidateResult = Hydrate(dto, catalog, migrations, diagnostics, status == ProjectLoadStatus.Recovered, out var changed);
-				if (candidateResult.IsFailure) return Result<ProjectLoadResult>.Failure(candidateResult.Diagnostic);
+				if (candidateResult.IsFailure) return CSharpFunctionalExtensions.Result.Failure<ProjectLoadResult, Diagnostic>(candidateResult.Error);
 				var candidate = candidateResult.Value;
 				ValidateMedia(candidate, dto, projectRoot, fileSystem, diagnostics);
 				if (changed && status != ProjectLoadStatus.Recovered && status != ProjectLoadStatus.Migrated) status = ProjectLoadStatus.Repaired;
-				return Result<ProjectLoadResult>.Success(new ProjectLoadResult(candidate, status, diagnostics));
+				return CSharpFunctionalExtensions.Result.Success<ProjectLoadResult, Diagnostic>(new ProjectLoadResult(candidate, status, diagnostics));
 			}
 			catch (Exception exception) {
-				return Result<ProjectLoadResult>.Failure(new Diagnostic(new DiagnosticCode("persistence.candidate_invalid"), Severity.Error, exception.Message, exception: DiagnosticExceptionInfo.FromException(exception)));
+				return CSharpFunctionalExtensions.Result.Failure<ProjectLoadResult, Diagnostic>(new Diagnostic(new DiagnosticCode("persistence.candidate_invalid"), Severity.Error, exception.Message, exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 		}
 
@@ -1518,7 +1518,7 @@ namespace ShitDesigner.Persistence {
 			return false;
 		}
 
-		private static Result<ProjectDocument> Hydrate(ProjectDocumentDto dto, INodeSchemaCatalog catalog, NodeMigrationRegistry migrations, List<Diagnostic> diagnostics, bool markDirty, out bool changed) {
+		private static CSharpFunctionalExtensions.Result<ProjectDocument, Diagnostic> Hydrate(ProjectDocumentDto dto, INodeSchemaCatalog catalog, NodeMigrationRegistry migrations, List<Diagnostic> diagnostics, bool markDirty, out bool changed) {
 			changed = false;
 			var assets = (dto.MediaAssets ?? new List<MediaAssetDto>()).Select(ToMedia).ToList();
 			var nodes = new List<NodeRecord>();
@@ -1572,7 +1572,7 @@ namespace ShitDesigner.Persistence {
 			if (known && portCatalog != null && schemaVersion == currentVersion && (dto.Ports ?? new List<PortDto>()).Count > 0 && portCatalog.TryGetCurrentPorts(typeId, out var currentPorts)) publishedPortsChanged = !PortsEqual(dto.Ports, currentPorts);
 			if (!known || (catalog != null && schemaVersion > currentVersion) || publishedPortsChanged) { unknownType = unknownType ?? dto.TypeId; changed = true; if (publishedPortsChanged) diagnostics.Add(new Diagnostic(new DiagnosticCode("persistence.node_port_snapshot_mismatch"), Severity.Warning, "Node port snapshot differs from the registered catalog; node was retained as UnknownNode.")); }
 			else if (catalog != null && schemaVersion < currentVersion) {
-				var migrated = migrations == null ? (Result<string>?)null : migrations.Migrate(typeId, schemaVersion, currentVersion, raw);
+				var migrated = migrations == null ? (CSharpFunctionalExtensions.Result<string, Diagnostic>?)null : migrations.Migrate(typeId, schemaVersion, currentVersion, raw);
 				if (!migrated.HasValue || migrated.Value.IsFailure) { unknownType = unknownType ?? dto.TypeId; changed = true; diagnostics.Add(new Diagnostic(new DiagnosticCode("persistence.node_unknown"), Severity.Warning, "Node schema migration failed; node was retained as UnknownNode.")); }
 				else if (!IsJsonObject(migrated.Value.Value)) { unknownType = unknownType ?? dto.TypeId; changed = true; diagnostics.Add(new Diagnostic(new DiagnosticCode("persistence.node_unknown"), Severity.Warning, "Node schema migration returned a non-object state; node was retained as UnknownNode.")); }
 				else { raw = migrated.Value.Value; schemaVersion = currentVersion; changed = true; }
@@ -1643,7 +1643,7 @@ namespace ShitDesigner.Persistence {
 
 			foreach (var asset in dto.MediaAssets ?? new List<MediaAssetDto>()) {
 				var path = MediaPathRules.Normalize(new MediaAssetId(asset.Id), asset.RelativePath);
-				if (path.IsFailure) { diagnostics.Add(path.Diagnostic); continue; }
+				if (path.IsFailure) { diagnostics.Add(path.Error); continue; }
 				var absolute = NormalizeFsPath(fs.GetFullPath(Path.Combine(root, path.Value.Replace('/', Path.DirectorySeparatorChar))));
 				if (!absolute.StartsWith(rootPrefix, comparison)) {
 					diagnostics.Add(new Diagnostic(new DiagnosticCode("persistence.media_outside_project"), Severity.Error, "Media path resolves outside the project root."));
@@ -1686,15 +1686,15 @@ namespace ShitDesigner.Persistence {
 			}
 		}
 		private static string NormalizeFsPath(string path) => (path ?? string.Empty).Replace('\\', '/').TrimEnd('/');
-		private static Result<ProjectLoadResult> Failure(string code, string message) => Result<ProjectLoadResult>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
-		private static Result<ProjectDocumentDto> FailureDto(string code, string message) => Result<ProjectDocumentDto>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static CSharpFunctionalExtensions.Result<ProjectLoadResult, Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.Result.Failure<ProjectLoadResult, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static CSharpFunctionalExtensions.Result<ProjectDocumentDto, Diagnostic> FailureDto(string code, string message) => CSharpFunctionalExtensions.Result.Failure<ProjectDocumentDto, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
 		private static bool IsReparsePoint(IProjectFileSystem fileSystem, string path) { try { return (fileSystem.GetAttributes(path) & FileAttributes.ReparsePoint) != 0; } catch { return false; } }
-		private static Result<byte[]> ReadOptional(IProjectFileSystem fileSystem, string path) {
+		private static CSharpFunctionalExtensions.Result<byte[], Diagnostic> ReadOptional(IProjectFileSystem fileSystem, string path) {
 			try {
-				return Result<byte[]>.Success(fileSystem.Exists(path) ? fileSystem.ReadAllBytes(path) : null);
+				return CSharpFunctionalExtensions.Result.Success<byte[], Diagnostic>(fileSystem.Exists(path) ? fileSystem.ReadAllBytes(path) : null);
 			}
 			catch (Exception exception) {
-				return Result<byte[]>.Failure(new Diagnostic(new DiagnosticCode("persistence.read_failed"), Severity.Error, "Project file could not be read.", exception: DiagnosticExceptionInfo.FromException(exception)));
+				return CSharpFunctionalExtensions.Result.Failure<byte[], Diagnostic>(new Diagnostic(new DiagnosticCode("persistence.read_failed"), Severity.Error, "Project file could not be read.", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 		}
 	}

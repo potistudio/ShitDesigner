@@ -19,13 +19,13 @@ namespace ShitDesigner.Bootstrap {
 			_midiInputManager = midiInputManager;
 		}
 
-		public Result<CompositionRoot> Create() {
+		public CSharpFunctionalExtensions.Result<CompositionRoot, Diagnostic> Create() {
 			var fileSystem = new LocalProjectFileSystem();
 			var pool = new RenderTexturePool();
 			var provider = _assets.BuildProvider(fileSystem, pool);
 			if (provider.IsFailure) {
 				pool.Dispose();
-				return Result<CompositionRoot>.Failure(provider.Diagnostic);
+				return CSharpFunctionalExtensions.Result.Failure<CompositionRoot, Diagnostic>(provider.Error);
 			}
 
 			return CompositionRoot.Create(fileSystem, provider.Value, pool: pool, presentationRoot: _presentationRoot,

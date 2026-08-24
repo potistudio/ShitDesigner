@@ -365,7 +365,7 @@ namespace ShitDesigner.Application {
 	}
 
 	public interface IApplicationRuntimeSessionFactory {
-		Result<ApplicationRuntimeComposition> Create(ProjectDocument document, NodeTypeRegistry registry);
+		CSharpFunctionalExtensions.Result<ApplicationRuntimeComposition, Diagnostic> Create(ProjectDocument document, NodeTypeRegistry registry);
 	}
 
 	/// <summary>Optional Bootstrap seam for project-scoped services.  The
@@ -378,10 +378,10 @@ namespace ShitDesigner.Application {
 
 	/// <summary>Core-only fallback used by EditMode tests and headless tools.</summary>
 	public sealed class MinimalApplicationRuntimeSessionFactory : IApplicationRuntimeSessionFactory {
-		public Result<ApplicationRuntimeComposition> Create(ProjectDocument document, NodeTypeRegistry registry) {
-			if (document == null || registry == null) return Result<ApplicationRuntimeComposition>.Failure(new Diagnostic(new DiagnosticCode("application.runtime.composition_invalid"), Severity.Error, "Runtime composition requires a document and node registry."));
+		public CSharpFunctionalExtensions.Result<ApplicationRuntimeComposition, Diagnostic> Create(ProjectDocument document, NodeTypeRegistry registry) {
+			if (document == null || registry == null) return CSharpFunctionalExtensions.Result.Failure<ApplicationRuntimeComposition, Diagnostic>(new Diagnostic(new DiagnosticCode("application.runtime.composition_invalid"), Severity.Error, "Runtime composition requires a document and node registry."));
 			var session = new RuntimeSession(document, registry, new DiagnosticHub("application.runtime"));
-			return Result<ApplicationRuntimeComposition>.Success(new ApplicationRuntimeComposition(session, new FrameCoordinator(session), false, "No application runtime bindings were supplied by Bootstrap."));
+			return CSharpFunctionalExtensions.Result.Success<ApplicationRuntimeComposition, Diagnostic>(new ApplicationRuntimeComposition(session, new FrameCoordinator(session), false, "No application runtime bindings were supplied by Bootstrap."));
 		}
 	}
 
@@ -595,14 +595,14 @@ namespace ShitDesigner.Application {
 		/// beginning a Save, publishing a task, or touching the filesystem.
 		/// This is the persistence identity used for restart verification,
 		/// rather than a projection that may also contain runtime UI state.</summary>
-		public Result<string> CaptureCanonicalProjectFingerprint() {
-			if (_document == null) return Result<string>.Failure(Failure("application.fingerprint.project_missing", "A canonical Project fingerprint requires a current project."));
+		public CSharpFunctionalExtensions.Result<string, Diagnostic> CaptureCanonicalProjectFingerprint() {
+			if (_document == null) return CSharpFunctionalExtensions.Result.Failure<string, Diagnostic>(Failure("application.fingerprint.project_missing", "A canonical Project fingerprint requires a current project."));
 			var snapshot = _document.TryCreateSaveSnapshot();
-			if (snapshot.IsFailure) return Result<string>.Failure(snapshot.Diagnostic);
+			if (snapshot.IsFailure) return CSharpFunctionalExtensions.Result.Failure<string, Diagnostic>(snapshot.Error);
 			var serialized = ProjectSerializer.Serialize(snapshot.Value);
-			if (serialized.IsFailure) return Result<string>.Failure(serialized.Diagnostic);
-			try { return Result<string>.Success(AssetIntegrity.Hash(Encoding.UTF8.GetBytes(serialized.Value))); }
-			catch (Exception exception) { return Result<string>.Failure(Failure("application.fingerprint.hash_failed", "Canonical Project fingerprint hashing failed: " + exception.Message)); }
+			if (serialized.IsFailure) return CSharpFunctionalExtensions.Result.Failure<string, Diagnostic>(serialized.Error);
+			try { return CSharpFunctionalExtensions.Result.Success<string, Diagnostic>(AssetIntegrity.Hash(Encoding.UTF8.GetBytes(serialized.Value))); }
+			catch (Exception exception) { return CSharpFunctionalExtensions.Result.Failure<string, Diagnostic>(Failure("application.fingerprint.hash_failed", "Canonical Project fingerprint hashing failed: " + exception.Message)); }
 		}
 
 		public ReadModelEnvelope<ProjectReadModel> ReadProject(bool fullSnapshot = true) {
@@ -618,13 +618,13 @@ namespace ShitDesigner.Application {
 		/// <summary>Resets runtime diagnostics for a measurement interval
 		/// through the public Application boundary. Active conditions are
 		/// intentionally retained and remain visible to the next read model.</summary>
-		public Result ResetDiagnosticsForMeasurement(ulong measurementFrame = 0) {
-			if (_runtime == null) return Result.Success();
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ResetDiagnosticsForMeasurement(ulong measurementFrame = 0) {
+			if (_runtime == null) return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 			_runtime.Diagnostics.ResetMeasurement(measurementFrame);
 			_runtime.ResetPerformanceForMeasurement(measurementFrame);
 			_previousDiagnostics.Clear();
 			_nextSnapshotFull = true;
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
 		/// <summary>Returns the last published snapshot without advancing its version.
@@ -642,7 +642,7 @@ namespace ShitDesigner.Application {
 			_state = ApplicationProjectState.Loading;
 			BeginTask("New", targetRoot, "Staging", "Pending");
 			var result = new NewProjectStager().Create(projectName, targetRoot, _fileSystem);
-			if (result.IsFailure) { SetTask("Failed", result.Diagnostic); return Complete(request, ApplicationCommandStatus.Rejected, result.Diagnostic, _document == null ? ApplicationProjectState.Empty : ApplicationProjectState.Ready); }
+			if (result.IsFailure) { SetTask("Failed", result.Error); return Complete(request, ApplicationCommandStatus.Rejected, result.Error, _document == null ? ApplicationProjectState.Empty : ApplicationProjectState.Ready); }
 			SetTask("Readback", null);
 			Install(result.Value.Document, result.Value.ProjectRoot, false, request);
 			AddRecent(result.Value.ProjectRoot);
@@ -656,7 +656,7 @@ namespace ShitDesigner.Application {
 			_state = ApplicationProjectState.Loading;
 			BeginTask("Open", projectRoot, "Read", "Pending");
 			var loaded = new ProjectLoader().Load(projectRoot, _fileSystem, _document, _catalog, _nodeMigrations, _projectMigrations);
-			if (loaded.IsFailure) { SetTask("Failed", loaded.Diagnostic); return Complete(request, ApplicationCommandStatus.Rejected, loaded.Diagnostic, _document == null ? ApplicationProjectState.Empty : ApplicationProjectState.Ready); }
+			if (loaded.IsFailure) { SetTask("Failed", loaded.Error); return Complete(request, ApplicationCommandStatus.Rejected, loaded.Error, _document == null ? ApplicationProjectState.Empty : ApplicationProjectState.Ready); }
 			Install(loaded.Value.Document, projectRoot, loaded.Value.IsRecovered, request);
 			AddRecent(projectRoot);
 			foreach (var diagnostic in loaded.Value.Diagnostics) _runtime?.Diagnostics.Report(diagnostic);
@@ -676,11 +676,11 @@ namespace ShitDesigner.Application {
 			_state = ApplicationProjectState.Saving;
 			BeginTask("Save", _root, "Serialize", "Pending");
 			var saved = new ProjectSaver().Save(_document, _root, _fileSystem);
-			if (saved.IsFailure) { SetTask("Failed", saved.Diagnostic); return Complete(request, ApplicationCommandStatus.Rejected, saved.Diagnostic, ApplicationProjectState.Ready); }
+			if (saved.IsFailure) { SetTask("Failed", saved.Error); return Complete(request, ApplicationCommandStatus.Rejected, saved.Error, ApplicationProjectState.Ready); }
 			SetTask("FlushAndReplace", null);
 			var deletion = _mediaDeletions.FinalizeAfterSave(_document, _fileSystem);
-			if (deletion.IsFailure) SetTask("Failed", deletion.Diagnostic); else SetTask("Completed", null);
-			return Complete(request, ApplicationCommandStatus.Applied, deletion.IsFailure ? deletion.Diagnostic : null, ApplicationProjectState.Ready);
+			if (deletion.IsFailure) SetTask("Failed", deletion.Error); else SetTask("Completed", null);
+			return Complete(request, ApplicationCommandStatus.Applied, deletion.IsFailure ? deletion.Error : null, ApplicationProjectState.Ready);
 		}
 
 		public ApplicationCommandResult SaveAs(string targetRoot) {
@@ -689,7 +689,7 @@ namespace ShitDesigner.Application {
 			_state = ApplicationProjectState.SaveAs;
 			BeginTask("SaveAs", targetRoot, "StageCopy", "Pending");
 			var saved = new PortableProjectSaver().SaveAs(_document, _root, targetRoot, _fileSystem);
-			if (saved.IsFailure) { SetTask("Failed", saved.Diagnostic); return Complete(request, ApplicationCommandStatus.Rejected, saved.Diagnostic, ApplicationProjectState.Ready); }
+			if (saved.IsFailure) { SetTask("Failed", saved.Error); return Complete(request, ApplicationCommandStatus.Rejected, saved.Error, ApplicationProjectState.Ready); }
 			SetTask("SwitchRoot", null);
 			CancelAllMediaDeletions();
 			_root = targetRoot;
@@ -741,7 +741,7 @@ namespace ShitDesigner.Application {
 
 		public ApplicationCommandResult RenameLogicalControl(string logicalControlId, string name) {
 			if (!LogicalControlId.TryParse(logicalControlId, out var id)) return Rejected(Guid.Empty, Failure("application.input.control_invalid", "Logical control ID is invalid."));
-			return CompleteProjectMutation(_projectCommands == null ? Result.Failure(Failure("application.project.missing", "There is no current project.")) : _projectCommands.RenameLogicalControl(id, name));
+			return CompleteProjectMutation(_projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.RenameLogicalControl(id, name));
 		}
 
 		public ApplicationCommandResult SetLogicalControlTargets(string logicalControlId, IEnumerable<ApplicationLogicalControlTargetRequest> targets) {
@@ -751,7 +751,7 @@ namespace ShitDesigner.Application {
 					if (!NodeInstanceId.TryParse(target.NodeId, out var node) || !ParameterId.TryParse(target.ParameterId, out var parameter)) throw new ArgumentException("Logical control target IDs are invalid.");
 					return new LogicalControlTargetRecord(node, parameter, target.TargetMin.Type, target.TargetMin, target.TargetMax, target.Invert);
 				});
-				return CompleteProjectMutation(_projectCommands == null ? Result.Failure(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetLogicalControlTargets(id, records));
+				return CompleteProjectMutation(_projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetLogicalControlTargets(id, records));
 			}
 			catch (Exception exception) { return Rejected(Guid.Empty, new Diagnostic(new DiagnosticCode("application.input.target_invalid"), Severity.Error, exception.Message, module: "application")); }
 		}
@@ -763,7 +763,7 @@ namespace ShitDesigner.Application {
 				ParameterRange? range = null;
 				if (request.OutputMinimum.HasValue != request.OutputMaximum.HasValue) throw new ArgumentException("Expression output clamp requires both bounds.");
 				if (request.OutputMinimum.HasValue) range = new ParameterRange(request.OutputMinimum.Value, request.OutputMaximum.Value);
-				return CompleteProjectMutation(_projectCommands == null ? Result.Failure(Failure("application.project.missing", "There is no current project.")) : _projectCommands.AddExpression(new ParameterExpressionRecord(node, parameter, expression, range)));
+				return CompleteProjectMutation(_projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.AddExpression(new ParameterExpressionRecord(node, parameter, expression, range)));
 			}
 			catch (Exception exception) { return Rejected(Guid.Empty, new Diagnostic(new DiagnosticCode("application.expression.invalid"), Severity.Error, exception.Message, module: "application")); }
 		}
@@ -786,7 +786,7 @@ namespace ShitDesigner.Application {
 			var request = BeginRequest(Guid.Empty);
 			if (_projectCommands == null) return Complete(request, ApplicationCommandStatus.Rejected, Failure("application.project.missing", "There is no current project."), _state);
 			var result = _projectCommands.DeleteLogicalControl(id); if (result.IsSuccess) SynchronizeRuntime();
-			return Complete(request, result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Diagnostic, _state);
+			return Complete(request, result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Error, _state);
 		}
 
 		public ApplicationCommandResult AddMediaAsset(ApplicationMediaAssetRequest request) {
@@ -827,8 +827,8 @@ namespace ShitDesigner.Application {
 				var operation = _mediaBatch;
 				CleanupImportedFiles(operation.Imported);
 				_mediaBatch = null;
-				SetTask("Failed", result.Diagnostic);
-				return Complete(operation.RequestId, ApplicationCommandStatus.Rejected, result.Diagnostic, _state);
+				SetTask("Failed", result.Error);
+				return Complete(operation.RequestId, ApplicationCommandStatus.Rejected, result.Error, _state);
 			}
 			SetTaskProgress("Rename", _mediaBatch.Index, _mediaBatch.Requests.Count, _mediaBatch.Requests[_mediaBatch.Index].DisplayName);
 			PublishReadModel(false);
@@ -850,7 +850,7 @@ namespace ShitDesigner.Application {
 			if (!MediaAssetId.TryParseUuidV4(mediaAssetId, out var media) || !NodeInstanceId.TryParse(nodeId, out var node) || !ParameterId.TryParse(parameterId, out var parameter)) return Rejected(Guid.Empty, Failure("application.media.rebind_invalid", "Media rebind IDs are invalid."));
 			var record = _document?.FindNode(node)?.FindParameter(parameter);
 			if (record == null || record.Definition.Type != ParameterType.MediaAssetReference) return Rejected(Guid.Empty, Failure("application.media.rebind_target", "The target parameter is not a media reference."));
-			return CompleteProjectMutation(_projectCommands == null ? Result.Failure(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetBaseValue(node, parameter, ParameterValue.FromMediaAsset(media)));
+			return CompleteProjectMutation(_projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetBaseValue(node, parameter, ParameterValue.FromMediaAsset(media)));
 		}
 
 		public ApplicationCommandResult ConfirmDeleteMedia(string mediaAssetId, ApplicationMediaDeleteDecision decision) {
@@ -886,14 +886,14 @@ namespace ShitDesigner.Application {
 				var command = BeginRequest(Guid.Empty);
 				if (_projectCommands == null) return Complete(command, ApplicationCommandStatus.Rejected, Failure("application.project.missing", "There is no current project."), _state);
 				var result = _projectCommands.AddPreset(new PresetRecord(id, request.Name, request.Category, request.SortIndex, entries)); if (result.IsSuccess) SynchronizeRuntime();
-				return Complete(command, result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Diagnostic, _state);
+				return Complete(command, result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Error, _state);
 			}
 			catch (Exception exception) { return Rejected(Guid.Empty, new Diagnostic(new DiagnosticCode("application.preset.invalid"), Severity.Error, exception.Message, module: "application")); }
 		}
 
 		public ApplicationCommandResult RenamePreset(string presetId, string name) {
 			if (!PresetId.TryParse(presetId, out var id)) return Rejected(Guid.Empty, Failure("application.preset.invalid", "Preset ID is invalid."));
-			return CompleteProjectMutation(_projectCommands == null ? Result.Failure(Failure("application.project.missing", "There is no current project.")) : _projectCommands.RenamePreset(id, name));
+			return CompleteProjectMutation(_projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.RenamePreset(id, name));
 		}
 
 		public ApplicationCommandResult DuplicatePreset(string presetId, string newPresetId, string name) {
@@ -907,13 +907,13 @@ namespace ShitDesigner.Application {
 			if (!PresetId.TryParse(presetId, out var id) || entry == null || !NodeInstanceId.TryParse(entry.NodeId, out var node) || !ParameterId.TryParse(entry.ParameterId, out var parameter)) return Rejected(Guid.Empty, Failure("application.preset.entry_invalid", "Preset entry is invalid."));
 			var preset = _document?.FindPreset(id); if (preset == null) return Rejected(Guid.Empty, Failure("application.preset.missing", "Preset does not exist."));
 			var entries = preset.Entries.Where(x => x.NodeId != node || x.ParameterId != parameter).Concat(new[] { new PresetEntryRecord(node, parameter, entry.Value.Type, entry.Value) });
-			return CompleteProjectMutation(_projectCommands == null ? Result.Failure(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetPresetEntries(id, entries));
+			return CompleteProjectMutation(_projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetPresetEntries(id, entries));
 		}
 
 		public ApplicationCommandResult RemovePresetEntry(string presetId, string nodeId, string parameterId) {
 			if (!PresetId.TryParse(presetId, out var id) || !NodeInstanceId.TryParse(nodeId, out var node) || !ParameterId.TryParse(parameterId, out var parameter)) return Rejected(Guid.Empty, Failure("application.preset.entry_invalid", "Preset entry is invalid."));
 			var preset = _document?.FindPreset(id); if (preset == null) return Rejected(Guid.Empty, Failure("application.preset.missing", "Preset does not exist."));
-			return CompleteProjectMutation(_projectCommands == null ? Result.Failure(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetPresetEntries(id, preset.Entries.Where(x => x.NodeId != node || x.ParameterId != parameter)));
+			return CompleteProjectMutation(_projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetPresetEntries(id, preset.Entries.Where(x => x.NodeId != node || x.ParameterId != parameter)));
 		}
 
 		public ApplicationCommandResult AddDashboardPage(ApplicationDashboardPageRequest request) => UpdateDashboardPage(request, false);
@@ -931,7 +931,7 @@ namespace ShitDesigner.Application {
 				if (index >= 0 && !replace) return Rejected(Guid.Empty, Failure("application.dashboard.exists", "Dashboard page already exists."));
 				var page = new DashboardPageRecord(request.PageId, request.Name, widgets);
 				if (index >= 0) pages[index] = page; else pages.Add(page);
-				return CompleteProjectMutation(_projectCommands == null ? Result.Failure(Failure("application.project.missing", "There is no current project.")) : _projectCommands.ReplaceUi(_document.Ui.WithDashboardPages(pages)));
+				return CompleteProjectMutation(_projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.ReplaceUi(_document.Ui.WithDashboardPages(pages)));
 			}
 			catch (Exception exception) { return Rejected(Guid.Empty, new Diagnostic(new DiagnosticCode("application.dashboard.invalid"), Severity.Error, exception.Message, module: "application")); }
 		}
@@ -990,7 +990,7 @@ namespace ShitDesigner.Application {
 				FocusPreviewDemand(previewId);
 				var existingQueued = QueueVisiblePreviewDemands();
 				return CompleteImmediate(existingQueued.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected,
-					existingQueued.IsSuccess ? null : existingQueued.Diagnostic);
+					existingQueued.IsSuccess ? null : existingQueued.Error);
 			}
 			if (current.Count >= 8) {
 				var names = string.Join(", ", current.Select(id => _document.Nodes.FirstOrDefault(x => x.Id.Value == id)?.DisplayName ?? id));
@@ -1000,7 +1000,7 @@ namespace ShitDesigner.Application {
 			if (result.IsSuccess) {
 				FocusPreviewDemand(previewId);
 				var queued = QueueVisiblePreviewDemands();
-				if (queued.IsFailure) return CompleteImmediate(ApplicationCommandStatus.Rejected, queued.Diagnostic);
+				if (queued.IsFailure) return CompleteImmediate(ApplicationCommandStatus.Rejected, queued.Error);
 			}
 			return result;
 		}
@@ -1012,7 +1012,7 @@ namespace ShitDesigner.Application {
 				_previewDemands.Remove(previewId ?? string.Empty);
 				if (NodeInstanceId.TryParse(previewId, out var previewNode)) _runtime?.RemovePreview(previewNode);
 				var queued = QueueVisiblePreviewDemands();
-				if (queued.IsFailure) return CompleteImmediate(ApplicationCommandStatus.Rejected, queued.Diagnostic);
+				if (queued.IsFailure) return CompleteImmediate(ApplicationCommandStatus.Rejected, queued.Error);
 			}
 			return result;
 		}
@@ -1024,7 +1024,7 @@ namespace ShitDesigner.Application {
 			if (!Enum.IsDefined(typeof(ApplicationOutputFitMode), request.FitMode)) return Rejected(Guid.Empty, Failure("application.preview.fit_invalid", "Preview fit mode must be Fit, Fill or Stretch."));
 			if (!string.Equals(request.BackgroundMode, "Checker", StringComparison.OrdinalIgnoreCase) && !string.Equals(request.BackgroundMode, "Black", StringComparison.OrdinalIgnoreCase)) return Rejected(Guid.Empty, Failure("application.preview.background_invalid", "Preview background must be Checker or Black."));
 			var raw = MergePreviewState(node.RawState, request);
-			var result = CompleteProjectMutation(_projectCommands == null ? Result.Failure(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetNodeRawState(node.Id, raw));
+			var result = CompleteProjectMutation(_projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetNodeRawState(node.Id, raw));
 			if (result.IsSuccess) _previewSettings[request.PreviewId] = request;
 			return result;
 		}
@@ -1040,7 +1040,7 @@ namespace ShitDesigner.Application {
 			}
 			_previewDemands[request.PreviewId] = request;
 			var queued = QueueVisiblePreviewDemands();
-			return CompleteImmediate(queued.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, queued.IsSuccess ? null : queued.Diagnostic);
+			return CompleteImmediate(queued.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, queued.IsSuccess ? null : queued.Error);
 		}
 
 		public ApplicationCommandResult SetPreviewHostVisible(bool visible) {
@@ -1049,13 +1049,13 @@ namespace ShitDesigner.Application {
 			// alter the project document or saved tab assignment. Runtime is
 			// explicitly told to hide active demands, while quality state is
 			// retained for a later host show.
-			var queued = visible ? QueueVisiblePreviewDemands() : (_runtime == null ? Result.Success() : _runtime.HideAllPreviews());
-			return CompleteImmediate(queued.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, queued.IsSuccess ? null : queued.Diagnostic);
+			var queued = visible ? QueueVisiblePreviewDemands() : (_runtime == null ? CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>() : _runtime.HideAllPreviews());
+			return CompleteImmediate(queued.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, queued.IsSuccess ? null : queued.Error);
 		}
 
 		public ApplicationCommandResult SetProgramDisplay(int display) {
 			if (display < 1) return Rejected(Guid.Empty, Failure("application.output.display_invalid", "Program display must be positive."));
-			return CompleteProjectMutation(_projectCommands == null ? Result.Failure(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetOutputSettings((_document?.Settings ?? ProjectOutputSettings.CreateDefault()).WithProgramDisplay(display)));
+			return CompleteProjectMutation(_projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetOutputSettings((_document?.Settings ?? ProjectOutputSettings.CreateDefault()).WithProgramDisplay(display)));
 		}
 
 		public ApplicationCommandResult ResetFeedback(string nodeId) {
@@ -1064,14 +1064,14 @@ namespace ShitDesigner.Application {
 			if (_frames == null) return Complete(request, ApplicationCommandStatus.Rejected, Failure("application.project.missing", "There is no current project."), _state);
 			var command = RuntimeCommand.ResetFeedback(node, request.ToString("D"));
 			var queued = _frames.EnqueueRuntimeCommand(command);
-			if (queued.IsFailure) return Complete(request, ApplicationCommandStatus.Rejected, queued.Diagnostic, _state);
+			if (queued.IsFailure) return Complete(request, ApplicationCommandStatus.Rejected, queued.Error, _state);
 			TrackRuntime(request, command.CommandRequestId);
 			return KeepAccepted(request);
 		}
 
 		public ApplicationCommandResult ExportDiagnostics(string path, bool json) {
 			var result = json ? ExportDiagnosticsJson(path) : ExportDiagnostics(path);
-			return CompleteImmediate(result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Diagnostic);
+			return CompleteImmediate(result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Error);
 		}
 
 		public ApplicationCommandResult SetWorkspaceLayout(string layoutId, bool dirty) {
@@ -1085,7 +1085,7 @@ namespace ShitDesigner.Application {
 			var request = BeginRequest(Guid.Empty);
 			if (_projectCommands == null) return Complete(request, ApplicationCommandStatus.Rejected, Failure("application.project.missing", "There is no current project."), _state);
 			var result = _projectCommands.DeletePreset(id); if (result.IsSuccess) SynchronizeRuntime();
-			return Complete(request, result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Diagnostic, _state);
+			return Complete(request, result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Error, _state);
 		}
 
 		public ApplicationCommandResult BeginKeyboardLearn(string logicalControlId) {
@@ -1122,11 +1122,11 @@ namespace ShitDesigner.Application {
 					case ApplicationGraphEditKind.Undo:
 						if (_projectCommands == null) return Complete(applicationRequest, ApplicationCommandStatus.Rejected, Failure("application.project.missing", "There is no current project."), _state);
 						var undo = _projectCommands.Undo(); if (undo.IsSuccess) SynchronizeRuntime();
-						return Complete(applicationRequest, undo.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, undo.IsSuccess ? null : undo.Diagnostic, _state);
+						return Complete(applicationRequest, undo.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, undo.IsSuccess ? null : undo.Error, _state);
 					case ApplicationGraphEditKind.Redo:
 						if (_projectCommands == null) return Complete(applicationRequest, ApplicationCommandStatus.Rejected, Failure("application.project.missing", "There is no current project."), _state);
 						var redo = _projectCommands.Redo(); if (redo.IsSuccess) SynchronizeRuntime();
-						return Complete(applicationRequest, redo.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, redo.IsSuccess ? null : redo.Diagnostic, _state);
+						return Complete(applicationRequest, redo.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, redo.IsSuccess ? null : redo.Error, _state);
 					case ApplicationGraphEditKind.CopySelection:
 					case ApplicationGraphEditKind.PasteSelection:
 					case ApplicationGraphEditKind.DuplicateSelection:
@@ -1143,7 +1143,7 @@ namespace ShitDesigner.Application {
 			catch (Exception exception) { return Complete(applicationRequest, ApplicationCommandStatus.Rejected, new Diagnostic(new DiagnosticCode("application.graph.invalid"), Severity.Error, exception.Message, module: "application"), _state); }
 			if (_frames == null) return Complete(applicationRequest, ApplicationCommandStatus.Rejected, Failure("application.project.missing", "There is no current project."), _state);
 			var queued = _frames.EnqueueGraphEdit(command);
-			if (queued.IsFailure) return Complete(applicationRequest, ApplicationCommandStatus.Rejected, queued.Diagnostic, _state);
+			if (queued.IsFailure) return Complete(applicationRequest, ApplicationCommandStatus.Rejected, queued.Error, _state);
 			TrackGraph(applicationRequest, command.CommandRequestId);
 			return KeepAccepted(applicationRequest);
 		}
@@ -1158,7 +1158,7 @@ namespace ShitDesigner.Application {
 			if (_frames == null) return Complete(request, ApplicationCommandStatus.Rejected, Failure("application.project.missing", "There is no current project."), _state);
 			var command = _frames.Clock.IsPaused ? RuntimeCommand.ResumeClock(request.ToString("D")) : RuntimeCommand.PauseClock(request.ToString("D"));
 			var queued = _frames.EnqueueRuntimeCommand(command);
-			if (queued.IsFailure) return Complete(request, ApplicationCommandStatus.Rejected, queued.Diagnostic, _state);
+			if (queued.IsFailure) return Complete(request, ApplicationCommandStatus.Rejected, queued.Error, _state);
 			TrackRuntime(request, command.CommandRequestId);
 			return KeepAccepted(request);
 		}
@@ -1204,7 +1204,7 @@ namespace ShitDesigner.Application {
 			if (_frames == null || _document == null) return Complete(request, ApplicationCommandStatus.Rejected, Failure("application.project.missing", "There is no current project."), _state);
 			var sequence = ++_sequence;
 			var result = _frames.EnqueueParameterEvent(RuntimeParameterEvent.Preset(sequence, presetId));
-			if (result.IsFailure) return Complete(request, ApplicationCommandStatus.Rejected, result.Diagnostic, _state);
+			if (result.IsFailure) return Complete(request, ApplicationCommandStatus.Rejected, result.Error, _state);
 			TrackParameter(request, sequence);
 			return KeepAccepted(request);
 		}
@@ -1215,7 +1215,7 @@ namespace ShitDesigner.Application {
 			var sequence = ++_sequence;
 			var result = _frames.EnqueueParameterEvent(RuntimeParameterEvent.BaseValue(sequence, update.NodeId, update.ParameterId, update.Value));
 			if (result.IsSuccess) TrackParameter(request, sequence);
-			return result.IsSuccess ? KeepAccepted(request) : Complete(request, ApplicationCommandStatus.Rejected, result.Diagnostic, _state);
+			return result.IsSuccess ? KeepAccepted(request) : Complete(request, ApplicationCommandStatus.Rejected, result.Error, _state);
 		}
 
 		public ApplicationCommandResult EnqueueGraphEdit(GraphEditCommand command, Guid? interactionId = null) {
@@ -1223,7 +1223,7 @@ namespace ShitDesigner.Application {
 			if (_frames == null || command == null) return Complete(request, ApplicationCommandStatus.Rejected, Failure("application.graph.invalid", "A graph edit and current project are required."), _state);
 			var result = _frames.EnqueueGraphEdit(command);
 			if (result.IsSuccess) TrackGraph(request, command.CommandRequestId);
-			return result.IsSuccess ? KeepAccepted(request) : Complete(request, ApplicationCommandStatus.Rejected, result.Diagnostic, _state);
+			return result.IsSuccess ? KeepAccepted(request) : Complete(request, ApplicationCommandStatus.Rejected, result.Error, _state);
 		}
 
 		public ApplicationCommandResult SetLogicalControlMappings(LogicalControlId id, IEnumerable<ControlMappingRecord> mappings, Guid? interactionId = null) {
@@ -1231,7 +1231,7 @@ namespace ShitDesigner.Application {
 			if (_projectCommands == null) return Complete(request, ApplicationCommandStatus.Rejected, Failure("application.project.missing", "There is no current project."), _state);
 			var result = _projectCommands.SetLogicalControlMappings(id, mappings);
 			if (result.IsSuccess) SynchronizeRuntime();
-			return Complete(request, result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Diagnostic, _state);
+			return Complete(request, result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Error, _state);
 		}
 
 		public ApplicationCommandResult AddLogicalControl(LogicalControlRecord control, Guid? interactionId = null) {
@@ -1239,18 +1239,18 @@ namespace ShitDesigner.Application {
 			if (_projectCommands == null) return Complete(request, ApplicationCommandStatus.Rejected, Failure("application.project.missing", "There is no current project."), _state);
 			var result = _projectCommands.AddLogicalControl(control);
 			if (result.IsSuccess) SynchronizeRuntime();
-			return Complete(request, result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Diagnostic, _state);
+			return Complete(request, result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Error, _state);
 		}
 
 		public ApplicationCommandResult DeleteMediaAsset(MediaAssetId id, Guid? interactionId = null) {
 			var request = BeginRequest(interactionId ?? Guid.Empty);
 			if (_projectCommands == null || _document == null) return Complete(request, ApplicationCommandStatus.Rejected, Failure("application.project.missing", "There is no current project."), _state);
 			var tracked = _mediaDeletions.RequestDeletion(_document, id, _root, _fileSystem);
-			if (tracked.IsFailure) return Complete(request, ApplicationCommandStatus.Rejected, tracked.Diagnostic, _state);
+			if (tracked.IsFailure) return Complete(request, ApplicationCommandStatus.Rejected, tracked.Error, _state);
 			var result = _projectCommands.DeleteMediaAsset(id);
 			if (result.IsFailure) {
 				_mediaDeletions.Cancel(id);
-				return Complete(request, ApplicationCommandStatus.Rejected, result.Diagnostic, _state);
+				return Complete(request, ApplicationCommandStatus.Rejected, result.Error, _state);
 			}
 			SynchronizeRuntime();
 			return Complete(request, ApplicationCommandStatus.Applied, null, _state);
@@ -1261,7 +1261,7 @@ namespace ShitDesigner.Application {
 			if (_projectCommands == null) return Complete(request, ApplicationCommandStatus.Rejected, Failure("application.project.missing", "There is no current project."), _state);
 			var result = _projectCommands.AddMediaAsset(asset);
 			if (result.IsSuccess) SynchronizeRuntime();
-			return Complete(request, result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Diagnostic, _state);
+			return Complete(request, result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Error, _state);
 		}
 
 		public ApplicationCommandResult Undo(Guid? interactionId = null) {
@@ -1272,7 +1272,7 @@ namespace ShitDesigner.Application {
 				foreach (var pending in _mediaDeletions.Pending.ToList()) _mediaDeletions.OnUndo(_document, pending.AssetId);
 				SynchronizeRuntime();
 			}
-			return Complete(request, result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Diagnostic, _state);
+			return Complete(request, result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Error, _state);
 		}
 
 		ApplicationCommandResult IApplicationCommandPort.Undo() => Undo((Guid?)null);
@@ -1282,7 +1282,7 @@ namespace ShitDesigner.Application {
 			if (_projectCommands == null || _document == null) return Complete(request, ApplicationCommandStatus.Rejected, Failure("application.project.missing", "There is no current project."), _state);
 			var result = _projectCommands.Redo();
 			if (result.IsSuccess) SynchronizeRuntime();
-			return Complete(request, result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Diagnostic, _state);
+			return Complete(request, result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Error, _state);
 		}
 
 		ApplicationCommandResult IApplicationCommandPort.Redo() => Redo((Guid?)null);
@@ -1292,7 +1292,7 @@ namespace ShitDesigner.Application {
 			if (_projectCommands == null) return Complete(request, ApplicationCommandStatus.Rejected, Failure("application.project.missing", "There is no current project."), _state);
 			var result = _projectCommands.SetPresetTriggerBinding(id, presetId);
 			if (result.IsSuccess) SynchronizeRuntime();
-			return Complete(request, result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Diagnostic, _state);
+			return Complete(request, result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Error, _state);
 		}
 
 		public ApplicationCommandResult BeginKeyboardLearn(LogicalControlId id, Guid? interactionId = null) {
@@ -1332,7 +1332,7 @@ namespace ShitDesigner.Application {
 				var value = item.Mapping.Normalize(pressed ? 1f : 0f);
 				var sequence = ++_sequence;
 				var queued = _frames.EnqueueParameterEvent(RuntimeParameterEvent.ControlValue(sequence, item.Control.Id, value));
-				if (queued.IsFailure) return Complete(request, ApplicationCommandStatus.Rejected, queued.Diagnostic, _state);
+				if (queued.IsFailure) return Complete(request, ApplicationCommandStatus.Rejected, queued.Error, _state);
 				TrackParameter(request, sequence);
 			}
 			// Keyboard polling can deliver several 120 Hz updates before the
@@ -1367,7 +1367,7 @@ namespace ShitDesigner.Application {
 				var value = item.Mapping.Normalize(inputEvent.RawValue);
 				var sequence = ++_sequence;
 				var queued = _frames.EnqueueParameterEvent(RuntimeParameterEvent.ControlValue(sequence, item.Control.Id, value));
-				if (queued.IsFailure) return Complete(request, ApplicationCommandStatus.Rejected, queued.Diagnostic, _state);
+				if (queued.IsFailure) return Complete(request, ApplicationCommandStatus.Rejected, queued.Error, _state);
 				TrackParameter(request, sequence);
 			}
 			return AcceptedWithoutPublication(request);
@@ -1381,7 +1381,7 @@ namespace ShitDesigner.Application {
 				return Complete(request, ApplicationCommandStatus.Rejected, Failure("application.input.control_value_invalid", "Live Control values must be between 0 and 1."), _state);
 			var sequence = ++_sequence;
 			var queued = _frames.EnqueueParameterEvent(RuntimeParameterEvent.ControlValue(sequence, id, normalizedValue));
-			if (queued.IsFailure) return Complete(request, ApplicationCommandStatus.Rejected, queued.Diagnostic, _state);
+			if (queued.IsFailure) return Complete(request, ApplicationCommandStatus.Rejected, queued.Error, _state);
 			TrackParameter(request, sequence);
 			return AcceptedWithoutPublication(request);
 		}
@@ -1398,8 +1398,8 @@ namespace ShitDesigner.Application {
 			foreach (var item in report.GraphCommandExecutionResults) {
 				var entry = _graphRequests.TryGetValue(item.CommandRequestId ?? string.Empty, out var requestId) && _ledger.TryGetValue(requestId, out var found)
 					? found : null;
-				if (entry != null) TryCompleteQueued(entry, item.Result.IsSuccess, item.Result.Diagnostic, item.CommandRequestId);
-				frameResults.Add(new ApplicationFrameCommandResult(item.CommandRequestId, item.Result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, item.Result.Diagnostic));
+				if (entry != null) TryCompleteQueued(entry, item.Result.IsSuccess, item.Result.Error, item.CommandRequestId);
+				frameResults.Add(new ApplicationFrameCommandResult(item.CommandRequestId, item.Result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, item.Result.Error));
 			}
 			foreach (var item in report.ParameterEventResults) {
 				var entry = _parameterRequests.TryGetValue(item.SequenceNumber, out var requestId) && _ledger.TryGetValue(requestId, out var found)
@@ -1440,8 +1440,8 @@ namespace ShitDesigner.Application {
 			_runtime.ObserveFrameTiming(sample);
 		}
 
-		public Result ExportDiagnostics(string path) {
-			if (string.IsNullOrWhiteSpace(path)) return Result.Failure(Failure("application.diagnostics.path", "Diagnostic export path is required."));
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ExportDiagnostics(string path) {
+			if (string.IsNullOrWhiteSpace(path)) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.diagnostics.path", "Diagnostic export path is required."));
 			try {
 				var directory = Path.GetDirectoryName(path);
 				if (!string.IsNullOrEmpty(directory)) _fileSystem.EnsureDirectory(directory);
@@ -1449,15 +1449,15 @@ namespace ShitDesigner.Application {
 				foreach (var diagnostic in (_runtime == null ? Enumerable.Empty<Diagnostic>() : _runtime.Diagnostics.History))
 					lines.Add(diagnostic.Code.Value + "\t" + diagnostic.Severity + "\t" + diagnostic.Message.Replace("\r", " ").Replace("\n", " "));
 				_fileSystem.WriteAllBytes(path, new UTF8Encoding(false, true).GetBytes(string.Join("\n", lines)));
-				return Result.Success();
+				return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 			}
 			catch (Exception exception) {
-				return Result.Failure(new Diagnostic(new DiagnosticCode("application.diagnostics.export_failed"), Severity.Error, "Diagnostic export failed.", exception: DiagnosticExceptionInfo.FromException(exception)));
+				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("application.diagnostics.export_failed"), Severity.Error, "Diagnostic export failed.", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 		}
 
-		public Result ExportDiagnosticsJson(string path) {
-			if (string.IsNullOrWhiteSpace(path)) return Result.Failure(Failure("application.diagnostics.path", "Diagnostic export path is required."));
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ExportDiagnosticsJson(string path) {
+			if (string.IsNullOrWhiteSpace(path)) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.diagnostics.path", "Diagnostic export path is required."));
 			try {
 				var directory = Path.GetDirectoryName(path);
 				if (!string.IsNullOrEmpty(directory)) _fileSystem.EnsureDirectory(directory);
@@ -1472,10 +1472,10 @@ namespace ShitDesigner.Application {
 				}
 				builder.Append("]}");
 				_fileSystem.WriteAllBytes(path, new UTF8Encoding(false, true).GetBytes(builder.ToString()));
-				return Result.Success();
+				return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 			}
 			catch (Exception exception) {
-				return Result.Failure(new Diagnostic(new DiagnosticCode("application.diagnostics.export_failed"), Severity.Error, "Diagnostic JSON export failed.", exception: DiagnosticExceptionInfo.FromException(exception)));
+				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("application.diagnostics.export_failed"), Severity.Error, "Diagnostic JSON export failed.", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 		}
 
@@ -1531,13 +1531,13 @@ namespace ShitDesigner.Application {
 			_recovered = recovered;
 			_sessionId = Guid.NewGuid();
 			_learningControl = null;
-			Result<ApplicationRuntimeComposition> composition;
+			CSharpFunctionalExtensions.Result<ApplicationRuntimeComposition, Diagnostic> composition;
 			try {
 				if (_runtimeFactory is IProjectRootAwareRuntimeSessionFactory rootAware) rootAware.SetProjectRoot(root);
 				composition = _runtimeFactory.Create(document, _registry);
 			}
 			catch (Exception exception) {
-				composition = Result<ApplicationRuntimeComposition>.Failure(new Diagnostic(new DiagnosticCode("application.runtime.composition_failed"), Severity.Error, "Runtime composition could not be created.", module: "application", exception: DiagnosticExceptionInfo.FromException(exception)));
+				composition = CSharpFunctionalExtensions.Result.Failure<ApplicationRuntimeComposition, Diagnostic>(new Diagnostic(new DiagnosticCode("application.runtime.composition_failed"), Severity.Error, "Runtime composition could not be created.", module: "application", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 			if (composition.IsSuccess && composition.Value != null) {
 				_runtimeComposition = composition.Value;
@@ -1552,8 +1552,8 @@ namespace ShitDesigner.Application {
 				_runtime = _runtimeComposition.Session;
 				_frames = _runtimeComposition.Frames;
 				_runtimeAvailable = false;
-				_runtimeUnavailableReason = composition.Diagnostic == null ? "Runtime composition could not be created." : composition.Diagnostic.Message;
-				_runtime.Diagnostics.Report(composition.Diagnostic ?? Failure("application.runtime.composition_failed", "Runtime composition could not be created."));
+				_runtimeUnavailableReason = composition.Error == null ? "Runtime composition could not be created." : composition.Error.Message;
+				_runtime.Diagnostics.Report(composition.Error ?? Failure("application.runtime.composition_failed", "Runtime composition could not be created."));
 			}
 			_publishedReadModel = null;
 			_previousProjects.Clear(); _previousGraphNodes.Clear(); _previousGraphConnections.Clear(); _previousParameters.Clear(); _previousDiagnostics.Clear();
@@ -1644,9 +1644,9 @@ namespace ShitDesigner.Application {
 			if (operation.Transaction == null) {
 				if (operation.Index >= operation.Requests.Count) {
 					SetTaskProgress("Register", operation.Imported.Count, operation.Requests.Count, null);
-					var command = _projectCommands == null ? Result.Failure(Failure("application.project.missing", "There is no current project.")) : _projectCommands.AddMediaAssets(operation.Imported);
+					var command = _projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.AddMediaAssets(operation.Imported);
 					if (command.IsFailure) {
-						FailMediaImportBatch(operation, command.Diagnostic);
+						FailMediaImportBatch(operation, command.Error);
 						return;
 					}
 					SynchronizeRuntime();
@@ -1723,8 +1723,8 @@ namespace ShitDesigner.Application {
 			}
 		}
 
-		private Result QueueVisiblePreviewDemands() {
-			if (_runtime == null) return Result.Failure(Failure("application.preview.runtime_missing", "Preview demands require a current runtime session."));
+		private CSharpFunctionalExtensions.UnitResult<Diagnostic> QueueVisiblePreviewDemands() {
+			if (_runtime == null) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.preview.runtime_missing", "Preview demands require a current runtime session."));
 			if (!_previewHostVisible) return _runtime.SetOutputDemands(Enumerable.Empty<OutputDemand>());
 			var demands = new List<OutputDemand>();
 			foreach (var previewId in (_document?.Ui?.PreviewNodeIds ?? Enumerable.Empty<string>()).Take(8)) {
@@ -1797,10 +1797,10 @@ namespace ShitDesigner.Application {
 			return Complete(request, status, diagnostic, _state);
 		}
 
-		private ApplicationCommandResult CompleteProjectMutation(Result result) {
+		private ApplicationCommandResult CompleteProjectMutation(CSharpFunctionalExtensions.UnitResult<Diagnostic> result) {
 			var request = BeginRequest(Guid.Empty);
 			if (result.IsSuccess) SynchronizeRuntime();
-			return Complete(request, result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Diagnostic, _state);
+			return Complete(request, result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Error, _state);
 		}
 
 		private static LogicalExpressionNode BuildExpression(ApplicationExpressionDraft request) {

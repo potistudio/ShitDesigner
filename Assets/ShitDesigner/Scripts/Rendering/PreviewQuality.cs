@@ -205,16 +205,16 @@ namespace ShitDesigner.Rendering {
 		public double GpuFrameTimeAverage => _gpuAverage.Average;
 		public IReadOnlyList<PreviewQualityReadModel> ReadModels => new ReadOnlyCollection<PreviewQualityReadModel>(_previews.Values.OrderBy(x => x.PreviewId, StringComparer.Ordinal).Select(x => x.ReadModel).ToList());
 
-		public Result<PreviewQualityController> Show(string previewId, bool focused, long focusOrder) {
-			if (_previews.ContainsKey(previewId)) return Result<PreviewQualityController>.Success(_previews[previewId]);
+		public CSharpFunctionalExtensions.Result<PreviewQualityController, Diagnostic> Show(string previewId, bool focused, long focusOrder) {
+			if (_previews.ContainsKey(previewId)) return CSharpFunctionalExtensions.Result.Success<PreviewQualityController, Diagnostic>(_previews[previewId]);
 			if (_previews.Count >= MaxVisiblePreviews)
-				return Result<PreviewQualityController>.Failure(new Diagnostic(new DiagnosticCode("rendering.preview.limit"), Severity.Error, "A maximum of eight previews may be visible."));
+				return CSharpFunctionalExtensions.Result.Failure<PreviewQualityController, Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.preview.limit"), Severity.Error, "A maximum of eight previews may be visible."));
 			if (focused && focusOrder == 0) focusOrder = ++_focusSequence;
 			else if (focusOrder > _focusSequence) _focusSequence = focusOrder;
 			var controller = new PreviewQualityController(previewId, focused, focusOrder);
 			_previews.Add(controller.PreviewId, controller);
 			_revision++;
-			return Result<PreviewQualityController>.Success(controller);
+			return CSharpFunctionalExtensions.Result.Success<PreviewQualityController, Diagnostic>(controller);
 		}
 
 		public bool Hide(string previewId) {

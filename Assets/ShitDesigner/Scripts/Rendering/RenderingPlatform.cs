@@ -16,16 +16,16 @@ namespace ShitDesigner.Rendering {
 	}
 
 	public static class RenderingFormatPolicy {
-		public static Result ValidateInternalFormat(ProgramDynamicRange range, IRenderingPlatformCapabilityPort capabilities) {
+		public static CSharpFunctionalExtensions.UnitResult<Diagnostic> ValidateInternalFormat(ProgramDynamicRange range, IRenderingPlatformCapabilityPort capabilities) {
 			if (capabilities == null) throw new ArgumentNullException(nameof(capabilities));
 			var format = ProgramHoldFormatPolicy.FormatFor(range);
 			if (!capabilities.IsFormatSupported(format, GraphicsFormatUsage.Render)
 				|| !capabilities.IsFormatSupported(format, GraphicsFormatUsage.Sample)
 				|| !capabilities.IsFormatSupported(format, GraphicsFormatUsage.LoadStore))
-				return Result.Failure(new Diagnostic(new DiagnosticCode("rendering.format.unsupported"), Severity.Fatal,
+				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.format.unsupported"), Severity.Fatal,
 					"The selected project color format is not supported for render, sample, and load/store usage.",
 					detail: new DiagnosticDetail(new[] { new KeyValuePair<string, string>("format", format.ToString()) })));
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 	}
 }

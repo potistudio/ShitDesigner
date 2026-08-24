@@ -56,7 +56,7 @@ namespace ShitDesigner.Media {
 	}
 
 	public interface IAssetFlashPrepareResolver {
-		Result<AssetFlashPrepareRequest> Resolve(MediaAssetId mediaAssetId);
+		CSharpFunctionalExtensions.Result<AssetFlashPrepareRequest, Diagnostic> Resolve(MediaAssetId mediaAssetId);
 	}
 
 	/// <summary>Pure rising-edge and expiry policy shared by production and
@@ -108,11 +108,11 @@ namespace ShitDesigner.Media {
 		public AssetFlashVisualNodeBinding(IAssetFlashPrepareResolver resolver, IVideoBackendFactory backends,
 			IVideoFrameAdapter frames, IVideoGraphicsCapabilities graphics = null) { _resolver = resolver; _backends = backends; _frames = frames; _graphics = graphics; }
 
-		public Result<IRuntimeNode> Create(RuntimeNodeCreateInfo node, ulong generationId) {
-			if (!IsAvailable) return Result<IRuntimeNode>.Failure(AvailabilityDiagnostic);
+		public CSharpFunctionalExtensions.Result<IRuntimeNode, Diagnostic> Create(RuntimeNodeCreateInfo node, ulong generationId) {
+			if (!IsAvailable) return CSharpFunctionalExtensions.Result.Failure<IRuntimeNode, Diagnostic>(AvailabilityDiagnostic);
 			if (node == null || node.TypeId != TypeId || generationId == 0)
-				return Result<IRuntimeNode>.Failure(Error("media.flash.node", "Asset Flash factory input does not match its binding."));
-			return Result<IRuntimeNode>.Success(new AssetFlashRuntimeNode(node, generationId, _resolver, _backends, _frames, _graphics));
+				return CSharpFunctionalExtensions.Result.Failure<IRuntimeNode, Diagnostic>(Error("media.flash.node", "Asset Flash factory input does not match its binding."));
+			return CSharpFunctionalExtensions.Result.Success<IRuntimeNode, Diagnostic>(new AssetFlashRuntimeNode(node, generationId, _resolver, _backends, _frames, _graphics));
 		}
 
 		private static Diagnostic Error(string code, string message) => new Diagnostic(new DiagnosticCode(code), Severity.Error, message, nodeTypeId: new NodeTypeId(AssetFlashContract.NodeTypeId), module: "media");
@@ -206,7 +206,7 @@ namespace ShitDesigner.Media {
 				_slots[index].Asset = asset;
 				if (!asset.HasValue) continue;
 				var resolved = _resolver.Resolve(asset.Value);
-				if (resolved.IsFailure) { _slots[index].Diagnostic = resolved.Diagnostic; context.Diagnostics.Report(resolved.Diagnostic); continue; }
+				if (resolved.IsFailure) { _slots[index].Diagnostic = resolved.Error; context.Diagnostics.Report(resolved.Error); continue; }
 				_slots[index].Request = resolved.Value;
 				if (resolved.Value.Kind == AssetFlashMediaKind.Image) PrepareImage(index, context);
 				else PrepareVideo(index, context);
@@ -237,15 +237,15 @@ namespace ShitDesigner.Media {
 
 		private void PrepareVideo(int index, NodeExecutionContext context) {
 			var selected = VideoBackendSelector.Select(_slots[index].Request.Video.Probe, _graphics);
-			if (selected.IsFailure) { _slots[index].Diagnostic = selected.Diagnostic; context.Diagnostics.Report(selected.Diagnostic); return; }
+			if (selected.IsFailure) { _slots[index].Diagnostic = selected.Error; context.Diagnostics.Report(selected.Error); return; }
 			var created = _backends.Create(NodeId, GenerationId, selected.Value);
-			if (created.IsFailure) { _slots[index].Diagnostic = created.Diagnostic; context.Diagnostics.Report(created.Diagnostic); return; }
+			if (created.IsFailure) { _slots[index].Diagnostic = created.Error; context.Diagnostics.Report(created.Error); return; }
 			var slot = _slots[index]; slot.Video = created.Value;
 			slot.Video.Completed += completion => OnVideoCompletion(index, completion);
-			var loop = slot.Video.SetLoop(false); if (loop.IsFailure) slot.Diagnostic = loop.Diagnostic;
-			var speed = slot.Video.SetSpeed(1d); if (speed.IsFailure) slot.Diagnostic = speed.Diagnostic;
+			var loop = slot.Video.SetLoop(false); if (loop.IsFailure) slot.Diagnostic = loop.Error;
+			var speed = slot.Video.SetSpeed(1d); if (speed.IsFailure) slot.Diagnostic = speed.Error;
 			var prepared = slot.Video.Prepare(slot.Request.Video);
-			if (prepared.IsFailure) { slot.Diagnostic = prepared.Diagnostic; context.Diagnostics.Report(prepared.Diagnostic); }
+			if (prepared.IsFailure) { slot.Diagnostic = prepared.Error; context.Diagnostics.Report(prepared.Error); }
 		}
 
 		private void Activate(int active, NodeExecutionContext context) {
@@ -283,7 +283,7 @@ namespace ShitDesigner.Media {
 				&& slot.PendingPlay && _lastActive == index && _demanded) {
 				slot.PendingPlay = false;
 				var played = slot.Video.Play();
-				if (played.IsFailure) slot.Diagnostic = played.Diagnostic;
+				if (played.IsFailure) slot.Diagnostic = played.Error;
 			}
 		}
 
@@ -297,13 +297,13 @@ namespace ShitDesigner.Media {
 		private void Publish(NodeExecutionContext context, NodeOutputWriter outputs, PortId imagePort, object source, VideoFrameConversionMetadata metadata) {
 			if (context.OutputSurfaces == null || !RuntimeOutputResolutionDemandAccess.TryGet(context, NodeId, imagePort, out var demand)) { State = RuntimeNodeState.Preparing; outputs.SetPreparing(imagePort, Error("media.flash.surface_missing", "Asset Flash output has no prepared surface demand.", context)); return; }
 			var surface = context.OutputSurfaces.TryGetPrepared(NodeId, imagePort, demand.Width, demand.Height, context.Snapshot.FrameNumber);
-			if (surface.IsFailure || surface.Value == null) { State = RuntimeNodeState.Faulted; outputs.SetFaulted(imagePort, surface.IsFailure ? surface.Diagnostic : Error("media.flash.surface_invalid", "Asset Flash received an invalid output surface.", context)); return; }
+			if (surface.IsFailure || surface.Value == null) { State = RuntimeNodeState.Faulted; outputs.SetFaulted(imagePort, surface.IsFailure ? surface.Error : Error("media.flash.surface_invalid", "Asset Flash received an invalid output surface.", context)); return; }
 			var frame = _frames is IVideoOutputSurfaceFrameAdapterWithConversion conversion
 				? conversion.Create(source, surface.Value, context.Snapshot.FrameNumber, metadata)
 				: _frames is IVideoOutputSurfaceFrameAdapter adapter
 					? adapter.Create(source, surface.Value, context.Snapshot.FrameNumber)
 					: _frames.Create(source, surface.Value.Width, surface.Value.Height, context.Snapshot.FrameNumber, surface.Value.LeaseId);
-			if (frame.IsFailure) { State = RuntimeNodeState.Faulted; outputs.SetFaulted(imagePort, frame.Diagnostic); return; }
+			if (frame.IsFailure) { State = RuntimeNodeState.Faulted; outputs.SetFaulted(imagePort, frame.Error); return; }
 			State = RuntimeNodeState.Ready; outputs.SetAvailable(imagePort, PortValue.FromImageFrame(frame.Value));
 		}
 
@@ -333,7 +333,7 @@ namespace ShitDesigner.Media {
 			return initial != null && initial.Value.Type == ParameterType.Float ? initial.Value.AsFloat() : fallback;
 		}
 
-		private void Report(Result result, NodeExecutionContext context) { if (result.IsFailure) context.Diagnostics.Report(result.Diagnostic); }
+		private void Report(CSharpFunctionalExtensions.UnitResult<Diagnostic> result, NodeExecutionContext context) { if (result.IsFailure) context.Diagnostics.Report(result.Error); }
 
 		private Diagnostic Error(string code, string message, NodeExecutionContext context, Exception exception = null)
 			=> new Diagnostic(new DiagnosticCode(code), Severity.Error, message, nodeId: NodeId, nodeTypeId: TypeId, generationId: GenerationId,

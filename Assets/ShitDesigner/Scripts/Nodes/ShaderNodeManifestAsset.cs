@@ -43,7 +43,7 @@ namespace ShitDesigner.Nodes {
 			return new ShaderNodeManifest(runtime, schemaVersion);
 		}
 
-		public Result ValidateManifest() {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ValidateManifest() {
 			if (schemaVersion != ShaderNodeManifest.CurrentSchemaVersion)
 				return Failure("nodes.shader_manifest_asset_schema", "Unsupported shader manifest asset schema.");
 			if (entries == null || entries.Count == 0)
@@ -57,12 +57,12 @@ namespace ShitDesigner.Nodes {
 			catch (Exception exception) {
 				return Failure("nodes.shader_manifest_asset_decode", exception.Message);
 			}
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
 		/// <summary>All shader entries carry a direct serialized Shader
 		/// reference.  This is the strip-safe runtime contract.</summary>
-		public Result ValidateShaderReferences() {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ValidateShaderReferences() {
 			var valid = ValidateManifest();
 			if (valid.IsFailure) return valid;
 			foreach (var entry in Entries) {
@@ -71,7 +71,7 @@ namespace ShitDesigner.Nodes {
 				if (entry.Passes.Count == 0 || entry.OutputPass < 0)
 					return Failure("nodes.shader_manifest_asset_pass", "A shader manifest entry has no valid output pass: " + entry.TypeId + ".");
 			}
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
 		/// <summary>Editor generators replace the complete DTO in one
@@ -84,16 +84,16 @@ namespace ShitDesigner.Nodes {
 			entries = manifest.Entries.Select(x => new ShaderNodeManifestAssetEntry(x)).ToList();
 		}
 
-		public Result SetShaderReference(string typeId, Shader shader) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SetShaderReference(string typeId, Shader shader) {
 			var entry = Find(typeId);
 			if (entry == null) return Failure("nodes.shader_manifest_asset_type", "Shader manifest entry is not present: " + typeId + ".");
 			if (shader == null) return Failure("nodes.shader_manifest_asset_shader", "A direct Shader reference is required: " + typeId + ".");
 			entry.SetShader(shader);
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
-		private static Result Failure(string code, string message)
-			=> Result.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "nodes"));
+		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message)
+			=> CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "nodes"));
 	}
 
 	[Serializable]

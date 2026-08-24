@@ -44,7 +44,7 @@ namespace ShitDesigner.Bootstrap {
 
 		/// <summary>Validates immutable startup inputs without opening devices,
 		/// creating runtime objects, or taking ownership of GPU resources.</summary>
-		public Result Preflight() {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Preflight() {
 			if (_nodeTypeCatalog == null) return PreflightFailure("bootstrap.preflight.catalog_missing", "The generated NodeTypeCatalog asset is required.");
 			if (_scene3dPrefab == null || _scene2dPrefab == null) return PreflightFailure("bootstrap.preflight.scene_missing", "Explicit 3D and 2D Scene prefabs are required.");
 			if (_shaderGenerator == null || _shaderEffect == null || _shaderBlend2 == null) return PreflightFailure("bootstrap.preflight.shader_missing", "All three builtin shader role assets are required.");
@@ -65,10 +65,10 @@ namespace ShitDesigner.Bootstrap {
 			return ShaderNodeManifestValidator.Validate(shaderManifestAsset.BuildRuntimeManifest());
 		}
 
-		public Result<IVisualBindingProvider> BuildProvider(IProjectFileSystem fileSystem, RenderTexturePool pool) {
+		public CSharpFunctionalExtensions.Result<IVisualBindingProvider, Diagnostic> BuildProvider(IProjectFileSystem fileSystem, RenderTexturePool pool) {
 			if (fileSystem == null || pool == null) return Failure("bootstrap.assets.arguments", "A file system and shared RenderTexturePool are required.");
 			var preflight = Preflight();
-			if (preflight.IsFailure) return Result<IVisualBindingProvider>.Failure(preflight.Diagnostic);
+			if (preflight.IsFailure) return CSharpFunctionalExtensions.Result.Failure<IVisualBindingProvider, Diagnostic>(preflight.Error);
 
 			var shaders = new ShaderMaterialRegistry();
 			var shaderManifestAsset = ShaderManifest;
@@ -81,7 +81,7 @@ namespace ShitDesigner.Bootstrap {
 			}) {
 				var entry = shaderManifest.Entries.Single(x => string.Equals(x.ShaderKey, pair.Key, StringComparison.Ordinal));
 				var registered = shaders.Register(new ShaderMaterialBinding(pair.Key, pair.Value, descriptor: entry.ToShaderBinding()));
-				if (registered.IsFailure) return Result<IVisualBindingProvider>.Failure(registered.Diagnostic);
+				if (registered.IsFailure) return CSharpFunctionalExtensions.Result.Failure<IVisualBindingProvider, Diagnostic>(registered.Error);
 			}
 			// Every generated ledger entry keeps a direct Shader reference in
 			// the manifest asset.  Register by TypeId as well as family key so
@@ -92,7 +92,7 @@ namespace ShitDesigner.Bootstrap {
 				if (assetEntry == null || assetEntry.Shader == null)
 					return Failure("bootstrap.assets.shader_reference_missing", "A generated shader entry is missing its direct Shader reference: " + entry.TypeId.Value + ".");
 				var registered = shaders.Register(new ShaderMaterialBinding(entry.ShaderKey, assetEntry.Shader, descriptor: entry.ToShaderBinding()));
-				if (registered.IsFailure) return Result<IVisualBindingProvider>.Failure(registered.Diagnostic);
+				if (registered.IsFailure) return CSharpFunctionalExtensions.Result.Failure<IVisualBindingProvider, Diagnostic>(registered.Error);
 			}
 
 			var context = new ProjectContext();
@@ -130,14 +130,14 @@ namespace ShitDesigner.Bootstrap {
 					context.ProjectRoot = root ?? string.Empty;
 				},
 				applicationResources: new IDisposable[] { hapBridge, conversion });
-			return Result<IVisualBindingProvider>.Success(provider);
+			return CSharpFunctionalExtensions.Result.Success<IVisualBindingProvider, Diagnostic>(provider);
 		}
 
-		private static Result<IVisualBindingProvider> Failure(string code, string message)
-			=> Result<IVisualBindingProvider>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap"));
+		private static CSharpFunctionalExtensions.Result<IVisualBindingProvider, Diagnostic> Failure(string code, string message)
+			=> CSharpFunctionalExtensions.Result.Failure<IVisualBindingProvider, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap"));
 
-		private static Result PreflightFailure(string code, string message)
-			=> Result.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap"));
+		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> PreflightFailure(string code, string message)
+			=> CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap"));
 
 		private sealed class ProjectContext {
 			public ProjectDocument Document;

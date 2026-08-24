@@ -39,9 +39,9 @@ namespace ShitDesigner.Rendering {
 			_sessionId = sessionId.Trim(); _formatPolicy = formatPolicy ?? new RuntimeOutputFormatPolicy();
 		}
 
-		public Result Prepare(FrameSnapshot snapshot) => Prepare(snapshot, null);
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Prepare(FrameSnapshot snapshot) => Prepare(snapshot, null);
 
-		public Result Prepare(FrameSnapshot snapshot, FrameEvaluationContext evaluation) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Prepare(FrameSnapshot snapshot, FrameEvaluationContext evaluation) {
 			if (_disposed) return Failure("rendering.output.disposed", "Output surface service is disposed.");
 			if (snapshot == null) return Failure("rendering.output.snapshot", "Output preparation requires a FrameSnapshot.");
 			var resolutions = evaluation != null
@@ -51,7 +51,7 @@ namespace ShitDesigner.Rendering {
 				// replacement between Phase 9 and the next preparation)
 				// must use the session's current installed plan.
 				: RuntimeOutputResolutionDemandAccess.GetVisualOutputs(_session);
-			if (resolutions.Count == 0) return Result.Success();
+			if (resolutions.Count == 0) return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 			foreach (var resolution in resolutions) {
 				if (resolution.PortId.Value != "image") continue;
 				var handle = _session.FindNode(resolution.NodeId);
@@ -92,7 +92,7 @@ namespace ShitDesigner.Rendering {
 			// signal: an acquired node lease remains valid while the node is
 			// alive and can be reused on re-open. Node deletion is collected
 			// by Finalize after this frame's presentation boundary.
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
 		public GraphicsFormat InternalFormat => _formatPolicy.DynamicRange == RuntimeDynamicRange.Hdr ? GraphicsFormat.R16G16B16A16_SFloat : GraphicsFormat.R8G8B8A8_UNorm;
@@ -107,23 +107,23 @@ namespace ShitDesigner.Rendering {
 				: GraphicsFormat.None;
 		}
 
-		public Result<IRuntimeOutputSurface> TryGetPrepared(NodeInstanceId nodeId, PortId portId, int width, int height, ulong frameNumber) {
-			if (_disposed) return Result<IRuntimeOutputSurface>.Failure(FailureDiagnostic("rendering.output.disposed", "Output surface service is disposed."));
-			if (nodeId.IsEmpty || portId.IsEmpty || frameNumber == 0 || width <= 0 || height <= 0) return Result<IRuntimeOutputSurface>.Failure(FailureDiagnostic("rendering.output.request", "Output surface request is invalid."));
-			if (!_outputs.TryGetValue(new OutputKey(nodeId, portId), out var controller)) return Result<IRuntimeOutputSurface>.Failure(FailureDiagnostic("rendering.output.not_prepared", "The requested output was not prepared in Phase 5."));
-			Result<BorrowedOutputSurface> borrowed;
+		public CSharpFunctionalExtensions.Result<IRuntimeOutputSurface, Diagnostic> TryGetPrepared(NodeInstanceId nodeId, PortId portId, int width, int height, ulong frameNumber) {
+			if (_disposed) return CSharpFunctionalExtensions.Result.Failure<IRuntimeOutputSurface, Diagnostic>(FailureDiagnostic("rendering.output.disposed", "Output surface service is disposed."));
+			if (nodeId.IsEmpty || portId.IsEmpty || frameNumber == 0 || width <= 0 || height <= 0) return CSharpFunctionalExtensions.Result.Failure<IRuntimeOutputSurface, Diagnostic>(FailureDiagnostic("rendering.output.request", "Output surface request is invalid."));
+			if (!_outputs.TryGetValue(new OutputKey(nodeId, portId), out var controller)) return CSharpFunctionalExtensions.Result.Failure<IRuntimeOutputSurface, Diagnostic>(FailureDiagnostic("rendering.output.not_prepared", "The requested output was not prepared in Phase 5."));
+			CSharpFunctionalExtensions.Result<BorrowedOutputSurface, Diagnostic> borrowed;
 			if (controller.HasCandidate && controller.CandidateLease.Descriptor.Width == width && controller.CandidateLease.Descriptor.Height == height) borrowed = controller.BorrowCandidate(frameNumber);
 			else if (controller.HasActive && controller.ActiveLease.Descriptor.Width == width && controller.ActiveLease.Descriptor.Height == height) borrowed = controller.BorrowActive(frameNumber);
-			else return Result<IRuntimeOutputSurface>.Failure(FailureDiagnostic("rendering.output.descriptor", "Prepared output dimensions do not match the propagated resolution demand."));
-			if (borrowed.IsFailure) return Result<IRuntimeOutputSurface>.Failure(borrowed.Diagnostic);
+			else return CSharpFunctionalExtensions.Result.Failure<IRuntimeOutputSurface, Diagnostic>(FailureDiagnostic("rendering.output.descriptor", "Prepared output dimensions do not match the propagated resolution demand."));
+			if (borrowed.IsFailure) return CSharpFunctionalExtensions.Result.Failure<IRuntimeOutputSurface, Diagnostic>(borrowed.Error);
 			var outputKey = new OutputKey(nodeId, portId);
-			return Result<IRuntimeOutputSurface>.Success(new RuntimeOutputSurface(outputKey, borrowed.Value, (key, lease) => {
+			return CSharpFunctionalExtensions.Result.Success<IRuntimeOutputSurface, Diagnostic>(new RuntimeOutputSurface(outputKey, borrowed.Value, (key, lease) => {
 				if (_outputs.TryGetValue(key, out var owner) && owner.HasCandidate && owner.CandidateLease.LeaseId.Value == lease)
 					_renderedCandidateLeases.Add(new RenderedCandidateKey(key, lease));
 			}));
 		}
 
-		public Result Finalize(FrameSnapshot snapshot, FrameEvaluationContext evaluation, bool frameSucceeded) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Finalize(FrameSnapshot snapshot, FrameEvaluationContext evaluation, bool frameSucceeded) {
 			if (_disposed) return Failure("rendering.output.disposed", "Output surface service is disposed.");
 			if (snapshot == null) return Failure("rendering.output.snapshot", "Output finalization requires a FrameSnapshot.");
 			foreach (var pair in _outputs) {
@@ -161,14 +161,14 @@ namespace ShitDesigner.Rendering {
 				_staleOutputKeys.Clear();
 				_lastTopologyRevision = _session.GraphTopologyRevision;
 			}
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
-		public Result Finalize(FrameSnapshot snapshot, bool frameSucceeded) => Finalize(snapshot, null, frameSucceeded);
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Finalize(FrameSnapshot snapshot, bool frameSucceeded) => Finalize(snapshot, null, frameSucceeded);
 		public void Dispose() { if (_disposed) return; _disposed = true; foreach (var output in _outputs.Values) output.Dispose(); foreach (var retiring in _retiring) retiring.Controller.Dispose(); _outputs.Clear(); _retiring.Clear(); _staleOutputKeys.Clear(); _renderedCandidateLeases.Clear(); }
 
 		private static Diagnostic FailureDiagnostic(string code, string message) => new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "rendering");
-		private static Result Failure(string code, string message) => Result.Failure(FailureDiagnostic(code, message));
+		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(FailureDiagnostic(code, message));
 
 		public readonly struct OutputKey : IEquatable<OutputKey> {
 			public NodeInstanceId NodeId { get; }
@@ -210,6 +210,6 @@ namespace ShitDesigner.Rendering {
 		public string ColorFormat => _borrowed.ColorFormat.ToString();
 		public bool IsRendered => _rendered;
 		internal RuntimeOutputSurface(RuntimeOutputSurfaceService.OutputKey outputKey, BorrowedOutputSurface borrowed, Action<RuntimeOutputSurfaceService.OutputKey, ulong> markRendered) { _outputKey = outputKey; _borrowed = borrowed; _markRendered = markRendered; }
-		public Result MarkRendered() { if (_rendered) return Result.Success(); _rendered = true; _markRendered?.Invoke(_outputKey, LeaseId); return Result.Success(); }
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> MarkRendered() { if (_rendered) return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(); _rendered = true; _markRendered?.Invoke(_outputKey, LeaseId); return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(); }
 	}
 }
