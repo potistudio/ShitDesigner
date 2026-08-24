@@ -66,7 +66,7 @@ namespace ShitDesigner.Presentation
         {
             if (document == null) throw new ArgumentNullException(nameof(document));
             // The serialized production root builds during Awake before
-            // ProductionBootstrapBehaviour supplies that same UIDocument.
+            // ApplicationHost supplies that same UIDocument.
             // Keep a stable document idempotent, while BuildOnce below still
             // detects if UIDocument replaced its visual root during attachment.
             if (!ReferenceEquals(_document, document))

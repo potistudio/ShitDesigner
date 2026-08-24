@@ -46,7 +46,7 @@ namespace ShitDesigner.Bootstrap.Editor
             AssetDatabase.SaveAssets();
 
             var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            var root = GameObject.Find("ShitDesigner Bootstrap");
+            var root = GameObject.Find("Host");
             if (root == null) throw new InvalidOperationException("Bootstrap scene root is missing.");
             var presentation = root.GetComponent<PresentationRoot>() ?? root.AddComponent<PresentationRoot>();
             var document = root.GetComponent<UIDocument>() ?? root.AddComponent<UIDocument>();
@@ -62,8 +62,8 @@ namespace ShitDesigner.Bootstrap.Editor
             presentationSerialized.FindProperty("_theme").objectReferenceValue =
                 AssetDatabase.LoadAssetAtPath<StyleSheet>(ThemePath);
             presentationSerialized.ApplyModifiedPropertiesWithoutUndo();
-            var behaviour = root.GetComponent<ProductionBootstrapBehaviour>();
-            if (behaviour == null) throw new InvalidOperationException("ProductionBootstrapBehaviour is missing.");
+            var behaviour = root.GetComponent<ApplicationHost>();
+            if (behaviour == null) throw new InvalidOperationException("ApplicationHost is missing.");
             var midiInputManager = root.GetComponent<ShitDesigner.Input.MidiInputManager>() ?? root.AddComponent<ShitDesigner.Input.MidiInputManager>();
             var assets = root.GetComponent<ProductionBootstrapAssets>();
             if (assets == null) throw new InvalidOperationException("ProductionBootstrapAssets is missing.");

@@ -137,6 +137,7 @@ Standalone操作画面とユーザー操作の翻訳を所有する。
 アプリケーションの組み立てとビルド時処理を所有する。
 
 - 起動用Composition Root
+- Preflight、Compose、Handshake、Activateによる起動状態遷移
 - Unity PlayerLoopからFrameCoordinatorへの呼び出し
 - アプリケーション終了時の破棄順序
 - NodeTypeCatalog ScriptableObjectのビルド前生成

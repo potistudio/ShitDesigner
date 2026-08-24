@@ -533,6 +533,8 @@ namespace ShitDesigner.Bootstrap
         private int _lastDisplayCount;
         private int _lastRequestedDisplayIndex = int.MinValue;
         private string _lastDisplayDiagnostic;
+        private bool _displayHandshakeAttempted;
+        private CapabilityStatus _displayHandshakeStatus;
         private bool _disposed;
 
         public ulong BindingGeneration => _bindingGeneration;
@@ -554,27 +556,53 @@ namespace ShitDesigner.Bootstrap
             try { _displayTransform = new DisplayTransformPass(_displayTransformShader); }
             catch { _displayTransform = null; }
             EnsureDisplayLease(1);
+            _displayHandshakeAttempted = false;
+            unchecked { _bindingGeneration++; }
+            if (_bindingGeneration == 0) _bindingGeneration = 1;
+            PreviewDisplayBlitCount = 0;
+        }
+
+        /// <summary>Discovers and activates the selected Unity display. A
+        /// missing external display is a supported degraded mode and keeps the
+        /// in-application Program monitor available.</summary>
+        public Result<CapabilityStatus> Handshake()
+        {
+            if (_disposed)
+                return Result<CapabilityStatus>.Failure(new Diagnostic(new DiagnosticCode("bootstrap.handshake.display_disposed"), Severity.Error, "Program display output is disposed.", module: "bootstrap"));
+            if (_session == null || _program == null)
+                return Result<CapabilityStatus>.Failure(new Diagnostic(new DiagnosticCode("bootstrap.handshake.display_unbound"), Severity.Error, "Program display output has no runtime session.", module: "bootstrap"));
+            if (_displayHandshakeAttempted) return Result<CapabilityStatus>.Success(_displayHandshakeStatus);
+            _displayHandshakeAttempted = true;
             var unityDisplayIndex = ProgramDisplayPolicy.ToUnityIndex(_session.Document.Settings.ProgramDisplay);
             try
             {
                 _programPresenter = new ProgramDisplayPresenter(_program, new UnityProgramDisplayPort(), unityDisplayIndex);
                 _lastDisplayCount = _programPresenter.DisplayCount;
                 _lastRequestedDisplayIndex = _programPresenter.Selection.RequestedDisplay;
+                if (_programPresenter.Selection.UsesProgramMonitor)
+                {
+                    var diagnostic = new Diagnostic(new DiagnosticCode("rendering.display.external_unavailable"), Severity.Warning,
+                        "The requested external Display is unavailable; the Program monitor is active.", module: "rendering");
+                    ReportDisplayDiagnostic(diagnostic);
+                    _displayHandshakeStatus = CapabilityStatus.Unavailable("display", diagnostic);
+                }
+                else _displayHandshakeStatus = CapabilityStatus.Ready("display");
             }
             catch (Exception exception)
             {
                 _programPresenter = null;
-                ReportDisplayDiagnostic(new Diagnostic(new DiagnosticCode("rendering.display.bind_failed"), Severity.Error,
-                    "The Program external Display could not be activated; the Program monitor remains available.", module: "rendering", exception: DiagnosticExceptionInfo.FromException(exception)));
+                var diagnostic = new Diagnostic(new DiagnosticCode("rendering.display.bind_failed"), Severity.Warning,
+                    "The Program external Display could not be activated; the Program monitor remains available.", module: "rendering", exception: DiagnosticExceptionInfo.FromException(exception));
+                ReportDisplayDiagnostic(diagnostic);
+                _displayHandshakeStatus = CapabilityStatus.Unavailable("display", diagnostic);
             }
-            unchecked { _bindingGeneration++; }
-            if (_bindingGeneration == 0) _bindingGeneration = 1;
-            PreviewDisplayBlitCount = 0;
+            return Result<CapabilityStatus>.Success(_displayHandshakeStatus);
         }
 
         internal void Sync(ulong frameNumber)
         {
             if (_disposed || _session == null || _program == null) return;
+            if (!_displayHandshakeAttempted) Handshake();
             _lastFrame = Math.Max(1UL, frameNumber);
             var result = _session.LastProgramResult;
             if (result.IsAvailable && result.HasValue && result.Value.IsImageFrame)
@@ -721,6 +749,8 @@ namespace ShitDesigner.Bootstrap
             _programPresenter = null;
             _lastDisplayCount = 0;
             _lastRequestedDisplayIndex = int.MinValue;
+            _displayHandshakeAttempted = false;
+            _displayHandshakeStatus = null;
             PreviewDisplayBlitCount = 0;
             _projectPreviewIds.Clear();
             _removedPreviewSurfaceIds.Clear();
@@ -921,6 +951,13 @@ namespace ShitDesigner.Bootstrap
         void Present(ApplicationFrameResult frame);
     }
 
+    /// <summary>Optional external-device boundary. Composition creates the
+    /// service; startup performs device discovery and connection explicitly.</summary>
+    public interface IProductionHandshake
+    {
+        Result<CapabilityStatus> Handshake();
+    }
+
     public sealed class NullApplicationInputPoller : IApplicationInputPoller
     {
         public void Poll() { }
@@ -944,14 +981,18 @@ namespace ShitDesigner.Bootstrap
 
     /// <summary>Production desktop input boundary. MIDI callbacks are drained
     /// before the Application frame and the native device is owned here.</summary>
-    public sealed class UnityProductionInputPoller : IApplicationInputPoller, IDisposable
+    public sealed class UnityProductionInputPoller : IApplicationInputPoller, IProductionHandshake, IDisposable
     {
 #if ENABLE_INPUT_SYSTEM
         private readonly UnityKeyboardAdapter _keyboard;
 #endif
-        private readonly IMidiInputSource _midiSource;
-        private readonly MidiInputRouter _midi;
+        private readonly ProjectApplication _application;
+        private readonly IMidiInputSource _injectedMidiSource;
+        private IMidiInputSource _midiSource;
+        private MidiInputRouter _midi;
         private readonly MidiInputManager _midiManager;
+        private bool _handshakeComplete;
+        private CapabilityStatus _handshakeStatus;
         private bool _disposed;
 
         public string MidiDeviceName => _midiManager?.DeviceName ?? _midiSource?.DeviceName ?? string.Empty;
@@ -959,17 +1000,33 @@ namespace ShitDesigner.Bootstrap
         public UnityProductionInputPoller(ProjectApplication application, IMidiInputSource midiSource = null, MidiInputManager midiManager = null)
         {
             if (application == null) throw new ArgumentNullException(nameof(application));
+            _application = application;
 #if ENABLE_INPUT_SYSTEM
             _keyboard = new UnityKeyboardAdapter(application);
 #endif
-            if (midiManager != null)
+            _midiManager = midiManager;
+            _injectedMidiSource = midiSource;
+        }
+
+        public Result<CapabilityStatus> Handshake()
+        {
+            if (_disposed)
+                return Result<CapabilityStatus>.Failure(new Diagnostic(new DiagnosticCode("bootstrap.handshake.input_disposed"), Severity.Error, "Production input is disposed.", module: "bootstrap"));
+            if (_handshakeComplete) return Result<CapabilityStatus>.Success(_handshakeStatus);
+            _handshakeComplete = true;
+            if (_midiManager != null)
             {
-                _midiManager = midiManager;
-                _midiManager.Configure(application, application, midiSource);
+                _midiManager.Configure(_application, _application, _injectedMidiSource);
+                _handshakeStatus = _midiManager.IsOpen
+                    ? CapabilityStatus.Ready("midi")
+                    : string.IsNullOrWhiteSpace(_midiManager.LastError)
+                        ? CapabilityStatus.Deferred("midi")
+                        : MidiUnavailable(_midiManager.LastError);
+                return Result<CapabilityStatus>.Success(_handshakeStatus);
             }
-            else if (midiSource != null)
+            if (_injectedMidiSource != null)
             {
-                _midiSource = midiSource;
+                _midiSource = _injectedMidiSource;
             }
             else
             {
@@ -984,12 +1041,17 @@ namespace ShitDesigner.Bootstrap
                 }
                 catch (Exception exception) { Debug.LogWarning("MIDI input discovery failed: " + exception.Message); }
             }
-            if (_midiSource != null) _midi = new MidiInputRouter(application, _midiSource);
+            if (_midiSource != null) _midi = new MidiInputRouter(_application, _midiSource);
+            _handshakeStatus = _midiSource == null
+                ? MidiUnavailable("No MIDI input device is available.")
+                : CapabilityStatus.Ready("midi");
+            return Result<CapabilityStatus>.Success(_handshakeStatus);
         }
 
         public void Poll()
         {
             if (_disposed) return;
+            if (!_handshakeComplete) Handshake();
 #if ENABLE_INPUT_SYSTEM
             _keyboard.Poll();
 #endif
@@ -1001,8 +1063,21 @@ namespace ShitDesigner.Bootstrap
         {
             if (_disposed) return;
             _disposed = true;
-            if (_midiManager != null) _midiManager.Shutdown();
-            else _midiSource?.Dispose();
+            if (_handshakeComplete)
+            {
+                if (_midiManager != null) _midiManager.Shutdown();
+                else _midiSource?.Dispose();
+            }
+            _midi = null;
+            _midiSource = null;
+            _handshakeStatus = null;
+        }
+
+        private static CapabilityStatus MidiUnavailable(string message)
+        {
+            var diagnostic = new Diagnostic(new DiagnosticCode("input.midi.unavailable"), Severity.Warning,
+                string.IsNullOrWhiteSpace(message) ? "MIDI input is unavailable." : message, module: "input");
+            return CapabilityStatus.Unavailable("midi", diagnostic);
         }
     }
 
@@ -1495,6 +1570,7 @@ namespace ShitDesigner.Bootstrap
         public IPlatformFileInteractionAdapter PlatformFiles { get; }
         public IApplicationInputPoller Input { get; }
         public ApplicationLoopDriverCore Loop { get; }
+        public HandshakeReport LastHandshakeReport { get; private set; }
         private readonly IDisposable _providerLifetime;
         private readonly IDisposable _platformFilesLifetime;
         private bool _disposed;
@@ -1671,6 +1747,32 @@ namespace ShitDesigner.Bootstrap
                 (provider as IDisposable)?.Dispose();
                 return Failure("bootstrap.root.create_failed", "Production composition root could not be created.", exception);
             }
+        }
+
+        /// <summary>Connects optional external devices after the application
+        /// and its first runtime session have been composed.</summary>
+        public Result<HandshakeReport> Handshake()
+        {
+            if (_disposed)
+                return Result<HandshakeReport>.Failure(new Diagnostic(new DiagnosticCode("bootstrap.handshake.composition_disposed"), Severity.Error, "Production composition is disposed.", module: "bootstrap"));
+            var midi = CapabilityStatus.Deferred("midi");
+            if (Input is IProductionHandshake inputHandshake)
+            {
+                var input = inputHandshake.Handshake();
+                if (input.IsFailure) return Result<HandshakeReport>.Failure(input.Diagnostic);
+                midi = input.Value;
+            }
+            // A project-less host can still use keyboard/MIDI input. Display
+            // activation waits until a runtime session binds Program output.
+            var display = CapabilityStatus.Deferred("display");
+            if (RuntimeFactory.CurrentComposition != null)
+            {
+                var output = OutputSurfaces.Handshake();
+                if (output.IsFailure) return Result<HandshakeReport>.Failure(output.Diagnostic);
+                display = output.Value;
+            }
+            LastHandshakeReport = new HandshakeReport(midi, display);
+            return Result<HandshakeReport>.Success(LastHandshakeReport);
         }
 
         public void Dispose()

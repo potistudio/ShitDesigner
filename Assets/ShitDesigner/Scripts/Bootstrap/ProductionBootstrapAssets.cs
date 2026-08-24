@@ -44,27 +44,39 @@ namespace ShitDesigner.Bootstrap
         public ShaderNodeManifestAsset ShaderManifest => _shaderManifest != null ? _shaderManifest : _nodeTypeCatalog?.ShaderManifest;
         public Shader DisplayTransformShader => _displayTransformShader;
 
+        /// <summary>Validates immutable startup inputs without opening devices,
+        /// creating runtime objects, or taking ownership of GPU resources.</summary>
+        public Result Preflight()
+        {
+            if (_nodeTypeCatalog == null) return PreflightFailure("bootstrap.preflight.catalog_missing", "The generated NodeTypeCatalog asset is required.");
+            if (_scene3dPrefab == null || _scene2dPrefab == null) return PreflightFailure("bootstrap.preflight.scene_missing", "Explicit 3D and 2D Scene prefabs are required.");
+            if (_shaderGenerator == null || _shaderEffect == null || _shaderBlend2 == null) return PreflightFailure("bootstrap.preflight.shader_missing", "All three builtin shader role assets are required.");
+            if (_displayTransformShader == null) return PreflightFailure("bootstrap.preflight.display_transform_missing", "The explicit DisplayTransform shader is required.");
+            if (_videoConversionMaterial == null) return PreflightFailure("bootstrap.preflight.video_material_missing", "The explicit VideoToLinearPremultiplied material is required.");
+            if (_hapPremultiplyMaterial == null || _hapYCoCgMaterial == null || _hapAlphaMaterial == null || _hapDecodeShader == null)
+                return PreflightFailure("bootstrap.preflight.hap_missing", "Explicit Hap conversion materials and compute shader are required.");
+
+            var catalogManifest = _nodeTypeCatalog.ValidateManifest();
+            if (catalogManifest.IsFailure) return catalogManifest;
+            var catalogReferences = _nodeTypeCatalog.ValidateAssetReferences(_scene3dPrefab, _scene2dPrefab, _shaderGenerator, _shaderEffect, _shaderBlend2);
+            if (catalogReferences.IsFailure) return catalogReferences;
+
+            var shaderManifestAsset = ShaderManifest;
+            if (shaderManifestAsset == null) return PreflightFailure("bootstrap.preflight.shader_manifest_missing", "The generated ShaderNodeManifest asset is required.");
+            var shaderReferences = shaderManifestAsset.ValidateShaderReferences();
+            if (shaderReferences.IsFailure) return shaderReferences;
+            return ShaderNodeManifestValidator.Validate(shaderManifestAsset.BuildRuntimeManifest());
+        }
+
         public Result<IProductionVisualBindingProvider> BuildProvider(IProjectFileSystem fileSystem, RenderTexturePool pool)
         {
             if (fileSystem == null || pool == null) return Failure("bootstrap.assets.arguments", "A file system and shared RenderTexturePool are required.");
-            if (_nodeTypeCatalog == null) return Failure("bootstrap.assets.catalog_missing", "The generated NodeTypeCatalog asset is required.");
-            if (_scene3dPrefab == null || _scene2dPrefab == null) return Failure("bootstrap.assets.scene_missing", "Explicit 3D and 2D Scene prefabs are required.");
-            if (_shaderGenerator == null || _shaderEffect == null || _shaderBlend2 == null) return Failure("bootstrap.assets.shader_missing", "All three builtin shader role assets are required.");
-            if (_displayTransformShader == null) return Failure("bootstrap.assets.display_transform_missing", "The explicit DisplayTransform shader is required.");
-            var catalogManifest = _nodeTypeCatalog.ValidateManifest();
-            if (catalogManifest.IsFailure) return Result<IProductionVisualBindingProvider>.Failure(catalogManifest.Diagnostic);
-            var catalogReferences = _nodeTypeCatalog.ValidateAssetReferences(_scene3dPrefab, _scene2dPrefab, _shaderGenerator, _shaderEffect, _shaderBlend2);
-            if (catalogReferences.IsFailure) return Result<IProductionVisualBindingProvider>.Failure(catalogReferences.Diagnostic);
-            if (_videoConversionMaterial == null) return Failure("bootstrap.assets.video_material_missing", "The explicit VideoToLinearPremultiplied material is required.");
+            var preflight = Preflight();
+            if (preflight.IsFailure) return Result<IProductionVisualBindingProvider>.Failure(preflight.Diagnostic);
 
             var shaders = new ShaderMaterialRegistry();
             var shaderManifestAsset = ShaderManifest;
-            if (shaderManifestAsset == null) return Failure("bootstrap.assets.shader_manifest_missing", "The generated ShaderNodeManifest asset is required.");
-            var shaderAssetValidation = shaderManifestAsset.ValidateShaderReferences();
-            if (shaderAssetValidation.IsFailure) return Result<IProductionVisualBindingProvider>.Failure(shaderAssetValidation.Diagnostic);
             var shaderManifest = shaderManifestAsset.BuildRuntimeManifest();
-            var shaderManifestValidation = ShaderNodeManifestValidator.Validate(shaderManifest);
-            if (shaderManifestValidation.IsFailure) return Result<IProductionVisualBindingProvider>.Failure(shaderManifestValidation.Diagnostic);
             foreach (var pair in new[]
             {
                 new System.Collections.Generic.KeyValuePair<string, Shader>("builtin.shader.generator", _shaderGenerator),
@@ -131,6 +143,9 @@ namespace ShitDesigner.Bootstrap
 
         private static Result<IProductionVisualBindingProvider> Failure(string code, string message)
             => Result<IProductionVisualBindingProvider>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap"));
+
+        private static Result PreflightFailure(string code, string message)
+            => Result.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap"));
 
         private sealed class ProductionProjectContext
         {
