@@ -1,5 +1,7 @@
 {
     "recommendations": [
+      "ms-dotnettools.csharp",
+      "newyellow.unity-shader-formatter",
       "visualstudiotoolsforunity.vstuc"
     ]
 }

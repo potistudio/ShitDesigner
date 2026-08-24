@@ -11,26 +11,20 @@ using UnityEngine.UIElements;
 using Application = UnityEngine.Application;
 using Object = UnityEngine.Object;
 
-namespace ShitDesigner.Presentation.Tests.PlayMode
-{
-	public sealed class PresentationUiPlayModeTests
-	{
-		private sealed class EmptyReadPort : IPresentationReadPort
-		{
+namespace ShitDesigner.Presentation.Tests.PlayMode {
+	public sealed class PresentationUiPlayModeTests {
+		private sealed class EmptyReadPort : IPresentationReadPort {
 			private readonly Guid _session = Guid.NewGuid();
 
-			public PresentationEnvelope<PresentationReadModel> ReadLatest(bool fullSnapshot)
-			{
+			public PresentationEnvelope<PresentationReadModel> ReadLatest(bool fullSnapshot) {
 				return new PresentationEnvelope<PresentationReadModel>(_session, 1L, 1uL, 1L, 1L, isFullSnapshot: true, new PresentationReadModel());
 			}
 		}
 
-		private sealed class CatalogReadPort : IPresentationReadPort
-		{
+		private sealed class CatalogReadPort : IPresentationReadPort {
 			private readonly Guid _session = Guid.NewGuid();
 
-			public PresentationEnvelope<PresentationReadModel> ReadLatest(bool fullSnapshot)
-			{
+			public PresentationEnvelope<PresentationReadModel> ReadLatest(bool fullSnapshot) {
 				return new PresentationEnvelope<PresentationReadModel>(_session, 1L, 1uL, 1L, 1L, isFullSnapshot: true, new PresentationReadModel(null, null, null, null, null, null, null, null, new NodeCatalogItem[2]
 				{
 					new NodeCatalogItem("fx.blur", "Blur", isAvailable: true, null, userAddable: true, "FX", isFavorite: true, isRecent: true),
@@ -39,17 +33,14 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 			}
 		}
 
-		private sealed class RecentReadPort : IPresentationReadPort
-		{
+		private sealed class RecentReadPort : IPresentationReadPort {
 			private readonly Guid _session = Guid.NewGuid();
 
-			public PresentationEnvelope<PresentationReadModel> ReadLatest(bool fullSnapshot)
-			{
+			public PresentationEnvelope<PresentationReadModel> ReadLatest(bool fullSnapshot) {
 				return new PresentationEnvelope<PresentationReadModel>(_session, 1L, 1uL, 1L, 1L, isFullSnapshot: true, new PresentationReadModel(new ShellReadModel(PresentationProjectState.Ready, "Current", projectDirty: false, recovered: false, canUndo: false, canRedo: false, null, 0uL), null, null, null, null, null, null, null, null, null, null, null, null, ExistingRoots()));
 			}
 
-			private static string[] ExistingRoots()
-			{
+			private static string[] ExistingRoots() {
 				string projectRoot = Path.GetDirectoryName(UnityEngine.Application.dataPath);
 				return new string[12]
 				{
@@ -59,51 +50,43 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 			}
 		}
 
-		private sealed class UiScaleReadPort : IPresentationReadPort
-		{
+		private sealed class UiScaleReadPort : IPresentationReadPort {
 			private readonly Guid _session = Guid.NewGuid();
 
 			public float Scale { get; set; } = 1f;
 
 			public long Version { get; private set; }
 
-			public void Set(float scale, long version)
-			{
+			public void Set(float scale, long version) {
 				Scale = scale;
 				Version = version;
 			}
 
-			public PresentationEnvelope<PresentationReadModel> ReadLatest(bool fullSnapshot)
-			{
+			public PresentationEnvelope<PresentationReadModel> ReadLatest(bool fullSnapshot) {
 				return new PresentationEnvelope<PresentationReadModel>(_session, Version, (ulong)Version, Version, Version, isFullSnapshot: true, new PresentationReadModel(null, new WorkspaceReadModel("Edit", layoutDirty: false, null, null, Scale)));
 			}
 		}
 
-		private sealed class RecordingDisplayIdentifyPort : IDisplayIdentifyPort
-		{
+		private sealed class RecordingDisplayIdentifyPort : IDisplayIdentifyPort {
 			public int DisplayCount { get; }
 
 			public List<int> Requested { get; } = new List<int>();
 
-			public RecordingDisplayIdentifyPort(int displayCount)
-			{
+			public RecordingDisplayIdentifyPort(int displayCount) {
 				DisplayCount = displayCount;
 			}
 
-			public bool TryIdentify(int displayNumber, out string error)
-			{
+			public bool TryIdentify(int displayNumber, out string error) {
 				Requested.Add(displayNumber);
 				error = string.Empty;
 				return displayNumber <= DisplayCount;
 			}
 		}
 
-		private sealed class GraphInteractionReadPort : IPresentationReadPort
-		{
+		private sealed class GraphInteractionReadPort : IPresentationReadPort {
 			private readonly Guid _session = Guid.NewGuid();
 
-			public PresentationEnvelope<PresentationReadModel> ReadLatest(bool fullSnapshot)
-			{
+			public PresentationEnvelope<PresentationReadModel> ReadLatest(bool fullSnapshot) {
 				GraphReadModel graph = new GraphReadModel(new GraphNodeReadModel[4]
 				{
 					new GraphNodeReadModel("source", "source", "Source", 0f, 0f),
@@ -124,70 +107,58 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 			}
 		}
 
-		private sealed class DirtyReadPort : IPresentationReadPort
-		{
+		private sealed class DirtyReadPort : IPresentationReadPort {
 			private readonly Guid _session = Guid.NewGuid();
 
-			public PresentationEnvelope<PresentationReadModel> ReadLatest(bool fullSnapshot)
-			{
+			public PresentationEnvelope<PresentationReadModel> ReadLatest(bool fullSnapshot) {
 				return new PresentationEnvelope<PresentationReadModel>(_session, 1L, 1uL, 1L, 1L, isFullSnapshot: true, new PresentationReadModel(new ShellReadModel(PresentationProjectState.Ready, "Dirty", projectDirty: true, recovered: false, canUndo: false, canRedo: false, "Unsaved", 0uL)));
 			}
 		}
 
-		private sealed class RecordingCommandPort : IPresentationCommandPort
-		{
+		private sealed class RecordingCommandPort : IPresentationCommandPort {
 			private readonly List<PresentationCommandRequest> _requests;
 
-			public RecordingCommandPort(List<PresentationCommandRequest> requests)
-			{
+			public RecordingCommandPort(List<PresentationCommandRequest> requests) {
 				_requests = requests;
 			}
 
-			public CommandReadModel Submit(PresentationCommandRequest request)
-			{
+			public CommandReadModel Submit(PresentationCommandRequest request) {
 				_requests.Add(request);
 				return new CommandReadModel(request.CommandRequestId, request.InteractionId, PresentationCommandStatus.Accepted);
 			}
 		}
 
-		private sealed class RecordingPlatformFiles : IPlatformFileInteractionAdapter
-		{
+		private sealed class RecordingPlatformFiles : IPlatformFileInteractionAdapter {
 			private readonly IReadOnlyList<string> _paths;
 
 			public PlatformPathRequest LastRequest { get; private set; }
 
-			public RecordingPlatformFiles(params string[] paths)
-			{
+			public RecordingPlatformFiles(params string[] paths) {
 				_paths = paths;
 			}
 
-			public void PickPath(PlatformPathRequest request, Action<PlatformPathResult> completed)
-			{
+			public void PickPath(PlatformPathRequest request, Action<PlatformPathResult> completed) {
 				LastRequest = request;
 				completed?.Invoke(new PlatformPathResult(request.RequestId, request.ProjectSessionId, succeeded: true, _paths));
 			}
 
-			public void Cancel(Guid requestId)
-			{
+			public void Cancel(Guid requestId) {
 			}
 		}
 
-		private sealed class RecordingProgramPresenter : IProgramPresenterPort
-		{
+		private sealed class RecordingProgramPresenter : IProgramPresenterPort {
 			private readonly List<bool> _changes = new List<bool>();
 
 			public IReadOnlyList<bool> VisibilityChanges => _changes;
 
-			public void SetVisible(bool visible)
-			{
+			public void SetVisible(bool visible) {
 				_changes.Add(visible);
 			}
 		}
 
 		[UnityTest]
 		[Category("GUI_VisualTree")]
-		public IEnumerator PresentationRoot_LoadsThemeIntoRuntimeDocument()
-		{
+		public IEnumerator PresentationRoot_LoadsThemeIntoRuntimeDocument() {
 			GameObject gameObject = new GameObject("PresentationRootThemeTest");
 			PanelSettings panel = ScriptableObject.CreateInstance<PanelSettings>();
 			panel.referenceResolution = new Vector2Int(1280, 720);
@@ -205,8 +176,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 		[UnityTest]
 		[Category("GUI_VisualTree")]
 		[Category("GUI_UiScale")]
-		public IEnumerator PresentationRoot_AppliesAllPersistedUiScalesWithoutAccumulationOrInputOverlap()
-		{
+		public IEnumerator PresentationRoot_AppliesAllPersistedUiScalesWithoutAccumulationOrInputOverlap() {
 			GameObject gameObject = new GameObject("PresentationRootUiScaleTest");
 			PanelSettings panel = ScriptableObject.CreateInstance<PanelSettings>();
 			panel.referenceResolution = new Vector2Int(1280, 720);
@@ -223,8 +193,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 			Click(UQueryExtensions.Q<Button>(presentation.RootVisualElement, "top-settings", (string)null));
 			yield return null;
 			float[] array = new float[4] { 1f, 1.25f, 1.5f, 1.25f };
-			foreach (float scale in array)
-			{
+			foreach (float scale in array) {
 				ApplyScale(read, coordinator, scale, read.Version + 1);
 				yield return null;
 				Assert.That<float>(panel.scale, (IResolveConstraint)(object)Is.EqualTo((object)(0.8f * scale)).Within((object)0.0001f), "Panel scale must use the immutable base scale, not the previous application.", Array.Empty<object>());
@@ -238,10 +207,8 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 
 		[UnityTest]
 		[Category("GUI_VisualTree")]
-		public IEnumerator RuntimeComposition_ContainsNamedSurfacesAndPanels()
-		{
-			VisualElement host = new VisualElement
-			{
+		public IEnumerator RuntimeComposition_ContainsNamedSurfacesAndPanels() {
+			VisualElement host = new VisualElement {
 				name = "test-host"
 			};
 			PresentationUiComposition.ComposeWorkspace(host, null);
@@ -257,8 +224,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 
 		[UnityTest]
 		[Category("GUI_VisualInteraction")]
-		public IEnumerator CommandPalette_PrimaryKBuildsButtonsAndRoutesSelection()
-		{
+		public IEnumerator CommandPalette_PrimaryKBuildsButtonsAndRoutesSelection() {
 			GameObject gameObject = new GameObject("CommandPaletteHost");
 			PanelSettings panel = ScriptableObject.CreateInstance<PanelSettings>();
 			panel.referenceResolution = new Vector2Int(1280, 720);
@@ -284,8 +250,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 
 		[UnityTest]
 		[Category("GUI_DiagnosticsProject")]
-		public IEnumerator ProjectOpenRecentUsesReadModelMaximumTenAndRoutesIndex()
-		{
+		public IEnumerator ProjectOpenRecentUsesReadModelMaximumTenAndRoutesIndex() {
 			GameObject gameObject = new GameObject("RecentProjectsHost");
 			PanelSettings panel = ScriptableObject.CreateInstance<PanelSettings>();
 			panel.referenceResolution = new Vector2Int(1280, 720);
@@ -308,8 +273,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 
 		[UnityTest]
 		[Category("GUI_OutputSurface")]
-		public IEnumerator IdentifyDisplaysUsesDisplayPortAndRendersTransientNumbersOutsideProgramImage()
-		{
+		public IEnumerator IdentifyDisplaysUsesDisplayPortAndRendersTransientNumbersOutsideProgramImage() {
 			GameObject gameObject = new GameObject("DisplayIdentifyHost");
 			PanelSettings panel = ScriptableObject.CreateInstance<PanelSettings>();
 			panel.referenceResolution = new Vector2Int(1280, 720);
@@ -333,8 +297,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 
 		[UnityTest]
 		[Category("GUI_VisualTree")]
-		public IEnumerator RuntimeComposition_ProgramSurfaceHasNoOverlayChild()
-		{
+		public IEnumerator RuntimeComposition_ProgramSurfaceHasNoOverlayChild() {
 			VisualElement host = new VisualElement();
 			PresentationUiComposition.ComposeWorkspace(host, null);
 			yield return null;
@@ -345,8 +308,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 
 		[UnityTest]
 		[Category("GUI_OutputSurface")]
-		public IEnumerator RuntimeComposition_ProgramDisplaySelectorFollowsReadModelWithoutSubmitting()
-		{
+		public IEnumerator RuntimeComposition_ProgramDisplaySelectorFollowsReadModelWithoutSubmitting() {
 			GameObject gameObject = new GameObject("ProgramDisplayReadModelHost");
 			PanelSettings panel = ScriptableObject.CreateInstance<PanelSettings>();
 			panel.referenceResolution = new Vector2Int(1280, 720);
@@ -366,8 +328,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 
 		[UnityTest]
 		[Category("GUI_OutputSurface")]
-		public IEnumerator RuntimeComposition_BindsAndClearsProgramAndPreviewTextures()
-		{
+		public IEnumerator RuntimeComposition_BindsAndClearsProgramAndPreviewTextures() {
 			GameObject gameObject = new GameObject("OutputSurfaceHost");
 			PanelSettings panel = ScriptableObject.CreateInstance<PanelSettings>();
 			panel.referenceResolution = new Vector2Int(1280, 720);
@@ -423,8 +384,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 
 		[UnityTest]
 		[Category("GUI_OutputSurface")]
-		public IEnumerator RuntimeComposition_DynamicOutputUpdatesWithoutReplacingPreviewInteractionTree()
-		{
+		public IEnumerator RuntimeComposition_DynamicOutputUpdatesWithoutReplacingPreviewInteractionTree() {
 			GameObject gameObject = new GameObject("DynamicOutputHost");
 			PanelSettings panel = ScriptableObject.CreateInstance<PanelSettings>();
 			panel.referenceResolution = new Vector2Int(1280, 720);
@@ -466,8 +426,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 
 		[UnityTest]
 		[Category("GUI_DiagnosticsProject")]
-		public IEnumerator RuntimeComposition_DynamicDiagnosticsKeepsElementAndUsesLatestDetail()
-		{
+		public IEnumerator RuntimeComposition_DynamicDiagnosticsKeepsElementAndUsesLatestDetail() {
 			GameObject gameObject = new GameObject("DynamicDiagnosticsHost");
 			PanelSettings panel = ScriptableObject.CreateInstance<PanelSettings>();
 			UIDocument document = gameObject.AddComponent<UIDocument>();
@@ -495,8 +454,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 
 		[UnityTest]
 		[Category("GUI_Parameters")]
-		public IEnumerator RuntimeComposition_DynamicParameterValuesUseNodeAndParameterIdentity()
-		{
+		public IEnumerator RuntimeComposition_DynamicParameterValuesUseNodeAndParameterIdentity() {
 			GameObject gameObject = new GameObject("DynamicParameterHost");
 			PanelSettings panel = ScriptableObject.CreateInstance<PanelSettings>();
 			UIDocument document = gameObject.AddComponent<UIDocument>();
@@ -522,8 +480,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 			Assert.That<string>(((BaseField<string>)(object)UQueryExtensions.Q<TextField>(nodeARow, "parameter-row-effective-gain", (string)null)).value, (IResolveConstraint)(object)Is.EqualTo((object)"3"));
 			Assert.That<string>(((BaseField<string>)(object)UQueryExtensions.Q<TextField>(nodeBRow, "parameter-row-effective-gain", (string)null)).value, (IResolveConstraint)(object)Is.EqualTo((object)"4"));
 			VisualElement stableRow = nodeARow;
-			for (int iteration = 0; iteration < 120; iteration++)
-			{
+			for (int iteration = 0; iteration < 120; iteration++) {
 				Assert.That<bool>(PresentationUiComposition.ApplyDynamicReadModel(root, new PresentationReadModel(null, null, null, updated)), (IResolveConstraint)(object)Is.True);
 			}
 			Assert.That<VisualElement>(rows.Single((VisualElement row) => string.Equals(row.userData as string, "node-a:gain", StringComparison.Ordinal)), (IResolveConstraint)(object)Is.SameAs((object)stableRow));
@@ -538,8 +495,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 
 		[UnityTest]
 		[Category("GUI_Parameters")]
-		public IEnumerator RuntimeComposition_ParameterCatalogBuildsTypedEditorsAndInlineEffectiveValues()
-		{
+		public IEnumerator RuntimeComposition_ParameterCatalogBuildsTypedEditorsAndInlineEffectiveValues() {
 			GameObject gameObject = new GameObject("TypedParameterHost");
 			PanelSettings panel = ScriptableObject.CreateInstance<PanelSettings>();
 			panel.referenceResolution = new Vector2Int(1280, 720);
@@ -584,8 +540,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 
 		[UnityTest]
 		[Category("GUI_MediaImport")]
-		public IEnumerator RuntimeComposition_MediaPickerRoutesMultiFileBatchAndProgress()
-		{
+		public IEnumerator RuntimeComposition_MediaPickerRoutesMultiFileBatchAndProgress() {
 			GameObject gameObject = new GameObject("MediaImportHost");
 			PanelSettings panel = ScriptableObject.CreateInstance<PanelSettings>();
 			panel.referenceResolution = new Vector2Int(1280, 720);
@@ -612,8 +567,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 
 		[UnityTest]
 		[Category("GUI_OutputSurface")]
-		public IEnumerator RuntimeComposition_ProgramCloseOnlyHidesPresenterAndKeepsSurfaceRead()
-		{
+		public IEnumerator RuntimeComposition_ProgramCloseOnlyHidesPresenterAndKeepsSurfaceRead() {
 			GameObject gameObject = new GameObject("ProgramPresenterHost");
 			PanelSettings panel = ScriptableObject.CreateInstance<PanelSettings>();
 			panel.referenceResolution = new Vector2Int(1280, 720);
@@ -636,8 +590,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 
 		[UnityTest]
 		[Category("GUI_GraphInteraction")]
-		public IEnumerator GraphContextSearch_UsesCatalogPositionAndSessionToggles()
-		{
+		public IEnumerator GraphContextSearch_UsesCatalogPositionAndSessionToggles() {
 			GameObject gameObject = new GameObject("GraphSearchHost");
 			PanelSettings panel = ScriptableObject.CreateInstance<PanelSettings>();
 			panel.referenceResolution = new Vector2Int(1280, 720);
@@ -678,8 +631,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 
 		[UnityTest]
 		[Category("GUI_GraphInteraction")]
-		public IEnumerator GraphBlankDropFiltersCompatibleNodesAndSelectionShortcutsAreCommands()
-		{
+		public IEnumerator GraphBlankDropFiltersCompatibleNodesAndSelectionShortcutsAreCommands() {
 			GameObject gameObject = new GameObject("GraphBlankDropHost");
 			PanelSettings panel = ScriptableObject.CreateInstance<PanelSettings>();
 			panel.referenceResolution = new Vector2Int(1280, 720);
@@ -693,7 +645,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 			GraphCanvasElement canvas = UQueryExtensions.Q<GraphCanvasElement>(root, "node-graph-canvas", (string)null);
 			GraphReadModel graph = coordinator.Current.Graph;
 			canvas.SetGraph(new GraphReadModel(graph.Nodes.Select((GraphNodeReadModel node) => (node.Id == "blur") ? new GraphNodeReadModel(node.Id, node.TypeId, node.DisplayName, node.X, node.Y, node.Status, node.IsPending, node.StatusReason, from index in Enumerable.Range(0, 5)
-				select new ParameterReadModel("blur", "p" + index, "P" + index, index.ToString(), index.ToString())) : node), graph.Ports, graph.Connections));
+																																																													select new ParameterReadModel("blur", "p" + index, "P" + index, index.ToString(), index.ToString())) : node), graph.Ports, graph.Connections));
 			yield return null;
 			Assert.That<VisualElement>(UQueryExtensions.Q((VisualElement)(object)canvas, "node-blur-parameter-p0", (string)null), (IResolveConstraint)(object)Is.Not.Null);
 			Assert.That<VisualElement>(UQueryExtensions.Q((VisualElement)(object)canvas, "node-blur-parameter-p3", (string)null), (IResolveConstraint)(object)Is.Not.Null);
@@ -732,8 +684,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 
 		[UnityTest]
 		[Category("GUI_DiagnosticsProject")]
-		public IEnumerator DiagnosticsCurrentHistoryFiltersDetailAndNodeFocusUseReadModel()
-		{
+		public IEnumerator DiagnosticsCurrentHistoryFiltersDetailAndNodeFocusUseReadModel() {
 			GameObject gameObject = new GameObject("DiagnosticsHost");
 			PanelSettings panelSettings = ScriptableObject.CreateInstance<PanelSettings>();
 			panelSettings.referenceResolution = new Vector2Int(1280, 720);
@@ -768,8 +719,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 
 		[UnityTest]
 		[Category("GUI_ProjectDialogs")]
-		public IEnumerator PresentationRoot_UnsavedDialogRoutesSaveDiscardCancelPayloads()
-		{
+		public IEnumerator PresentationRoot_UnsavedDialogRoutesSaveDiscardCancelPayloads() {
 			GameObject gameObject = new GameObject("ProjectDialogHost");
 			PanelSettings panel = ScriptableObject.CreateInstance<PanelSettings>();
 			panel.referenceResolution = new Vector2Int(1280, 720);
@@ -801,8 +751,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 
 		[UnityTest]
 		[Category("GUI_VisualInteraction")]
-		public IEnumerator RuntimeComposition_DockAndGraphControls_AreInteractive()
-		{
+		public IEnumerator RuntimeComposition_DockAndGraphControls_AreInteractive() {
 			GameObject gameObject = new GameObject("DockInteractionHost");
 			PanelSettings panelSettings = ScriptableObject.CreateInstance<PanelSettings>();
 			panelSettings.referenceResolution = new Vector2Int(1280, 720);
@@ -826,8 +775,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 
 		[UnityTest]
 		[Category("GUI_GraphInteraction")]
-		public IEnumerator GraphPortDrag_SubmitsTypedConnectAndDisconnectCommands()
-		{
+		public IEnumerator GraphPortDrag_SubmitsTypedConnectAndDisconnectCommands() {
 			GameObject gameObject = new GameObject("GraphInteractionHost");
 			PanelSettings panel = ScriptableObject.CreateInstance<PanelSettings>();
 			panel.referenceResolution = new Vector2Int(1280, 720);
@@ -882,8 +830,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 
 		[UnityTest]
 		[Category("GUI_GraphInteraction")]
-		public IEnumerator GraphPortDrag_IncompatibleDropKeepsExistingEdgeAndDoesNotSubmit()
-		{
+		public IEnumerator GraphPortDrag_IncompatibleDropKeepsExistingEdgeAndDoesNotSubmit() {
 			GameObject gameObject = new GameObject("GraphRejectHost");
 			PanelSettings panel = ScriptableObject.CreateInstance<PanelSettings>();
 			panel.referenceResolution = new Vector2Int(1280, 720);
@@ -920,8 +867,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 			Object.DestroyImmediate((Object)(object)gameObject);
 		}
 
-		private static void SendPointer(VisualElement target, string kind)
-		{
+		private static void SendPointer(VisualElement target, string kind) {
 			//IL_0013: Unknown result type (might be due to invalid IL or missing references)
 			//IL_0018: Unknown result type (might be due to invalid IL or missing references)
 			//IL_001b: Unknown result type (might be due to invalid IL or missing references)
@@ -948,30 +894,24 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 			Rect worldBound = target.worldBound;
 			Vector2 position = worldBound.center;
 			VisualElement dispatchRoot = ((target.panel == null) ? target : target.panel.visualTree);
-			if (kind == "down")
-			{
-				Event systemEvent = new Event
-				{
+			if (kind == "down") {
+				Event systemEvent = new Event {
 					type = (EventType)0,
 					button = 0,
 					mousePosition = position
 				};
 				((CallbackEventHandler)dispatchRoot).SendEvent((EventBase)(object)PointerEventBase<PointerDownEvent>.GetPooled(systemEvent));
 			}
-			else if (kind == "move")
-			{
-				Event systemEvent2 = new Event
-				{
+			else if (kind == "move") {
+				Event systemEvent2 = new Event {
 					type = (EventType)3,
 					button = 0,
 					mousePosition = position
 				};
 				((CallbackEventHandler)dispatchRoot).SendEvent((EventBase)(object)PointerEventBase<PointerMoveEvent>.GetPooled(systemEvent2));
 			}
-			else
-			{
-				Event systemEvent3 = new Event
-				{
+			else {
+				Event systemEvent3 = new Event {
 					type = (EventType)1,
 					button = 0,
 					mousePosition = position
@@ -980,22 +920,19 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 			}
 		}
 
-		private static void Click(Button button)
-		{
+		private static void Click(Button button) {
 			Assert.That<Button>(button, (IResolveConstraint)(object)Is.Not.Null, "Expected an interactive Button in the composed UI.", Array.Empty<object>());
 			((Focusable)button).Focus();
 			((CallbackEventHandler)button).SendEvent((EventBase)(object)NavigationEventBase<NavigationSubmitEvent>.GetPooled((EventModifiers)0));
 		}
 
-		private static void ApplyScale(UiScaleReadPort read, PresentationCoordinator coordinator, float scale, long version)
-		{
+		private static void ApplyScale(UiScaleReadPort read, PresentationCoordinator coordinator, float scale, long version) {
 			read.Set(scale, version);
 			PresentationApplyReport report = coordinator.ApplyLatestReadModels((ulong)version);
 			Assert.That<bool>(report.Applied, (IResolveConstraint)(object)Is.True);
 		}
 
-		private static void AssertUsableUiScaleLayout(VisualElement root)
-		{
+		private static void AssertUsableUiScaleLayout(VisualElement root) {
 			//IL_00a2: Unknown result type (might be due to invalid IL or missing references)
 			//IL_00a7: Unknown result type (might be due to invalid IL or missing references)
 			//IL_00e2: Unknown result type (might be due to invalid IL or missing references)
@@ -1028,11 +965,9 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 			Assert.That<VisualElement>(status, (IResolveConstraint)(object)Is.Not.Null);
 			Rect worldBound;
 			int num;
-			if (((VisualElement)save).enabledInHierarchy)
-			{
+			if (((VisualElement)save).enabledInHierarchy) {
 				worldBound = ((VisualElement)save).worldBound;
-				if (worldBound.width > 0f)
-				{
+				if (worldBound.width > 0f) {
 					worldBound = ((VisualElement)save).worldBound;
 					num = ((worldBound.height > 0f) ? 1 : 0);
 					goto IL_00d0;
@@ -1040,7 +975,7 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 			}
 			num = 0;
 			goto IL_00d0;
-			IL_00d0:
+		IL_00d0:
 			Assert.That<bool>((byte)num != 0, (IResolveConstraint)(object)Is.True);
 			IPanel panel = ((VisualElement)save).panel;
 			worldBound = ((VisualElement)save).worldBound;
@@ -1054,13 +989,11 @@ namespace ShitDesigner.Presentation.Tests.PlayMode
 			Assert.That<bool>(worldBound.Overlaps(status.worldBound), (IResolveConstraint)(object)Is.False);
 			worldBound = graphToolbar.worldBound;
 			int num2;
-			if (worldBound.width > 0f)
-			{
+			if (worldBound.width > 0f) {
 				worldBound = graphToolbar.worldBound;
 				num2 = ((worldBound.height > 0f) ? 1 : 0);
 			}
-			else
-			{
+			else {
 				num2 = 0;
 			}
 			Assert.That<bool>((byte)num2 != 0, (IResolveConstraint)(object)Is.True);

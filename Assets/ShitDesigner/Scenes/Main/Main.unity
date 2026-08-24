@@ -627,9 +627,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: ShitDesigner.Bootstrap::ShitDesigner.Bootstrap.ApplicationHost
   _presentationRoot: {fileID: 1555642062}
-  _assets: {fileID: 0}
-  _panelSettings: {fileID: 0}
-  _midiInputManager: {fileID: 0}
+  _assets: {fileID: 1594496361}
+  _panelSettings: {fileID: 11400000, guid: acdb4ed592be84c4b8cf01d5947806f1, type: 2}
+  _midiInputManager: {fileID: 1594496362}
   _createOnAwake: 1
 --- !u!4 &1594496360
 Transform:
@@ -659,19 +659,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c7d7c8cffa66e554988cac388e36be19, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ShitDesigner.Bootstrap::ShitDesigner.Bootstrap.ProductionBootstrapAssets
-  _scene3dPrefab: {fileID: 0}
-  _scene2dPrefab: {fileID: 0}
-  _videoHostPrefab: {fileID: 0}
-  _shaderGenerator: {fileID: 0}
-  _shaderEffect: {fileID: 0}
-  _shaderBlend2: {fileID: 0}
-  _displayTransformShader: {fileID: 0}
-  _videoConversionMaterial: {fileID: 0}
-  _hapPremultiplyMaterial: {fileID: 0}
-  _hapYCoCgMaterial: {fileID: 0}
-  _hapAlphaMaterial: {fileID: 0}
-  _hapDecodeShader: {fileID: 0}
-  _nodeTypeCatalog: {fileID: 0}
+  _scene3dPrefab: {fileID: 100000, guid: 55555555555555555555555555555555, type: 3}
+  _scene2dPrefab: {fileID: 110000, guid: 66666666666666666666666666666666, type: 3}
+  _videoHostPrefab: {fileID: 100000, guid: 77777777777777777777777777777770, type: 3}
+  _shaderGenerator: {fileID: 4800000, guid: 11111111111111111111111111111111, type: 3}
+  _shaderEffect: {fileID: 4800000, guid: 22222222222222222222222222222222, type: 3}
+  _shaderBlend2: {fileID: 4800000, guid: 33333333333333333333333333333333, type: 3}
+  _displayTransformShader: {fileID: 4800000, guid: 913fc501737385645bde49afe4534757, type: 3}
+  _videoConversionMaterial: {fileID: 2100000, guid: 44444444444444444444444444444444, type: 2}
+  _hapPremultiplyMaterial: {fileID: 2100001, guid: 88888888888888888888888888888888, type: 2}
+  _hapYCoCgMaterial: {fileID: 2100002, guid: 99999999999999999999999999999999, type: 2}
+  _hapAlphaMaterial: {fileID: 2100003, guid: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, type: 2}
+  _hapDecodeShader: {fileID: 7200000, guid: 4cbecb5908686794884e1f93a7bbefd0, type: 3}
+  _nodeTypeCatalog: {fileID: 11400000, guid: 557deaee6f41a4c4a9ca4f9a0fdbb8bf, type: 2}
   _shaderManifest: {fileID: 0}
 --- !u!114 &1594496362
 MonoBehaviour:
