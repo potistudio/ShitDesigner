@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -60,9 +61,9 @@ namespace ShitDesigner.Bootstrap.Tests {
 				() => {
 					order.Add("compose");
 					startup.RegisterShutdown(ShutdownStage.Stop, () => order.Add("rollback"));
-					return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+					return UnitResult.Success<Diagnostic>();
 				},
-				() => { order.Add("handshake"); return CSharpFunctionalExtensions.Result.Failure<HandshakeReport, Diagnostic>(expected); },
+				() => { order.Add("handshake"); return Result.Failure<HandshakeReport, Diagnostic>(expected); },
 				() => RecordSuccessfulPhase(order, "activate"));
 
 			Assert.That(result.IsFailure, Is.True);
@@ -78,10 +79,10 @@ namespace ShitDesigner.Bootstrap.Tests {
 			var unavailable = CapabilityStatus.Unavailable("midi", new Diagnostic(new DiagnosticCode("test.midi.unavailable"), Severity.Warning, "No MIDI."));
 
 			var result = startup.Run(
-				() => CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(),
-				() => CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(),
-				() => CSharpFunctionalExtensions.Result.Success<HandshakeReport, Diagnostic>(new HandshakeReport(unavailable, CapabilityStatus.Ready("display"))),
-				() => CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>());
+				() => UnitResult.Success<Diagnostic>(),
+				() => UnitResult.Success<Diagnostic>(),
+				() => Result.Success<HandshakeReport, Diagnostic>(new HandshakeReport(unavailable, CapabilityStatus.Ready("display"))),
+				() => UnitResult.Success<Diagnostic>());
 
 			Assert.That(result.IsSuccess, Is.True);
 			Assert.That(startup.State, Is.EqualTo(SystemState.Degraded));
@@ -96,16 +97,16 @@ namespace ShitDesigner.Bootstrap.Tests {
 			var midi = CapabilityStatus.Unavailable("midi",
 				new Diagnostic(new DiagnosticCode("test.midi.unavailable"), Severity.Warning, "No MIDI."));
 			var supervisor = new CapabilitySupervisor(
-				() => { midiProbeCount++; return CSharpFunctionalExtensions.Result.Success<CapabilityStatus, Diagnostic>(midi); },
-				() => { displayProbeCount++; return CSharpFunctionalExtensions.Result.Success<CapabilityStatus, Diagnostic>(CapabilityStatus.Ready("display")); });
+				() => { midiProbeCount++; return Result.Success<CapabilityStatus, Diagnostic>(midi); },
+				() => { displayProbeCount++; return Result.Success<CapabilityStatus, Diagnostic>(CapabilityStatus.Ready("display")); });
 			var startup = new StartupSequence();
 			supervisor.Changed += startup.Observe;
 
 			Assert.That(startup.Run(
-				() => CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(),
-				() => CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(),
+				() => UnitResult.Success<Diagnostic>(),
+				() => UnitResult.Success<Diagnostic>(),
 				supervisor.Handshake,
-				() => CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>()).IsSuccess, Is.True);
+				() => UnitResult.Success<Diagnostic>()).IsSuccess, Is.True);
 			Assert.That(startup.State, Is.EqualTo(SystemState.Degraded));
 
 			midi = CapabilityStatus.Ready("midi");
@@ -130,16 +131,16 @@ namespace ShitDesigner.Bootstrap.Tests {
 			var order = new List<string>();
 			var startup = new StartupSequence();
 			Assert.That(startup.Run(
-				() => CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(),
+				() => UnitResult.Success<Diagnostic>(),
 				() => {
 					startup.RegisterShutdown(ShutdownStage.Teardown, () => order.Add("teardown"));
 					startup.RegisterShutdown(ShutdownStage.Stop, () => order.Add("stop"));
-					return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+					return UnitResult.Success<Diagnostic>();
 				},
-				() => CSharpFunctionalExtensions.Result.Success<HandshakeReport, Diagnostic>(HandshakeReport.Ready),
+				() => Result.Success<HandshakeReport, Diagnostic>(HandshakeReport.Ready),
 				() => {
 					startup.RegisterShutdown(ShutdownStage.Drain, () => order.Add("drain"));
-					return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+					return UnitResult.Success<Diagnostic>();
 				}).IsSuccess, Is.True);
 
 			startup.Shutdown();
@@ -153,16 +154,16 @@ namespace ShitDesigner.Bootstrap.Tests {
 			var order = new List<string>();
 			var startup = new StartupSequence();
 			Assert.That(startup.Run(
-				() => CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(),
+				() => UnitResult.Success<Diagnostic>(),
 				() => {
 					startup.RegisterShutdown(ShutdownStage.Stop, () => order.Add("stop"));
 					startup.RegisterShutdown(ShutdownStage.Teardown, () => order.Add("teardown"));
-					return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+					return UnitResult.Success<Diagnostic>();
 				},
-				() => CSharpFunctionalExtensions.Result.Success<HandshakeReport, Diagnostic>(HandshakeReport.Ready),
+				() => Result.Success<HandshakeReport, Diagnostic>(HandshakeReport.Ready),
 				() => {
 					startup.RegisterShutdown(ShutdownStage.Drain, () => throw new InvalidOperationException("drain failed"));
-					return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+					return UnitResult.Success<Diagnostic>();
 				}).IsSuccess, Is.True);
 
 			startup.Shutdown();
@@ -199,8 +200,8 @@ namespace ShitDesigner.Bootstrap.Tests {
 				using (var app = new ProjectApplication(new LocalProjectFileSystem())) {
 					Assert.That(app.NewProject("Loop", target, UnsavedChangesDecision.Discard).IsSuccess, Is.True);
 					var supervisor = new CapabilitySupervisor(
-						() => { order.Add("midi"); return CSharpFunctionalExtensions.Result.Success<CapabilityStatus, Diagnostic>(CapabilityStatus.Ready("midi")); },
-						() => { order.Add("display"); return CSharpFunctionalExtensions.Result.Success<CapabilityStatus, Diagnostic>(CapabilityStatus.Ready("display")); });
+						() => { order.Add("midi"); return Result.Success<CapabilityStatus, Diagnostic>(CapabilityStatus.Ready("midi")); },
+						() => { order.Add("display"); return Result.Success<CapabilityStatus, Diagnostic>(CapabilityStatus.Ready("display")); });
 					var driver = new ApplicationLoopDriverCore(app, new RecordingInput(order), new RecordingPresentation(order), new RecordingTiming(order), supervisor);
 					try {
 						Assert.That(driver.LateUpdate(1.0), Is.Not.Null);
@@ -855,18 +856,18 @@ namespace ShitDesigner.Bootstrap.Tests {
 
 		private sealed class RecordingProvider : IVisualBindingProvider {
 			public int CreateCount;
-			public CSharpFunctionalExtensions.Result<VisualBindingSet, Diagnostic> Create(string sessionId) {
+			public Result<VisualBindingSet, Diagnostic> Create(string sessionId) {
 				CreateCount++;
-				return CSharpFunctionalExtensions.Result.Failure<VisualBindingSet, Diagnostic>(new Diagnostic(new DiagnosticCode("test.unexpected_session_create"), Severity.Error, "Unexpected session binding creation."));
+				return Result.Failure<VisualBindingSet, Diagnostic>(new Diagnostic(new DiagnosticCode("test.unexpected_session_create"), Severity.Error, "Unexpected session binding creation."));
 			}
 		}
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> RecordSuccessfulPhase(ICollection<string> order, string phase) {
+		private static UnitResult<Diagnostic> RecordSuccessfulPhase(ICollection<string> order, string phase) {
 			order.Add(phase);
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
-		private static CSharpFunctionalExtensions.Result<HandshakeReport, Diagnostic> RecordSuccessfulHandshake(ICollection<string> order) {
+		private static Result<HandshakeReport, Diagnostic> RecordSuccessfulHandshake(ICollection<string> order) {
 			order.Add("handshake");
-			return CSharpFunctionalExtensions.Result.Success<HandshakeReport, Diagnostic>(HandshakeReport.Ready);
+			return Result.Success<HandshakeReport, Diagnostic>(HandshakeReport.Ready);
 		}
 		private sealed class NullPresentationFrame : IApplicationPresentationFrame {
 			public void Read(ApplicationFrameResult frame) { }

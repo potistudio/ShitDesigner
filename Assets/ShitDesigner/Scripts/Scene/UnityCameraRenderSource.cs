@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using ShitDesigner.Core;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -9,7 +10,7 @@ namespace ShitDesigner.Scene {
 	/// built-in synchronous Camera.Render path. URP StandardRequest owns its
 	/// destination and leaves the camera state untouched.</summary>
 	public sealed class UnityCameraRenderSource : ISceneRenderSource {
-		public CSharpFunctionalExtensions.Result<SceneRenderResult, Diagnostic> Render(SceneRenderRequest request) {
+		public Result<SceneRenderResult, Diagnostic> Render(SceneRenderRequest request) {
 			if (request == null) return Failure("scene.render.request", "Scene render request is required.");
 			if (!(request.OutputTarget is RenderTexture target)) return Failure("scene.render.target", "Scene output must be a RenderTexture.");
 			if (target == null || !target.IsCreated()) return Failure("scene.render.target", "Scene output RenderTexture must be created.");
@@ -41,10 +42,10 @@ namespace ShitDesigner.Scene {
 						return Failure("scene.render.request_unsupported", "The active render pipeline does not support StandardRequest for this Scene camera.");
 					RenderPipeline.SubmitRenderRequest(request.Camera, renderRequest);
 				}
-				return CSharpFunctionalExtensions.Result.Success<SceneRenderResult, Diagnostic>(SceneRenderResult.Success());
+				return Result.Success<SceneRenderResult, Diagnostic>(SceneRenderResult.Success());
 			}
 			catch (Exception exception) {
-				return CSharpFunctionalExtensions.Result.Failure<SceneRenderResult, Diagnostic>(new Diagnostic(new DiagnosticCode("scene.render.exception"), Severity.Error, exception.Message, nodeId: request.NodeId, generationId: request.GenerationId, module: "scene", exception: DiagnosticExceptionInfo.FromException(exception)));
+				return Result.Failure<SceneRenderResult, Diagnostic>(new Diagnostic(new DiagnosticCode("scene.render.exception"), Severity.Error, exception.Message, nodeId: request.NodeId, generationId: request.GenerationId, module: "scene", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 			finally {
 				// URP's StandardRequest owns its destination and temporarily
@@ -59,7 +60,7 @@ namespace ShitDesigner.Scene {
 			}
 		}
 
-		private static CSharpFunctionalExtensions.Result<SceneRenderResult, Diagnostic> Failure(string code, string message)
-			=> CSharpFunctionalExtensions.Result.Failure<SceneRenderResult, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "scene"));
+		private static Result<SceneRenderResult, Diagnostic> Failure(string code, string message)
+			=> Result.Failure<SceneRenderResult, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "scene"));
 	}
 }

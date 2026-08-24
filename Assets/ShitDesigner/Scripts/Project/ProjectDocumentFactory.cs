@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -52,12 +53,12 @@ namespace ShitDesigner.Project {
 		/// case.  The normalizer supplies the required ProgramOutput node;
 		/// the factory supplies the project-owned Main dashboard page.
 		/// </summary>
-		public static CSharpFunctionalExtensions.Result<ProjectDocument, Diagnostic> CreateNew(string projectName, IProjectIdFactory idFactory = null) {
+		public static Result<ProjectDocument, Diagnostic> CreateNew(string projectName, IProjectIdFactory idFactory = null) {
 			var ui = new ProjectUiStateRecord(new[] { new DashboardPageRecord("main", "Main") });
 			return TryCreate(projectName, 1, Enumerable.Empty<NodeRecord>(), Enumerable.Empty<ConnectionRecord>(), Enumerable.Empty<LogicalControlRecord>(), Enumerable.Empty<ParameterExpressionRecord>(), Enumerable.Empty<PresetRecord>(), Enumerable.Empty<MediaAssetRecord>(), ui, ProjectOutputSettings.CreateDefault(), true, idFactory);
 		}
 
-		public static CSharpFunctionalExtensions.Result<ProjectDocument, Diagnostic> TryCreate(
+		public static Result<ProjectDocument, Diagnostic> TryCreate(
 			string projectName,
 			int projectFormatVersion,
 			IEnumerable<NodeRecord> nodes,
@@ -72,11 +73,11 @@ namespace ShitDesigner.Project {
 			IProjectIdFactory idFactory = null) {
 			var detailed = TryCreateDetailed(projectName, projectFormatVersion, nodes, connections, logicalControls, expressions, presets, mediaAssets, ui, settings, markDirty, idFactory);
 			return detailed.IsFailure
-				? CSharpFunctionalExtensions.Result.Failure<ProjectDocument, Diagnostic>(detailed.Error)
-				: CSharpFunctionalExtensions.Result.Success<ProjectDocument, Diagnostic>(detailed.Value.Document);
+				? Result.Failure<ProjectDocument, Diagnostic>(detailed.Error)
+				: Result.Success<ProjectDocument, Diagnostic>(detailed.Value.Document);
 		}
 
-		public static CSharpFunctionalExtensions.Result<ProjectDocumentFactoryResult, Diagnostic> TryCreateDetailed(
+		public static Result<ProjectDocumentFactoryResult, Diagnostic> TryCreateDetailed(
 			string projectName,
 			int projectFormatVersion,
 			IEnumerable<NodeRecord> nodes,
@@ -101,7 +102,7 @@ namespace ShitDesigner.Project {
 			var assetList = (mediaAssets ?? Enumerable.Empty<MediaAssetRecord>()).ToList();
 
 			var identity = ValidateIdentity(nodeList, connectionList, controlList, expressionList, presetList, assetList);
-			if (identity.IsFailure) return CSharpFunctionalExtensions.Result.Failure<ProjectDocumentFactoryResult, Diagnostic>(identity.Error);
+			if (identity.IsFailure) return Result.Failure<ProjectDocumentFactoryResult, Diagnostic>(identity.Error);
 			if (connectionList.Count > 4096) return Failure<ProjectDocumentFactoryResult>("project.factory.connection_limit", "The project connection limit is 4096.");
 			if (presetList.GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase).Any(x => x.Count() > 1)) return Failure<ProjectDocumentFactoryResult>("project.factory.preset_name_duplicate", "Preset names must be unique ignoring case.");
 			if (expressionList.GroupBy(x => new { x.NodeId, x.ParameterId }).Any(x => x.Count() > 1)) return Failure<ProjectDocumentFactoryResult>("project.factory.expression_duplicate", "Expression targets must be unique.");
@@ -133,7 +134,7 @@ namespace ShitDesigner.Project {
 			foreach (var preset in normalizedPresets) candidate.AddPreset(preset);
 			candidate.RevalidateBrokenReferences();
 			if (markDirty || repairInfo.Count != 0) candidate.CommitMutation();
-			return CSharpFunctionalExtensions.Result.Success<ProjectDocumentFactoryResult, Diagnostic>(new ProjectDocumentFactoryResult(candidate, repairInfo));
+			return Result.Success<ProjectDocumentFactoryResult, Diagnostic>(new ProjectDocumentFactoryResult(candidate, repairInfo));
 		}
 
 
@@ -142,7 +143,7 @@ namespace ShitDesigner.Project {
 		/// open document.  Persistence can discard the returned candidate on
 		/// failure and keep <paramref name="current"/> untouched.
 		/// </summary>
-		public static CSharpFunctionalExtensions.Result<ProjectDocument, Diagnostic> Rehydrate(
+		public static Result<ProjectDocument, Diagnostic> Rehydrate(
 			ProjectDocument current,
 			string projectName,
 			int projectFormatVersion,
@@ -263,7 +264,7 @@ namespace ShitDesigner.Project {
 				enumOptionIds: new[] { new ParameterId("fit"), new ParameterId("fill"), new ParameterId("stretch") });
 		}
 
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> ValidateIdentity(IEnumerable<NodeRecord> nodes, IEnumerable<ConnectionRecord> connections, IEnumerable<LogicalControlRecord> controls, IEnumerable<ParameterExpressionRecord> expressions, IEnumerable<PresetRecord> presets, IEnumerable<MediaAssetRecord> assets) {
+		private static UnitResult<Diagnostic> ValidateIdentity(IEnumerable<NodeRecord> nodes, IEnumerable<ConnectionRecord> connections, IEnumerable<LogicalControlRecord> controls, IEnumerable<ParameterExpressionRecord> expressions, IEnumerable<PresetRecord> presets, IEnumerable<MediaAssetRecord> assets) {
 			if (nodes.Any(x => x == null) || connections.Any(x => x == null) || controls.Any(x => x == null) || expressions.Any(x => x == null) || presets.Any(x => x == null) || assets.Any(x => x == null)) return Failure("project.factory.null_record", "Project candidate records cannot be null.");
 			if (nodes.GroupBy(x => x.Id).Any(x => x.Count() > 1)) return Failure("project.factory.node_duplicate", "Node IDs must be unique.");
 			if (connections.GroupBy(x => x.Id).Any(x => x.Count() > 1)) return Failure("project.factory.connection_duplicate", "Connection IDs must be unique.");
@@ -274,7 +275,7 @@ namespace ShitDesigner.Project {
 			foreach (var control in controls) if (!control.Id.IsUuidV4) return Failure("project.factory.control_uuid", "LogicalControlId must be UUID v4.");
 			foreach (var preset in presets) if (!preset.Id.IsUuidV4) return Failure("project.factory.preset_uuid", "PresetId must be UUID v4.");
 			foreach (var asset in assets) if (!asset.Id.IsUuidV4) return Failure("project.factory.asset_uuid", "MediaAssetId must be UUID v4.");
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
 		private static ConnectionRecord NormalizeConnection(ConnectionRecord connection, IReadOnlyDictionary<NodeInstanceId, NodeRecord> nodes) {
@@ -320,7 +321,7 @@ namespace ShitDesigner.Project {
 			return adjacency.Keys.Any(visit);
 		}
 
-		private static CSharpFunctionalExtensions.Result<T, Diagnostic> Failure<T>(string code, string message) => CSharpFunctionalExtensions.Result.Failure<T, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static Result<T, Diagnostic> Failure<T>(string code, string message) => Result.Failure<T, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static UnitResult<Diagnostic> Failure(string code, string message) => UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
 	}
 }

@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections.Generic;
 using System.Linq;
 using ShitDesigner.Core;
@@ -139,11 +140,11 @@ namespace ShitDesigner.Rendering {
 		/// <summary>Direct rendering seam used by GPU/runtime contract tests.
 		/// It exercises the same pool leases, pass order and history commit as
 		/// the graph-bound Evaluate path.</summary>
-		public CSharpFunctionalExtensions.Result<RenderTexture, Diagnostic> Render(RenderTexture source, RenderTexture target, ulong frameNumber,
+		public Result<RenderTexture, Diagnostic> Render(RenderTexture source, RenderTexture target, ulong frameNumber,
 			double graphTime = 0d, bool paused = false, bool reset = false) {
-			if (_disposed) return CSharpFunctionalExtensions.Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.disposed", "Shader pass graph node is disposed."));
-			if (target == null || !target.IsCreated()) return CSharpFunctionalExtensions.Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.target", "A created RenderTexture target is required."));
-			if (frameNumber == 0) return CSharpFunctionalExtensions.Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.frame", "Frame number must be positive."));
+			if (_disposed) return Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.disposed", "Shader pass graph node is disposed."));
+			if (target == null || !target.IsCreated()) return Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.target", "A created RenderTexture target is required."));
+			if (frameNumber == 0) return Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.frame", "Frame number must be positive."));
 			try {
 				Texture input = source ?? (Texture)Texture2D.blackTexture;
 				ShaderRuntimeUniformApplier.Apply(_material, _binding, graphTime, 0d, frameNumber,
@@ -156,45 +157,45 @@ namespace ShitDesigner.Rendering {
 				return result;
 			}
 			catch (Exception exception) {
-				return CSharpFunctionalExtensions.Result.Failure<RenderTexture, Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.shader_graph.render_failed"), Severity.Error,
+				return Result.Failure<RenderTexture, Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.shader_graph.render_failed"), Severity.Error,
 					exception.Message, nodeId: NodeId, nodeTypeId: TypeId, generationId: GenerationId,
 					module: "rendering", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ResetHistory(ulong frameNumber = 1UL) {
-			if (_history == null) return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
-			if (!_history.Reset(_historyKey, frameNumber)) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(DiagnosticFor("rendering.shader_graph.history_reset", "Shader history reset failed."));
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+		public UnitResult<Diagnostic> ResetHistory(ulong frameNumber = 1UL) {
+			if (_history == null) return UnitResult.Success<Diagnostic>();
+			if (!_history.Reset(_historyKey, frameNumber)) return UnitResult.Failure<Diagnostic>(DiagnosticFor("rendering.shader_graph.history_reset", "Shader history reset failed."));
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		private CSharpFunctionalExtensions.Result<RenderTexture, Diagnostic> RenderCore(Texture source, RenderTexture target, ulong frameNumber,
+		private Result<RenderTexture, Diagnostic> RenderCore(Texture source, RenderTexture target, ulong frameNumber,
 			double graphTime, bool paused, bool reset) {
 			if (_binding.Stateful && !EnsureHistory(target, frameNumber))
-				return CSharpFunctionalExtensions.Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.history_allocate", "Stateful shader history could not allocate its RenderTexture ring."));
+				return Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.history_allocate", "Stateful shader history could not allocate its RenderTexture ring."));
 			if (_binding.Stateful && reset && !ResetHistory(frameNumber).IsSuccess)
-				return CSharpFunctionalExtensions.Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.history_reset", "Stateful shader history reset failed."));
+				return Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.history_reset", "Stateful shader history reset failed."));
 
 			var validBefore = false;
 			if (_history != null && _history.TryGetSnapshot(_historyKey, out var historyBefore)) validBefore = historyBefore.IsValid;
 			if (_binding.Stateful && paused && validBefore) {
 				if (!TryGetHistoryTexture(0, out var frozen))
-					return CSharpFunctionalExtensions.Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.history_missing", "Paused shader history has no readable slot."));
+					return Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.history_missing", "Paused shader history has no readable slot."));
 				Graphics.Blit(frozen, target);
 				LastPassCount = 0;
 				LastTemporaryLeaseCount = 0;
-				return CSharpFunctionalExtensions.Result.Success<RenderTexture, Diagnostic>(target);
+				return Result.Success<RenderTexture, Diagnostic>(target);
 			}
 
 			var effectivePaused = false;
 			if (_history != null) {
 				if (!_history.BeginFrame(_historyKey, frameNumber, graphTime, effectivePaused))
-					return CSharpFunctionalExtensions.Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.history_begin", "Stateful shader history could not begin its frame."));
+					return Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.history_begin", "Stateful shader history could not begin its frame."));
 				BindHistoryTextures();
 			}
 
 			var passes = _binding.Passes.OrderBy(x => x.Index).ToList();
-			if (passes.Count == 0) return CSharpFunctionalExtensions.Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.pass_missing", "Shader pass graph has no declared passes."));
+			if (passes.Count == 0) return Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.pass_missing", "Shader pass graph has no declared passes."));
 			var current = source ?? Texture2D.blackTexture;
 			// Preserve the original graph input separately from the current
 			// ping-pong surface. Multi-pass family shaders use this to blend
@@ -210,7 +211,7 @@ namespace ShitDesigner.Rendering {
 					var destination = target;
 					if (!isLast) {
 						var temporary = AcquireTemporary(target, frameNumber, index);
-						if (temporary.IsFailure) return CSharpFunctionalExtensions.Result.Failure<RenderTexture, Diagnostic>(temporary.Error);
+						if (temporary.IsFailure) return Result.Failure<RenderTexture, Diagnostic>(temporary.Error);
 						_temporaryLeases.Add(temporary.Value);
 						destination = temporary.Value.Texture;
 					}
@@ -231,10 +232,10 @@ namespace ShitDesigner.Rendering {
 				LastTemporaryLeaseCount = _temporaryLeases.Count;
 				if (_history != null) {
 					if (!_history.Commit(_historyKey, frameNumber, target))
-						return CSharpFunctionalExtensions.Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.history_commit", "Stateful shader history commit failed."));
+						return Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.history_commit", "Stateful shader history commit failed."));
 					LastCommittedFrame = frameNumber;
 				}
-				return CSharpFunctionalExtensions.Result.Success<RenderTexture, Diagnostic>(target);
+				return Result.Success<RenderTexture, Diagnostic>(target);
 			}
 			finally {
 				ReleaseTemporaryLeases(frameNumber);
@@ -304,7 +305,7 @@ namespace ShitDesigner.Rendering {
 			return _history != null && _history.TryGetTexture(_historyKey, offset, out texture);
 		}
 
-		private CSharpFunctionalExtensions.Result<TextureLeaseHandle, Diagnostic> AcquireTemporary(RenderTexture target, ulong frameNumber, int passIndex) {
+		private Result<TextureLeaseHandle, Diagnostic> AcquireTemporary(RenderTexture target, ulong frameNumber, int passIndex) {
 			var format = target.graphicsFormat == GraphicsFormat.None ? GraphicsFormat.R8G8B8A8_UNorm : target.graphicsFormat;
 			var descriptor = new TextureDescriptor(target.width, target.height, format);
 			return _pool.Acquire(descriptor, TemporaryOwner(passIndex), Math.Max(1UL, frameNumber));

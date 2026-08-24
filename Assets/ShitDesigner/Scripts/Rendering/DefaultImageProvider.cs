@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections.Generic;
 using ShitDesigner.Core;
 using ShitDesigner.Runtime;
@@ -32,26 +33,26 @@ namespace ShitDesigner.Rendering {
 			_dynamicRange = dynamicRange;
 		}
 
-		public CSharpFunctionalExtensions.Result<PortValue, Diagnostic> Get(RuntimeDefaultImageKind kind, int width, int height, ulong frameNumber) {
-			if (_disposed) return CSharpFunctionalExtensions.Result.Failure<PortValue, Diagnostic>(Error("rendering.default_image.disposed", "The default image provider is disposed."));
+		public Result<PortValue, Diagnostic> Get(RuntimeDefaultImageKind kind, int width, int height, ulong frameNumber) {
+			if (_disposed) return Result.Failure<PortValue, Diagnostic>(Error("rendering.default_image.disposed", "The default image provider is disposed."));
 			TextureDescriptor descriptor;
 			try {
 				descriptor = new TextureDescriptor(width, height, _dynamicRange == RuntimeDynamicRange.Hdr ? GraphicsFormat.R16G16B16A16_SFloat : GraphicsFormat.R8G8B8A8_UNorm,
 					GraphicsFormat.None, 1, false, false, TextureDimension.Tex2D, 1, false);
 			}
 			catch (Exception exception) {
-				return CSharpFunctionalExtensions.Result.Failure<PortValue, Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.default_image.descriptor_invalid"), Severity.Error, "The default image descriptor is invalid.", exception: DiagnosticExceptionInfo.FromException(exception)));
+				return Result.Failure<PortValue, Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.default_image.descriptor_invalid"), Severity.Error, "The default image descriptor is invalid.", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 
 			if (!_entries.TryGetValue(kind, out var entry) || entry.Descriptor != descriptor || entry.Lease == null || entry.Lease.IsReleased) {
 				var owner = OwnerFor(kind);
 				var acquired = _pool.Acquire(descriptor, owner, frameNumber);
-				if (acquired.IsFailure) return CSharpFunctionalExtensions.Result.Failure<PortValue, Diagnostic>(acquired.Error);
+				if (acquired.IsFailure) return Result.Failure<PortValue, Diagnostic>(acquired.Error);
 				var candidate = new Entry { Descriptor = descriptor, Lease = acquired.Value, Owner = owner };
 				try { Clear(candidate.Lease.Texture, kind); }
 				catch (Exception exception) {
 					candidate.Lease.Release(owner, frameNumber);
-					return CSharpFunctionalExtensions.Result.Failure<PortValue, Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.default_image.clear_failed"), Severity.Error, "The default image could not be initialized.", exception: DiagnosticExceptionInfo.FromException(exception)));
+					return Result.Failure<PortValue, Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.default_image.clear_failed"), Severity.Error, "The default image could not be initialized.", exception: DiagnosticExceptionInfo.FromException(exception)));
 				}
 				if (entry?.Lease != null && !entry.Lease.IsReleased) entry.Lease.Release(entry.Owner, frameNumber);
 				entry = candidate;
@@ -59,8 +60,8 @@ namespace ShitDesigner.Rendering {
 			}
 
 			var borrowed = entry.Lease.Borrow(frameNumber);
-			if (borrowed.IsFailure) return CSharpFunctionalExtensions.Result.Failure<PortValue, Diagnostic>(borrowed.Error);
-			return CSharpFunctionalExtensions.Result.Success<PortValue, Diagnostic>(PortValue.FromImageFrame(borrowed.Value.Frame));
+			if (borrowed.IsFailure) return Result.Failure<PortValue, Diagnostic>(borrowed.Error);
+			return Result.Success<PortValue, Diagnostic>(PortValue.FromImageFrame(borrowed.Value.Frame));
 		}
 
 		public void Dispose() {

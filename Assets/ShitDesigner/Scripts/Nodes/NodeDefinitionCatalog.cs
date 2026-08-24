@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -290,7 +291,7 @@ namespace ShitDesigner.Nodes {
 				.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.Ordinal).ToList());
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Validate() {
+		public UnitResult<Diagnostic> Validate() {
 			if (_entries.Count == 0) return Failure("nodes.catalog.empty", "Node catalog contains no definitions.");
 			if (_entries.Any(x => x == null) || _entries.GroupBy(x => x.TypeId).Any(x => x.Count() > 1)) return Failure("nodes.catalog.duplicate_type", "Node type IDs must be globally unique.");
 			foreach (var entry in _entries) {
@@ -321,32 +322,32 @@ namespace ShitDesigner.Nodes {
 			if (program == null || !program.SystemOwned || program.UserAddable || program.Ports.Count != 1 || program.Ports[0].Id.Value != "image" || program.Ports[0].Direction != NodePortDirection.Input || program.Ports[0].Type != NodePortType.ImageFrame || !program.Ports[0].Required) return Failure("nodes.catalog.program_shape", "ProgramOutput must be fixed and system-owned.");
 			var preview = _entries.SingleOrDefault(x => x.TypeId.Value == "system.preview");
 			if (preview == null || preview.SystemOwned || !preview.UserAddable || preview.Ports.Count != 1 || preview.Ports[0].Id.Value != "image" || preview.Ports[0].Direction != NodePortDirection.Input || preview.Ports[0].Type != NodePortType.ImageFrame || !preview.Ports[0].Required) return Failure("nodes.catalog.preview_shape", "Preview must be a user-addable required Image input.");
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
 		/// <summary>Registers only the Runtime factory half. Bootstrap adapts
 		/// the immutable descriptors to Graph's persistence registry.</summary>
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> RegisterFactories(RuntimeSession runtimeSession) {
+		public UnitResult<Diagnostic> RegisterFactories(RuntimeSession runtimeSession) {
 			if (runtimeSession == null) return Failure("nodes.catalog.runtime_missing", "Runtime session is required.");
 			var valid = Validate(); if (valid.IsFailure) return valid;
 			if (_entries.Any(entry => _specializedNodeTypeIds.Contains(entry.TypeId.Value, StringComparer.Ordinal) && entry.Factory is CatalogNodeFactory missingFactory && missingFactory.IsPlaceholder)) return Failure("nodes.catalog.binding_missing", "A production visual node factory was not injected.");
 			foreach (var entry in _entries) {
 				var result = runtimeSession.RegisterFactory(entry.Factory); if (result.IsFailure) return result;
 			}
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ValidateProductionBindings(NodeFactoryBindings bindings) {
+		public UnitResult<Diagnostic> ValidateProductionBindings(NodeFactoryBindings bindings) {
 			if (bindings == null) return Failure("nodes.catalog.bindings_missing", "Production node service bindings are required.");
 			foreach (var type in _specializedNodeTypeIds)
 				if (!bindings.Contains(new NodeTypeId(type))) return Failure("nodes.catalog.binding_missing", "A Scene, Shader, or Video runtime service binding is missing.");
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		public static CSharpFunctionalExtensions.Result<NodeDefinitionCatalog, Diagnostic> CreateProduction(NodeFactoryBindings bindings) {
+		public static Result<NodeDefinitionCatalog, Diagnostic> CreateProduction(NodeFactoryBindings bindings) {
 			var catalog = CreateInitial(bindings);
 			var valid = catalog.ValidateProductionBindings(bindings);
-			return valid.IsFailure ? CSharpFunctionalExtensions.Result.Failure<NodeDefinitionCatalog, Diagnostic>(valid.Error) : CSharpFunctionalExtensions.Result.Success<NodeDefinitionCatalog, Diagnostic>(catalog);
+			return valid.IsFailure ? Result.Failure<NodeDefinitionCatalog, Diagnostic>(valid.Error) : Result.Success<NodeDefinitionCatalog, Diagnostic>(catalog);
 		}
 
 		public static NodeDefinitionCatalog CreateInitial(NodeFactoryBindings bindings = null) {
@@ -363,37 +364,37 @@ namespace ShitDesigner.Nodes {
 			return new NodeDefinitionCatalog(InitialNodeDefinitions.Create(shaderManifest).Select(definition => {
 				var creator = bindings.Resolve(definition.TypeId);
 				var placeholder = creator == null;
-				creator = creator ?? ((node, generation) => CSharpFunctionalExtensions.Result.Success<IRuntimeNode, Diagnostic>(new CatalogRuntimeNode(node, generation, definition)));
+				creator = creator ?? ((node, generation) => Result.Success<IRuntimeNode, Diagnostic>(new CatalogRuntimeNode(node, generation, definition)));
 				return new NodeCatalogEntry(definition, new CatalogNodeFactory(definition.TypeId, creator, placeholder), InitialNodeDefinitions.ShaderBinding(shaderManifest, definition.TypeId), InitialNodeDefinitions.SceneBinding(definition.TypeId));
 			}), specialized);
 		}
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "nodes"));
+		private static UnitResult<Diagnostic> Failure(string code, string message) => UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "nodes"));
 	}
 
 	public sealed class NodeFactoryBindings {
-		private readonly Dictionary<NodeTypeId, Func<RuntimeNodeCreateInfo, ulong, CSharpFunctionalExtensions.Result<IRuntimeNode, Diagnostic>>> _bindings = new Dictionary<NodeTypeId, Func<RuntimeNodeCreateInfo, ulong, CSharpFunctionalExtensions.Result<IRuntimeNode, Diagnostic>>>();
+		private readonly Dictionary<NodeTypeId, Func<RuntimeNodeCreateInfo, ulong, Result<IRuntimeNode, Diagnostic>>> _bindings = new Dictionary<NodeTypeId, Func<RuntimeNodeCreateInfo, ulong, Result<IRuntimeNode, Diagnostic>>>();
 		private readonly Dictionary<NodeTypeId, IRuntimeVisualNodeBinding> _visualBindings = new Dictionary<NodeTypeId, IRuntimeVisualNodeBinding>();
 		public IReadOnlyCollection<NodeTypeId> RegisteredTypeIds => new ReadOnlyCollection<NodeTypeId>(_bindings.Keys.OrderBy(x => x.Value, StringComparer.Ordinal).ToList());
 		public NodeFactoryBindingAvailability Availability => new NodeFactoryBindingAvailability(RegisteredTypeIds, NodeDefinitionCatalog.SpecializedNodeTypeIds.Select(x => new NodeTypeId(x)));
 		public bool IsProductionComplete => Availability.IsComplete;
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Register(NodeTypeId typeId, Func<RuntimeNodeCreateInfo, ulong, CSharpFunctionalExtensions.Result<IRuntimeNode, Diagnostic>> creator) {
-			if (typeId.IsEmpty || creator == null) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("nodes.factory.invalid"), Severity.Error, "A node factory binding requires a type and creator.", module: "nodes"));
-			if (!_bindings.TryAdd(typeId, creator)) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("nodes.factory.duplicate"), Severity.Error, "Node factory binding is already registered.", module: "nodes"));
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+		public UnitResult<Diagnostic> Register(NodeTypeId typeId, Func<RuntimeNodeCreateInfo, ulong, Result<IRuntimeNode, Diagnostic>> creator) {
+			if (typeId.IsEmpty || creator == null) return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("nodes.factory.invalid"), Severity.Error, "A node factory binding requires a type and creator.", module: "nodes"));
+			if (!_bindings.TryAdd(typeId, creator)) return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("nodes.factory.duplicate"), Severity.Error, "Node factory binding is already registered.", module: "nodes"));
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Register(IRuntimeVisualNodeBinding binding) {
-			if (binding == null) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("nodes.factory.invalid"), Severity.Error, "A visual node binding is required.", module: "nodes"));
+		public UnitResult<Diagnostic> Register(IRuntimeVisualNodeBinding binding) {
+			if (binding == null) return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("nodes.factory.invalid"), Severity.Error, "A visual node binding is required.", module: "nodes"));
 			if (!binding.IsAvailable)
-				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(binding.AvailabilityDiagnostic ?? new Diagnostic(new DiagnosticCode("nodes.factory.unavailable"), Severity.Error, "The visual node binding is unavailable.", nodeTypeId: binding.TypeId, module: "nodes"));
+				return UnitResult.Failure<Diagnostic>(binding.AvailabilityDiagnostic ?? new Diagnostic(new DiagnosticCode("nodes.factory.unavailable"), Severity.Error, "The visual node binding is unavailable.", nodeTypeId: binding.TypeId, module: "nodes"));
 			var registered = Register(binding.TypeId, binding.Create);
 			if (registered.IsSuccess) _visualBindings.Add(binding.TypeId, binding);
 			return registered;
 		}
 		public bool Contains(NodeTypeId typeId) => _bindings.ContainsKey(typeId);
 		public bool TryGetVisualBinding(NodeTypeId typeId, out IRuntimeVisualNodeBinding binding) => _visualBindings.TryGetValue(typeId, out binding);
-		internal Func<RuntimeNodeCreateInfo, ulong, CSharpFunctionalExtensions.Result<IRuntimeNode, Diagnostic>> Resolve(NodeTypeId typeId) => _bindings.TryGetValue(typeId, out var creator) ? creator : null;
+		internal Func<RuntimeNodeCreateInfo, ulong, Result<IRuntimeNode, Diagnostic>> Resolve(NodeTypeId typeId) => _bindings.TryGetValue(typeId, out var creator) ? creator : null;
 	}
 
 	/// <summary>Immutable read-only view used by Bootstrap and diagnostics to
@@ -411,14 +412,14 @@ namespace ShitDesigner.Nodes {
 	}
 
 	public sealed class CatalogNodeFactory : INodeFactory {
-		private readonly Func<RuntimeNodeCreateInfo, ulong, CSharpFunctionalExtensions.Result<IRuntimeNode, Diagnostic>> _creator;
+		private readonly Func<RuntimeNodeCreateInfo, ulong, Result<IRuntimeNode, Diagnostic>> _creator;
 		public NodeTypeId TypeId { get; }
 		public bool IsPlaceholder { get; }
-		public CatalogNodeFactory(NodeTypeId typeId, Func<RuntimeNodeCreateInfo, ulong, CSharpFunctionalExtensions.Result<IRuntimeNode, Diagnostic>> creator, bool isPlaceholder = false) { TypeId = typeId; _creator = creator ?? throw new ArgumentNullException(nameof(creator)); IsPlaceholder = isPlaceholder; }
-		public CSharpFunctionalExtensions.Result<IRuntimeNode, Diagnostic> Create(RuntimeNodeCreateInfo node, ulong generationId) {
-			if (node == null || node.TypeId != TypeId || generationId == 0) return CSharpFunctionalExtensions.Result.Failure<IRuntimeNode, Diagnostic>(new Diagnostic(new DiagnosticCode("nodes.factory.invalid_node"), Severity.Error, "Factory input does not match the registered type.", nodeTypeId: TypeId, module: "nodes"));
+		public CatalogNodeFactory(NodeTypeId typeId, Func<RuntimeNodeCreateInfo, ulong, Result<IRuntimeNode, Diagnostic>> creator, bool isPlaceholder = false) { TypeId = typeId; _creator = creator ?? throw new ArgumentNullException(nameof(creator)); IsPlaceholder = isPlaceholder; }
+		public Result<IRuntimeNode, Diagnostic> Create(RuntimeNodeCreateInfo node, ulong generationId) {
+			if (node == null || node.TypeId != TypeId || generationId == 0) return Result.Failure<IRuntimeNode, Diagnostic>(new Diagnostic(new DiagnosticCode("nodes.factory.invalid_node"), Severity.Error, "Factory input does not match the registered type.", nodeTypeId: TypeId, module: "nodes"));
 			try { return _creator(node, generationId); }
-			catch (Exception exception) { return CSharpFunctionalExtensions.Result.Failure<IRuntimeNode, Diagnostic>(new Diagnostic(new DiagnosticCode("nodes.factory.exception"), Severity.Error, "Node factory threw.", nodeId: node.Id, nodeTypeId: TypeId, generationId: generationId, exception: DiagnosticExceptionInfo.FromException(exception), module: "nodes")); }
+			catch (Exception exception) { return Result.Failure<IRuntimeNode, Diagnostic>(new Diagnostic(new DiagnosticCode("nodes.factory.exception"), Severity.Error, "Node factory threw.", nodeId: node.Id, nodeTypeId: TypeId, generationId: generationId, exception: DiagnosticExceptionInfo.FromException(exception), module: "nodes")); }
 		}
 	}
 
@@ -443,8 +444,8 @@ namespace ShitDesigner.Nodes {
 				else outputs.SetBlocked(port.Id, Diagnostic("nodes.input.unavailable", "Required input is unavailable.", context));
 			}
 		}
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Reset(NodeInstanceId nodeId) { if (nodeId != NodeId) return Failure("nodes.feedback.owner", "Feedback reset owner does not match.", nodeId); _feedbackPrevious = null; return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(); }
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Commit(NodeInstanceId nodeId, NodeOutputResult input, FrameSnapshot snapshot) { if (nodeId != NodeId || TypeId.Value != "system.feedback") return Failure("nodes.feedback.owner", "Feedback commit owner does not match.", nodeId); if (input.IsAvailable && input.Value.IsImageFrame) _feedbackPrevious = input.Value.AsImageFrame(); return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(); }
+		public UnitResult<Diagnostic> Reset(NodeInstanceId nodeId) { if (nodeId != NodeId) return Failure("nodes.feedback.owner", "Feedback reset owner does not match.", nodeId); _feedbackPrevious = null; return UnitResult.Success<Diagnostic>(); }
+		public UnitResult<Diagnostic> Commit(NodeInstanceId nodeId, NodeOutputResult input, FrameSnapshot snapshot) { if (nodeId != NodeId || TypeId.Value != "system.feedback") return Failure("nodes.feedback.owner", "Feedback commit owner does not match.", nodeId); if (input.IsAvailable && input.Value.IsImageFrame) _feedbackPrevious = input.Value.AsImageFrame(); return UnitResult.Success<Diagnostic>(); }
 		public void Dispose() { _disposed = true; _feedbackPrevious = null; }
 
 		private bool TryConvert(NodeExecutionContext context, NodePortDefinition output, out PortValue value) {
@@ -486,7 +487,7 @@ namespace ShitDesigner.Nodes {
 			try { return parameter.Value.AsFloat(); } catch (InvalidOperationException) { return fallback; }
 		}
 		private Diagnostic Diagnostic(string code, string message, NodeExecutionContext context) => new Diagnostic(new DiagnosticCode(code), Severity.Warning, message, nodeId: NodeId, nodeTypeId: TypeId, generationId: GenerationId, frameNumber: unchecked((long)context.Snapshot.FrameNumber), graphClockTime: context.Snapshot.GraphClockTime, module: "nodes");
-		private CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message, NodeInstanceId nodeId) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, nodeId: nodeId, nodeTypeId: TypeId, generationId: GenerationId, module: "nodes"));
+		private UnitResult<Diagnostic> Failure(string code, string message, NodeInstanceId nodeId) => UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, nodeId: nodeId, nodeTypeId: TypeId, generationId: GenerationId, module: "nodes"));
 	}
 
 	public sealed class SurfaceImageFrame : IRuntimeImageFrameSurface {
@@ -545,12 +546,12 @@ namespace ShitDesigner.Nodes {
 		private static NodeDefinition IntToFloat() => Conversion("int_to_float", "Int To Float", NodePortType.Int, NodePortType.Float, new[] { Input("value", NodePortType.Int) });
 		private static NodeDefinition FloatToBool() => Conversion("float_to_bool", "Float To Bool", NodePortType.Float, NodePortType.Bool, new[] { Input("value", NodePortType.Float) }, new[] { new NodeParameterDefinition(new ParameterId("threshold"), "Threshold", ParameterType.Float, ParameterValue.FromFloat(.5f), ParameterValue.FromFloat(0), ParameterValue.FromFloat(1)) });
 		private static NodeDefinition BoolToFloat() => Conversion("bool_to_float", "Bool To Float", NodePortType.Bool, NodePortType.Float, new[] { Input("value", NodePortType.Bool) }, new[] { new NodeParameterDefinition(new ParameterId("false_value"), "False", ParameterType.Float, ParameterValue.FromFloat(0)), new NodeParameterDefinition(new ParameterId("true_value"), "True", ParameterType.Float, ParameterValue.FromFloat(1)) });
-		private static NodeDefinition Compose(string n) { var ports = (n == "2" ? new[] { "x", "y" } : n == "3" ? new[] { "x", "y", "z" } : new[] { "x", "y", "z", "w" }).Select(x => Input(x, NodePortType.Float)).Cast<NodePortDefinition>().ToList(); ports.Add(new NodePortDefinition(new PortId("result"), "CSharpFunctionalExtensions.UnitResult<Diagnostic>", NodePortDirection.Output, n == "2" ? NodePortType.Vector2 : n == "3" ? NodePortType.Vector3 : NodePortType.Vector4, false)); return new NodeDefinition(new NodeTypeId("shitdesigner.convert.compose_vector" + n), 1, "Compose Vector" + n, "Conversion", ports); }
+		private static NodeDefinition Compose(string n) { var ports = (n == "2" ? new[] { "x", "y" } : n == "3" ? new[] { "x", "y", "z" } : new[] { "x", "y", "z", "w" }).Select(x => Input(x, NodePortType.Float)).Cast<NodePortDefinition>().ToList(); ports.Add(new NodePortDefinition(new PortId("result"), "UnitResult<Diagnostic>", NodePortDirection.Output, n == "2" ? NodePortType.Vector2 : n == "3" ? NodePortType.Vector3 : NodePortType.Vector4, false)); return new NodeDefinition(new NodeTypeId("shitdesigner.convert.compose_vector" + n), 1, "Compose Vector" + n, "Conversion", ports); }
 		private static NodeDefinition Split(string n) { var ports = new List<NodePortDefinition> { Input("value", n == "2" ? NodePortType.Vector2 : n == "3" ? NodePortType.Vector3 : NodePortType.Vector4) }; foreach (var x in n == "2" ? new[] { "x", "y" } : n == "3" ? new[] { "x", "y", "z" } : new[] { "x", "y", "z", "w" }) ports.Add(new NodePortDefinition(new PortId(x), x.ToUpperInvariant(), NodePortDirection.Output, NodePortType.Float, false)); return new NodeDefinition(new NodeTypeId("shitdesigner.convert.split_vector" + n), 1, "Split Vector" + n, "Conversion", ports); }
-		private static NodeDefinition VectorComponent() => new NodeDefinition(new NodeTypeId("shitdesigner.convert.vector_component"), 1, "Vector Component", "Conversion", new[] { Input("value", NodePortType.Vector4), new NodePortDefinition(new PortId("result"), "CSharpFunctionalExtensions.UnitResult<Diagnostic>", NodePortDirection.Output, NodePortType.Float, false) }, new[] { new NodeParameterDefinition(new ParameterId("component"), "Component", ParameterType.Enum, ParameterValue.FromEnum("x"), enumOptions: new[] { "x", "y", "z", "w" }) });
+		private static NodeDefinition VectorComponent() => new NodeDefinition(new NodeTypeId("shitdesigner.convert.vector_component"), 1, "Vector Component", "Conversion", new[] { Input("value", NodePortType.Vector4), new NodePortDefinition(new PortId("result"), "UnitResult<Diagnostic>", NodePortDirection.Output, NodePortType.Float, false) }, new[] { new NodeParameterDefinition(new ParameterId("component"), "Component", ParameterType.Enum, ParameterValue.FromEnum("x"), enumOptions: new[] { "x", "y", "z", "w" }) });
 		private static NodeDefinition ColorToLuminance() => Conversion("color_to_luminance", "Color To Luminance", NodePortType.Color, NodePortType.Float, new[] { Input("value", NodePortType.Color) });
 		private static NodeDefinition FloatToColor() => Conversion("float_to_color", "Float To Color", NodePortType.Float, NodePortType.Color, new[] { Input("value", NodePortType.Float) }, new[] { new NodeParameterDefinition(new ParameterId("alpha"), "Alpha", ParameterType.Float, ParameterValue.FromFloat(1), ParameterValue.FromFloat(0), ParameterValue.FromFloat(1)) });
 		private static NodePortDefinition Input(string id, NodePortType type) => new NodePortDefinition(new PortId(id), id.ToUpperInvariant(), NodePortDirection.Input, type, true);
-		private static NodeDefinition Conversion(string id, string display, NodePortType input, NodePortType output, IEnumerable<NodePortDefinition> ports, IEnumerable<NodeParameterDefinition> parameters = null) => new NodeDefinition(new NodeTypeId("shitdesigner.convert." + id), 1, display, "Conversion", ports.Concat(new[] { new NodePortDefinition(new PortId("result"), "CSharpFunctionalExtensions.UnitResult<Diagnostic>", NodePortDirection.Output, output, false) }), parameters);
+		private static NodeDefinition Conversion(string id, string display, NodePortType input, NodePortType output, IEnumerable<NodePortDefinition> ports, IEnumerable<NodeParameterDefinition> parameters = null) => new NodeDefinition(new NodeTypeId("shitdesigner.convert." + id), 1, display, "Conversion", ports.Concat(new[] { new NodePortDefinition(new PortId("result"), "UnitResult<Diagnostic>", NodePortDirection.Output, output, false) }), parameters);
 	}
 }

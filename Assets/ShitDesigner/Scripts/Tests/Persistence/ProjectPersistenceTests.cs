@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -640,7 +641,7 @@ namespace ShitDesigner.Persistence.Tests {
 			public int FromVersion { get; }
 			public int ToVersion => FromVersion + 1;
 			public TestNodeMigrator(NodeTypeId nodeTypeId, int fromVersion, string result) { NodeTypeId = nodeTypeId; FromVersion = fromVersion; _result = result; }
-			public CSharpFunctionalExtensions.Result<string, Diagnostic> Migrate(string rawJson) => CSharpFunctionalExtensions.Result.Success<string, Diagnostic>(_result);
+			public Result<string, Diagnostic> Migrate(string rawJson) => Result.Success<string, Diagnostic>(_result);
 		}
 
 		private static byte[] CreateOfficialXxh3SanityFixture(int length) {
@@ -672,7 +673,7 @@ namespace ShitDesigner.Persistence.Tests {
 			public int FromVersion { get; }
 			public int ToVersion => FromVersion + 1;
 			public TestProjectMigrator(int fromVersion, int toVersion) { FromVersion = fromVersion; }
-			public CSharpFunctionalExtensions.Result<ProjectDocumentDto, Diagnostic> Migrate(ProjectDocumentDto sourceCopy) { sourceCopy.ProjectFormatVersion = ToVersion; sourceCopy.ProjectName += "-migrated"; return CSharpFunctionalExtensions.Result.Success<ProjectDocumentDto, Diagnostic>(sourceCopy); }
+			public Result<ProjectDocumentDto, Diagnostic> Migrate(ProjectDocumentDto sourceCopy) { sourceCopy.ProjectFormatVersion = ToVersion; sourceCopy.ProjectName += "-migrated"; return Result.Success<ProjectDocumentDto, Diagnostic>(sourceCopy); }
 		}
 
 		private sealed class TestNodeCatalog : INodeSchemaCatalog {
@@ -688,7 +689,7 @@ namespace ShitDesigner.Persistence.Tests {
 		}
 
 		private sealed class RejectingProbe : IMediaAssetProbe {
-			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Probe(Stream stagedStream, string extension) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("test.probe.rejected"), Severity.Error, "rejected"));
+			public UnitResult<Diagnostic> Probe(Stream stagedStream, string extension) => UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("test.probe.rejected"), Severity.Error, "rejected"));
 		}
 
 		private sealed class NonAtomicFileSystem : IProjectFileSystem {
