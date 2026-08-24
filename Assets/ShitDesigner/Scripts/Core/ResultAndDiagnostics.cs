@@ -3,29 +3,30 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text.RegularExpressions;
+using CSharpFunctionalExtensions;
 
 namespace ShitDesigner.Core {
 	public readonly struct Result {
-		private readonly Diagnostic _diagnostic;
-		public bool IsSuccess { get; }
+		private readonly UnitResult<Diagnostic> _result;
+		private readonly bool _initialized;
+		public bool IsSuccess => _initialized && _result.IsSuccess;
 		public bool IsFailure => !IsSuccess;
-		public Diagnostic Diagnostic => _diagnostic;
-		private Result(bool success, Diagnostic diagnostic) { IsSuccess = success; _diagnostic = diagnostic; }
-		public static Result Success() => new Result(true, null);
-		public static Result Failure(Diagnostic diagnostic) => new Result(false, diagnostic ?? throw new ArgumentNullException(nameof(diagnostic)));
+		public Diagnostic Diagnostic => IsFailure && _initialized ? _result.Error : null;
+		private Result(UnitResult<Diagnostic> result) { _result = result; _initialized = true; }
+		public static Result Success() => new Result(CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>());
+		public static Result Failure(Diagnostic diagnostic) => new Result(CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(diagnostic ?? throw new ArgumentNullException(nameof(diagnostic))));
 	}
 
 	public readonly struct Result<T> {
-		private readonly T _value;
-		private readonly Diagnostic _diagnostic;
-		public bool IsSuccess { get; }
+		private readonly CSharpFunctionalExtensions.Result<T, Diagnostic> _result;
+		private readonly bool _initialized;
+		public bool IsSuccess => _initialized && _result.IsSuccess;
 		public bool IsFailure => !IsSuccess;
-		public T Value => IsSuccess ? _value : throw new InvalidOperationException("Result has no value.");
-		public Diagnostic Diagnostic => _diagnostic;
-		private Result(T value) { IsSuccess = true; _value = value; _diagnostic = null; }
-		private Result(Diagnostic diagnostic) { IsSuccess = false; _value = default; _diagnostic = diagnostic; }
-		public static Result<T> Success(T value) => new Result<T>(value);
-		public static Result<T> Failure(Diagnostic diagnostic) => new Result<T>(diagnostic ?? throw new ArgumentNullException(nameof(diagnostic)));
+		public T Value => IsSuccess ? _result.Value : throw new InvalidOperationException("Result has no value.");
+		public Diagnostic Diagnostic => IsFailure && _initialized ? _result.Error : null;
+		private Result(CSharpFunctionalExtensions.Result<T, Diagnostic> result) { _result = result; _initialized = true; }
+		public static Result<T> Success(T value) => new Result<T>(CSharpFunctionalExtensions.Result.Success<T, Diagnostic>(value));
+		public static Result<T> Failure(Diagnostic diagnostic) => new Result<T>(CSharpFunctionalExtensions.Result.Failure<T, Diagnostic>(diagnostic ?? throw new ArgumentNullException(nameof(diagnostic))));
 	}
 
 	public enum Severity {
