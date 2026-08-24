@@ -1,0 +1,21 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/ShitDesigner/Scenes/Main/MainUI.uss?fileID=7433441132597879392&amp;guid=7e3b7d42d5904ebf83a22f50f92ce618&amp;type=3#MainUI"/>
+    <ui:VisualElement name="main-ui" class="main-ui">
+        <ui:VisualElement name="top-bar" class="top-bar" style="height: 31px;">
+            <ui:VisualElement class="spacer"/>
+            <ui:Button name="live-button" text="○  OFF" tooltip="Live output" class="live-button is-off"/>
+        </ui:VisualElement>
+        <ui:VisualElement name="live-confirm-overlay" class="confirmation-overlay is-hidden">
+            <ui:VisualElement class="confirmation-dialog">
+                <ui:Label name="live-confirm-title" text="START LIVE OUTPUT?" class="confirmation-title"/>
+                <ui:VisualElement class="confirmation-rule"/>
+                <ui:Label name="live-confirm-message" text="Send camera output to Display 2." class="confirmation-message"/>
+                <ui:DropdownField name="live-display-selector" label="OUTPUT DISPLAY" tooltip="Select the external display" class="display-selector"/>
+                <ui:VisualElement class="confirmation-actions">
+                    <ui:Button name="live-confirm-cancel" text="CANCEL" class="confirmation-button confirmation-cancel"/>
+                    <ui:Button name="live-confirm-accept" text="START" class="confirmation-button confirmation-accept"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
