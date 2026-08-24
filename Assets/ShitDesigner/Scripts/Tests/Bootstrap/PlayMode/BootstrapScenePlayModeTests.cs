@@ -17,7 +17,7 @@ using UnityEngine.TestTools;
 using UnityEngine.Rendering;
 
 namespace ShitDesigner.Bootstrap.Tests {
-	public sealed class ProductionBootstrapScenePlayModeTests {
+	public sealed class BootstrapScenePlayModeTests {
 		[UnityTest]
 		public IEnumerator DedicatedBootstrapSceneCreatesCompositionAndPresentationHost() {
 			yield return SceneManager.LoadSceneAsync("ShitDesignerBootstrap", LoadSceneMode.Single);
@@ -25,7 +25,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 			var behaviour = UnityEngine.Object.FindAnyObjectByType<ApplicationHost>();
 			Assert.That(behaviour, Is.Not.Null);
 			Assert.That(behaviour.Composition, Is.Not.Null);
-			Assert.That(behaviour.State, Is.EqualTo(ProductionSystemState.Online).Or.EqualTo(ProductionSystemState.Degraded), behaviour.StartupDiagnostic?.Message);
+			Assert.That(behaviour.State, Is.EqualTo(SystemState.Online).Or.EqualTo(SystemState.Degraded), behaviour.StartupDiagnostic?.Message);
 			Assert.That(behaviour.HandshakeReport, Is.Not.Null);
 			var presentation = UnityEngine.Object.FindAnyObjectByType<ShitDesigner.Presentation.PresentationRoot>();
 			Assert.That(presentation, Is.Not.Null);
@@ -55,7 +55,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 
 				Assert.That(behaviour, Is.Not.Null);
 				Assert.That(behaviour.Composition, Is.Not.Null);
-				var assets = UnityEngine.Object.FindAnyObjectByType<ProductionBootstrapAssets>();
+				var assets = UnityEngine.Object.FindAnyObjectByType<BootstrapAssets>();
 				Assert.That(assets?.DisplayTransformShader, Is.Not.Null,
 					"The bootstrap scene must serialize the DisplayTransform shader so Player stripping cannot remove the terminal Program/Preview path.");
 				Assert.That(assets.DisplayTransformShader.name, Is.EqualTo("Hidden/ShitDesigner/DisplayTransform"));
@@ -87,7 +87,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 				Assert.That(application.RequestPreviewDemand(new ApplicationOutputDemandRequest(firstPreviewId, "image", 640, 360)).IsSuccess, Is.True);
 				Assert.That(application.RequestPreviewDemand(new ApplicationOutputDemandRequest(secondPreviewId, "image", 640, 360)).IsSuccess, Is.True);
 
-				ProductionOwnershipSnapshot ownership = null;
+				CompositionOwnershipSnapshot ownership = null;
 				while (Time.realtimeSinceStartupAsDouble < deadline) {
 					ownership = behaviour.Composition.CaptureOwnershipSnapshot();
 					if (ownership?.Previews?.Count == 2 && ownership.Previews.All(preview => preview.Width == 640 && preview.Height == 360 && preview.FrameNumber > 0)) break;
@@ -106,9 +106,9 @@ namespace ShitDesigner.Bootstrap.Tests {
 				// then repeat health reads without constructing another full
 				// pool/node ownership snapshot. Hide/show, quality replacement
 				// and delete/retire lifetime coverage remains in
-				// ProductionOutputSurfaceBridgePlayModeTests, where borrowed
+				// OutputSurfaceBridgePlayModeTests, where borrowed
 				// leases can be observed directly.
-				var healthBuffer = new ProductionPerformanceSurfaceSnapshot[2];
+				var healthBuffer = new PerformanceSurfaceSnapshot[2];
 				var callerOwnedHealthBuffer = healthBuffer;
 				Assert.That(behaviour.Composition.TryCapturePerformanceHealth(healthBuffer, out var healthCount, out var health), Is.True);
 				Assert.That(healthCount, Is.EqualTo(ownership.Previews.Count));
@@ -132,7 +132,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 				Assert.That(health.Program.FrameNumber, Is.EqualTo(ownership.Program.FrameNumber));
 				Assert.That(health.Program.IsBound, Is.EqualTo(ownership.Program.FrameNumber > 0));
 
-				var undersizedBuffer = new ProductionPerformanceSurfaceSnapshot[1];
+				var undersizedBuffer = new PerformanceSurfaceSnapshot[1];
 				Assert.That(behaviour.Composition.TryCapturePerformanceHealth(undersizedBuffer, out var insufficientCount, out var insufficient), Is.False);
 				Assert.That(insufficientCount, Is.EqualTo(0));
 				Assert.That(insufficient.RequiredPreviewCount, Is.EqualTo(2));
@@ -677,11 +677,11 @@ namespace ShitDesigner.Bootstrap.Tests {
 		}
 
 		[UnityTest, Category("GPU"), Category("ScenePrefab"), Category("D3D12"), Category("Vulkan"), Category("Metal")]
-		public IEnumerator ProductionScenePrefabsContainVisibleDedicatedGeometryAndRenderPixels() {
+		public IEnumerator ScenePrefabsContainVisibleDedicatedGeometryAndRenderPixels() {
 			yield return SceneManager.LoadSceneAsync("ShitDesignerBootstrap", LoadSceneMode.Single);
 			yield return null;
-			var assets = UnityEngine.Object.FindAnyObjectByType<ProductionBootstrapAssets>();
-			Assert.That(assets, Is.Not.Null, "ProductionBootstrapAssets must be present in the bootstrap scene.");
+			var assets = UnityEngine.Object.FindAnyObjectByType<BootstrapAssets>();
+			Assert.That(assets, Is.Not.Null, "BootstrapAssets must be present in the bootstrap scene.");
 			var scene3d = assets.Scene3dPrefab;
 			var scene2d = assets.Scene2dPrefab;
 			Assert.That(scene3d, Is.Not.Null);

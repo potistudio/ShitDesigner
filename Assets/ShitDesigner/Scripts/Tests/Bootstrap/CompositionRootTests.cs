@@ -20,7 +20,7 @@ using UnityEngine.SceneManagement;
 
 namespace ShitDesigner.Bootstrap.Tests {
 	[TestFixture]
-	public sealed class ProductionCompositionRootTests {
+	public sealed class CompositionRootTests {
 		[Test]
 		public void EntrySceneKeepsSerializedApplicationHostAfterRename() {
 			var scene = EditorSceneManager.OpenScene("Assets/ShitDesigner/Scenes/ShitDesignerBootstrap.unity", OpenSceneMode.Additive);
@@ -35,7 +35,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 		[Test]
 		public void StartupSequenceRunsNamedBoundariesInOrderAndReachesOnline() {
 			var order = new List<string>();
-			var startup = new ProductionStartupSequence();
+			var startup = new StartupSequence();
 
 			var result = startup.Run(
 				() => RecordSuccessfulPhase(order, "preflight"),
@@ -44,7 +44,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 				() => RecordSuccessfulPhase(order, "activate"));
 
 			Assert.That(result.IsSuccess, Is.True);
-			Assert.That(startup.State, Is.EqualTo(ProductionSystemState.Online));
+			Assert.That(startup.State, Is.EqualTo(SystemState.Online));
 			Assert.That(startup.LastDiagnostic, Is.Null);
 			CollectionAssert.AreEqual(new[] { "preflight", "compose", "handshake", "activate" }, order);
 		}
@@ -52,7 +52,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 		[Test]
 		public void StartupSequenceFaultsAtFailedBoundaryAndDoesNotRunLaterPhases() {
 			var order = new List<string>();
-			var startup = new ProductionStartupSequence();
+			var startup = new StartupSequence();
 			var expected = new Diagnostic(new DiagnosticCode("test.handshake.unavailable"), Severity.Error, "Handshake failed.");
 
 			var result = startup.Run(
@@ -67,14 +67,14 @@ namespace ShitDesigner.Bootstrap.Tests {
 
 			Assert.That(result.IsFailure, Is.True);
 			Assert.That(result.Diagnostic, Is.SameAs(expected));
-			Assert.That(startup.State, Is.EqualTo(ProductionSystemState.Faulted));
+			Assert.That(startup.State, Is.EqualTo(SystemState.Faulted));
 			Assert.That(startup.LastDiagnostic, Is.SameAs(expected));
 			CollectionAssert.AreEqual(new[] { "preflight", "compose", "handshake", "rollback" }, order);
 		}
 
 		[Test]
 		public void StartupSequencePublishesDegradedWhenOptionalCapabilityIsUnavailable() {
-			var startup = new ProductionStartupSequence();
+			var startup = new StartupSequence();
 			var unavailable = CapabilityStatus.Unavailable("midi", new Diagnostic(new DiagnosticCode("test.midi.unavailable"), Severity.Warning, "No MIDI."));
 
 			var result = startup.Run(
@@ -84,15 +84,51 @@ namespace ShitDesigner.Bootstrap.Tests {
 				() => Result.Success());
 
 			Assert.That(result.IsSuccess, Is.True);
-			Assert.That(startup.State, Is.EqualTo(ProductionSystemState.Degraded));
+			Assert.That(startup.State, Is.EqualTo(SystemState.Degraded));
 			Assert.That(startup.HandshakeReport.IsDegraded, Is.True);
 			Assert.That(startup.HandshakeReport.Midi.Diagnostic.Code.Value, Is.EqualTo("test.midi.unavailable"));
 		}
 
 		[Test]
+		public void CapabilitySupervisorMovesSystemBetweenDegradedAndOnlineAtProbeInterval() {
+			var midiProbeCount = 0;
+			var displayProbeCount = 0;
+			var midi = CapabilityStatus.Unavailable("midi",
+				new Diagnostic(new DiagnosticCode("test.midi.unavailable"), Severity.Warning, "No MIDI."));
+			var supervisor = new CapabilitySupervisor(
+				() => { midiProbeCount++; return Result<CapabilityStatus>.Success(midi); },
+				() => { displayProbeCount++; return Result<CapabilityStatus>.Success(CapabilityStatus.Ready("display")); });
+			var startup = new StartupSequence();
+			supervisor.Changed += startup.Observe;
+
+			Assert.That(startup.Run(
+				() => Result.Success(),
+				() => Result.Success(),
+				supervisor.Handshake,
+				() => Result.Success()).IsSuccess, Is.True);
+			Assert.That(startup.State, Is.EqualTo(SystemState.Degraded));
+
+			midi = CapabilityStatus.Ready("midi");
+			supervisor.Tick(0d);
+			Assert.That(startup.State, Is.EqualTo(SystemState.Online));
+			Assert.That(midiProbeCount, Is.EqualTo(2));
+			Assert.That(displayProbeCount, Is.EqualTo(2));
+
+			midi = CapabilityStatus.Unavailable("midi",
+				new Diagnostic(new DiagnosticCode("test.midi.disconnected"), Severity.Warning, "MIDI disconnected."));
+			supervisor.Tick(0.5d);
+			Assert.That(startup.State, Is.EqualTo(SystemState.Online), "The supervisor must not probe every frame.");
+			supervisor.Tick(1d);
+			Assert.That(startup.State, Is.EqualTo(SystemState.Degraded));
+			Assert.That(startup.HandshakeReport.Midi.Diagnostic.Code.Value, Is.EqualTo("test.midi.disconnected"));
+			Assert.That(midiProbeCount, Is.EqualTo(3));
+			Assert.That(displayProbeCount, Is.EqualTo(3));
+		}
+
+		[Test]
 		public void StartupShutdownDrainsStopsAndTearsDownInOrder() {
 			var order = new List<string>();
-			var startup = new ProductionStartupSequence();
+			var startup = new StartupSequence();
 			Assert.That(startup.Run(
 				() => Result.Success(),
 				() => {
@@ -108,14 +144,14 @@ namespace ShitDesigner.Bootstrap.Tests {
 
 			startup.Shutdown();
 
-			Assert.That(startup.State, Is.EqualTo(ProductionSystemState.Offline));
+			Assert.That(startup.State, Is.EqualTo(SystemState.Offline));
 			CollectionAssert.AreEqual(new[] { "drain", "stop", "teardown" }, order);
 		}
 
 		[Test]
 		public void StartupShutdownContinuesAfterOneBoundaryThrows() {
 			var order = new List<string>();
-			var startup = new ProductionStartupSequence();
+			var startup = new StartupSequence();
 			Assert.That(startup.Run(
 				() => Result.Success(),
 				() => {
@@ -131,7 +167,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 
 			startup.Shutdown();
 
-			Assert.That(startup.State, Is.EqualTo(ProductionSystemState.Offline));
+			Assert.That(startup.State, Is.EqualTo(SystemState.Offline));
 			Assert.That(startup.LastDiagnostic?.Code.Value, Is.EqualTo("bootstrap.shutdown.phase_failed"));
 			CollectionAssert.AreEqual(new[] { "stop", "teardown" }, order);
 		}
@@ -156,17 +192,20 @@ namespace ShitDesigner.Bootstrap.Tests {
 		}
 
 		[Test]
-		public void DriverCallsInputThenReadApplyPresentOncePerLateUpdate() {
+		public void DriverSupervisesCapabilitiesThenCallsInputReadApplyPresentOncePerLateUpdate() {
 			var target = Path.Combine(Path.GetTempPath(), "ShitDesigner.Bootstrap.Tests", Guid.NewGuid().ToString("N"));
 			var order = new List<string>();
 			try {
 				using (var app = new ProjectApplication(new LocalProjectFileSystem())) {
 					Assert.That(app.NewProject("Loop", target, UnsavedChangesDecision.Discard).IsSuccess, Is.True);
-					var driver = new ApplicationLoopDriverCore(app, new RecordingInput(order), new RecordingPresentation(order), new RecordingTiming(order));
+					var supervisor = new CapabilitySupervisor(
+						() => { order.Add("midi"); return Result<CapabilityStatus>.Success(CapabilityStatus.Ready("midi")); },
+						() => { order.Add("display"); return Result<CapabilityStatus>.Success(CapabilityStatus.Ready("display")); });
+					var driver = new ApplicationLoopDriverCore(app, new RecordingInput(order), new RecordingPresentation(order), new RecordingTiming(order), supervisor);
 					try {
 						Assert.That(driver.LateUpdate(1.0), Is.Not.Null);
 						Assert.That(driver.TickCount, Is.EqualTo(1));
-						CollectionAssert.AreEqual(new[] { "input", "read", "apply", "present", "timing" }, order);
+						CollectionAssert.AreEqual(new[] { "midi", "display", "input", "read", "apply", "present", "timing" }, order);
 						driver.Dispose();
 						Assert.That(driver.LateUpdate(2.0), Is.Null);
 					}
@@ -261,7 +300,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 		}
 
 		[Test]
-		public void ProductionSchedulerRejectsReentryAndStopsAfterDispose() {
+		public void SchedulerRejectsReentryAndStopsAfterDispose() {
 			var target = Path.Combine(Path.GetTempPath(), "ShitDesigner.Bootstrap.CadenceLifecycle", Guid.NewGuid().ToString("N"));
 			try {
 				using (var app = new ProjectApplication(new LocalProjectFileSystem())) {
@@ -459,7 +498,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 		public void UnityFrameTimingHistory_ReplaysOldestUnseenCompletionOnePerPollWithoutPrivateBatching() {
 			var history = new ReplayedFrameTimingHistory();
 			var time = 0d;
-			var source = new UnityProductionFrameTimingSource(history, () => ++time);
+			var source = new FrameTimingSource(history, () => ++time);
 
 			// Unity returns element zero as newest. The same sixteen-entry
 			// history is replayed on every poll; the source must therefore
@@ -497,7 +536,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 
 		[Test]
 		public void UnityFrameTimingHistory_RawInvalidTimingPublishesOneUnavailableOriginalBoundary() {
-			var source = new UnityProductionFrameTimingSource(new RawInvalidFrameTimingHistory(), () => 1d);
+			var source = new FrameTimingSource(new RawInvalidFrameTimingHistory(), () => 1d);
 
 			Assert.That(source.TryReadCompleted(41UL, out var unavailable), Is.True);
 			Assert.That(unavailable.IsAvailable, Is.False);
@@ -514,7 +553,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 			Assert.That(source.LastDiagnostic.Outcome, Is.EqualTo("Duplicate"));
 			Assert.That(source.PendingCount, Is.EqualTo(1));
 
-			var cpuInvalid = new UnityProductionFrameTimingSource(new RawInvalidFrameTimingHistory(201d, double.NaN, 7d), () => 2d);
+			var cpuInvalid = new FrameTimingSource(new RawInvalidFrameTimingHistory(201d, double.NaN, 7d), () => 2d);
 			Assert.That(cpuInvalid.TryReadCompleted(43UL, out var cpuUnavailable), Is.True);
 			Assert.That(cpuUnavailable.IsAvailable, Is.False);
 			Assert.That(cpuUnavailable.FrameNumber, Is.EqualTo(43UL));
@@ -533,7 +572,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 				"When both CPU workload sources are invalid, the timing must remain unavailable rather than using wait-inclusive total CPU.");
 
 			var time = 0d;
-			var source = new UnityProductionFrameTimingSource(new CpuWorkloadFrameTimingHistory(), () => ++time);
+			var source = new FrameTimingSource(new CpuWorkloadFrameTimingHistory(), () => ++time);
 			Assert.That(source.TryReadCompleted(41UL, out var bootstrap), Is.True);
 			Assert.That(bootstrap.IsAvailable, Is.False, "The first completion still has no preceding presentation timestamp.");
 
@@ -557,7 +596,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 
 		[Test]
 		public void UnityFrameTimingHistory_ApiExceptionIsReportedWithoutInventingACompletion() {
-			var source = new UnityProductionFrameTimingSource(new ThrowingFrameTimingHistory(), () => 1d);
+			var source = new FrameTimingSource(new ThrowingFrameTimingHistory(), () => 1d);
 			Assert.That(source.TryReadCompleted(51UL, out _), Is.False);
 			Assert.That(source.LastDiagnostic.Outcome, Is.EqualTo("ApiException"));
 			Assert.That(source.LastDiagnostic.CandidateOutcome, Is.EqualTo("None"));
@@ -720,7 +759,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 		[Test]
 		public void PlatformFileAdapterDropsStaleSessionResults() {
 			var backend = new RecordingFileDialogBackend();
-			using (var adapter = new ProductionPlatformFileInteractionAdapter(backend)) {
+			using (var adapter = new PlatformFileInteractionAdapter(backend)) {
 				var request = new PlatformPathRequest(Guid.NewGuid(), Guid.NewGuid(), PlatformPathRequestKind.MultiFile, "Import");
 				PlatformPathResult result = null;
 				adapter.PickPath(request, value => result = value);
@@ -734,7 +773,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 		[Test]
 		public void PlatformFileAdapterCancelMakesLateCallbackInert() {
 			var backend = new RecordingFileDialogBackend();
-			using (var adapter = new ProductionPlatformFileInteractionAdapter(backend)) {
+			using (var adapter = new PlatformFileInteractionAdapter(backend)) {
 				var request = new PlatformPathRequest(Guid.NewGuid(), Guid.NewGuid(), PlatformPathRequestKind.File, "Open");
 				var callbackCount = 0;
 				adapter.PickPath(request, _ => callbackCount++);
@@ -814,11 +853,11 @@ namespace ShitDesigner.Bootstrap.Tests {
 			}
 		}
 
-		private sealed class RecordingProvider : IProductionVisualBindingProvider {
+		private sealed class RecordingProvider : IVisualBindingProvider {
 			public int CreateCount;
-			public Result<ProductionVisualBindingSet> Create(string sessionId) {
+			public Result<VisualBindingSet> Create(string sessionId) {
 				CreateCount++;
-				return Result<ProductionVisualBindingSet>.Failure(new Diagnostic(new DiagnosticCode("test.unexpected_session_create"), Severity.Error, "Unexpected session binding creation."));
+				return Result<VisualBindingSet>.Failure(new Diagnostic(new DiagnosticCode("test.unexpected_session_create"), Severity.Error, "Unexpected session binding creation."));
 			}
 		}
 		private static Result RecordSuccessfulPhase(ICollection<string> order, string phase) {
@@ -851,7 +890,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 			public void Apply(ApplicationFrameResult frame) { _order.Add("apply"); }
 			public void Present(ApplicationFrameResult frame) { _order.Add("present"); }
 		}
-		private sealed class RecordingTiming : IProductionFrameTimingSource {
+		private sealed class RecordingTiming : IFrameTimingSource {
 			private readonly IList<string> _order;
 			public RecordingTiming(IList<string> order) { _order = order; }
 			public bool TryReadCompleted(ulong presentedFrameNumber, out RuntimeFrameTimingSample sample) {
@@ -861,7 +900,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 			}
 		}
 
-		private sealed class DelayedTiming : IProductionFrameTimingSource {
+		private sealed class DelayedTiming : IFrameTimingSource {
 			private int _polls;
 			public int CompletedSamplesReturned { get; private set; }
 			public bool TryReadCompleted(ulong presentedFrameNumber, out RuntimeFrameTimingSample sample) {
@@ -915,7 +954,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 		private sealed class ThrowingFrameTimingHistory : IUnityFrameTimingHistoryReader {
 			public int CaptureAndRead(UnityFrameTimingHistoryEntry[] destination) => throw new InvalidOperationException("fixture");
 		}
-		private sealed class RecordingFileDialogBackend : IProductionPlatformFileDialogBackend {
+		private sealed class RecordingFileDialogBackend : IPlatformFileDialogBackend {
 			private Action<PlatformPathResult> _complete;
 			public bool IsSupported => true;
 			public void PickPath(PlatformPathRequest request, Action<PlatformPathResult> completed) { _complete = completed; }

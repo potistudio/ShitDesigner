@@ -6,7 +6,7 @@
 
 ## 起動順
 
-起動は `ProductionStartupSequence` が次の境界を順番に実行する。
+起動は `StartupSequence` が次の境界を順番に実行する。
 
 ```text
 Cold → Preflight → Composing → Handshaking → Activating → Online | Degraded
@@ -21,7 +21,16 @@ Cold → Preflight → Composing → Handshaking → Activating → Online | Deg
 
 必須境界が失敗した場合は後続境界を実行せず `Faulted` へ移る。MIDIと外部Displayは任意機能なので、不在だけでは起動失敗にしない。
 
-`Awake` と外部からCompositionを渡す `Configure` は、どちらも同じ `ProductionStartupSequence` を通る。別の起動経路は持たない。
+Hostの起動入口は `Awake` だけとし、Compositionは必ず `CompositionFactory` から生成する。別の起動経路は持たない。
+
+## 稼働中の外部状態
+
+`CapabilitySupervisor` は `ApplicationLoopDriver` のメインスレッド上で1秒ごとにMIDIとDisplayをProbeする。状態が変化した場合だけ新しいReportを発行し、System Stateを `Online` と `Degraded` の間で更新する。
+
+- 起動時に存在しなかったMIDIは継続的に再接続する。
+- Projectが開かれた後にDisplay Handshakeを開始する。
+- Displayの増減または選択変更を検出し、外部DisplayとProgram Monitorを切り替える。
+- Unity Display APIはバックグラウンドスレッドから呼び出さない。
 
 ## 終了順
 

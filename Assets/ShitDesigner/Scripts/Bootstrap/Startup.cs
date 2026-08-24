@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace ShitDesigner.Bootstrap {
-	public enum ProductionSystemState {
+	public enum SystemState {
 		Cold,
 		Preflight,
 		Composing,
@@ -42,6 +42,14 @@ namespace ShitDesigner.Bootstrap {
 		public static CapabilityStatus Unavailable(string name, Diagnostic diagnostic) => new CapabilityStatus(name, CapabilityState.Unavailable,
 			diagnostic ?? throw new ArgumentNullException(nameof(diagnostic)));
 		public static CapabilityStatus Deferred(string name) => new CapabilityStatus(name, CapabilityState.Deferred, null);
+
+		public bool HasSameState(CapabilityStatus other) {
+			if (other == null || !string.Equals(Name, other.Name, StringComparison.Ordinal) || State != other.State) return false;
+			var code = Diagnostic?.Code.Value ?? string.Empty;
+			var otherCode = other.Diagnostic?.Code.Value ?? string.Empty;
+			return string.Equals(code, otherCode, StringComparison.Ordinal)
+				&& string.Equals(Diagnostic?.Message ?? string.Empty, other.Diagnostic?.Message ?? string.Empty, StringComparison.Ordinal);
+		}
 	}
 
 	public sealed class HandshakeReport {
@@ -55,6 +63,63 @@ namespace ShitDesigner.Bootstrap {
 		}
 
 		public static HandshakeReport Ready => new HandshakeReport(CapabilityStatus.Ready("midi"), CapabilityStatus.Ready("display"));
+		public bool HasSameState(HandshakeReport other) => other != null && Midi.HasSameState(other.Midi) && Display.HasSameState(other.Display);
+	}
+
+	/// <summary>Main-thread supervisor for optional external capabilities.
+	/// Handshake captures the initial state; Tick keeps it current and publishes
+	/// only meaningful transitions.</summary>
+	public sealed class CapabilitySupervisor {
+		public const double DefaultProbeIntervalSeconds = 1d;
+		private readonly Func<Result<CapabilityStatus>> _midiProbe;
+		private readonly Func<Result<CapabilityStatus>> _displayProbe;
+		private readonly double _probeIntervalSeconds;
+		private double _nextProbeTime = double.NegativeInfinity;
+
+		public HandshakeReport CurrentReport { get; private set; }
+		public event Action<HandshakeReport> Changed;
+
+		public CapabilitySupervisor(Func<Result<CapabilityStatus>> midiProbe, Func<Result<CapabilityStatus>> displayProbe,
+			double probeIntervalSeconds = DefaultProbeIntervalSeconds) {
+			_midiProbe = midiProbe ?? throw new ArgumentNullException(nameof(midiProbe));
+			_displayProbe = displayProbe ?? throw new ArgumentNullException(nameof(displayProbe));
+			if (probeIntervalSeconds <= 0d || double.IsNaN(probeIntervalSeconds) || double.IsInfinity(probeIntervalSeconds))
+				throw new ArgumentOutOfRangeException(nameof(probeIntervalSeconds));
+			_probeIntervalSeconds = probeIntervalSeconds;
+		}
+
+		public Result<HandshakeReport> Handshake() {
+			_nextProbeTime = double.NegativeInfinity;
+			return Result<HandshakeReport>.Success(ProbeAndPublish());
+		}
+
+		public void Tick(double monotonicTime) {
+			if (double.IsNaN(monotonicTime) || double.IsInfinity(monotonicTime) || monotonicTime < _nextProbeTime) return;
+			_nextProbeTime = monotonicTime + _probeIntervalSeconds;
+			ProbeAndPublish();
+		}
+
+		private HandshakeReport ProbeAndPublish() {
+			var report = new HandshakeReport(Probe(_midiProbe, "midi"), Probe(_displayProbe, "display"));
+			if (CurrentReport != null && CurrentReport.HasSameState(report)) return CurrentReport;
+			CurrentReport = report;
+			Changed?.Invoke(report);
+			return report;
+		}
+
+		private static CapabilityStatus Probe(Func<Result<CapabilityStatus>> probe, string name) {
+			try {
+				var result = probe();
+				if (result.IsSuccess && result.Value != null) return result.Value;
+				return CapabilityStatus.Unavailable(name, result.Diagnostic ?? ProbeFailure(name, null));
+			}
+			catch (Exception exception) { return CapabilityStatus.Unavailable(name, ProbeFailure(name, exception)); }
+		}
+
+		private static Diagnostic ProbeFailure(string name, Exception exception) => new Diagnostic(
+			new DiagnosticCode("bootstrap.capability.probe_failed"), Severity.Warning,
+			name + " capability probe failed.", module: "bootstrap",
+			exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception));
 	}
 
 	public enum ShutdownStage {
@@ -65,51 +130,58 @@ namespace ShitDesigner.Bootstrap {
 
 	/// <summary>Small, deterministic startup state machine. Each callback owns
 	/// one boundary; the sequence only enforces order and exposes failure.</summary>
-	public sealed class ProductionStartupSequence {
+	public sealed class StartupSequence {
 		private readonly List<Action> _drain = new List<Action>();
 		private readonly List<Action> _stop = new List<Action>();
 		private readonly List<Action> _teardown = new List<Action>();
 		private readonly List<Diagnostic> _shutdownDiagnostics = new List<Diagnostic>();
-		public ProductionSystemState State { get; private set; } = ProductionSystemState.Cold;
+		public SystemState State { get; private set; } = SystemState.Cold;
 		public Diagnostic LastDiagnostic { get; private set; }
 		public HandshakeReport HandshakeReport { get; private set; }
 		public IReadOnlyList<Diagnostic> ShutdownDiagnostics => _shutdownDiagnostics;
 
 		public Result Run(Func<Result> preflight, Func<Result> compose, Func<Result<HandshakeReport>> handshake, Func<Result> activate) {
-			if (State != ProductionSystemState.Cold && State != ProductionSystemState.Offline)
+			if (State != SystemState.Cold && State != SystemState.Offline)
 				return Failure("bootstrap.startup.state", "Production startup can only begin from Cold or Offline.");
 
 			LastDiagnostic = null;
 			HandshakeReport = null;
 			_shutdownDiagnostics.Clear();
 			ClearShutdownActions();
-			var result = Execute(ProductionSystemState.Preflight, preflight);
+			var result = Execute(SystemState.Preflight, preflight);
 			if (result.IsFailure) return result;
-			result = Execute(ProductionSystemState.Composing, compose);
+			result = Execute(SystemState.Composing, compose);
 			if (result.IsFailure) return result;
 			var handshakeResult = ExecuteHandshake(handshake);
 			if (handshakeResult.IsFailure) return Result.Failure(handshakeResult.Diagnostic);
 			HandshakeReport = handshakeResult.Value;
-			result = Execute(ProductionSystemState.Activating, activate);
+			result = Execute(SystemState.Activating, activate);
 			if (result.IsFailure) return result;
-			State = HandshakeReport.IsDegraded ? ProductionSystemState.Degraded : ProductionSystemState.Online;
+			State = HandshakeReport.IsDegraded ? SystemState.Degraded : SystemState.Online;
 			return Result.Success();
 		}
 
 		public void RegisterShutdown(ShutdownStage stage, Action action) {
 			if (action == null) throw new ArgumentNullException(nameof(action));
-			if (State != ProductionSystemState.Composing && State != ProductionSystemState.Handshaking && State != ProductionSystemState.Activating)
+			if (State != SystemState.Composing && State != SystemState.Handshaking && State != SystemState.Activating)
 				throw new InvalidOperationException("Shutdown ownership can only be registered during startup.");
 			Actions(stage).Add(action);
 		}
 
-		public void Shutdown() {
-			if (State == ProductionSystemState.Offline) return;
-			ReleaseOwned();
-			State = ProductionSystemState.Offline;
+		public void Observe(HandshakeReport report) {
+			if (report == null) throw new ArgumentNullException(nameof(report));
+			if (State != SystemState.Online && State != SystemState.Degraded) return;
+			HandshakeReport = report;
+			State = report.IsDegraded ? SystemState.Degraded : SystemState.Online;
 		}
 
-		private Result Execute(ProductionSystemState state, Func<Result> phase) {
+		public void Shutdown() {
+			if (State == SystemState.Offline) return;
+			ReleaseOwned();
+			State = SystemState.Offline;
+		}
+
+		private Result Execute(SystemState state, Func<Result> phase) {
 			State = state;
 			if (phase == null) return Fail(new Diagnostic(new DiagnosticCode("bootstrap.startup.phase_missing"), Severity.Error, state + " phase is missing.", module: "bootstrap"));
 			try {
@@ -123,7 +195,7 @@ namespace ShitDesigner.Bootstrap {
 		}
 
 		private Result<HandshakeReport> ExecuteHandshake(Func<Result<HandshakeReport>> phase) {
-			State = ProductionSystemState.Handshaking;
+			State = SystemState.Handshaking;
 			if (phase == null)
 				return FailHandshake(new Diagnostic(new DiagnosticCode("bootstrap.startup.phase_missing"), Severity.Error, "Handshaking phase is missing.", module: "bootstrap"));
 			try {
@@ -137,13 +209,13 @@ namespace ShitDesigner.Bootstrap {
 		}
 
 		private void ReleaseOwned() {
-			ExecuteShutdown(ProductionSystemState.Draining, _drain);
-			ExecuteShutdown(ProductionSystemState.Stopping, _stop);
-			ExecuteShutdown(ProductionSystemState.Teardown, _teardown);
+			ExecuteShutdown(SystemState.Draining, _drain);
+			ExecuteShutdown(SystemState.Stopping, _stop);
+			ExecuteShutdown(SystemState.Teardown, _teardown);
 			ClearShutdownActions();
 		}
 
-		private void ExecuteShutdown(ProductionSystemState state, List<Action> actions) {
+		private void ExecuteShutdown(SystemState state, List<Action> actions) {
 			State = state;
 			for (var index = actions.Count - 1; index >= 0; index--) {
 				try { actions[index](); }
@@ -161,7 +233,7 @@ namespace ShitDesigner.Bootstrap {
 			LastDiagnostic = startupDiagnostic;
 			ReleaseOwned();
 			LastDiagnostic = startupDiagnostic;
-			State = ProductionSystemState.Faulted;
+			State = SystemState.Faulted;
 			return Result.Failure(startupDiagnostic);
 		}
 
@@ -188,17 +260,17 @@ namespace ShitDesigner.Bootstrap {
 		private Result Failure(string code, string message) => Fail(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap"));
 	}
 
-	internal sealed class ProductionWindowLifecycle {
-		private readonly IProductionWindowAdapter _adapter;
+	internal sealed class WindowLifecycle {
+		private readonly IWindowAdapter _adapter;
 
-		public ProductionWindowLifecycle(IProductionWindowAdapter adapter) {
+		public WindowLifecycle(IWindowAdapter adapter) {
 			_adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
 		}
 
 		public Result Activate() {
 			ConfigureFramePacing();
-			if (!_adapter.IsSupported || !_adapter.IsWindowed) return Result.Success();
-			_adapter.SetWindowedSize(new ProductionWindowSize(ProductionWindowConstraints.InitialWidth, ProductionWindowConstraints.InitialHeight));
+			if (!_adapter.IsSupported || _adapter.IsFullscreen) return Result.Success();
+			_adapter.SetWindowedSize(new WindowSize(WindowConstraints.InitialWidth, WindowConstraints.InitialHeight));
 			EnforceMinimumSize();
 			return Result.Success();
 		}
@@ -206,10 +278,10 @@ namespace ShitDesigner.Bootstrap {
 		public void Tick() => EnforceMinimumSize();
 
 		private void EnforceMinimumSize() {
-			if (!_adapter.IsSupported || !_adapter.IsWindowed) return;
+			if (!_adapter.IsSupported || _adapter.IsFullscreen) return;
 			var current = _adapter.CurrentSize;
-			if (ProductionWindowConstraints.NeedsClamp(current))
-				_adapter.SetWindowedSize(ProductionWindowConstraints.Clamp(current));
+			if (WindowConstraints.NeedsClamp(current))
+				_adapter.SetWindowedSize(WindowConstraints.Clamp(current));
 		}
 
 		private static void ConfigureFramePacing() {
@@ -220,16 +292,16 @@ namespace ShitDesigner.Bootstrap {
 			}
 			QualitySettings.SetQualityLevel(selected, applyExpensiveChanges: false);
 			QualitySettings.vSyncCount = 0;
-			UnityEngine.Application.targetFrameRate = ApplicationLoopDriverCore.ProductionHostTargetFramesPerSecond;
+			UnityEngine.Application.targetFrameRate = ApplicationLoopDriverCore.HostTargetFramesPerSecond;
 		}
 	}
 
-	internal sealed class ProductionPresentationHost : IDisposable {
+	internal sealed class PresentationHost : IDisposable {
 		private readonly GameObject _owner;
 		private readonly PanelSettings _panelSettingsSource;
 		private PresentationRoot _root;
 
-		public ProductionPresentationHost(GameObject owner, PresentationRoot root, PanelSettings panelSettingsSource) {
+		public PresentationHost(GameObject owner, PresentationRoot root, PanelSettings panelSettingsSource) {
 			_owner = owner != null ? owner : throw new ArgumentNullException(nameof(owner));
 			_root = root;
 			_panelSettingsSource = panelSettingsSource;

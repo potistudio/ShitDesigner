@@ -23,6 +23,10 @@ namespace ShitDesigner.Input {
 		bool TryDequeue(out MidiInputEvent inputEvent);
 	}
 
+	public interface IMidiInputAvailability {
+		bool IsAvailable { get; }
+	}
+
 	public static class MidiShortMessageDecoder {
 		public static bool TryDecode(string deviceName, uint packedMessage, out MidiInputEvent inputEvent) {
 			var status = (byte)(packedMessage & 0xff);
@@ -61,23 +65,36 @@ namespace ShitDesigner.Input {
 
 	/// <summary>Windows WinMM MIDI input. Native callbacks only enqueue data;
 	/// Application state is touched later by Poll on Unity's main thread.</summary>
-	public sealed class WindowsMidiInputSource : IMidiInputSource {
+	public sealed class WindowsMidiInputSource : IMidiInputSource, IMidiInputAvailability {
 		private const uint CallbackFunction = 0x00030000;
 		private const uint MidiDataMessage = 0x3c3;
 		private const uint NoError = 0;
 		private readonly ConcurrentQueue<MidiInputEvent> _events = new ConcurrentQueue<MidiInputEvent>();
 		private static readonly MidiInCallback Callback = OnMidiMessage;
+		private readonly uint _deviceId;
 		private IntPtr _handle;
 		private GCHandle _selfHandle;
 		private bool _hasSelfHandle;
 		private bool _disposed;
 
 		public string DeviceName { get; }
+		public bool IsAvailable {
+			get {
+				if (_disposed) return false;
+				try {
+					var devices = GetDevices();
+					return _deviceId < (uint)devices.Count && string.Equals(devices[(int)_deviceId].Name, DeviceName, StringComparison.Ordinal);
+				}
+				catch { }
+				return false;
+			}
+		}
 
 		public WindowsMidiInputSource(uint deviceId) {
 			if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new PlatformNotSupportedException("WinMM MIDI input is only available on Windows.");
 			var devices = GetDevices();
 			if (deviceId >= devices.Count) throw new ArgumentOutOfRangeException(nameof(deviceId), "The MIDI input device does not exist.");
+			_deviceId = deviceId;
 			DeviceName = devices[(int)deviceId].Name;
 			_selfHandle = GCHandle.Alloc(this);
 			_hasSelfHandle = true;

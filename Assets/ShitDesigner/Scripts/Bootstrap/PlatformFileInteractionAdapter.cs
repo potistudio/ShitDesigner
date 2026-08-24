@@ -15,14 +15,14 @@ namespace ShitDesigner.Bootstrap {
 	/// Editor-only API. Implementations invoke the callback when the native
 	/// dialog closes; the adapter validates request/session identity before it
 	/// reaches Presentation.</summary>
-	public interface IProductionPlatformFileDialogBackend : IDisposable {
+	public interface IPlatformFileDialogBackend : IDisposable {
 		bool IsSupported { get; }
 		void PickPath(PlatformPathRequest request, Action<PlatformPathResult> completed);
 		void Cancel(Guid requestId);
 	}
 
-	public sealed class ProductionPlatformFileInteractionAdapter : IPlatformFileInteractionAdapter, IDisposable {
-		private readonly IProductionPlatformFileDialogBackend _backend;
+	public sealed class PlatformFileInteractionAdapter : IPlatformFileInteractionAdapter, IDisposable {
+		private readonly IPlatformFileDialogBackend _backend;
 		private readonly SynchronizationContext _mainContext;
 		private readonly object _gate = new object();
 		private readonly Dictionary<Guid, PlatformPathRequest> _active = new Dictionary<Guid, PlatformPathRequest>();
@@ -31,8 +31,8 @@ namespace ShitDesigner.Bootstrap {
 		public bool IsSupported => !_disposed && _backend != null && _backend.IsSupported;
 		public int ActiveRequestCount { get { lock (_gate) return _active.Count; } }
 
-		public ProductionPlatformFileInteractionAdapter(IProductionPlatformFileDialogBackend backend = null) {
-			_backend = backend ?? ProductionPlatformFileDialogBackend.CreateDefault();
+		public PlatformFileInteractionAdapter(IPlatformFileDialogBackend backend = null) {
+			_backend = backend ?? PlatformFileDialogBackend.CreateDefault();
 			_mainContext = SynchronizationContext.Current;
 		}
 
@@ -98,8 +98,8 @@ namespace ShitDesigner.Bootstrap {
 			=> new PlatformPathResult(request.RequestId, request.ProjectSessionId, false, error: message + (exception == null ? string.Empty : " " + exception.Message));
 	}
 
-	public static class ProductionPlatformFileDialogBackend {
-		public static IProductionPlatformFileDialogBackend CreateDefault() {
+	public static class PlatformFileDialogBackend {
+		public static IPlatformFileDialogBackend CreateDefault() {
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
 			return new WindowsNativeFileDialogBackend();
 #elif UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
@@ -110,7 +110,7 @@ namespace ShitDesigner.Bootstrap {
 		}
 	}
 
-	internal sealed class UnsupportedPlatformFileDialogBackend : IProductionPlatformFileDialogBackend {
+	internal sealed class UnsupportedPlatformFileDialogBackend : IPlatformFileDialogBackend {
 		public bool IsSupported => false;
 		public void PickPath(PlatformPathRequest request, Action<PlatformPathResult> completed) { }
 		public void Cancel(Guid requestId) { }
@@ -118,7 +118,7 @@ namespace ShitDesigner.Bootstrap {
 	}
 
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
-	internal sealed class WindowsNativeFileDialogBackend : IProductionPlatformFileDialogBackend {
+	internal sealed class WindowsNativeFileDialogBackend : IPlatformFileDialogBackend {
 		private readonly Dictionary<Guid, bool> _active = new Dictionary<Guid, bool>();
 		public bool IsSupported => true;
 
@@ -197,7 +197,7 @@ namespace ShitDesigner.Bootstrap {
 #endif
 
 #if UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
-    internal sealed class MacNativeFileDialogBackend : IProductionPlatformFileDialogBackend
+    internal sealed class MacNativeFileDialogBackend : IPlatformFileDialogBackend
     {
         private readonly Dictionary<Guid, Process> _active = new Dictionary<Guid, Process>();
         public bool IsSupported => File.Exists("/usr/bin/osascript");

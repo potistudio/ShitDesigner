@@ -27,12 +27,12 @@ namespace ShitDesigner.Bootstrap {
 	/// <summary>One explicit visual binding set is created for one Runtime
 	/// session. The set owns only session resources; catalog assets remain
 	/// application-owned and are never destroyed here.</summary>
-	public sealed class ProductionVisualBindingSet : IDisposable {
+	public sealed class VisualBindingSet : IDisposable {
 		public IReadOnlyList<IRuntimeVisualNodeBinding> Bindings { get; }
 		public IReadOnlyList<IDisposable> OwnedResources { get; }
 		private bool _disposed;
 
-		public ProductionVisualBindingSet(IEnumerable<IRuntimeVisualNodeBinding> bindings, IEnumerable<IDisposable> ownedResources = null) {
+		public VisualBindingSet(IEnumerable<IRuntimeVisualNodeBinding> bindings, IEnumerable<IDisposable> ownedResources = null) {
 			var list = (bindings ?? Enumerable.Empty<IRuntimeVisualNodeBinding>()).Where(x => x != null).ToList();
 			if (list.Count == 0) throw new ArgumentException("At least one explicit visual binding is required.", nameof(bindings));
 			Bindings = new ReadOnlyCollection<IRuntimeVisualNodeBinding>(list);
@@ -51,42 +51,42 @@ namespace ShitDesigner.Bootstrap {
 	/// <summary>Bootstrap-owned factory boundary. Production and deterministic
 	/// EditMode Harnesses use this exact contract; only the provider differs.
 	/// </summary>
-	public interface IProductionVisualBindingProvider {
-		Result<ProductionVisualBindingSet> Create(string sessionId);
+	public interface IVisualBindingProvider {
+		Result<VisualBindingSet> Create(string sessionId);
 	}
 
 	/// <summary>Optional read-only ownership projection for concrete providers.
 	/// Keeping this separate preserves the narrow production provider factory
 	/// contract used by deterministic bootstrap tests.</summary>
-	public interface IProductionVisualBindingOwnershipProvider {
-		ProductionBindingOwnershipSnapshot CaptureOwnership();
+	public interface IVisualBindingOwnershipProvider {
+		BindingOwnershipSnapshot CaptureOwnership();
 	}
 
 	/// <summary>Allocation-free ownership count seam for per-frame Performance
 	/// health. The complete snapshot contract remains separate.</summary>
-	public interface IProductionVisualBindingPerformanceHealthProvider {
+	public interface IVisualBindingPerformanceHealthProvider {
 		void CapturePerformanceCounts(out int sceneCount, out int layerCount);
 	}
 
 	/// <summary>Optional session policy/context hooks used by the production
 	/// provider.  The base provider interface stays small so deterministic
 	/// Harness providers do not need Unity or Project references.</summary>
-	public interface IProductionVisualBindingPolicy {
+	public interface IVisualBindingPolicy {
 		void SetOutputFormatPolicy(IRuntimeOutputFormatPolicy policy);
 	}
 
-	public interface IProductionVisualBindingPoolAware {
+	public interface IVisualBindingPoolAware {
 		bool UsesPool(RenderTexturePool pool);
 	}
 
-	public interface IProductionProjectContextAware {
+	public interface IProjectContextAware {
 		void SetProjectContext(ProjectDocument document, string projectRoot);
 	}
 
 	/// <summary>Builds the seven required bindings from explicit shader,
 	/// prefab, Scene and Media services. It never calls Shader.Find,
 	/// Resources.FindObjectsOfTypeAll or a project-wide object search.</summary>
-	public sealed class ExplicitProductionVisualBindingProvider : IProductionVisualBindingProvider, IProductionVisualBindingOwnershipProvider, IProductionVisualBindingPerformanceHealthProvider, IProductionVisualBindingPolicy, IProductionVisualBindingPoolAware, IProductionProjectContextAware, IDisposable {
+	public sealed class ExplicitVisualBindingProvider : IVisualBindingProvider, IVisualBindingOwnershipProvider, IVisualBindingPerformanceHealthProvider, IVisualBindingPolicy, IVisualBindingPoolAware, IProjectContextAware, IDisposable {
 		private readonly Func<SceneIsolationManager> _sceneManagerFactory;
 		private readonly GameObject _scene3dPrefab;
 		private readonly GameObject _scene2dPrefab;
@@ -104,7 +104,7 @@ namespace ShitDesigner.Bootstrap {
 		private SceneIsolationManager _activeScenes;
 		private bool _disposed;
 
-		public ExplicitProductionVisualBindingProvider(
+		public ExplicitVisualBindingProvider(
 			Func<SceneIsolationManager> sceneManagerFactory,
 			GameObject scene3dPrefab,
 			GameObject scene2dPrefab,
@@ -138,11 +138,11 @@ namespace ShitDesigner.Bootstrap {
 		public void SetOutputFormatPolicy(IRuntimeOutputFormatPolicy policy) => _formatPolicy = policy ?? throw new ArgumentNullException(nameof(policy));
 		public void SetProjectContext(ProjectDocument document, string projectRoot) => _projectContextSetter?.Invoke(document, projectRoot);
 
-		public ProductionBindingOwnershipSnapshot CaptureOwnership() {
+		public BindingOwnershipSnapshot CaptureOwnership() {
 			var scenes = _activeScenes;
 			return scenes == null
-				? new ProductionBindingOwnershipSnapshot(0, 0)
-				: new ProductionBindingOwnershipSnapshot(scenes.ActiveNodeCount, scenes.Layers?.ActiveCount ?? 0);
+				? new BindingOwnershipSnapshot(0, 0)
+				: new BindingOwnershipSnapshot(scenes.ActiveNodeCount, scenes.Layers?.ActiveCount ?? 0);
 		}
 
 		public void CapturePerformanceCounts(out int sceneCount, out int layerCount) {
@@ -151,7 +151,7 @@ namespace ShitDesigner.Bootstrap {
 			layerCount = scenes?.Layers?.ActiveCount ?? 0;
 		}
 
-		public Result<ProductionVisualBindingSet> Create(string sessionId) {
+		public Result<VisualBindingSet> Create(string sessionId) {
 			if (_disposed) return Failure("bootstrap.binding.disposed", "The production visual binding provider is disposed.");
 			if (string.IsNullOrWhiteSpace(sessionId)) return Failure("bootstrap.binding.session", "A session ID is required.");
 			if (_sceneManagerFactory == null || _scene3dPrefab == null || _scene2dPrefab == null)
@@ -200,7 +200,7 @@ namespace ShitDesigner.Bootstrap {
 				if (!feedback.IsAvailable) return Failure("bootstrap.binding.feedback_missing", "Feedback requires the shared RenderTexturePool.");
 				bindings.Add(feedback);
 				owned.Add(feedback);
-				return Result<ProductionVisualBindingSet>.Success(new ProductionVisualBindingSet(bindings, owned));
+				return Result<VisualBindingSet>.Success(new VisualBindingSet(bindings, owned));
 			}
 			catch (Exception exception) {
 				for (var i = owned.Count - 1; i >= 0; i--) try { owned[i].Dispose(); } catch { }
@@ -217,8 +217,8 @@ namespace ShitDesigner.Bootstrap {
 				try { _applicationResources[i].Dispose(); } catch { }
 		}
 
-		private static Result<ProductionVisualBindingSet> Failure(string code, string message, Exception exception = null) =>
-			Result<ProductionVisualBindingSet>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
+		private static Result<VisualBindingSet> Failure(string code, string message, Exception exception = null) =>
+			Result<VisualBindingSet>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
 	}
 
 	/// <summary>Project-root and integrity checked resolver used by Video
@@ -356,19 +356,19 @@ namespace ShitDesigner.Bootstrap {
 	/// session-scoped services and gives them to Runtime through narrow
 	/// contracts; Application never references Rendering, Scene, Media or
 	/// Nodes concrete types.</summary>
-	public sealed class ProductionRuntimeSessionFactory : IApplicationRuntimeSessionFactory, IProjectRootAwareRuntimeSessionFactory {
-		private readonly IProductionVisualBindingProvider _provider;
+	public sealed class RuntimeSessionFactory : IApplicationRuntimeSessionFactory, IProjectRootAwareRuntimeSessionFactory {
+		private readonly IVisualBindingProvider _provider;
 		private readonly RenderTexturePool _pool;
-		private readonly ProductionOutputSurfaceBridge _surfaceBridge;
+		private readonly OutputSurfaceBridge _surfaceBridge;
 		private readonly NodeTypeCatalog _nodeTypeCatalog;
 		private string _projectRoot = string.Empty;
 
 		public RenderTexturePool Pool => _pool;
 		public string ProjectRoot => _projectRoot;
-		public IProductionVisualBindingProvider Provider => _provider;
+		public IVisualBindingProvider Provider => _provider;
 		public ApplicationRuntimeComposition CurrentComposition { get; private set; }
 
-		public ProductionRuntimeSessionFactory(IProductionVisualBindingProvider provider, RenderTexturePool pool, ProductionOutputSurfaceBridge surfaceBridge = null, NodeTypeCatalog nodeTypeCatalog = null) {
+		public RuntimeSessionFactory(IVisualBindingProvider provider, RenderTexturePool pool, OutputSurfaceBridge surfaceBridge = null, NodeTypeCatalog nodeTypeCatalog = null) {
 			_provider = provider ?? throw new ArgumentNullException(nameof(provider));
 			_pool = pool ?? throw new ArgumentNullException(nameof(pool));
 			_surfaceBridge = surfaceBridge;
@@ -380,9 +380,9 @@ namespace ShitDesigner.Bootstrap {
 		public Result<ApplicationRuntimeComposition> Create(ProjectDocument document, NodeTypeRegistry registry) {
 			if (document == null || registry == null) return Failure("bootstrap.runtime.arguments", "A document and registry are required.");
 			var sessionId = Guid.NewGuid().ToString("D");
-			ProductionVisualBindingSet set = null;
+			VisualBindingSet set = null;
 			RuntimeSession session = null;
-			ProductionResourceLifecycle lifecycle = null;
+			ResourceLifecycle lifecycle = null;
 			ProgramHoldController programHold = null;
 			DefaultImageProvider defaultImages = null;
 			var owned = new List<IDisposable>();
@@ -391,9 +391,9 @@ namespace ShitDesigner.Bootstrap {
 				var programRange = document.Settings.DynamicRange == ProjectDynamicRange.Ldr ? ProgramDynamicRange.Ldr : ProgramDynamicRange.Hdr;
 				var formatValidation = RenderingFormatPolicy.ValidateInternalFormat(programRange, new UnityRenderingPlatformCapabilityPort());
 				if (formatValidation.IsFailure) return Result<ApplicationRuntimeComposition>.Failure(formatValidation.Diagnostic);
-				if (_provider is IProductionVisualBindingPolicy policyAware) policyAware.SetOutputFormatPolicy(formatPolicy);
-				if (_provider is IProductionProjectContextAware contextAware) contextAware.SetProjectContext(document, _projectRoot);
-				if (_provider is IProductionVisualBindingPoolAware poolAware && !poolAware.UsesPool(_pool))
+				if (_provider is IVisualBindingPolicy policyAware) policyAware.SetOutputFormatPolicy(formatPolicy);
+				if (_provider is IProjectContextAware contextAware) contextAware.SetProjectContext(document, _projectRoot);
+				if (_provider is IVisualBindingPoolAware poolAware && !poolAware.UsesPool(_pool))
 					return Failure("bootstrap.runtime.pool_mismatch", "The visual binding provider must use the composition root RenderTexturePool.");
 				var created = _provider.Create(sessionId);
 				if (created.IsFailure) return Result<ApplicationRuntimeComposition>.Failure(created.Diagnostic);
@@ -427,7 +427,7 @@ namespace ShitDesigner.Bootstrap {
 				session.DefaultImageProvider = defaultImages;
 				session.OutputSurfaces = surfaces;
 				var feedbackBinding = set.Bindings.OfType<FeedbackVisualNodeBinding>().SingleOrDefault();
-				lifecycle = new ProductionResourceLifecycle(surfaces, feedbackBinding);
+				lifecycle = new ResourceLifecycle(surfaces, feedbackBinding);
 				session.ResourcePreparation = lifecycle;
 				session.ResourceFinalization = lifecycle;
 				var registered = NodeCatalogBootstrap.RegisterProduction(catalog, registry, session, bindings);
@@ -438,7 +438,7 @@ namespace ShitDesigner.Bootstrap {
 					return Result<ApplicationRuntimeComposition>.Failure(registered.Diagnostic);
 				}
 				owned.Add(programHold);
-				var compositionResources = new List<IDisposable> { new ProductionVisualBindingSetLease(set) };
+				var compositionResources = new List<IDisposable> { new VisualBindingSetLease(set) };
 				compositionResources.AddRange(owned);
 				if (_surfaceBridge != null) {
 					_surfaceBridge.Bind(session, programHold, _pool);
@@ -463,15 +463,15 @@ namespace ShitDesigner.Bootstrap {
 		private static Result<ApplicationRuntimeComposition> Failure(string code, string message, Exception exception = null) =>
 			Result<ApplicationRuntimeComposition>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
 
-		private sealed class ProductionVisualBindingSetLease : IDisposable {
-			private ProductionVisualBindingSet _set;
-			public ProductionVisualBindingSetLease(ProductionVisualBindingSet set) { _set = set; }
+		private sealed class VisualBindingSetLease : IDisposable {
+			private VisualBindingSet _set;
+			public VisualBindingSetLease(VisualBindingSet set) { _set = set; }
 			public void Dispose() { var set = _set; _set = null; set?.Dispose(); }
 		}
 
 		private sealed class SurfaceBridgeLease : IDisposable {
-			private ProductionOutputSurfaceBridge _bridge;
-			public SurfaceBridgeLease(ProductionOutputSurfaceBridge bridge) { _bridge = bridge; }
+			private OutputSurfaceBridge _bridge;
+			public SurfaceBridgeLease(OutputSurfaceBridge bridge) { _bridge = bridge; }
 			public void Dispose() { var bridge = _bridge; _bridge = null; bridge?.Clear(); }
 		}
 
@@ -479,12 +479,12 @@ namespace ShitDesigner.Bootstrap {
 		/// ordered adapter keeps output surfaces first and Feedback history
 		/// second, while the binding set remains the sole owner of Feedback.
 		/// It is deliberately not responsible for disposing the binding.</summary>
-		private sealed class ProductionResourceLifecycle : IRuntimeResourcePreparationWithPlan, IRuntimeResourceFinalizationWithPlan, IDisposable {
+		private sealed class ResourceLifecycle : IRuntimeResourcePreparationWithPlan, IRuntimeResourceFinalizationWithPlan, IDisposable {
 			private readonly RuntimeOutputSurfaceService _surfaces;
 			private readonly FeedbackVisualNodeBinding _feedback;
 			private bool _disposed;
 
-			public ProductionResourceLifecycle(RuntimeOutputSurfaceService surfaces, FeedbackVisualNodeBinding feedback) {
+			public ResourceLifecycle(RuntimeOutputSurfaceService surfaces, FeedbackVisualNodeBinding feedback) {
 				_surfaces = surfaces ?? throw new ArgumentNullException(nameof(surfaces));
 				_feedback = feedback;
 			}
@@ -514,7 +514,7 @@ namespace ShitDesigner.Bootstrap {
 	/// <summary>Presentation-only bridge. A Presentation lease has no pool
 	/// release operation; the owning Runtime/Program Hold keeps the texture
 	/// alive until the next Phase-9 or session teardown.</summary>
-	public sealed class ProductionOutputSurfaceBridge : IOutputSurfaceDescriptorPort, IProgramPresenterPort, IDisposable {
+	public sealed class OutputSurfaceBridge : IOutputSurfaceDescriptorPort, IProgramPresenterPort, ICapabilityProbe, IDisposable {
 		private sealed class PreviewDisplaySurface {
 			public string SurfaceId;
 			public TextureLeaseHandle Lease;
@@ -562,12 +562,12 @@ namespace ShitDesigner.Bootstrap {
 		internal int PreviewDisplayBlitCount { get; private set; }
 		public Diagnostic LastDisplayDiagnostic { get; private set; }
 
-		public ProductionOutputSurfaceBridge(Shader displayTransformShader) {
+		public OutputSurfaceBridge(Shader displayTransformShader) {
 			_displayTransformShader = displayTransformShader ?? throw new ArgumentNullException(nameof(displayTransformShader));
 		}
 
 		internal void Bind(RuntimeSession session, ProgramHoldController program, RenderTexturePool pool) {
-			if (_disposed) throw new ObjectDisposedException(nameof(ProductionOutputSurfaceBridge));
+			if (_disposed) throw new ObjectDisposedException(nameof(OutputSurfaceBridge));
 			_session = session ?? throw new ArgumentNullException(nameof(session));
 			_program = program ?? throw new ArgumentNullException(nameof(program));
 			_pool = pool ?? throw new ArgumentNullException(nameof(pool));
@@ -595,13 +595,7 @@ namespace ShitDesigner.Bootstrap {
 				_programPresenter = new ProgramDisplayPresenter(_program, new UnityProgramDisplayPort(), unityDisplayIndex);
 				_lastDisplayCount = _programPresenter.DisplayCount;
 				_lastRequestedDisplayIndex = _programPresenter.Selection.RequestedDisplay;
-				if (_programPresenter.Selection.UsesProgramMonitor) {
-					var diagnostic = new Diagnostic(new DiagnosticCode("rendering.display.external_unavailable"), Severity.Warning,
-						"The requested external Display is unavailable; the Program monitor is active.", module: "rendering");
-					ReportDisplayDiagnostic(diagnostic);
-					_displayHandshakeStatus = CapabilityStatus.Unavailable("display", diagnostic);
-				}
-				else _displayHandshakeStatus = CapabilityStatus.Ready("display");
+				_displayHandshakeStatus = StatusFor(_programPresenter.Selection);
 			}
 			catch (Exception exception) {
 				_programPresenter = null;
@@ -611,6 +605,19 @@ namespace ShitDesigner.Bootstrap {
 				_displayHandshakeStatus = CapabilityStatus.Unavailable("display", diagnostic);
 			}
 			return Result<CapabilityStatus>.Success(_displayHandshakeStatus);
+		}
+
+		public Result<CapabilityStatus> Probe() {
+			if (_disposed)
+				return Result<CapabilityStatus>.Failure(new Diagnostic(new DiagnosticCode("bootstrap.handshake.display_disposed"), Severity.Error, "Program display output is disposed.", module: "bootstrap"));
+			if (_session == null || _program == null)
+				return Result<CapabilityStatus>.Failure(new Diagnostic(new DiagnosticCode("bootstrap.handshake.display_unbound"), Severity.Error, "Program display output has no runtime session.", module: "bootstrap"));
+			if (_programPresenter == null) {
+				_displayHandshakeAttempted = false;
+				return Handshake();
+			}
+			RefreshDisplaySelection();
+			return Result<CapabilityStatus>.Success(_displayHandshakeStatus ?? StatusFor(_programPresenter.Selection));
 		}
 
 		internal void Sync(ulong frameNumber) {
@@ -767,11 +774,21 @@ namespace ShitDesigner.Bootstrap {
 			_lastDisplayCount = count;
 			if (refreshed.IsFailure) {
 				ReportDisplayDiagnostic(refreshed.Diagnostic);
+				_displayHandshakeStatus = CapabilityStatus.Unavailable("display", refreshed.Diagnostic);
 				return;
 			}
 			_lastRequestedDisplayIndex = requestedIndex;
 			LastDisplayDiagnostic = null;
 			_lastDisplayDiagnostic = null;
+			_displayHandshakeStatus = StatusFor(refreshed.Value);
+		}
+
+		private CapabilityStatus StatusFor(ProgramDisplaySelection selection) {
+			if (!selection.UsesProgramMonitor) return CapabilityStatus.Ready("display");
+			var diagnostic = new Diagnostic(new DiagnosticCode("rendering.display.external_unavailable"), Severity.Warning,
+				"The requested external Display is unavailable; the Program monitor is active.", module: "rendering");
+			ReportDisplayDiagnostic(diagnostic);
+			return CapabilityStatus.Unavailable("display", diagnostic);
 		}
 
 		private void ReportDisplayDiagnostic(Diagnostic diagnostic) {
@@ -929,8 +946,12 @@ namespace ShitDesigner.Bootstrap {
 
 	/// <summary>Optional external-device boundary. Composition creates the
 	/// service; startup performs device discovery and connection explicitly.</summary>
-	public interface IProductionHandshake {
+	public interface ICapabilityHandshake {
 		Result<CapabilityStatus> Handshake();
+	}
+
+	public interface ICapabilityProbe : ICapabilityHandshake {
+		Result<CapabilityStatus> Probe();
 	}
 
 	public sealed class NullApplicationInputPoller : IApplicationInputPoller {
@@ -953,7 +974,7 @@ namespace ShitDesigner.Bootstrap {
 
 	/// <summary>Production desktop input boundary. MIDI callbacks are drained
 	/// before the Application frame and the native device is owned here.</summary>
-	public sealed class UnityProductionInputPoller : IApplicationInputPoller, IProductionHandshake, IDisposable {
+	public sealed class InputPoller : IApplicationInputPoller, ICapabilityProbe, IDisposable {
 #if ENABLE_INPUT_SYSTEM
 		private readonly UnityKeyboardAdapter _keyboard;
 #endif
@@ -968,7 +989,7 @@ namespace ShitDesigner.Bootstrap {
 
 		public string MidiDeviceName => _midiManager?.DeviceName ?? _midiSource?.DeviceName ?? string.Empty;
 
-		public UnityProductionInputPoller(ProjectApplication application, IMidiInputSource midiSource = null, MidiInputManager midiManager = null) {
+		public InputPoller(ProjectApplication application, IMidiInputSource midiSource = null, MidiInputManager midiManager = null) {
 			if (application == null) throw new ArgumentNullException(nameof(application));
 			_application = application;
 #if ENABLE_INPUT_SYSTEM
@@ -985,27 +1006,38 @@ namespace ShitDesigner.Bootstrap {
 			_handshakeComplete = true;
 			if (_midiManager != null) {
 				_midiManager.Configure(_application, _application, _injectedMidiSource);
-				_handshakeStatus = _midiManager.IsOpen
-					? CapabilityStatus.Ready("midi")
-					: string.IsNullOrWhiteSpace(_midiManager.LastError)
-						? CapabilityStatus.Deferred("midi")
-						: MidiUnavailable(_midiManager.LastError);
+				_handshakeStatus = ManagerStatus();
 				return Result<CapabilityStatus>.Success(_handshakeStatus);
 			}
 			if (_injectedMidiSource != null) {
 				_midiSource = _injectedMidiSource;
 			}
-			else {
-				try {
-					var devices = WindowsMidiInputSource.GetDevices();
-					if (devices.Count > 0) {
-						if (WindowsMidiInputSource.TryOpenDefault(out var opened, out var error)) _midiSource = opened;
-						else Debug.LogWarning("MIDI input device 0 could not be opened: " + error);
-					}
-				}
-				catch (Exception exception) { Debug.LogWarning("MIDI input discovery failed: " + exception.Message); }
-			}
+			else TryOpenDefaultMidiSource();
 			if (_midiSource != null) _midi = new MidiInputRouter(_application, _midiSource);
+			_handshakeStatus = _midiSource == null
+				? MidiUnavailable("No MIDI input device is available.")
+				: CapabilityStatus.Ready("midi");
+			return Result<CapabilityStatus>.Success(_handshakeStatus);
+		}
+
+		public Result<CapabilityStatus> Probe() {
+			if (_disposed)
+				return Result<CapabilityStatus>.Failure(new Diagnostic(new DiagnosticCode("bootstrap.capability.input_disposed"), Severity.Error, "Production input is disposed.", module: "bootstrap"));
+			if (!_handshakeComplete) return Handshake();
+			if (_midiManager != null) {
+				if (!_midiManager.IsOpen) _midiManager.TryReconnect();
+				_handshakeStatus = ManagerStatus();
+				return Result<CapabilityStatus>.Success(_handshakeStatus);
+			}
+			if (_midiSource is IMidiInputAvailability availability && !availability.IsAvailable) {
+				if (_injectedMidiSource == null) _midiSource.Dispose();
+				_midiSource = null;
+				_midi = null;
+			}
+			if (_midiSource == null && _injectedMidiSource == null) {
+				TryOpenDefaultMidiSource();
+				if (_midiSource != null) _midi = new MidiInputRouter(_application, _midiSource);
+			}
 			_handshakeStatus = _midiSource == null
 				? MidiUnavailable("No MIDI input device is available.")
 				: CapabilityStatus.Ready("midi");
@@ -1039,6 +1071,22 @@ namespace ShitDesigner.Bootstrap {
 				string.IsNullOrWhiteSpace(message) ? "MIDI input is unavailable." : message, module: "input");
 			return CapabilityStatus.Unavailable("midi", diagnostic);
 		}
+
+		private CapabilityStatus ManagerStatus() => _midiManager.IsOpen
+			? CapabilityStatus.Ready("midi")
+			: string.IsNullOrWhiteSpace(_midiManager.LastError)
+				? CapabilityStatus.Deferred("midi")
+				: MidiUnavailable(_midiManager.LastError);
+
+		private void TryOpenDefaultMidiSource() {
+			try {
+				var devices = WindowsMidiInputSource.GetDevices();
+				if (devices.Count == 0) return;
+				if (WindowsMidiInputSource.TryOpenDefault(out var opened, out var error)) _midiSource = opened;
+				else Debug.LogWarning("MIDI input device 0 could not be opened: " + error);
+			}
+			catch (Exception exception) { Debug.LogWarning("MIDI input discovery failed: " + exception.Message); }
+		}
 	}
 
 	/// <summary>Pure driver used by both MonoBehaviour production and EditMode
@@ -1047,32 +1095,36 @@ namespace ShitDesigner.Bootstrap {
 	/// the production boundary; this driver does not add a second scheduler
 	/// or accumulate a backlog.</summary>
 	public sealed class ApplicationLoopDriverCore {
-		public const int ProductionProgramFramesPerSecond = 60;
+		public const int ProgramFramesPerSecond = 60;
 		// Application and Program use the same requested desktop pacing. The
 		// value remains a Unity target request, not a promise about the host's
 		// actual refresh cadence.
-		public const int ProductionHostTargetFramesPerSecond = ProductionProgramFramesPerSecond;
+		public const int HostTargetFramesPerSecond = ProgramFramesPerSecond;
 		private readonly ProjectApplication _application;
 		private readonly IApplicationInputPoller _input;
 		private readonly IApplicationPresentationFrame _presentation;
-		private readonly IProductionFrameTimingSource _timingSource;
+		private readonly IFrameTimingSource _timingSource;
+		private readonly CapabilitySupervisor _capabilities;
 		private bool _ticking;
 		public int TickCount { get; private set; }
 		public bool IsDisposed { get; private set; }
-		public ProductionFrameTimingDiagnostic FrameTimingDiagnostic =>
-			(_timingSource as IProductionFrameTimingDiagnosticsSource)?.LastDiagnostic ?? ProductionFrameTimingDiagnostic.Unavailable;
+		public FrameTimingDiagnostic FrameTimingDiagnostic =>
+			(_timingSource as IFrameTimingDiagnosticsSource)?.LastDiagnostic ?? FrameTimingDiagnostic.Unavailable;
 
-		public ApplicationLoopDriverCore(ProjectApplication application, IApplicationInputPoller input, IApplicationPresentationFrame presentation, IProductionFrameTimingSource timingSource = null) {
+		public ApplicationLoopDriverCore(ProjectApplication application, IApplicationInputPoller input, IApplicationPresentationFrame presentation,
+			IFrameTimingSource timingSource = null, CapabilitySupervisor capabilities = null) {
 			_application = application ?? throw new ArgumentNullException(nameof(application));
 			_input = input ?? throw new ArgumentNullException(nameof(input));
 			_presentation = presentation ?? throw new ArgumentNullException(nameof(presentation));
 			_timingSource = timingSource;
+			_capabilities = capabilities;
 		}
 
 		public ApplicationFrameResult LateUpdate(double monotonicTime) {
 			if (IsDisposed || _ticking) return null;
 			_ticking = true;
 			try {
+				_capabilities?.Tick(monotonicTime);
 				_input.Poll();
 				var frame = _application.Tick(monotonicTime);
 				if (frame == null) return null;
@@ -1114,14 +1166,14 @@ namespace ShitDesigner.Bootstrap {
 	/// <summary>Splits the frame lifecycle around the existing Presentation
 	/// coordinator while keeping the bridge/read/apply/present order explicit.
 	/// </summary>
-	public sealed class ProductionPresentationFrame : IApplicationPresentationFrame {
+	public sealed class PresentationFrame : IApplicationPresentationFrame {
 		private readonly ApplicationPresentationAdapter _adapter;
 		private readonly PresentationCoordinator _coordinator;
-		private readonly ProductionOutputSurfaceBridge _surfaces;
+		private readonly OutputSurfaceBridge _surfaces;
 		private readonly PresentationRoot _root;
 		private ulong _frame;
 
-		public ProductionPresentationFrame(ApplicationPresentationAdapter adapter, PresentationCoordinator coordinator, ProductionOutputSurfaceBridge surfaces, PresentationRoot root = null) {
+		public PresentationFrame(ApplicationPresentationAdapter adapter, PresentationCoordinator coordinator, OutputSurfaceBridge surfaces, PresentationRoot root = null) {
 			_adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
 			_coordinator = coordinator ?? throw new ArgumentNullException(nameof(coordinator));
 			_surfaces = surfaces;
@@ -1141,7 +1193,7 @@ namespace ShitDesigner.Bootstrap {
 	/// <summary>Unity-only timing boundary. FrameTimingManager is queried
 	/// after a Program frame is presented; Runtime receives only the immutable
 	/// sample and never touches Unity APIs.</summary>
-	public interface IProductionFrameTimingSource {
+	public interface IFrameTimingSource {
 		bool TryReadCompleted(ulong presentedFrameNumber, out RuntimeFrameTimingSample sample);
 	}
 
@@ -1150,7 +1202,7 @@ namespace ShitDesigner.Bootstrap {
 	/// Runtime and Application continue to receive only immutable samples.
 	/// The public CPU sample is a workload critical path, so the total/waiting
 	/// CPU values remain here for diagnosis instead of being silently lost.</summary>
-	public sealed class ProductionFrameTimingDiagnostic {
+	public sealed class FrameTimingDiagnostic {
 		public int RawCount { get; }
 		public double RawIdentity { get; }
 		/// <summary>Unity's total CPU frame time, including pacing waits.</summary>
@@ -1173,12 +1225,12 @@ namespace ShitDesigner.Bootstrap {
 		/// CPU name. It is the total CPU frame time, not the public workload.</summary>
 		public double RawCpuMilliseconds => RawCpuFrameTimeMilliseconds;
 
-		public ProductionFrameTimingDiagnostic(int rawCount, double rawIdentity, double rawCpuMilliseconds, double rawGpuMilliseconds,
+		public FrameTimingDiagnostic(int rawCount, double rawIdentity, double rawCpuMilliseconds, double rawGpuMilliseconds,
 			int pendingBefore, int pendingAfter, string outcome, string candidateOutcome, ulong performanceFrameNumber, string exceptionType = null)
 			: this(rawCount, rawIdentity, rawCpuMilliseconds, rawCpuMilliseconds, rawCpuMilliseconds, double.NaN, rawGpuMilliseconds,
 				pendingBefore, pendingAfter, outcome, candidateOutcome, performanceFrameNumber, exceptionType) { }
 
-		public ProductionFrameTimingDiagnostic(int rawCount, double rawIdentity, double rawCpuFrameTimeMilliseconds,
+		public FrameTimingDiagnostic(int rawCount, double rawIdentity, double rawCpuFrameTimeMilliseconds,
 			double rawCpuMainThreadFrameTimeMilliseconds, double rawCpuRenderThreadFrameTimeMilliseconds,
 			double rawCpuMainThreadPresentWaitMilliseconds, double rawGpuMilliseconds, int pendingBefore, int pendingAfter,
 			string outcome, string candidateOutcome, ulong performanceFrameNumber, string exceptionType = null) {
@@ -1192,12 +1244,12 @@ namespace ShitDesigner.Bootstrap {
 			CandidateOutcome = candidateOutcome ?? "None"; PerformanceFrameNumber = performanceFrameNumber; ExceptionType = exceptionType ?? string.Empty;
 		}
 
-		public static ProductionFrameTimingDiagnostic Unavailable { get; } = new ProductionFrameTimingDiagnostic(0, double.NaN,
+		public static FrameTimingDiagnostic Unavailable { get; } = new FrameTimingDiagnostic(0, double.NaN,
 			double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, 0, 0, "Unavailable", "None", 0UL);
 	}
 
-	internal interface IProductionFrameTimingDiagnosticsSource {
-		ProductionFrameTimingDiagnostic LastDiagnostic { get; }
+	internal interface IFrameTimingDiagnosticsSource {
+		FrameTimingDiagnostic LastDiagnostic { get; }
 	}
 
 	internal enum FrameTimingConsumeOutcome { Completed, Bootstrap, RawInvalid, Duplicate, StaleIdentity, InvalidIdentity, NoPending }
@@ -1384,7 +1436,7 @@ namespace ShitDesigner.Bootstrap {
 		}
 	}
 
-	public sealed class UnityProductionFrameTimingSource : IProductionFrameTimingSource, IProductionFrameTimingDiagnosticsSource {
+	public sealed class FrameTimingSource : IFrameTimingSource, IFrameTimingDiagnosticsSource {
 		// GetLatestTimings fills index zero with the newest completion and
 		// walks backwards. Reading the finite window prevents a one-element
 		// poll from skipping recoverable completed timings after GPU jitter.
@@ -1392,14 +1444,14 @@ namespace ShitDesigner.Bootstrap {
 		private readonly IUnityFrameTimingHistoryReader _historyReader;
 		private readonly Func<double> _clock;
 		private readonly FrameTimingCompletionCorrelation _correlation = new FrameTimingCompletionCorrelation();
-		public ProductionFrameTimingDiagnostic LastDiagnostic { get; private set; } = ProductionFrameTimingDiagnostic.Unavailable;
+		public FrameTimingDiagnostic LastDiagnostic { get; private set; } = FrameTimingDiagnostic.Unavailable;
 
-		public UnityProductionFrameTimingSource() : this(new UnityFrameTimingHistoryReader()) { }
+		public FrameTimingSource() : this(new UnityFrameTimingHistoryReader()) { }
 
-		internal UnityProductionFrameTimingSource(IUnityFrameTimingHistoryReader historyReader)
+		internal FrameTimingSource(IUnityFrameTimingHistoryReader historyReader)
 			: this(historyReader, () => Time.realtimeSinceStartupAsDouble) { }
 
-		internal UnityProductionFrameTimingSource(IUnityFrameTimingHistoryReader historyReader, Func<double> clock) {
+		internal FrameTimingSource(IUnityFrameTimingHistoryReader historyReader, Func<double> clock) {
 			_historyReader = historyReader ?? throw new ArgumentNullException(nameof(historyReader));
 			_clock = clock ?? throw new ArgumentNullException(nameof(clock));
 		}
@@ -1444,19 +1496,19 @@ namespace ShitDesigner.Bootstrap {
 					if (consumed == FrameTimingConsumeOutcome.Completed || consumed == FrameTimingConsumeOutcome.Bootstrap ||
 						consumed == FrameTimingConsumeOutcome.RawInvalid) {
 						sample = completed;
-						LastDiagnostic = new ProductionFrameTimingDiagnostic((int)count, rawIdentity, rawCpuFrameTime,
+						LastDiagnostic = new FrameTimingDiagnostic((int)count, rawIdentity, rawCpuFrameTime,
 							rawCpuMainThreadFrameTime, rawCpuRenderThreadFrameTime, rawCpuMainThreadPresentWait, rawGpuFrameTime, pendingBefore,
 							_correlation.PendingCount, consumed.ToString(), candidateOutcome, sample.FrameNumber);
 						return true;
 					}
 				}
 				if (_correlation.TryExpire(out sample)) {
-					LastDiagnostic = new ProductionFrameTimingDiagnostic((int)count, rawIdentity, rawCpuFrameTime,
+					LastDiagnostic = new FrameTimingDiagnostic((int)count, rawIdentity, rawCpuFrameTime,
 						rawCpuMainThreadFrameTime, rawCpuRenderThreadFrameTime, rawCpuMainThreadPresentWait, rawGpuFrameTime, pendingBefore,
 						_correlation.PendingCount, "Expired", candidateOutcome, sample.FrameNumber);
 					return true;
 				}
-				LastDiagnostic = new ProductionFrameTimingDiagnostic((int)count, rawIdentity, rawCpuFrameTime,
+				LastDiagnostic = new FrameTimingDiagnostic((int)count, rawIdentity, rawCpuFrameTime,
 					rawCpuMainThreadFrameTime, rawCpuRenderThreadFrameTime, rawCpuMainThreadPresentWait, rawGpuFrameTime, pendingBefore,
 					_correlation.PendingCount, candidateOutcome, candidateOutcome, 0UL);
 			}
@@ -1465,11 +1517,11 @@ namespace ShitDesigner.Bootstrap {
 				// overdue presentation so the public Harness can report the
 				// missing completion, while the queue stays bounded.
 				if (_correlation.TryExpire(out sample)) {
-					LastDiagnostic = new ProductionFrameTimingDiagnostic(0, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, pendingBefore,
+					LastDiagnostic = new FrameTimingDiagnostic(0, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, pendingBefore,
 						_correlation.PendingCount, "ApiException", "Expired", sample.FrameNumber, exception.GetType().Name);
 					return true;
 				}
-				LastDiagnostic = new ProductionFrameTimingDiagnostic(0, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, pendingBefore,
+				LastDiagnostic = new FrameTimingDiagnostic(0, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, pendingBefore,
 					_correlation.PendingCount, "ApiException", "None", 0UL, exception.GetType().Name);
 			}
 			return false;
@@ -1480,16 +1532,17 @@ namespace ShitDesigner.Bootstrap {
 	/// the shared pool, input router, presentation bridge and the one Player
 	/// Loop driver. Test Harnesses can call Create with fake binding providers
 	/// and reuse the same path without Unity scene discovery.</summary>
-	public sealed class ProductionCompositionRoot : IDisposable {
+	public sealed class CompositionRoot : IDisposable {
 		public ProjectApplication Application { get; }
-		public ProductionRuntimeSessionFactory RuntimeFactory { get; }
+		public RuntimeSessionFactory RuntimeFactory { get; }
 		public RenderTexturePool RenderPool { get; }
-		public ProductionOutputSurfaceBridge OutputSurfaces { get; }
+		public OutputSurfaceBridge OutputSurfaces { get; }
 		public ApplicationPresentationAdapter PresentationAdapter { get; }
 		public PresentationCoordinator Presentation { get; }
 		public IPlatformFileInteractionAdapter PlatformFiles { get; }
 		public IApplicationInputPoller Input { get; }
 		public ApplicationLoopDriverCore Loop { get; }
+		public CapabilitySupervisor Capabilities { get; }
 		public HandshakeReport LastHandshakeReport { get; private set; }
 		private readonly IDisposable _providerLifetime;
 		private readonly IDisposable _platformFilesLifetime;
@@ -1499,22 +1552,22 @@ namespace ShitDesigner.Bootstrap {
 		/// from the same production composition that drives the Player. This is
 		/// deliberately read-only so a test cannot manufacture a passing
 		/// teardown state.</summary>
-		public ProductionOwnershipSnapshot CaptureOwnershipSnapshot() {
+		public CompositionOwnershipSnapshot CaptureOwnershipSnapshot() {
 			var pool = RenderPool?.CaptureOwnershipSnapshot();
-			var bindingProvider = RuntimeFactory?.Provider as IProductionVisualBindingOwnershipProvider;
-			var binding = bindingProvider?.CaptureOwnership() ?? new ProductionBindingOwnershipSnapshot(0, 0);
+			var bindingProvider = RuntimeFactory?.Provider as IVisualBindingOwnershipProvider;
+			var binding = bindingProvider?.CaptureOwnership() ?? new BindingOwnershipSnapshot(0, 0);
 			var composition = RuntimeFactory?.CurrentComposition;
 			var session = composition?.Session;
 			var backendCount = 0;
 			var nativeContextCount = 0;
 			var program = CaptureSurface("program", "Program", session == null ? default(NodeOutputResult) : session.LastProgramResult,
 				session?.ProgramTargetFramesPerSecond ?? 0);
-			var previews = new List<ProductionSurfaceOwnershipSnapshot>();
+			var previews = new List<SurfaceOwnershipSnapshot>();
 			if (session != null) {
 				foreach (var preview in session.CapturePreviewOutputSnapshots()) {
 					if (OutputSurfaces != null && OutputSurfaces.TryCapturePreviewSurface(preview.PreviewId,
 						out var width, out var height, out var graphicsFormat, out var frameNumber)) {
-						previews.Add(new ProductionSurfaceOwnershipSnapshot(preview.PreviewId, "Preview", width, height,
+						previews.Add(new SurfaceOwnershipSnapshot(preview.PreviewId, "Preview", width, height,
 							graphicsFormat, preview.TargetFramesPerSecond, frameNumber));
 					}
 					else {
@@ -1529,7 +1582,7 @@ namespace ShitDesigner.Bootstrap {
 					if (video.NativeContextActive) nativeContextCount++;
 				}
 			}
-			return new ProductionOwnershipSnapshot(pool, binding.SceneCount, binding.LayerCount, backendCount,
+			return new CompositionOwnershipSnapshot(pool, binding.SceneCount, binding.LayerCount, backendCount,
 				nativeContextCount, OutputSurfaces?.ActiveLeaseCount ?? 0, program, previews,
 				session == null || session.IsDisposed);
 		}
@@ -1538,14 +1591,14 @@ namespace ShitDesigner.Bootstrap {
 		/// Performance presentation. It intentionally avoids full pool entry
 		/// sorting, Runtime Nodes defensive copies, and ownership list builds.
 		/// Callers supply preview storage; insufficient capacity is explicit.</summary>
-		public bool TryCapturePerformanceHealth(ProductionPerformanceSurfaceSnapshot[] previews, out int previewCount, out ProductionPerformanceHealthSnapshot health) {
+		public bool TryCapturePerformanceHealth(PerformanceSurfaceSnapshot[] previews, out int previewCount, out PerformanceHealthSnapshot health) {
 			var composition = RuntimeFactory?.CurrentComposition;
 			var session = composition?.Session;
 			var requested = session?.CapturePreviewOutputSnapshots();
 			var required = requested?.Count ?? 0;
 			previewCount = 0;
 			var pool = RenderPool;
-			var provider = RuntimeFactory?.Provider as IProductionVisualBindingPerformanceHealthProvider;
+			var provider = RuntimeFactory?.Provider as IVisualBindingPerformanceHealthProvider;
 			var sceneCount = 0;
 			var layerCount = 0;
 			var backendCount = 0;
@@ -1554,7 +1607,7 @@ namespace ShitDesigner.Bootstrap {
 			if (session != null) session.CaptureMediaBackendCounts(out backendCount, out nativeContextCount);
 			var program = CapturePerformanceSurface("program", session == null ? default(NodeOutputResult) : session.LastProgramResult,
 				session?.ProgramTargetFramesPerSecond ?? 0);
-			health = new ProductionPerformanceHealthSnapshot(pool?.BudgetBytes ?? 0, pool?.LeasedBytes ?? 0, pool?.FreeBytes ?? 0,
+			health = new PerformanceHealthSnapshot(pool?.BudgetBytes ?? 0, pool?.LeasedBytes ?? 0, pool?.FreeBytes ?? 0,
 				pool?.HighWaterBytes ?? 0, pool?.BudgetWarningActive ?? false, sceneCount, layerCount, backendCount, nativeContextCount,
 				OutputSurfaces?.ActiveLeaseCount ?? 0, required, session == null || session.IsDisposed, program);
 			if (previews == null || previews.Length < required) return false;
@@ -1563,7 +1616,7 @@ namespace ShitDesigner.Bootstrap {
 				var preview = requested[index];
 				if (OutputSurfaces != null && OutputSurfaces.TryCapturePreviewSurface(preview.PreviewId,
 					out var width, out var height, out var graphicsFormat, out var frameNumber)) {
-					previews[index] = new ProductionPerformanceSurfaceSnapshot(preview.PreviewId, width, height, graphicsFormat,
+					previews[index] = new PerformanceSurfaceSnapshot(preview.PreviewId, width, height, graphicsFormat,
 						preview.TargetFramesPerSecond, frameNumber, true);
 				}
 				else {
@@ -1587,38 +1640,40 @@ namespace ShitDesigner.Bootstrap {
 			return result;
 		}
 
-		private static ProductionSurfaceOwnershipSnapshot CaptureSurface(string id, string targetKind, NodeOutputResult result, int targetFps, int width = 0, int height = 0) {
+		private static SurfaceOwnershipSnapshot CaptureSurface(string id, string targetKind, NodeOutputResult result, int targetFps, int width = 0, int height = 0) {
 			if (result.IsAvailable && result.HasValue && result.Value.IsImageFrame) {
 				var image = result.Value.AsImageFrame();
-				return new ProductionSurfaceOwnershipSnapshot(id, targetKind, image.Width, image.Height, image.ColorFormat, targetFps, image.FrameNumber);
+				return new SurfaceOwnershipSnapshot(id, targetKind, image.Width, image.Height, image.ColorFormat, targetFps, image.FrameNumber);
 			}
-			return new ProductionSurfaceOwnershipSnapshot(id, targetKind, width, height, string.Empty, targetFps, 0);
+			return new SurfaceOwnershipSnapshot(id, targetKind, width, height, string.Empty, targetFps, 0);
 		}
 
-		private static ProductionPerformanceSurfaceSnapshot CapturePerformanceSurface(string id, NodeOutputResult result, int targetFps, int width = 0, int height = 0) {
+		private static PerformanceSurfaceSnapshot CapturePerformanceSurface(string id, NodeOutputResult result, int targetFps, int width = 0, int height = 0) {
 			if (result.IsAvailable && result.HasValue && result.Value.IsImageFrame) {
 				var image = result.Value.AsImageFrame();
-				return new ProductionPerformanceSurfaceSnapshot(id, image.Width, image.Height, image.ColorFormat, targetFps, image.FrameNumber, true);
+				return new PerformanceSurfaceSnapshot(id, image.Width, image.Height, image.ColorFormat, targetFps, image.FrameNumber, true);
 			}
-			return new ProductionPerformanceSurfaceSnapshot(id, width, height, string.Empty, targetFps, 0, false);
+			return new PerformanceSurfaceSnapshot(id, width, height, string.Empty, targetFps, 0, false);
 		}
 
-		private ProductionCompositionRoot(ProjectApplication application, ProductionRuntimeSessionFactory runtimeFactory, RenderTexturePool pool, ProductionOutputSurfaceBridge surfaces,
-			ApplicationPresentationAdapter adapter, PresentationCoordinator presentation, IPlatformFileInteractionAdapter platformFiles, IApplicationInputPoller input, ApplicationLoopDriverCore loop, IDisposable providerLifetime, IDisposable platformFilesLifetime) {
+		private CompositionRoot(ProjectApplication application, RuntimeSessionFactory runtimeFactory, RenderTexturePool pool, OutputSurfaceBridge surfaces,
+			ApplicationPresentationAdapter adapter, PresentationCoordinator presentation, IPlatformFileInteractionAdapter platformFiles, IApplicationInputPoller input,
+			ApplicationLoopDriverCore loop, CapabilitySupervisor capabilities, IDisposable providerLifetime, IDisposable platformFilesLifetime) {
 			Application = application; RuntimeFactory = runtimeFactory; RenderPool = pool; OutputSurfaces = surfaces;
-			PresentationAdapter = adapter; Presentation = presentation; PlatformFiles = platformFiles; Input = input; Loop = loop;
+			PresentationAdapter = adapter; Presentation = presentation; PlatformFiles = platformFiles; Input = input; Loop = loop; Capabilities = capabilities;
 			_providerLifetime = providerLifetime; _platformFilesLifetime = platformFilesLifetime;
+			Capabilities.Changed += OnCapabilitiesChanged;
 		}
 
-		public static Result<ProductionCompositionRoot> Create(IProjectFileSystem fileSystem, IProductionVisualBindingProvider provider, IApplicationInputPoller input = null, RenderTexturePool pool = null, PresentationRoot presentationRoot = null, Func<ProjectApplication, IApplicationInputPoller> inputFactory = null, IPlatformFileInteractionAdapter platformFiles = null, NodeTypeCatalog nodeTypeCatalog = null, Shader displayTransformShader = null) {
+		public static Result<CompositionRoot> Create(IProjectFileSystem fileSystem, IVisualBindingProvider provider, IApplicationInputPoller input = null, RenderTexturePool pool = null, PresentationRoot presentationRoot = null, Func<ProjectApplication, IApplicationInputPoller> inputFactory = null, IPlatformFileInteractionAdapter platformFiles = null, NodeTypeCatalog nodeTypeCatalog = null, Shader displayTransformShader = null) {
 			if (fileSystem == null || provider == null) return Failure("bootstrap.root.arguments", "A file system and production binding provider are required.");
 			if (nodeTypeCatalog == null) return Failure("bootstrap.root.catalog_missing", "The generated NodeTypeCatalog asset is required before the project can open.");
 			if (displayTransformShader == null) return Failure("bootstrap.root.display_transform_missing", "The serialized DisplayTransform shader is required before the project can open.");
 			var catalogManifest = nodeTypeCatalog.BuildRuntimeCatalog();
-			if (catalogManifest.IsFailure) return Result<ProductionCompositionRoot>.Failure(catalogManifest.Diagnostic);
+			if (catalogManifest.IsFailure) return Result<CompositionRoot>.Failure(catalogManifest.Diagnostic);
 			var renderPool = pool ?? new RenderTexturePool();
-			var surfaces = new ProductionOutputSurfaceBridge(displayTransformShader);
-			var ownedPlatformFiles = platformFiles == null ? new ProductionPlatformFileInteractionAdapter() : null;
+			var surfaces = new OutputSurfaceBridge(displayTransformShader);
+			var ownedPlatformFiles = platformFiles == null ? new PlatformFileInteractionAdapter() : null;
 			var actualPlatformFiles = platformFiles ?? (IPlatformFileInteractionAdapter)ownedPlatformFiles;
 			try {
 				// The application registry is built from the generated asset.
@@ -1627,20 +1682,26 @@ namespace ShitDesigner.Bootstrap {
 				var catalogResult = catalogManifest;
 				var registry = new NodeTypeRegistry();
 				var ensured = NodeCatalogBootstrap.EnsureDefinitions(catalogResult.Value, registry);
-				if (ensured.IsFailure) { renderPool.Dispose(); surfaces.Dispose(); ownedPlatformFiles?.Dispose(); (provider as IDisposable)?.Dispose(); return Result<ProductionCompositionRoot>.Failure(ensured.Diagnostic); }
-				var factory = new ProductionRuntimeSessionFactory(provider, renderPool, surfaces, nodeTypeCatalog);
+				if (ensured.IsFailure) { renderPool.Dispose(); surfaces.Dispose(); ownedPlatformFiles?.Dispose(); (provider as IDisposable)?.Dispose(); return Result<CompositionRoot>.Failure(ensured.Diagnostic); }
+				var factory = new RuntimeSessionFactory(provider, renderPool, surfaces, nodeTypeCatalog);
 				var userSettingsStorage = new ProjectUserSettingsStorage(fileSystem);
 				var application = new ProjectApplication(fileSystem, registry, runtimeFactory: factory, recentProjectStore: userSettingsStorage);
 				var userSettings = new ProjectUserSettingsPort(userSettingsStorage);
 				var adapter = new ApplicationPresentationAdapter(application, application, surfaces, userSettings);
 				var coordinator = new PresentationCoordinator(adapter, adapter, outputSurfacePort: surfaces, programPresenter: surfaces, platformFiles: actualPlatformFiles);
 				var poller = input ?? inputFactory?.Invoke(application) ?? CreateDefaultInputPoller(application);
-				var frame = new ProductionPresentationFrame(adapter, coordinator, surfaces, presentationRoot);
+				var frame = new PresentationFrame(adapter, coordinator, surfaces, presentationRoot);
+				var capabilities = new CapabilitySupervisor(
+					() => ProbeInput(poller),
+					() => factory.CurrentComposition == null
+						? Result<CapabilityStatus>.Success(CapabilityStatus.Deferred("display"))
+						: surfaces.Probe());
 				// The Unity host requests the same 60 Hz pacing as the
 				// Program. ApplicationLoopDriver follows each LateUpdate;
 				// it does not gate or accumulate application ticks.
-				var loop = new ApplicationLoopDriverCore(application, poller, frame, new UnityProductionFrameTimingSource());
-				return Result<ProductionCompositionRoot>.Success(new ProductionCompositionRoot(application, factory, renderPool, surfaces, adapter, coordinator, actualPlatformFiles, poller, loop, provider as IDisposable, ownedPlatformFiles));
+				var loop = new ApplicationLoopDriverCore(application, poller, frame, new FrameTimingSource(), capabilities);
+				return Result<CompositionRoot>.Success(new CompositionRoot(application, factory, renderPool, surfaces, adapter, coordinator,
+					actualPlatformFiles, poller, loop, capabilities, provider as IDisposable, ownedPlatformFiles));
 			}
 			catch (Exception exception) {
 				renderPool.Dispose(); surfaces.Dispose(); ownedPlatformFiles?.Dispose();
@@ -1654,27 +1715,16 @@ namespace ShitDesigner.Bootstrap {
 		public Result<HandshakeReport> Handshake() {
 			if (_disposed)
 				return Result<HandshakeReport>.Failure(new Diagnostic(new DiagnosticCode("bootstrap.handshake.composition_disposed"), Severity.Error, "Production composition is disposed.", module: "bootstrap"));
-			var midi = CapabilityStatus.Deferred("midi");
-			if (Input is IProductionHandshake inputHandshake) {
-				var input = inputHandshake.Handshake();
-				if (input.IsFailure) return Result<HandshakeReport>.Failure(input.Diagnostic);
-				midi = input.Value;
-			}
-			// A project-less host can still use keyboard/MIDI input. Display
-			// activation waits until a runtime session binds Program output.
-			var display = CapabilityStatus.Deferred("display");
-			if (RuntimeFactory.CurrentComposition != null) {
-				var output = OutputSurfaces.Handshake();
-				if (output.IsFailure) return Result<HandshakeReport>.Failure(output.Diagnostic);
-				display = output.Value;
-			}
-			LastHandshakeReport = new HandshakeReport(midi, display);
-			return Result<HandshakeReport>.Success(LastHandshakeReport);
+			var report = Capabilities.Handshake();
+			if (report.IsFailure) return report;
+			LastHandshakeReport = report.Value;
+			return report;
 		}
 
 		public void Dispose() {
 			if (_disposed) return;
 			_disposed = true;
+			Capabilities.Changed -= OnCapabilitiesChanged;
 			Loop.Dispose();
 			(Input as IDisposable)?.Dispose();
 			Application.Dispose();
@@ -1685,12 +1735,20 @@ namespace ShitDesigner.Bootstrap {
 			_providerLifetime?.Dispose();
 		}
 
-		private static Result<ProductionCompositionRoot> Failure(string code, string message, Exception exception = null) =>
-			Result<ProductionCompositionRoot>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
+		private static Result<CompositionRoot> Failure(string code, string message, Exception exception = null) =>
+			Result<CompositionRoot>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
 
 		private static IApplicationInputPoller CreateDefaultInputPoller(ProjectApplication application) {
-			return new UnityProductionInputPoller(application);
+			return new InputPoller(application);
 		}
+
+		private static Result<CapabilityStatus> ProbeInput(IApplicationInputPoller input) {
+			if (input is ICapabilityProbe probe) return probe.Probe();
+			if (input is ICapabilityHandshake handshake) return handshake.Handshake();
+			return Result<CapabilityStatus>.Success(CapabilityStatus.Deferred("midi"));
+		}
+
+		private void OnCapabilitiesChanged(HandshakeReport report) => LastHandshakeReport = report;
 	}
 
 }
