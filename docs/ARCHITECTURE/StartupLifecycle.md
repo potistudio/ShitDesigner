@@ -13,7 +13,7 @@ Cold → Preflight → Composing → Handshaking → Activating → Online | Deg
 ```
 
 - `Preflight`: シリアライズ済みアセット、NodeTypeCatalog、Shader参照を検証する。機器、GPUリソースおよびRuntime Objectを所有しない。
-- `Composing`: Presentation Hostを用意し、`CompositionFactory` がComposition Root、Runtime Sessionおよび既定Projectを生成する。外部機器へは接続しない。
+- `Composing`: Presentation Hostを用意し、`CompositionFactory` がComposition RootとApplication Serviceを生成する。ProjectはユーザーのNew/Open操作まで生成しない。外部機器へは接続しない。
 - `Handshaking`: MIDI入力とUnity Displayを検出・接続し、`HandshakeReport` に各機能の状態を記録する。
 - `Activating`: Window制約、Presentationおよび `ApplicationLoopDriver` を有効にする。
 - `Online`: 通常のPlayer Loopで稼働する。

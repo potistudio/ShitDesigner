@@ -631,8 +631,6 @@ MonoBehaviour:
   _panelSettings: {fileID: 0}
   _midiInputManager: {fileID: 0}
   _createOnAwake: 1
-  _createDefaultProject: 1
-  _defaultProjectName: Untitled
 --- !u!4 &1594496360
 Transform:
   m_ObjectHideFlags: 0

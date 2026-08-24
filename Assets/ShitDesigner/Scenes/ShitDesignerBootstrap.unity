@@ -198,8 +198,6 @@ MonoBehaviour:
   _panelSettings: {fileID: 11400000, guid: acdb4ed592be84c4b8cf01d5947806f1, type: 2}
   _midiInputManager: {fileID: 114004}
   _createOnAwake: 1
-  _createDefaultProject: 1
-  _defaultProjectName: Untitled
 --- !u!114 &114002
 MonoBehaviour:
   m_ObjectHideFlags: 0
