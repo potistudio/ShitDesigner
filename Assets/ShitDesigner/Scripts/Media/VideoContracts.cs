@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -192,14 +193,14 @@ namespace ShitDesigner.Media {
 	}
 
 	public interface IVideoCapabilityProbe {
-		CSharpFunctionalExtensions.Result<VideoProbeResult, Diagnostic> Probe(string absolutePath);
+		Result<VideoProbeResult, Diagnostic> Probe(string absolutePath);
 	}
 
 	/// <summary>Codec/container metadata boundary. A real implementation may
 	/// call Media Foundation/AVFoundation or a native Hap parser; it stays
 	/// outside the node contract so deterministic tests can inject metadata.</summary>
 	public interface IVideoMetadataProbe {
-		CSharpFunctionalExtensions.Result<VideoProbeResult, Diagnostic> Probe(string absolutePath);
+		Result<VideoProbeResult, Diagnostic> Probe(string absolutePath);
 	}
 
 	public interface IVideoGraphicsCapabilities {
@@ -226,7 +227,7 @@ namespace ShitDesigner.Media {
 			_metadataProbe = metadataProbe;
 		}
 
-		public CSharpFunctionalExtensions.Result<VideoProbeResult, Diagnostic> Probe(string absolutePath) {
+		public Result<VideoProbeResult, Diagnostic> Probe(string absolutePath) {
 			if (string.IsNullOrWhiteSpace(absolutePath) || !Path.IsPathRooted(absolutePath)) return Failure("media.probe.path", "Video probe requires a verified absolute path.");
 			if (_metadataProbe != null) {
 				var metadata = _metadataProbe.Probe(Path.GetFullPath(absolutePath));
@@ -239,7 +240,7 @@ namespace ShitDesigner.Media {
 			return Failure("media.probe.metadata_required", "Codec metadata is required; extension-only probing cannot identify the guaranteed video variants.");
 		}
 
-		private static CSharpFunctionalExtensions.Result<VideoProbeResult, Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.Result.Failure<VideoProbeResult, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static Result<VideoProbeResult, Diagnostic> Failure(string code, string message) => Result.Failure<VideoProbeResult, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
 	}
 
 	/// <summary>Content probe used by the production resolver. It checks the
@@ -249,31 +250,31 @@ namespace ShitDesigner.Media {
 	/// VideoPlayer receives a URL. Hap MOVs use the strict sample-table parser
 	/// so their duration and codec come from the file.</summary>
 	public sealed class FileVideoMetadataProbe : IVideoMetadataProbe {
-		public CSharpFunctionalExtensions.Result<VideoProbeResult, Diagnostic> Probe(string absolutePath) {
+		public Result<VideoProbeResult, Diagnostic> Probe(string absolutePath) {
 			if (string.IsNullOrWhiteSpace(absolutePath) || !Path.IsPathRooted(absolutePath)) return Failure("media.probe.path", "Video probe requires a verified absolute path.");
 			if (!File.Exists(absolutePath)) return Failure("media.probe.missing", "The video file does not exist.");
 			var extension = Path.GetExtension(absolutePath).ToLowerInvariant();
 			try {
 				if (extension == ".mov") {
-					if (!HapMovie.TryOpen(absolutePath, out var movie, out var error)) return CSharpFunctionalExtensions.Result.Success<VideoProbeResult, Diagnostic>(VideoProbeResult.UnsupportedVideo(VideoContainer.Mov, VideoCodec.Unknown, error ?? "The MOV file did not contain a supported Hap video track."));
+					if (!HapMovie.TryOpen(absolutePath, out var movie, out var error)) return Result.Success<VideoProbeResult, Diagnostic>(VideoProbeResult.UnsupportedVideo(VideoContainer.Mov, VideoCodec.Unknown, error ?? "The MOV file did not contain a supported Hap video track."));
 					var duration = movie.TimeScale == 0 ? 0d : movie.DurationTicks / (double)movie.TimeScale;
 					var alpha = movie.Codec == VideoCodec.Hap5 || movie.Codec == VideoCodec.HapM;
 					return IsGuaranteedHap(movie.Codec)
-						? CSharpFunctionalExtensions.Result.Success<VideoProbeResult, Diagnostic>(VideoProbeResult.SupportedVideo(VideoContainer.Mov, movie.Codec, hasAlpha: alpha, durationSeconds: duration))
-						: CSharpFunctionalExtensions.Result.Success<VideoProbeResult, Diagnostic>(VideoProbeResult.UnsupportedVideo(VideoContainer.Mov, movie.Codec, "This Hap MOV variant is outside the guaranteed production codec set."));
+						? Result.Success<VideoProbeResult, Diagnostic>(VideoProbeResult.SupportedVideo(VideoContainer.Mov, movie.Codec, hasAlpha: alpha, durationSeconds: duration))
+						: Result.Success<VideoProbeResult, Diagnostic>(VideoProbeResult.UnsupportedVideo(VideoContainer.Mov, movie.Codec, "This Hap MOV variant is outside the guaranteed production codec set."));
 				}
 
 				var bytes = File.ReadAllBytes(absolutePath);
 				if (extension == ".mp4") {
-					if (!Contains(bytes, "ftyp") || !Contains(bytes, "moov") || !Contains(bytes, "mdat")) return CSharpFunctionalExtensions.Result.Success<VideoProbeResult, Diagnostic>(VideoProbeResult.UnsupportedVideo(VideoContainer.Mp4, VideoCodec.Unknown, "The MP4 atom table is truncated or malformed."));
-					if (!Contains(bytes, "avc1") && !Contains(bytes, "avc3")) return CSharpFunctionalExtensions.Result.Success<VideoProbeResult, Diagnostic>(VideoProbeResult.UnsupportedVideo(VideoContainer.Mp4, VideoCodec.Unknown, "MP4 content did not advertise a guaranteed H.264 sample entry."));
-					return CSharpFunctionalExtensions.Result.Success<VideoProbeResult, Diagnostic>(VideoProbeResult.SupportedVideo(VideoContainer.Mp4, VideoCodec.H264, hasAudio: Contains(bytes, "mp4a")));
+					if (!Contains(bytes, "ftyp") || !Contains(bytes, "moov") || !Contains(bytes, "mdat")) return Result.Success<VideoProbeResult, Diagnostic>(VideoProbeResult.UnsupportedVideo(VideoContainer.Mp4, VideoCodec.Unknown, "The MP4 atom table is truncated or malformed."));
+					if (!Contains(bytes, "avc1") && !Contains(bytes, "avc3")) return Result.Success<VideoProbeResult, Diagnostic>(VideoProbeResult.UnsupportedVideo(VideoContainer.Mp4, VideoCodec.Unknown, "MP4 content did not advertise a guaranteed H.264 sample entry."));
+					return Result.Success<VideoProbeResult, Diagnostic>(VideoProbeResult.SupportedVideo(VideoContainer.Mp4, VideoCodec.H264, hasAudio: Contains(bytes, "mp4a")));
 				}
 				if (extension == ".webm") {
-					if (!Contains(bytes, "webm") || !Contains(bytes, "V_VP8")) return CSharpFunctionalExtensions.Result.Success<VideoProbeResult, Diagnostic>(VideoProbeResult.UnsupportedVideo(VideoContainer.WebM, VideoCodec.Unknown, Contains(bytes, "V_VP9") ? "VP9 WebM is outside the guaranteed Unity backend contract." : "WebM content did not advertise a guaranteed VP8 sample."));
-					return CSharpFunctionalExtensions.Result.Success<VideoProbeResult, Diagnostic>(VideoProbeResult.SupportedVideo(VideoContainer.WebM, VideoCodec.VP8, hasAlpha: Contains(bytes, "ALPHA") || Contains(bytes, "ALPH")));
+					if (!Contains(bytes, "webm") || !Contains(bytes, "V_VP8")) return Result.Success<VideoProbeResult, Diagnostic>(VideoProbeResult.UnsupportedVideo(VideoContainer.WebM, VideoCodec.Unknown, Contains(bytes, "V_VP9") ? "VP9 WebM is outside the guaranteed Unity backend contract." : "WebM content did not advertise a guaranteed VP8 sample."));
+					return Result.Success<VideoProbeResult, Diagnostic>(VideoProbeResult.SupportedVideo(VideoContainer.WebM, VideoCodec.VP8, hasAlpha: Contains(bytes, "ALPHA") || Contains(bytes, "ALPH")));
 				}
-				return CSharpFunctionalExtensions.Result.Success<VideoProbeResult, Diagnostic>(VideoProbeResult.UnsupportedVideo(VideoContainer.Unknown, VideoCodec.Unknown, "The production video metadata adapter does not guarantee this container/codec."));
+				return Result.Success<VideoProbeResult, Diagnostic>(VideoProbeResult.UnsupportedVideo(VideoContainer.Unknown, VideoCodec.Unknown, "The production video metadata adapter does not guarantee this container/codec."));
 			}
 			catch (IOException exception) { return Failure("media.probe.read", exception.Message); }
 			catch (UnauthorizedAccessException exception) { return Failure("media.probe.read", exception.Message); }
@@ -291,25 +292,25 @@ namespace ShitDesigner.Media {
 			return false;
 		}
 
-		private static CSharpFunctionalExtensions.Result<VideoProbeResult, Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.Result.Failure<VideoProbeResult, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "media"));
+		private static Result<VideoProbeResult, Diagnostic> Failure(string code, string message) => Result.Failure<VideoProbeResult, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "media"));
 	}
 
 	public static class VideoBackendSelector {
-		public static CSharpFunctionalExtensions.Result<VideoBackendKind, Diagnostic> Select(VideoProbeResult probe, IVideoGraphicsCapabilities graphics = null) {
+		public static Result<VideoBackendKind, Diagnostic> Select(VideoProbeResult probe, IVideoGraphicsCapabilities graphics = null) {
 			if (probe == null) return Failure("media.probe.missing", "Video probe result is required.");
 			if (!probe.Supported) return Failure("media.probe.unsupported", probe.DiagnosticMessage);
 			if ((probe.Container == VideoContainer.Mp4 && probe.Codec == VideoCodec.H264)
 				|| (probe.Container == VideoContainer.WebM && probe.Codec == VideoCodec.VP8))
-				return CSharpFunctionalExtensions.Result.Success<VideoBackendKind, Diagnostic>(VideoBackendKind.UnityVideoBackend);
+				return Result.Success<VideoBackendKind, Diagnostic>(VideoBackendKind.UnityVideoBackend);
 			if (probe.Codec == VideoCodec.Hap1 || probe.Codec == VideoCodec.Hap5 || probe.Codec == VideoCodec.HapY || probe.Codec == VideoCodec.HapM) {
 				if (probe.Container != VideoContainer.Mov) return Failure("media.container.unsupported", "Guaranteed Hap variants require a MOV container.");
 				var path = HapGraphicsPath.Select(graphics);
-				return path == HapDecodePath.Unsupported ? Failure("media.hap.unsupported", "No supported Hap decode path is available.") : CSharpFunctionalExtensions.Result.Success<VideoBackendKind, Diagnostic>(VideoBackendKind.HapVideoBackend);
+				return path == HapDecodePath.Unsupported ? Failure("media.hap.unsupported", "No supported Hap decode path is available.") : Result.Success<VideoBackendKind, Diagnostic>(VideoBackendKind.HapVideoBackend);
 			}
 			return Failure("media.codec.unsupported", "The codec is outside the initial video contract.");
 		}
 
-		private static CSharpFunctionalExtensions.Result<VideoBackendKind, Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.Result.Failure<VideoBackendKind, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static Result<VideoBackendKind, Diagnostic> Failure(string code, string message) => Result.Failure<VideoBackendKind, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
 	}
 
 	public static class HapGraphicsPath {
@@ -329,14 +330,14 @@ namespace ShitDesigner.Media {
 		VideoBackendState State { get; }
 		object BorrowedTexture { get; }
 		event Action<VideoBackendCompletion> Completed;
-		CSharpFunctionalExtensions.UnitResult<Diagnostic> Prepare(VideoPrepareRequest request);
-		CSharpFunctionalExtensions.UnitResult<Diagnostic> Play();
-		CSharpFunctionalExtensions.UnitResult<Diagnostic> Pause();
-		CSharpFunctionalExtensions.UnitResult<Diagnostic> Stop();
-		CSharpFunctionalExtensions.UnitResult<Diagnostic> SetSpeed(double speed);
-		CSharpFunctionalExtensions.UnitResult<Diagnostic> SetLoop(bool loop);
-		CSharpFunctionalExtensions.UnitResult<Diagnostic> Seek(double seconds);
-		CSharpFunctionalExtensions.UnitResult<Diagnostic> SyncToGraphClock(double logicalSeconds, bool demanded);
+		UnitResult<Diagnostic> Prepare(VideoPrepareRequest request);
+		UnitResult<Diagnostic> Play();
+		UnitResult<Diagnostic> Pause();
+		UnitResult<Diagnostic> Stop();
+		UnitResult<Diagnostic> SetSpeed(double speed);
+		UnitResult<Diagnostic> SetLoop(bool loop);
+		UnitResult<Diagnostic> Seek(double seconds);
+		UnitResult<Diagnostic> SyncToGraphClock(double logicalSeconds, bool demanded);
 	}
 
 	/// <summary>Small lifecycle base for concrete Unity and Hap backends. It
@@ -359,14 +360,14 @@ namespace ShitDesigner.Media {
 		public abstract object BorrowedTexture { get; }
 		public event Action<VideoBackendCompletion> Completed;
 
-		public abstract CSharpFunctionalExtensions.UnitResult<Diagnostic> Prepare(VideoPrepareRequest request);
-		public abstract CSharpFunctionalExtensions.UnitResult<Diagnostic> Play();
-		public abstract CSharpFunctionalExtensions.UnitResult<Diagnostic> Pause();
-		public abstract CSharpFunctionalExtensions.UnitResult<Diagnostic> Stop();
-		public abstract CSharpFunctionalExtensions.UnitResult<Diagnostic> SetSpeed(double speed);
-		public abstract CSharpFunctionalExtensions.UnitResult<Diagnostic> SetLoop(bool loop);
-		public abstract CSharpFunctionalExtensions.UnitResult<Diagnostic> Seek(double seconds);
-		public abstract CSharpFunctionalExtensions.UnitResult<Diagnostic> SyncToGraphClock(double logicalSeconds, bool demanded);
+		public abstract UnitResult<Diagnostic> Prepare(VideoPrepareRequest request);
+		public abstract UnitResult<Diagnostic> Play();
+		public abstract UnitResult<Diagnostic> Pause();
+		public abstract UnitResult<Diagnostic> Stop();
+		public abstract UnitResult<Diagnostic> SetSpeed(double speed);
+		public abstract UnitResult<Diagnostic> SetLoop(bool loop);
+		public abstract UnitResult<Diagnostic> Seek(double seconds);
+		public abstract UnitResult<Diagnostic> SyncToGraphClock(double logicalSeconds, bool demanded);
 
 		protected void Emit(VideoCompletionKind kind, double timeSeconds = 0d, long frameIndex = -1, string errorMessage = null) {
 			if (_disposed) return;
@@ -394,7 +395,7 @@ namespace ShitDesigner.Media {
 	/// implementations stay behind this interface so the node can be tested
 	/// with a deterministic backend.</summary>
 	public interface IVideoBackendFactory {
-		CSharpFunctionalExtensions.Result<IVideoBackendHandle, Diagnostic> Create(NodeInstanceId nodeId, ulong generationId, VideoBackendKind kind);
+		Result<IVideoBackendHandle, Diagnostic> Create(NodeInstanceId nodeId, ulong generationId, VideoBackendKind kind);
 	}
 
 	public enum VideoTransportEventKind {
@@ -444,76 +445,76 @@ namespace ShitDesigner.Media {
 		public bool Loop => _loop;
 		public event Action<VideoTransportEvent> Changed;
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SetMediaAsset(MediaAssetId? mediaAsset) {
+		public UnitResult<Diagnostic> SetMediaAsset(MediaAssetId? mediaAsset) {
 			if (mediaAsset.HasValue && !mediaAsset.Value.IsUuidV4) return Failure("media.transport.asset", "Video transport requires a UUID v4 MediaAssetId.");
-			if (_mediaAsset == mediaAsset) return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			if (_mediaAsset == mediaAsset) return UnitResult.Success<Diagnostic>();
 			_mediaAsset = mediaAsset;
 			_playheadSeconds = 0d;
 			Raise(new VideoTransportEvent(VideoTransportEventKind.MediaChanged));
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SetDuration(double durationSeconds) {
+		public UnitResult<Diagnostic> SetDuration(double durationSeconds) {
 			if (double.IsNaN(durationSeconds) || double.IsInfinity(durationSeconds) || durationSeconds < 0d)
 				return Failure("media.transport.duration", "Video duration must be finite and non-negative.");
 			_durationSeconds = durationSeconds;
 			if (_playheadSeconds > durationSeconds) _playheadSeconds = durationSeconds;
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SetPlaying(bool playing) {
+		public UnitResult<Diagnostic> SetPlaying(bool playing) {
 			_playing = playing;
 			Raise(new VideoTransportEvent(playing ? VideoTransportEventKind.Play : VideoTransportEventKind.Pause, _playheadSeconds));
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SetSpeed(double speed) {
+		public UnitResult<Diagnostic> SetSpeed(double speed) {
 			if (double.IsNaN(speed) || double.IsInfinity(speed) || speed < 0d || speed > 4d)
 				return Failure("media.transport.speed", "Video speed must be between 0 and 4.");
 			_speed = speed;
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SetLoop(bool loop) {
+		public UnitResult<Diagnostic> SetLoop(bool loop) {
 			_loop = loop;
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Seek(double seconds) {
+		public UnitResult<Diagnostic> Seek(double seconds) {
 			if (double.IsNaN(seconds) || double.IsInfinity(seconds) || seconds < 0d)
 				return Failure("media.transport.seek", "Video seek position must be finite and non-negative.");
 			Raise(new VideoTransportEvent(VideoTransportEventKind.SeekStarted, Math.Min(seconds, _durationSeconds)));
 			_playheadSeconds = _durationSeconds > 0d ? Math.Min(seconds, _durationSeconds) : seconds;
 			Raise(new VideoTransportEvent(VideoTransportEventKind.SeekCompleted, _playheadSeconds));
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
 		/// <summary>Updates runtime playhead projection without emitting a
 		/// user-edit/seek event. This is derived GraphClock state, not a
 		/// persisted parameter mutation.</summary>
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SetRuntimePlayhead(double seconds) {
+		public UnitResult<Diagnostic> SetRuntimePlayhead(double seconds) {
 			if (double.IsNaN(seconds) || double.IsInfinity(seconds) || seconds < 0d)
 				return Failure("media.transport.playhead", "Runtime playhead must be finite and non-negative.");
 			_playheadSeconds = _durationSeconds > 0d ? Math.Min(seconds, _durationSeconds) : seconds;
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
 		/// <summary>Updates backend-owned playback state without emitting a
 		/// persisted transport edit. EOF and loop callbacks are runtime
 		/// observations, not user parameter changes.</summary>
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SetRuntimePlaying(bool playing) {
+		public UnitResult<Diagnostic> SetRuntimePlaying(bool playing) {
 			_playing = playing;
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Advance(double deltaSeconds) {
+		public UnitResult<Diagnostic> Advance(double deltaSeconds) {
 			if (double.IsNaN(deltaSeconds) || double.IsInfinity(deltaSeconds) || deltaSeconds < 0d)
 				return Failure("media.transport.advance", "Video clock delta must be finite and non-negative.");
-			if (!_playing || _speed == 0d || _durationSeconds <= 0d) return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			if (!_playing || _speed == 0d || _durationSeconds <= 0d) return UnitResult.Success<Diagnostic>();
 			var next = _playheadSeconds + deltaSeconds * _speed;
 			if (next < _durationSeconds) {
 				_playheadSeconds = next;
-				return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+				return UnitResult.Success<Diagnostic>();
 			}
 
 			if (_loop) {
@@ -525,11 +526,11 @@ namespace ShitDesigner.Media {
 				_playing = false;
 				Raise(new VideoTransportEvent(VideoTransportEventKind.Ended, _playheadSeconds));
 			}
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
 		private void Raise(VideoTransportEvent value) => Changed?.Invoke(value);
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static UnitResult<Diagnostic> Failure(string code, string message) => UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
 	}
 
 	/// <summary>Owns a backend handle and filters stale asynchronous callbacks
@@ -560,13 +561,13 @@ namespace ShitDesigner.Media {
 			_backend.Completed += OnCompleted;
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Prepare(VideoPrepareRequest request) {
+		public UnitResult<Diagnostic> Prepare(VideoPrepareRequest request) {
 			if (_disposed) return Failure("media.lifecycle.disposed", "Video playback session is disposed.");
 			if (request == null) return Failure("media.prepare.request", "Video prepare request is required.");
 			SetStatus(VideoPlaybackStatus.Preparing);
-			CSharpFunctionalExtensions.UnitResult<Diagnostic> result;
+			UnitResult<Diagnostic> result;
 			try { result = _backend.Prepare(request); }
-			catch (Exception exception) { result = CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(ExceptionDiagnostic("media.prepare.failed", exception)); }
+			catch (Exception exception) { result = UnitResult.Failure<Diagnostic>(ExceptionDiagnostic("media.prepare.failed", exception)); }
 			if (result.IsFailure) {
 				LastDiagnostic = result.Error;
 				SetStatus(VideoPlaybackStatus.Faulted);
@@ -582,12 +583,12 @@ namespace ShitDesigner.Media {
 		/// different implementation. The old callback is detached before it
 		/// is disposed; its node/generation can never complete the new
 		/// backend's session.</summary>
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ReplaceBackend(IVideoBackendHandle replacement) {
+		public UnitResult<Diagnostic> ReplaceBackend(IVideoBackendHandle replacement) {
 			if (_disposed) return Failure("media.lifecycle.disposed", "Video playback session is disposed.");
 			if (replacement == null) return Failure("media.backend.missing", "A replacement video backend is required.");
 			if (replacement.NodeId != NodeId || replacement.GenerationId != GenerationId)
 				return Failure("media.backend.owner", "Replacement backend owner identity does not match the playback session.");
-			if (ReferenceEquals(replacement, _backend)) return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			if (ReferenceEquals(replacement, _backend)) return UnitResult.Success<Diagnostic>();
 			var old = _backend;
 			old.Completed -= OnCompleted;
 			try { old.Dispose(); }
@@ -596,21 +597,21 @@ namespace ShitDesigner.Media {
 			_backend.Completed += OnCompleted;
 			CurrentPrepareRequest = null;
 			SetStatus(VideoPlaybackStatus.NoSource);
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Play() => Invoke(_backend.Play, VideoPlaybackStatus.Playing, "media.play.failed");
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Pause() => Invoke(_backend.Pause, VideoPlaybackStatus.Paused, "media.pause.failed");
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Stop() => Invoke(_backend.Stop, VideoPlaybackStatus.Ready, "media.stop.failed");
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SetSpeed(double speed) => InvokeTransport(() => _backend.SetSpeed(speed), "media.speed.failed");
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SetLoop(bool loop) => InvokeTransport(() => _backend.SetLoop(loop), "media.loop.failed");
+		public UnitResult<Diagnostic> Play() => Invoke(_backend.Play, VideoPlaybackStatus.Playing, "media.play.failed");
+		public UnitResult<Diagnostic> Pause() => Invoke(_backend.Pause, VideoPlaybackStatus.Paused, "media.pause.failed");
+		public UnitResult<Diagnostic> Stop() => Invoke(_backend.Stop, VideoPlaybackStatus.Ready, "media.stop.failed");
+		public UnitResult<Diagnostic> SetSpeed(double speed) => InvokeTransport(() => _backend.SetSpeed(speed), "media.speed.failed");
+		public UnitResult<Diagnostic> SetLoop(bool loop) => InvokeTransport(() => _backend.SetLoop(loop), "media.loop.failed");
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Seek(double seconds) {
+		public UnitResult<Diagnostic> Seek(double seconds) {
 			if (double.IsNaN(seconds) || double.IsInfinity(seconds) || seconds < 0d) return Failure("media.seek.invalid", "Video seek position must be finite and non-negative.");
 			SetStatus(VideoPlaybackStatus.Preparing);
-			CSharpFunctionalExtensions.UnitResult<Diagnostic> result;
+			UnitResult<Diagnostic> result;
 			try { result = _backend.Seek(seconds); }
-			catch (Exception exception) { result = CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(ExceptionDiagnostic("media.seek.failed", exception)); }
+			catch (Exception exception) { result = UnitResult.Failure<Diagnostic>(ExceptionDiagnostic("media.seek.failed", exception)); }
 			if (result.IsFailure) {
 				LastDiagnostic = result.Error;
 				SetStatus(VideoPlaybackStatus.Faulted);
@@ -618,7 +619,7 @@ namespace ShitDesigner.Media {
 			return result;
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SyncToGraphClock(double logicalSeconds, bool demanded) {
+		public UnitResult<Diagnostic> SyncToGraphClock(double logicalSeconds, bool demanded) {
 			if (_disposed) return Failure("media.lifecycle.disposed", "Video playback session is disposed.");
 			if (double.IsNaN(logicalSeconds) || double.IsInfinity(logicalSeconds) || logicalSeconds < 0d) return Failure("media.clock.invalid", "Graph clock time must be finite and non-negative.");
 			try {
@@ -628,15 +629,15 @@ namespace ShitDesigner.Media {
 			}
 			catch (Exception exception) {
 				LastDiagnostic = ExceptionDiagnostic("media.clock.failed", exception);
-				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(LastDiagnostic);
+				return UnitResult.Failure<Diagnostic>(LastDiagnostic);
 			}
 		}
 
-		private CSharpFunctionalExtensions.UnitResult<Diagnostic> Invoke(Func<CSharpFunctionalExtensions.UnitResult<Diagnostic>> operation, VideoPlaybackStatus successState, string code) {
+		private UnitResult<Diagnostic> Invoke(Func<UnitResult<Diagnostic>> operation, VideoPlaybackStatus successState, string code) {
 			if (_disposed) return Failure("media.lifecycle.disposed", "Video playback session is disposed.");
-			CSharpFunctionalExtensions.UnitResult<Diagnostic> result;
+			UnitResult<Diagnostic> result;
 			try { result = operation(); }
-			catch (Exception exception) { result = CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(ExceptionDiagnostic(code, exception)); }
+			catch (Exception exception) { result = UnitResult.Failure<Diagnostic>(ExceptionDiagnostic(code, exception)); }
 			if (result.IsFailure) {
 				LastDiagnostic = result.Error;
 				SetStatus(VideoPlaybackStatus.Faulted);
@@ -645,14 +646,14 @@ namespace ShitDesigner.Media {
 			// Preserve the backend's precise diagnostic (file missing,
 			// platform unsupported, seek failure, ...); wrapping it in a
 			// generic operation code would discard the contract details.
-			return result.IsFailure ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(result.Error) : result;
+			return result.IsFailure ? UnitResult.Failure<Diagnostic>(result.Error) : result;
 		}
 
-		private CSharpFunctionalExtensions.UnitResult<Diagnostic> InvokeTransport(Func<CSharpFunctionalExtensions.UnitResult<Diagnostic>> operation, string code) {
+		private UnitResult<Diagnostic> InvokeTransport(Func<UnitResult<Diagnostic>> operation, string code) {
 			if (_disposed) return Failure("media.lifecycle.disposed", "Video playback session is disposed.");
-			CSharpFunctionalExtensions.UnitResult<Diagnostic> result;
+			UnitResult<Diagnostic> result;
 			try { result = operation(); }
-			catch (Exception exception) { result = CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(ExceptionDiagnostic(code, exception)); }
+			catch (Exception exception) { result = UnitResult.Failure<Diagnostic>(ExceptionDiagnostic(code, exception)); }
 			if (result.IsFailure) LastDiagnostic = result.Error;
 			return result;
 		}
@@ -693,7 +694,7 @@ namespace ShitDesigner.Media {
 			SetStatus(VideoPlaybackStatus.Disposed);
 		}
 
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static UnitResult<Diagnostic> Failure(string code, string message) => UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
 		private static Diagnostic ExceptionDiagnostic(string code, Exception exception) => new Diagnostic(new DiagnosticCode(code), Severity.Error, exception.Message, exception: DiagnosticExceptionInfo.FromException(exception), module: "media");
 	}
 
@@ -711,25 +712,25 @@ namespace ShitDesigner.Media {
 	/// <summary>Converts a backend-owned decoded texture into the shared Runtime
 	/// image boundary. Rendering owns the actual texture and lease.</summary>
 	public interface IVideoFrameAdapter {
-		CSharpFunctionalExtensions.Result<IRuntimeImageFrame, Diagnostic> Create(object borrowedTexture, int width, int height, ulong frameNumber, ulong leaseId);
+		Result<IRuntimeImageFrame, Diagnostic> Create(object borrowedTexture, int width, int height, ulong frameNumber, ulong leaseId);
 	}
 
 	/// <summary>Optional richer adapter used by a Rendering integration. It
 	/// receives the Phase-5 prepared destination surface so the conversion
 	/// can copy into that lease without acquiring a second surface.</summary>
 	public interface IVideoOutputSurfaceFrameAdapter : IVideoFrameAdapter {
-		CSharpFunctionalExtensions.Result<IRuntimeImageFrame, Diagnostic> Create(object borrowedTexture, IRuntimeOutputSurface preparedSurface, ulong frameNumber);
+		Result<IRuntimeImageFrame, Diagnostic> Create(object borrowedTexture, IRuntimeOutputSurface preparedSurface, ulong frameNumber);
 	}
 
 	public interface IVideoOutputSurfaceFrameAdapterWithConversion : IVideoOutputSurfaceFrameAdapter {
-		CSharpFunctionalExtensions.Result<IRuntimeImageFrame, Diagnostic> Create(object borrowedTexture, IRuntimeOutputSurface preparedSurface, ulong frameNumber, VideoFrameConversionMetadata metadata);
+		Result<IRuntimeImageFrame, Diagnostic> Create(object borrowedTexture, IRuntimeOutputSurface preparedSurface, ulong frameNumber, VideoFrameConversionMetadata metadata);
 	}
 
 	/// <summary>Resolves a persisted MediaAssetReference into the verified
 	/// runtime file and authoritative codec probe. The resolver is injected so
 	/// Media never owns Project catalog or filesystem policy.</summary>
 	public interface IVideoPrepareResolver {
-		CSharpFunctionalExtensions.Result<VideoPrepareRequest, Diagnostic> Resolve(MediaAssetId mediaAssetId);
+		Result<VideoPrepareRequest, Diagnostic> Resolve(MediaAssetId mediaAssetId);
 	}
 
 	/// <summary>Stateful transport bridge. Parameter values are sampled from
@@ -785,7 +786,7 @@ namespace ShitDesigner.Media {
 			return _transport.Loop ? projected % _transport.DurationSeconds : Math.Min(projected, _transport.DurationSeconds);
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Apply(FrameSnapshot snapshot, bool demanded) {
+		public UnitResult<Diagnostic> Apply(FrameSnapshot snapshot, bool demanded) {
 			if (snapshot == null) return Failure("media.transport.snapshot", "Video transport requires a FrameSnapshot.");
 			var result = ApplyParameters(snapshot);
 			if (result.IsFailure) return result;
@@ -799,21 +800,21 @@ namespace ShitDesigner.Media {
 			if (result.IsFailure) return result;
 			if (_demandSyncApplied && _demandSyncFrame == snapshot.FrameNumber) {
 				_demandSyncApplied = false;
-				return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+				return UnitResult.Success<Diagnostic>();
 			}
 			_demandSyncApplied = false;
 			return Remember(_session.SyncToGraphClock(logical, demanded));
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> OnDemandChanged(bool demanded, FrameEvaluationContext context) {
+		public UnitResult<Diagnostic> OnDemandChanged(bool demanded, FrameEvaluationContext context) {
 			if (context == null) return Failure("media.transport.context", "Video demand transition requires a frame context.");
 			var logical = LogicalPosition(context.Snapshot.GraphClockTime);
 			return OnDemandChanged(demanded, context.Snapshot, logical);
 		}
 
-		private CSharpFunctionalExtensions.UnitResult<Diagnostic> OnDemandChanged(bool demanded, FrameSnapshot snapshot, double logical) {
+		private UnitResult<Diagnostic> OnDemandChanged(bool demanded, FrameSnapshot snapshot, double logical) {
 			var result = SetDemanded(demanded, logical);
-			if (!demanded && _session.Status == VideoPlaybackStatus.NoSource) return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			if (!demanded && _session.Status == VideoPlaybackStatus.NoSource) return UnitResult.Success<Diagnostic>();
 			if (result.IsFailure) return Remember(result);
 			result = _session.SyncToGraphClock(logical, demanded);
 			if (result.IsFailure) return Remember(result);
@@ -821,22 +822,22 @@ namespace ShitDesigner.Media {
 			if (result.IsFailure) return Remember(result);
 			_demandSyncFrame = snapshot.FrameNumber;
 			_demandSyncApplied = true;
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		private CSharpFunctionalExtensions.UnitResult<Diagnostic> SetDemanded(bool demanded, double logical) {
+		private UnitResult<Diagnostic> SetDemanded(bool demanded, double logical) {
 			_demanded = demanded;
-			if (!demanded) return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			if (!demanded) return UnitResult.Success<Diagnostic>();
 			// Demand can be published before this fresh controller has sampled
 			// persisted transport values.  Prepare starts media at zero, so a
 			// restored zero playhead must not manufacture a Seek(0) and wait
 			// for a completion the backend is not required to publish.
 			_pendingSeek = _initialized;
 			_pendingPlay = _transport.Playing && !_eofLatched;
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		private CSharpFunctionalExtensions.UnitResult<Diagnostic> ApplyParameters(FrameSnapshot snapshot) {
+		private UnitResult<Diagnostic> ApplyParameters(FrameSnapshot snapshot) {
 			var asset = ReadAsset(snapshot, VideoPlayerContract.MediaAssetParameterId, _transport.MediaAsset);
 			var requestedPlaying = ReadBool(snapshot, VideoPlayerContract.PlayingParameterId, _transport.Playing);
 			if (!requestedPlaying) {
@@ -868,13 +869,13 @@ namespace ShitDesigner.Media {
 				_anchorPlayhead = 0d;
 				if (asset.HasValue && _resolver != null) {
 					var request = _resolver.Resolve(asset.Value);
-					if (request.IsFailure) return Remember(CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(request.Error));
+					if (request.IsFailure) return Remember(UnitResult.Failure<Diagnostic>(request.Error));
 					var selected = VideoBackendSelector.Select(request.Value.Probe, _graphics);
-					if (selected.IsFailure) return Remember(CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(selected.Error));
+					if (selected.IsFailure) return Remember(UnitResult.Failure<Diagnostic>(selected.Error));
 					if (_session.Backend.BackendKind != selected.Value) {
 						if (_backendFactory == null) return Remember(Failure("media.backend.factory_missing", "A live backend switch requires an injected backend factory."));
 						var replacement = _backendFactory.Create(_session.NodeId, _session.GenerationId, selected.Value);
-						if (replacement.IsFailure) return Remember(CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(replacement.Error));
+						if (replacement.IsFailure) return Remember(UnitResult.Failure<Diagnostic>(replacement.Error));
 						var switched = _session.ReplaceBackend(replacement.Value);
 						if (switched.IsFailure) {
 							replacement.Value.Dispose();
@@ -941,13 +942,13 @@ namespace ShitDesigner.Media {
 				}
 			}
 			_initialized = true;
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		private CSharpFunctionalExtensions.UnitResult<Diagnostic> TryResume(double logical) {
-			if (!_demanded) return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+		private UnitResult<Diagnostic> TryResume(double logical) {
+			if (!_demanded) return UnitResult.Success<Diagnostic>();
 			var ready = _session.Status == VideoPlaybackStatus.Ready || _session.Status == VideoPlaybackStatus.Playing || _session.Status == VideoPlaybackStatus.Paused || _session.Status == VideoPlaybackStatus.Ended;
-			if (!ready) return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			if (!ready) return UnitResult.Success<Diagnostic>();
 			if (_pendingSeek) {
 				var seek = _session.Seek(logical);
 				if (seek.IsFailure) return Remember(seek);
@@ -958,15 +959,15 @@ namespace ShitDesigner.Media {
 				if (play.IsFailure) return Remember(play);
 				_pendingPlay = false;
 			}
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		private CSharpFunctionalExtensions.UnitResult<Diagnostic> Remember(CSharpFunctionalExtensions.UnitResult<Diagnostic> result) {
+		private UnitResult<Diagnostic> Remember(UnitResult<Diagnostic> result) {
 			if (result.IsFailure) _lastDiagnostic = result.Error;
 			return result;
 		}
 
-		private CSharpFunctionalExtensions.Result<T, Diagnostic> Remember<T>(CSharpFunctionalExtensions.Result<T, Diagnostic> result) {
+		private Result<T, Diagnostic> Remember<T>(Result<T, Diagnostic> result) {
 			if (result.IsFailure) _lastDiagnostic = result.Error;
 			return result;
 		}
@@ -991,7 +992,7 @@ namespace ShitDesigner.Media {
 			}
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Apply(FrameSnapshot snapshot, NodeInstanceId nodeId, bool demanded) {
+		public UnitResult<Diagnostic> Apply(FrameSnapshot snapshot, NodeInstanceId nodeId, bool demanded) {
 			_nodeId = nodeId;
 			return Apply(snapshot, demanded);
 		}
@@ -1003,7 +1004,7 @@ namespace ShitDesigner.Media {
 		private bool ReadBool(FrameSnapshot snapshot, string parameter, bool fallback) => snapshot.EffectiveValues.TryGetValue(new ParameterKey(_nodeId, new ParameterId(parameter)), out var value) && value.Type == ParameterType.Bool ? value.AsBool() : fallback;
 		private double ReadFloat(FrameSnapshot snapshot, string parameter, double fallback) => snapshot.EffectiveValues.TryGetValue(new ParameterKey(_nodeId, new ParameterId(parameter)), out var value) && value.Type == ParameterType.Float ? value.AsFloat() : fallback;
 
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "media"));
+		private static UnitResult<Diagnostic> Failure(string code, string message) => UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "media"));
 	}
 
 	/// <summary>Runtime node integration without depending on a concrete Unity

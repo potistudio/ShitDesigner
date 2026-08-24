@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.IO;
 using System.Linq;
 using NUnit.Framework;
@@ -164,7 +165,7 @@ namespace ShitDesigner.Nodes.Tests {
 			var bindings = new NodeFactoryBindings();
 			foreach (var type in NodeDefinitionCatalog.SpecializedNodeTypeIds) {
 				var id = new NodeTypeId(type);
-				Assert.That(bindings.Register(id, (info, generation) => CSharpFunctionalExtensions.Result.Success<IRuntimeNode, Diagnostic>(new StubNode(info.Id, info.TypeId, generation))).IsSuccess, Is.True);
+				Assert.That(bindings.Register(id, (info, generation) => Result.Success<IRuntimeNode, Diagnostic>(new StubNode(info.Id, info.TypeId, generation))).IsSuccess, Is.True);
 			}
 			var production = NodeDefinitionCatalog.CreateProduction(bindings);
 			Assert.That(production.IsSuccess, Is.True);

@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -125,11 +126,11 @@ namespace ShitDesigner.Project {
 			_enumOptionIds = new ReadOnlyCollection<ParameterId>(options);
 			_enumOptions = new ReadOnlyCollection<EnumOptionDefinition>(optionDefinitions);
 		}
-		public CSharpFunctionalExtensions.Result<ParameterValue, Diagnostic> Clamp(ParameterValue value) {
-			if (value.Type != Type) return CSharpFunctionalExtensions.Result.Failure<ParameterValue, Diagnostic>(ProjectDiagnostics.TypeMismatch(Id));
-			if (Type == ParameterType.Enum && !string.IsNullOrEmpty(value.AsString()) && !_enumOptionIds.Contains(new ParameterId(value.AsString()))) return CSharpFunctionalExtensions.Result.Failure<ParameterValue, Diagnostic>(ProjectDiagnostics.InvalidValue(Id));
-			if (Type == ParameterType.MediaAssetReference && value.IsMediaAssetSelected && !value.AsMediaAsset().Value.IsUuidV4) return CSharpFunctionalExtensions.Result.Failure<ParameterValue, Diagnostic>(ProjectDiagnostics.InvalidValue(Id));
-			if (!HardRange.HasValue) return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(value);
+		public Result<ParameterValue, Diagnostic> Clamp(ParameterValue value) {
+			if (value.Type != Type) return Result.Failure<ParameterValue, Diagnostic>(ProjectDiagnostics.TypeMismatch(Id));
+			if (Type == ParameterType.Enum && !string.IsNullOrEmpty(value.AsString()) && !_enumOptionIds.Contains(new ParameterId(value.AsString()))) return Result.Failure<ParameterValue, Diagnostic>(ProjectDiagnostics.InvalidValue(Id));
+			if (Type == ParameterType.MediaAssetReference && value.IsMediaAssetSelected && !value.AsMediaAsset().Value.IsUuidV4) return Result.Failure<ParameterValue, Diagnostic>(ProjectDiagnostics.InvalidValue(Id));
+			if (!HardRange.HasValue) return Result.Success<ParameterValue, Diagnostic>(value);
 			return ParameterValue.Clamp(value, HardRange.Value.Minimum, HardRange.Value.Maximum);
 		}
 	}
@@ -302,9 +303,9 @@ namespace ShitDesigner.Project {
 		private static bool IsOrdered(ParameterValue min, ParameterValue max) => new ParameterRange(min, max).Minimum == min;
 		public LogicalControlTargetRecord AsBroken(string reason) => new LogicalControlTargetRecord(NodeId, ParameterId, ParameterType, TargetMin, TargetMax, Invert, true, reason);
 		public LogicalControlTargetRecord AsRepaired() => new LogicalControlTargetRecord(NodeId, ParameterId, ParameterType, TargetMin, TargetMax, Invert, false, null);
-		public CSharpFunctionalExtensions.Result<ParameterValue, Diagnostic> Map(float normalizedValue) {
-			if (IsBroken) return CSharpFunctionalExtensions.Result.Failure<ParameterValue, Diagnostic>(ProjectDiagnostics.BrokenReference(NodeId, ParameterId, BrokenReason));
-			if (float.IsNaN(normalizedValue) || float.IsInfinity(normalizedValue)) return CSharpFunctionalExtensions.Result.Failure<ParameterValue, Diagnostic>(ProjectDiagnostics.InvalidValue(ParameterId));
+		public Result<ParameterValue, Diagnostic> Map(float normalizedValue) {
+			if (IsBroken) return Result.Failure<ParameterValue, Diagnostic>(ProjectDiagnostics.BrokenReference(NodeId, ParameterId, BrokenReason));
+			if (float.IsNaN(normalizedValue) || float.IsInfinity(normalizedValue)) return Result.Failure<ParameterValue, Diagnostic>(ProjectDiagnostics.InvalidValue(ParameterId));
 			var t = Math.Min(1f, Math.Max(0f, normalizedValue)); if (Invert) t = 1f - t;
 			return ParameterValue.Lerp(TargetMin, TargetMax, t);
 		}

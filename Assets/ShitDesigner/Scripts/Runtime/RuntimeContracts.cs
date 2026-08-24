@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -402,18 +403,18 @@ namespace ShitDesigner.Runtime {
 			_requestedSet = null;
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Set(PortId portId, NodeOutputResult result) {
-			if (_sealed) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("runtime.output.writer_sealed", "Output writer is already sealed.", portId));
-			if (portId.IsEmpty || !IsRequested(portId)) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("runtime.output.port_not_requested", "Output port was not requested.", portId));
-			if (_outputs.ContainsKey(portId)) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("runtime.output.duplicate", "Output port was set more than once.", portId));
+		public UnitResult<Diagnostic> Set(PortId portId, NodeOutputResult result) {
+			if (_sealed) return UnitResult.Failure<Diagnostic>(Failure("runtime.output.writer_sealed", "Output writer is already sealed.", portId));
+			if (portId.IsEmpty || !IsRequested(portId)) return UnitResult.Failure<Diagnostic>(Failure("runtime.output.port_not_requested", "Output port was not requested.", portId));
+			if (_outputs.ContainsKey(portId)) return UnitResult.Failure<Diagnostic>(Failure("runtime.output.duplicate", "Output port was set more than once.", portId));
 			_outputs.Add(portId, result);
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SetAvailable(PortId portId, PortValue value) => Set(portId, NodeOutputResult.Available(value));
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SetBlocked(PortId portId, Diagnostic diagnostic) => Set(portId, NodeOutputResult.Blocked(diagnostic));
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SetFaulted(PortId portId, Diagnostic diagnostic) => Set(portId, NodeOutputResult.Faulted(diagnostic));
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SetPreparing(PortId portId, Diagnostic diagnostic) => Set(portId, NodeOutputResult.Preparing(diagnostic));
+		public UnitResult<Diagnostic> SetAvailable(PortId portId, PortValue value) => Set(portId, NodeOutputResult.Available(value));
+		public UnitResult<Diagnostic> SetBlocked(PortId portId, Diagnostic diagnostic) => Set(portId, NodeOutputResult.Blocked(diagnostic));
+		public UnitResult<Diagnostic> SetFaulted(PortId portId, Diagnostic diagnostic) => Set(portId, NodeOutputResult.Faulted(diagnostic));
+		public UnitResult<Diagnostic> SetPreparing(PortId portId, Diagnostic diagnostic) => Set(portId, NodeOutputResult.Preparing(diagnostic));
 
 		internal IReadOnlyDictionary<PortId, NodeOutputResult> Seal() {
 			if (_sealed) return _sealedOutputs;
@@ -445,13 +446,13 @@ namespace ShitDesigner.Runtime {
 	/// dependency in the opposite direction.
 	/// </summary>
 	public interface IRuntimeProjectMutationPort {
-		CSharpFunctionalExtensions.UnitResult<Diagnostic> ApplyGraphPatch(GraphPatch patch);
-		CSharpFunctionalExtensions.UnitResult<Diagnostic> ApplyParameterTransaction(IReadOnlyList<BaseValueUpdate> updates);
+		UnitResult<Diagnostic> ApplyGraphPatch(GraphPatch patch);
+		UnitResult<Diagnostic> ApplyParameterTransaction(IReadOnlyList<BaseValueUpdate> updates);
 	}
 
 	/// <summary>Creates the shared read-only ImageFrame used by optional Image inputs.</summary>
 	public interface IRuntimeDefaultImageProvider {
-		CSharpFunctionalExtensions.Result<PortValue, Diagnostic> Get(RuntimeDefaultImageKind kind, int width, int height, ulong frameNumber);
+		Result<PortValue, Diagnostic> Get(RuntimeDefaultImageKind kind, int width, int height, ulong frameNumber);
 	}
 
 	/// <summary>Phase-5 output surface boundary. Rendering prepares/reuses the
@@ -476,32 +477,32 @@ namespace ShitDesigner.Runtime {
 	/// candidate. Returning a held last frame without marking leaves the
 	/// candidate uncommitted.</summary>
 	public interface IRuntimeOutputSurfaceCompletion {
-		CSharpFunctionalExtensions.UnitResult<Diagnostic> MarkRendered();
+		UnitResult<Diagnostic> MarkRendered();
 		bool IsRendered { get; }
 	}
 
 	public interface IRuntimeOutputSurfacePort {
-		CSharpFunctionalExtensions.Result<IRuntimeOutputSurface, Diagnostic> TryGetPrepared(NodeInstanceId nodeId, PortId portId, int width, int height, ulong frameNumber);
+		Result<IRuntimeOutputSurface, Diagnostic> TryGetPrepared(NodeInstanceId nodeId, PortId portId, int width, int height, ulong frameNumber);
 	}
 
 	public interface IRuntimeResourcePreparation {
-		CSharpFunctionalExtensions.UnitResult<Diagnostic> Prepare(FrameSnapshot snapshot);
+		UnitResult<Diagnostic> Prepare(FrameSnapshot snapshot);
 	}
 
 	/// <summary>Optional Phase-5 extension that receives the Phase-4 demand
 	/// plan without changing the immutable state snapshot contract.</summary>
 	public interface IRuntimeResourcePreparationWithPlan : IRuntimeResourcePreparation {
-		CSharpFunctionalExtensions.UnitResult<Diagnostic> Prepare(FrameSnapshot snapshot, FrameEvaluationContext evaluation);
+		UnitResult<Diagnostic> Prepare(FrameSnapshot snapshot, FrameEvaluationContext evaluation);
 	}
 
 	public interface IRuntimeResourceFinalization {
-		CSharpFunctionalExtensions.UnitResult<Diagnostic> Finalize(FrameSnapshot snapshot, bool frameSucceeded);
+		UnitResult<Diagnostic> Finalize(FrameSnapshot snapshot, bool frameSucceeded);
 	}
 
 	/// <summary>Optional Phase-9 extension paired with the Phase-5 plan-aware
 	/// preparation contract.</summary>
 	public interface IRuntimeResourceFinalizationWithPlan : IRuntimeResourceFinalization {
-		CSharpFunctionalExtensions.UnitResult<Diagnostic> Finalize(FrameSnapshot snapshot, FrameEvaluationContext evaluation, bool frameSucceeded);
+		UnitResult<Diagnostic> Finalize(FrameSnapshot snapshot, FrameEvaluationContext evaluation, bool frameSucceeded);
 	}
 
 	/// <summary>Per-frame plan produced at Phase 4. It is intentionally
@@ -527,20 +528,20 @@ namespace ShitDesigner.Runtime {
 		public ulong GenerationId { get; }
 		public long? DocumentRevision { get; }
 		public long? GraphRevision { get; }
-		public Func<RuntimeSession, CSharpFunctionalExtensions.UnitResult<Diagnostic>> Apply { get; }
-		public Func<RuntimeSession, CSharpFunctionalExtensions.UnitResult<Diagnostic>> Discard { get; }
+		public Func<RuntimeSession, UnitResult<Diagnostic>> Apply { get; }
+		public Func<RuntimeSession, UnitResult<Diagnostic>> Discard { get; }
 
-		public RuntimeCompletion(NodeInstanceId nodeId, ulong generationId, Func<RuntimeSession, CSharpFunctionalExtensions.UnitResult<Diagnostic>> apply, Func<RuntimeSession, CSharpFunctionalExtensions.UnitResult<Diagnostic>> discard = null, long? documentRevision = null, long? graphRevision = null) {
+		public RuntimeCompletion(NodeInstanceId nodeId, ulong generationId, Func<RuntimeSession, UnitResult<Diagnostic>> apply, Func<RuntimeSession, UnitResult<Diagnostic>> discard = null, long? documentRevision = null, long? graphRevision = null) {
 			if (nodeId.IsEmpty || generationId == 0) throw new ArgumentException("Completion owner identity is required.");
 			NodeId = nodeId;
 			GenerationId = generationId;
 			DocumentRevision = documentRevision;
 			GraphRevision = graphRevision;
 			Apply = apply ?? throw new ArgumentNullException(nameof(apply));
-			Discard = discard ?? (_ => CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>());
+			Discard = discard ?? (_ => UnitResult.Success<Diagnostic>());
 		}
 
-		public RuntimeCompletion(NodeInstanceId nodeId, ulong generationId, long documentRevision, Func<RuntimeSession, CSharpFunctionalExtensions.UnitResult<Diagnostic>> apply, Func<RuntimeSession, CSharpFunctionalExtensions.UnitResult<Diagnostic>> discard = null)
+		public RuntimeCompletion(NodeInstanceId nodeId, ulong generationId, long documentRevision, Func<RuntimeSession, UnitResult<Diagnostic>> apply, Func<RuntimeSession, UnitResult<Diagnostic>> discard = null)
 			: this(nodeId, generationId, apply, discard, documentRevision, null) { }
 	}
 
@@ -592,7 +593,7 @@ namespace ShitDesigner.Runtime {
 
 	public interface IRuntimeNodeFactory {
 		NodeTypeId TypeId { get; }
-		CSharpFunctionalExtensions.Result<IRuntimeNode, Diagnostic> Create(RuntimeNodeCreateInfo node, ulong generationId);
+		Result<IRuntimeNode, Diagnostic> Create(RuntimeNodeCreateInfo node, ulong generationId);
 	}
 
 	/// <summary>
@@ -608,12 +609,12 @@ namespace ShitDesigner.Runtime {
 	}
 
 	public interface IFeedbackCommitter {
-		CSharpFunctionalExtensions.UnitResult<Diagnostic> Commit(NodeInstanceId nodeId, NodeOutputResult input, FrameSnapshot snapshot);
+		UnitResult<Diagnostic> Commit(NodeInstanceId nodeId, NodeOutputResult input, FrameSnapshot snapshot);
 	}
 
 	/// <summary>Optional boundary command implemented by temporal Feedback nodes.</summary>
 	public interface IFeedbackResetter {
-		CSharpFunctionalExtensions.UnitResult<Diagnostic> Reset(NodeInstanceId nodeId);
+		UnitResult<Diagnostic> Reset(NodeInstanceId nodeId);
 	}
 
 	public readonly struct OutputPresentation {

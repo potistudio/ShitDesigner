@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.Linq;
 using ShitDesigner.Core;
 using ShitDesigner.Runtime;
@@ -24,20 +25,20 @@ namespace ShitDesigner.Scene {
 			TypeId = typeId; Kind = kind; _manager = manager; _prefabResolver = prefabResolver; _applyEffectiveParameters = applyEffectiveParameters;
 		}
 
-		public CSharpFunctionalExtensions.Result<IRuntimeNode, Diagnostic> Create(RuntimeNodeCreateInfo node, ulong generationId) {
-			if (!IsAvailable) return CSharpFunctionalExtensions.Result.Failure<IRuntimeNode, Diagnostic>(AvailabilityDiagnostic);
+		public Result<IRuntimeNode, Diagnostic> Create(RuntimeNodeCreateInfo node, ulong generationId) {
+			if (!IsAvailable) return Result.Failure<IRuntimeNode, Diagnostic>(AvailabilityDiagnostic);
 			if (node == null || node.TypeId != TypeId || generationId == 0) return FailureNode("scene.factory.node", "Scene factory input does not match its binding.", node, generationId);
 			GameObject prefab;
 			try { prefab = _prefabResolver(node); }
 			catch (Exception exception) { return FailureNode("scene.prefab.resolve", exception.Message, node, generationId, exception); }
 			if (prefab == null) return FailureNode("scene.prefab.missing", "Scene node requires an explicit prefab/camera binding.", node, generationId);
 			var created = _manager.Create(new SceneCreateRequest(node.Id, Kind, "ShitDesigner." + TypeId.Value + "." + node.Id.Value, generationId, prefab));
-			if (created.IsFailure) return CSharpFunctionalExtensions.Result.Failure<IRuntimeNode, Diagnostic>(created.Error);
-			return CSharpFunctionalExtensions.Result.Success<IRuntimeNode, Diagnostic>(new SceneRuntimeNode(node, generationId, created.Value, _applyEffectiveParameters));
+			if (created.IsFailure) return Result.Failure<IRuntimeNode, Diagnostic>(created.Error);
+			return Result.Success<IRuntimeNode, Diagnostic>(new SceneRuntimeNode(node, generationId, created.Value, _applyEffectiveParameters));
 		}
 
-		private CSharpFunctionalExtensions.Result<IRuntimeNode, Diagnostic> FailureNode(string code, string message, RuntimeNodeCreateInfo node, ulong generationId, Exception exception = null) =>
-			CSharpFunctionalExtensions.Result.Failure<IRuntimeNode, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, nodeId: node?.Id ?? default(NodeInstanceId), nodeTypeId: TypeId, generationId: generationId, module: "scene", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
+		private Result<IRuntimeNode, Diagnostic> FailureNode(string code, string message, RuntimeNodeCreateInfo node, ulong generationId, Exception exception = null) =>
+			Result.Failure<IRuntimeNode, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, nodeId: node?.Id ?? default(NodeInstanceId), nodeTypeId: TypeId, generationId: generationId, module: "scene", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
 	}
 
 	public sealed class SceneRuntimeNode : IRuntimeNode, IRuntimeDemandAwareNode {

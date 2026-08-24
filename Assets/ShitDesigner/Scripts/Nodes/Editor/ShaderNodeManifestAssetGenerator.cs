@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -62,13 +63,13 @@ namespace ShitDesigner.Nodes.Editor {
 			Debug.Log("ShitDesigner VJ shader manifest and node catalog generated: " + result.Value + " shader entries.");
 		}
 
-		public static CSharpFunctionalExtensions.Result<int, Diagnostic> GenerateAndValidate() {
+		public static Result<int, Diagnostic> GenerateAndValidate() {
 			var loaded = LoadManifest();
-			if (loaded.IsFailure) return CSharpFunctionalExtensions.Result.Failure<int, Diagnostic>(loaded.Error);
+			if (loaded.IsFailure) return Result.Failure<int, Diagnostic>(loaded.Error);
 			var manifest = loaded.Value.Manifest;
 			var shaderByType = loaded.Value.Shaders;
 			var valid = ShaderNodeManifestValidator.Validate(manifest);
-			if (valid.IsFailure) return CSharpFunctionalExtensions.Result.Failure<int, Diagnostic>(valid.Error);
+			if (valid.IsFailure) return Result.Failure<int, Diagnostic>(valid.Error);
 
 			var manifestAsset = AssetDatabase.LoadAssetAtPath<ShaderNodeManifestAsset>(ManifestAssetPath);
 			if (manifestAsset == null) {
@@ -79,16 +80,16 @@ namespace ShitDesigner.Nodes.Editor {
 			manifestAsset.ReplaceManifest(manifest, loaded.Value.Fingerprint);
 			foreach (var pair in shaderByType) {
 				var attached = manifestAsset.SetShaderReference(pair.Key, pair.Value);
-				if (attached.IsFailure) return CSharpFunctionalExtensions.Result.Failure<int, Diagnostic>(attached.Error);
+				if (attached.IsFailure) return Result.Failure<int, Diagnostic>(attached.Error);
 			}
 			var assetValid = manifestAsset.ValidateManifest();
-			if (assetValid.IsFailure) return CSharpFunctionalExtensions.Result.Failure<int, Diagnostic>(assetValid.Error);
+			if (assetValid.IsFailure) return Result.Failure<int, Diagnostic>(assetValid.Error);
 			var shadersValid = manifestAsset.ValidateShaderReferences();
-			if (shadersValid.IsFailure) return CSharpFunctionalExtensions.Result.Failure<int, Diagnostic>(shadersValid.Error);
+			if (shadersValid.IsFailure) return Result.Failure<int, Diagnostic>(shadersValid.Error);
 
 			var runtime = NodeDefinitionCatalog.CreateInitial(manifest);
 			var runtimeValid = runtime.Validate();
-			if (runtimeValid.IsFailure) return CSharpFunctionalExtensions.Result.Failure<int, Diagnostic>(runtimeValid.Error);
+			if (runtimeValid.IsFailure) return Result.Failure<int, Diagnostic>(runtimeValid.Error);
 			var catalog = AssetDatabase.LoadAssetAtPath<NodeTypeCatalog>(CatalogAssetPath);
 			if (catalog == null) {
 				catalog = ScriptableObject.CreateInstance<NodeTypeCatalog>();
@@ -99,29 +100,29 @@ namespace ShitDesigner.Nodes.Editor {
 			catalog.ReplaceManifest(runtime.Entries);
 			foreach (var pair in shaderByType) {
 				var configured = catalog.ConfigureShaderReference(pair.Key, pair.Value);
-				if (configured.IsFailure) return CSharpFunctionalExtensions.Result.Failure<int, Diagnostic>(configured.Error);
+				if (configured.IsFailure) return Result.Failure<int, Diagnostic>(configured.Error);
 			}
 			var sceneReferences = ConfigureLegacySceneReferences(catalog);
-			if (sceneReferences.IsFailure) return CSharpFunctionalExtensions.Result.Failure<int, Diagnostic>(sceneReferences.Error);
+			if (sceneReferences.IsFailure) return Result.Failure<int, Diagnostic>(sceneReferences.Error);
 			var catalogValid = catalog.ValidateManifest();
-			if (catalogValid.IsFailure) return CSharpFunctionalExtensions.Result.Failure<int, Diagnostic>(catalogValid.Error);
+			if (catalogValid.IsFailure) return Result.Failure<int, Diagnostic>(catalogValid.Error);
 			var exact = catalog.ValidateAgainst(runtime);
-			if (exact.IsFailure) return CSharpFunctionalExtensions.Result.Failure<int, Diagnostic>(exact.Error);
+			if (exact.IsFailure) return Result.Failure<int, Diagnostic>(exact.Error);
 			var count = manifest.Entries.Count;
-			if (count != 441) return CSharpFunctionalExtensions.Result.Failure<int, Diagnostic>(Failure("nodes.shader_manifest_count", "Expected 438 VJ entries plus 3 legacy shader entries, found " + count + ".").Error);
+			if (count != 441) return Result.Failure<int, Diagnostic>(Failure("nodes.shader_manifest_count", "Expected 438 VJ entries plus 3 legacy shader entries, found " + count + ".").Error);
 			EditorUtility.SetDirty(manifestAsset);
 			EditorUtility.SetDirty(catalog);
 			AssetDatabase.SaveAssets();
 			AssetDatabase.Refresh();
-			return CSharpFunctionalExtensions.Result.Success<int, Diagnostic>(count);
+			return Result.Success<int, Diagnostic>(count);
 		}
 
-		public static CSharpFunctionalExtensions.Result<ShaderNodeManifest, Diagnostic> LoadAuthoritativeManifest() {
+		public static Result<ShaderNodeManifest, Diagnostic> LoadAuthoritativeManifest() {
 			var result = LoadManifest();
-			return result.IsFailure ? CSharpFunctionalExtensions.Result.Failure<ShaderNodeManifest, Diagnostic>(result.Error) : CSharpFunctionalExtensions.Result.Success<ShaderNodeManifest, Diagnostic>(result.Value.Manifest);
+			return result.IsFailure ? Result.Failure<ShaderNodeManifest, Diagnostic>(result.Error) : Result.Success<ShaderNodeManifest, Diagnostic>(result.Value.Manifest);
 		}
 
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> ConfigureLegacySceneReferences(NodeTypeCatalog catalog) {
+		private static UnitResult<Diagnostic> ConfigureLegacySceneReferences(NodeTypeCatalog catalog) {
 			var scene3d = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/ShitDesigner/Scripts/Bootstrap/Scene3D.prefab");
 			var scene2d = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/ShitDesigner/Scripts/Bootstrap/Scene2D.prefab");
 			if (scene3d == null || scene2d == null) return Failure("nodes.catalog.prefab_missing", "Required Scene prefabs are missing from the project.");
@@ -130,7 +131,7 @@ namespace ShitDesigner.Nodes.Editor {
 			return catalog.ConfigureReference("shitdesigner.scene.2d", prefab: scene2d);
 		}
 
-		private static CSharpFunctionalExtensions.Result<LoadedManifest, Diagnostic> LoadManifest() {
+		private static Result<LoadedManifest, Diagnostic> LoadManifest() {
 			try {
 				var entries = new List<ShaderNodeManifestEntry>();
 				var shaders = new Dictionary<string, Shader>(StringComparer.Ordinal);
@@ -138,11 +139,11 @@ namespace ShitDesigner.Nodes.Editor {
 				var compositing = Read<CompositingLedger>(CompositingLedgerPath);
 				var audio = Read<AudioLedger>(AudioLedgerPath);
 				if (spatial == null || spatial.variants == null || spatial.variants.Length != 246)
-					return CSharpFunctionalExtensions.Result.Failure<LoadedManifest, Diagnostic>(Failure("nodes.shader_ledger_spatial", "Spatial ledger must contain exactly 246 variants.").Error);
+					return Result.Failure<LoadedManifest, Diagnostic>(Failure("nodes.shader_ledger_spatial", "Spatial ledger must contain exactly 246 variants.").Error);
 				if (compositing == null || compositing.variants == null || compositing.variants.Length != 104)
-					return CSharpFunctionalExtensions.Result.Failure<LoadedManifest, Diagnostic>(Failure("nodes.shader_ledger_compositing", "Compositing/temporal ledger must contain exactly 104 variants.").Error);
+					return Result.Failure<LoadedManifest, Diagnostic>(Failure("nodes.shader_ledger_compositing", "Compositing/temporal ledger must contain exactly 104 variants.").Error);
 				if (audio == null || audio.variants == null || audio.variants.Length != 88)
-					return CSharpFunctionalExtensions.Result.Failure<LoadedManifest, Diagnostic>(Failure("nodes.shader_ledger_audio", "Audio/raymarch/utility ledger must contain exactly 88 variants.").Error);
+					return Result.Failure<LoadedManifest, Diagnostic>(Failure("nodes.shader_ledger_audio", "Audio/raymarch/utility ledger must contain exactly 88 variants.").Error);
 
 				entries.AddRange(ShaderNodeManifest.CreateBuiltIn().Entries);
 				foreach (var row in spatial.variants) {
@@ -163,17 +164,17 @@ namespace ShitDesigner.Nodes.Editor {
 				foreach (var legacy in ShaderNodeManifest.CreateBuiltIn().Entries)
 					shaders[legacy.TypeId.Value] = LoadLegacyShader(legacy.ShaderKey);
 				var duplicate = entries.GroupBy(x => x.TypeId.Value, StringComparer.Ordinal).FirstOrDefault(x => x.Count() > 1);
-				if (duplicate != null) return CSharpFunctionalExtensions.Result.Failure<LoadedManifest, Diagnostic>(Failure("nodes.shader_ledger_duplicate", "Duplicate shader manifest TypeId: " + duplicate.Key + ".").Error);
+				if (duplicate != null) return Result.Failure<LoadedManifest, Diagnostic>(Failure("nodes.shader_ledger_duplicate", "Duplicate shader manifest TypeId: " + duplicate.Key + ".").Error);
 				foreach (var pair in shaders)
-					if (pair.Value == null) return CSharpFunctionalExtensions.Result.Failure<LoadedManifest, Diagnostic>(Failure("nodes.shader_family_missing", "Family Shader is missing for " + pair.Key + ".").Error);
-				return CSharpFunctionalExtensions.Result.Success<LoadedManifest, Diagnostic>(new LoadedManifest(new ShaderNodeManifest(entries), shaders, Fingerprint()));
+					if (pair.Value == null) return Result.Failure<LoadedManifest, Diagnostic>(Failure("nodes.shader_family_missing", "Family Shader is missing for " + pair.Key + ".").Error);
+				return Result.Success<LoadedManifest, Diagnostic>(new LoadedManifest(new ShaderNodeManifest(entries), shaders, Fingerprint()));
 			}
 			catch (Exception exception) {
 				// Preserve the offending constructor/ledger row in the editor
 				// diagnostic.  A bare message such as "Stable IDs cannot be
 				// empty" is otherwise impossible to action when one of the
 				// three authoritative ledgers changes.
-				return CSharpFunctionalExtensions.Result.Failure<LoadedManifest, Diagnostic>(Failure("nodes.shader_ledger_import", exception.ToString(), exception).Error);
+				return Result.Failure<LoadedManifest, Diagnostic>(Failure("nodes.shader_ledger_import", exception.ToString(), exception).Error);
 			}
 		}
 
@@ -554,8 +555,8 @@ namespace ShitDesigner.Nodes.Editor {
 			public LoadedManifest(ShaderNodeManifest manifest, IReadOnlyDictionary<string, Shader> shaders, string fingerprint) { Manifest = manifest; Shaders = shaders; Fingerprint = fingerprint; }
 		}
 
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message, Exception exception = null)
-			=> CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "nodes", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
+		private static UnitResult<Diagnostic> Failure(string code, string message, Exception exception = null)
+			=> UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "nodes", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
 	}
 }
 #endif

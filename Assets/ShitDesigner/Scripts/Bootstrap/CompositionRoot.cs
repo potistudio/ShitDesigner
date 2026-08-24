@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -52,7 +53,7 @@ namespace ShitDesigner.Bootstrap {
 	/// EditMode Harnesses use this exact contract; only the provider differs.
 	/// </summary>
 	public interface IVisualBindingProvider {
-		CSharpFunctionalExtensions.Result<VisualBindingSet, Diagnostic> Create(string sessionId);
+		Result<VisualBindingSet, Diagnostic> Create(string sessionId);
 	}
 
 	/// <summary>Optional read-only ownership projection for concrete providers.
@@ -151,7 +152,7 @@ namespace ShitDesigner.Bootstrap {
 			layerCount = scenes?.Layers?.ActiveCount ?? 0;
 		}
 
-		public CSharpFunctionalExtensions.Result<VisualBindingSet, Diagnostic> Create(string sessionId) {
+		public Result<VisualBindingSet, Diagnostic> Create(string sessionId) {
 			if (_disposed) return Failure("bootstrap.binding.disposed", "The production visual binding provider is disposed.");
 			if (string.IsNullOrWhiteSpace(sessionId)) return Failure("bootstrap.binding.session", "A session ID is required.");
 			if (_sceneManagerFactory == null || _scene3dPrefab == null || _scene2dPrefab == null)
@@ -200,7 +201,7 @@ namespace ShitDesigner.Bootstrap {
 				if (!feedback.IsAvailable) return Failure("bootstrap.binding.feedback_missing", "Feedback requires the shared RenderTexturePool.");
 				bindings.Add(feedback);
 				owned.Add(feedback);
-				return CSharpFunctionalExtensions.Result.Success<VisualBindingSet, Diagnostic>(new VisualBindingSet(bindings, owned));
+				return Result.Success<VisualBindingSet, Diagnostic>(new VisualBindingSet(bindings, owned));
 			}
 			catch (Exception exception) {
 				for (var i = owned.Count - 1; i >= 0; i--) try { owned[i].Dispose(); } catch { }
@@ -217,8 +218,8 @@ namespace ShitDesigner.Bootstrap {
 				try { _applicationResources[i].Dispose(); } catch { }
 		}
 
-		private static CSharpFunctionalExtensions.Result<VisualBindingSet, Diagnostic> Failure(string code, string message, Exception exception = null) =>
-			CSharpFunctionalExtensions.Result.Failure<VisualBindingSet, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
+		private static Result<VisualBindingSet, Diagnostic> Failure(string code, string message, Exception exception = null) =>
+			Result.Failure<VisualBindingSet, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
 	}
 
 	/// <summary>Project-root and integrity checked resolver used by Video
@@ -237,7 +238,7 @@ namespace ShitDesigner.Bootstrap {
 			_probe = probe ?? throw new ArgumentNullException(nameof(probe));
 		}
 
-		public CSharpFunctionalExtensions.Result<VideoPrepareRequest, Diagnostic> Resolve(MediaAssetId mediaAssetId) {
+		public Result<VideoPrepareRequest, Diagnostic> Resolve(MediaAssetId mediaAssetId) {
 			var document = _document();
 			if (document == null || mediaAssetId.IsEmpty) return Failure("media.resolve.asset", "A selected media asset is required.");
 			var asset = document.MediaAssets.FirstOrDefault(x => x.Id == mediaAssetId);
@@ -256,8 +257,8 @@ namespace ShitDesigner.Bootstrap {
 						return Failure("media.resolve.integrity", "The project media file failed its manifest integrity check.");
 				}
 				var probe = _probe.Probe(fullPath);
-				if (probe.IsFailure) return CSharpFunctionalExtensions.Result.Failure<VideoPrepareRequest, Diagnostic>(probe.Error);
-				return CSharpFunctionalExtensions.Result.Success<VideoPrepareRequest, Diagnostic>(new VideoPrepareRequest(fullPath, probe.Value));
+				if (probe.IsFailure) return Result.Failure<VideoPrepareRequest, Diagnostic>(probe.Error);
+				return Result.Success<VideoPrepareRequest, Diagnostic>(new VideoPrepareRequest(fullPath, probe.Value));
 			}
 			catch (Exception exception) { return Failure("media.resolve.failed", "The project media file could not be prepared.", exception); }
 		}
@@ -271,7 +272,7 @@ namespace ShitDesigner.Bootstrap {
 			try { return (_fileSystem.GetAttributes(path) & FileAttributes.ReparsePoint) != 0; } catch { return false; }
 		}
 
-		private static CSharpFunctionalExtensions.Result<VideoPrepareRequest, Diagnostic> Failure(string code, string message, Exception exception = null) => CSharpFunctionalExtensions.Result.Failure<VideoPrepareRequest, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "media", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
+		private static Result<VideoPrepareRequest, Diagnostic> Failure(string code, string message, Exception exception = null) => Result.Failure<VideoPrepareRequest, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "media", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
 	}
 
 	/// <summary>Resolves both still images and videos through the same project
@@ -290,15 +291,15 @@ namespace ShitDesigner.Bootstrap {
 			_videos = videos ?? throw new ArgumentNullException(nameof(videos));
 		}
 
-		public CSharpFunctionalExtensions.Result<AssetFlashPrepareRequest, Diagnostic> Resolve(MediaAssetId mediaAssetId) {
+		public Result<AssetFlashPrepareRequest, Diagnostic> Resolve(MediaAssetId mediaAssetId) {
 			var document = _document();
 			if (document == null || mediaAssetId.IsEmpty) return Failure("media.flash.resolve.asset", "A selected media asset is required.");
 			var asset = document.MediaAssets.FirstOrDefault(x => x.Id == mediaAssetId);
 			if (asset == null) return Failure("media.flash.resolve.missing", "The selected media asset is not in the project manifest.");
 			if (asset.Kind == MediaAssetKind.Video) {
 				var video = _videos.Resolve(mediaAssetId);
-				return video.IsFailure ? CSharpFunctionalExtensions.Result.Failure<AssetFlashPrepareRequest, Diagnostic>(video.Error)
-					: CSharpFunctionalExtensions.Result.Success<AssetFlashPrepareRequest, Diagnostic>(AssetFlashPrepareRequest.VideoFile(video.Value));
+				return video.IsFailure ? Result.Failure<AssetFlashPrepareRequest, Diagnostic>(video.Error)
+					: Result.Success<AssetFlashPrepareRequest, Diagnostic>(AssetFlashPrepareRequest.VideoFile(video.Value));
 			}
 			if (asset.Kind != MediaAssetKind.Image)
 				return Failure("media.flash.resolve.kind", "Asset Flash supports Image and Video media assets only.");
@@ -328,13 +329,13 @@ namespace ShitDesigner.Bootstrap {
 					: asset.ColorSpace == MediaColorSpace.Rec709 ? VideoColorEncoding.Rec709 : VideoColorEncoding.Srgb;
 				var alpha = asset.AlphaMode == MediaAlphaMode.Premultiplied ? VideoAlphaMode.Premultiplied
 					: asset.AlphaMode == MediaAlphaMode.Straight ? VideoAlphaMode.Straight : VideoAlphaMode.Opaque;
-				return CSharpFunctionalExtensions.Result.Success<AssetFlashPrepareRequest, Diagnostic>(AssetFlashPrepareRequest.Image(bytes, new VideoFrameConversionMetadata(color, alpha)));
+				return Result.Success<AssetFlashPrepareRequest, Diagnostic>(AssetFlashPrepareRequest.Image(bytes, new VideoFrameConversionMetadata(color, alpha)));
 			}
 			catch (Exception exception) { return Failure("media.flash.resolve.failed", "The project image could not be prepared.", exception); }
 		}
 
-		private static CSharpFunctionalExtensions.Result<AssetFlashPrepareRequest, Diagnostic> Failure(string code, string message, Exception exception = null)
-			=> CSharpFunctionalExtensions.Result.Failure<AssetFlashPrepareRequest, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "media", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
+		private static Result<AssetFlashPrepareRequest, Diagnostic> Failure(string code, string message, Exception exception = null)
+			=> Result.Failure<AssetFlashPrepareRequest, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "media", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
 	}
 
 	/// <summary>Routes a selected codec to the explicit Unity or Hap factory.
@@ -344,10 +345,10 @@ namespace ShitDesigner.Bootstrap {
 		private readonly IVideoBackendFactory _unity;
 		private readonly IVideoBackendFactory _hap;
 		public CompositeVideoBackendFactory(IVideoBackendFactory unity, IVideoBackendFactory hap) { _unity = unity; _hap = hap; }
-		public CSharpFunctionalExtensions.Result<IVideoBackendHandle, Diagnostic> Create(NodeInstanceId nodeId, ulong generationId, VideoBackendKind kind) {
+		public Result<IVideoBackendHandle, Diagnostic> Create(NodeInstanceId nodeId, ulong generationId, VideoBackendKind kind) {
 			var selected = kind == VideoBackendKind.HapVideoBackend ? _hap : _unity;
 			return selected == null
-				? CSharpFunctionalExtensions.Result.Failure<IVideoBackendHandle, Diagnostic>(new Diagnostic(new DiagnosticCode("media.backend.unavailable"), Severity.Error, "The selected video backend is unavailable.", module: "media"))
+				? Result.Failure<IVideoBackendHandle, Diagnostic>(new Diagnostic(new DiagnosticCode("media.backend.unavailable"), Severity.Error, "The selected video backend is unavailable.", module: "media"))
 				: selected.Create(nodeId, generationId, kind);
 		}
 	}
@@ -377,7 +378,7 @@ namespace ShitDesigner.Bootstrap {
 
 		public void SetProjectRoot(string projectRoot) => _projectRoot = projectRoot ?? string.Empty;
 
-		public CSharpFunctionalExtensions.Result<ApplicationRuntimeComposition, Diagnostic> Create(ProjectDocument document, NodeTypeRegistry registry) {
+		public Result<ApplicationRuntimeComposition, Diagnostic> Create(ProjectDocument document, NodeTypeRegistry registry) {
 			if (document == null || registry == null) return Failure("bootstrap.runtime.arguments", "A document and registry are required.");
 			var sessionId = Guid.NewGuid().ToString("D");
 			VisualBindingSet set = null;
@@ -390,22 +391,22 @@ namespace ShitDesigner.Bootstrap {
 				var formatPolicy = NodeCatalogBootstrap.CreateOutputFormatPolicy(document.Settings);
 				var programRange = document.Settings.DynamicRange == ProjectDynamicRange.Ldr ? ProgramDynamicRange.Ldr : ProgramDynamicRange.Hdr;
 				var formatValidation = RenderingFormatPolicy.ValidateInternalFormat(programRange, new UnityRenderingPlatformCapabilityPort());
-				if (formatValidation.IsFailure) return CSharpFunctionalExtensions.Result.Failure<ApplicationRuntimeComposition, Diagnostic>(formatValidation.Error);
+				if (formatValidation.IsFailure) return Result.Failure<ApplicationRuntimeComposition, Diagnostic>(formatValidation.Error);
 				if (_provider is IVisualBindingPolicy policyAware) policyAware.SetOutputFormatPolicy(formatPolicy);
 				if (_provider is IProjectContextAware contextAware) contextAware.SetProjectContext(document, _projectRoot);
 				if (_provider is IVisualBindingPoolAware poolAware && !poolAware.UsesPool(_pool))
 					return Failure("bootstrap.runtime.pool_mismatch", "The visual binding provider must use the composition root RenderTexturePool.");
 				var created = _provider.Create(sessionId);
-				if (created.IsFailure) return CSharpFunctionalExtensions.Result.Failure<ApplicationRuntimeComposition, Diagnostic>(created.Error);
+				if (created.IsFailure) return Result.Failure<ApplicationRuntimeComposition, Diagnostic>(created.Error);
 				set = created.Value;
 				var bindingResult = NodeCatalogBootstrap.BuildProductionBindings(set.Bindings);
-				if (bindingResult.IsFailure) { set.Dispose(); return CSharpFunctionalExtensions.Result.Failure<ApplicationRuntimeComposition, Diagnostic>(bindingResult.Error); }
+				if (bindingResult.IsFailure) { set.Dispose(); return Result.Failure<ApplicationRuntimeComposition, Diagnostic>(bindingResult.Error); }
 				var bindings = bindingResult.Value;
 				var catalogResult = _nodeTypeCatalog.BuildRuntimeCatalog(bindings);
-				if (catalogResult.IsFailure) { set.Dispose(); return CSharpFunctionalExtensions.Result.Failure<ApplicationRuntimeComposition, Diagnostic>(catalogResult.Error); }
+				if (catalogResult.IsFailure) { set.Dispose(); return Result.Failure<ApplicationRuntimeComposition, Diagnostic>(catalogResult.Error); }
 				var catalog = catalogResult.Value;
 				var definitions = NodeCatalogBootstrap.EnsureDefinitions(catalog, registry);
-				if (definitions.IsFailure) { set.Dispose(); return CSharpFunctionalExtensions.Result.Failure<ApplicationRuntimeComposition, Diagnostic>(definitions.Error); }
+				if (definitions.IsFailure) { set.Dispose(); return Result.Failure<ApplicationRuntimeComposition, Diagnostic>(definitions.Error); }
 
 				// Program output is a fixed 1920x1080/60 contract. Unity's
 				// global targetFrameRate may be zero (platform default) or a
@@ -423,7 +424,7 @@ namespace ShitDesigner.Bootstrap {
 				var surfaces = new RuntimeOutputSurfaceService(session, _pool, sessionId, formatPolicy);
 				programHold = new ProgramHoldController(_pool, new ResourceOwnerKey(sessionId, ResourceOwnerKind.ProgramPresenter, "program", 1, "hold", LeaseRole.ProgramHold), programRange);
 				var ensured = programHold.Ensure(1);
-				if (ensured.IsFailure) { session.Dispose(); set.Dispose(); programHold.Dispose(); return CSharpFunctionalExtensions.Result.Failure<ApplicationRuntimeComposition, Diagnostic>(ensured.Error); }
+				if (ensured.IsFailure) { session.Dispose(); set.Dispose(); programHold.Dispose(); return Result.Failure<ApplicationRuntimeComposition, Diagnostic>(ensured.Error); }
 				session.DefaultImageProvider = defaultImages;
 				session.OutputSurfaces = surfaces;
 				var feedbackBinding = set.Bindings.OfType<FeedbackVisualNodeBinding>().SingleOrDefault();
@@ -435,7 +436,7 @@ namespace ShitDesigner.Bootstrap {
 					session.Dispose();
 					set.Dispose();
 					programHold.Dispose();
-					return CSharpFunctionalExtensions.Result.Failure<ApplicationRuntimeComposition, Diagnostic>(registered.Error);
+					return Result.Failure<ApplicationRuntimeComposition, Diagnostic>(registered.Error);
 				}
 				owned.Add(programHold);
 				var compositionResources = new List<IDisposable> { new VisualBindingSetLease(set) };
@@ -447,7 +448,7 @@ namespace ShitDesigner.Bootstrap {
 				var frames = new FrameCoordinator(session);
 				var composition = new ApplicationRuntimeComposition(session, frames, true, string.Empty, compositionResources);
 				CurrentComposition = composition;
-				return CSharpFunctionalExtensions.Result.Success<ApplicationRuntimeComposition, Diagnostic>(composition);
+				return Result.Success<ApplicationRuntimeComposition, Diagnostic>(composition);
 			}
 			catch (Exception exception) {
 				try { lifecycle?.Dispose(); } catch { }
@@ -460,8 +461,8 @@ namespace ShitDesigner.Bootstrap {
 			}
 		}
 
-		private static CSharpFunctionalExtensions.Result<ApplicationRuntimeComposition, Diagnostic> Failure(string code, string message, Exception exception = null) =>
-			CSharpFunctionalExtensions.Result.Failure<ApplicationRuntimeComposition, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
+		private static Result<ApplicationRuntimeComposition, Diagnostic> Failure(string code, string message, Exception exception = null) =>
+			Result.Failure<ApplicationRuntimeComposition, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
 
 		private sealed class VisualBindingSetLease : IDisposable {
 			private VisualBindingSet _set;
@@ -489,17 +490,17 @@ namespace ShitDesigner.Bootstrap {
 				_feedback = feedback;
 			}
 
-			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Prepare(FrameSnapshot snapshot) => Prepare(snapshot, null);
-			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Prepare(FrameSnapshot snapshot, FrameEvaluationContext evaluation) {
-				if (_disposed) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.resource.disposed"), Severity.Error, "Production resource lifecycle is disposed.", module: "bootstrap"));
+			public UnitResult<Diagnostic> Prepare(FrameSnapshot snapshot) => Prepare(snapshot, null);
+			public UnitResult<Diagnostic> Prepare(FrameSnapshot snapshot, FrameEvaluationContext evaluation) {
+				if (_disposed) return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.resource.disposed"), Severity.Error, "Production resource lifecycle is disposed.", module: "bootstrap"));
 				var surface = _surfaces.Prepare(snapshot, evaluation);
 				if (surface.IsFailure) return surface;
-				return _feedback == null ? CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>() : _feedback.Prepare(snapshot, evaluation);
+				return _feedback == null ? UnitResult.Success<Diagnostic>() : _feedback.Prepare(snapshot, evaluation);
 			}
 
-			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Finalize(FrameSnapshot snapshot, bool frameSucceeded) => Finalize(snapshot, null, frameSucceeded);
-			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Finalize(FrameSnapshot snapshot, FrameEvaluationContext evaluation, bool frameSucceeded) {
-				if (_disposed) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.resource.disposed"), Severity.Error, "Production resource lifecycle is disposed.", module: "bootstrap"));
+			public UnitResult<Diagnostic> Finalize(FrameSnapshot snapshot, bool frameSucceeded) => Finalize(snapshot, null, frameSucceeded);
+			public UnitResult<Diagnostic> Finalize(FrameSnapshot snapshot, FrameEvaluationContext evaluation, bool frameSucceeded) {
+				if (_disposed) return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.resource.disposed"), Severity.Error, "Production resource lifecycle is disposed.", module: "bootstrap"));
 				return _surfaces.Finalize(snapshot, evaluation, frameSucceeded);
 			}
 
@@ -583,12 +584,12 @@ namespace ShitDesigner.Bootstrap {
 		/// <summary>Discovers and activates the selected Unity display. A
 		/// missing external display is a supported degraded mode and keeps the
 		/// in-application Program monitor available.</summary>
-		public CSharpFunctionalExtensions.Result<CapabilityStatus, Diagnostic> Handshake() {
+		public Result<CapabilityStatus, Diagnostic> Handshake() {
 			if (_disposed)
-				return CSharpFunctionalExtensions.Result.Failure<CapabilityStatus, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.handshake.display_disposed"), Severity.Error, "Program display output is disposed.", module: "bootstrap"));
+				return Result.Failure<CapabilityStatus, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.handshake.display_disposed"), Severity.Error, "Program display output is disposed.", module: "bootstrap"));
 			if (_session == null || _program == null)
-				return CSharpFunctionalExtensions.Result.Failure<CapabilityStatus, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.handshake.display_unbound"), Severity.Error, "Program display output has no runtime session.", module: "bootstrap"));
-			if (_displayHandshakeAttempted) return CSharpFunctionalExtensions.Result.Success<CapabilityStatus, Diagnostic>(_displayHandshakeStatus);
+				return Result.Failure<CapabilityStatus, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.handshake.display_unbound"), Severity.Error, "Program display output has no runtime session.", module: "bootstrap"));
+			if (_displayHandshakeAttempted) return Result.Success<CapabilityStatus, Diagnostic>(_displayHandshakeStatus);
 			_displayHandshakeAttempted = true;
 			var unityDisplayIndex = ProgramDisplayPolicy.ToUnityIndex(_session.Document.Settings.ProgramDisplay);
 			try {
@@ -604,20 +605,20 @@ namespace ShitDesigner.Bootstrap {
 				ReportDisplayDiagnostic(diagnostic);
 				_displayHandshakeStatus = CapabilityStatus.Unavailable("display", diagnostic);
 			}
-			return CSharpFunctionalExtensions.Result.Success<CapabilityStatus, Diagnostic>(_displayHandshakeStatus);
+			return Result.Success<CapabilityStatus, Diagnostic>(_displayHandshakeStatus);
 		}
 
-		public CSharpFunctionalExtensions.Result<CapabilityStatus, Diagnostic> Probe() {
+		public Result<CapabilityStatus, Diagnostic> Probe() {
 			if (_disposed)
-				return CSharpFunctionalExtensions.Result.Failure<CapabilityStatus, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.handshake.display_disposed"), Severity.Error, "Program display output is disposed.", module: "bootstrap"));
+				return Result.Failure<CapabilityStatus, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.handshake.display_disposed"), Severity.Error, "Program display output is disposed.", module: "bootstrap"));
 			if (_session == null || _program == null)
-				return CSharpFunctionalExtensions.Result.Failure<CapabilityStatus, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.handshake.display_unbound"), Severity.Error, "Program display output has no runtime session.", module: "bootstrap"));
+				return Result.Failure<CapabilityStatus, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.handshake.display_unbound"), Severity.Error, "Program display output has no runtime session.", module: "bootstrap"));
 			if (_programPresenter == null) {
 				_displayHandshakeAttempted = false;
 				return Handshake();
 			}
 			RefreshDisplaySelection();
-			return CSharpFunctionalExtensions.Result.Success<CapabilityStatus, Diagnostic>(_displayHandshakeStatus ?? StatusFor(_programPresenter.Selection));
+			return Result.Success<CapabilityStatus, Diagnostic>(_displayHandshakeStatus ?? StatusFor(_programPresenter.Selection));
 		}
 
 		internal void Sync(ulong frameNumber) {
@@ -800,32 +801,32 @@ namespace ShitDesigner.Bootstrap {
 			_session?.Diagnostics?.Report(diagnostic);
 		}
 
-		private CSharpFunctionalExtensions.UnitResult<Diagnostic> EnsureDisplayLease(ulong frameNumber) {
-			if (_displaySurface?.Lease != null && !_displaySurface.Lease.IsReleased) return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+		private UnitResult<Diagnostic> EnsureDisplayLease(ulong frameNumber) {
+			if (_displaySurface?.Lease != null && !_displaySurface.Lease.IsReleased) return UnitResult.Success<Diagnostic>();
 			if (_pool == null || _program == null)
-				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.display.pool_missing"), Severity.Error, "Program display conversion pool is unavailable.", module: "bootstrap"));
+				return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.display.pool_missing"), Severity.Error, "Program display conversion pool is unavailable.", module: "bootstrap"));
 			var descriptor = new TextureDescriptor(ProgramHoldController.ProgramSize.x, ProgramHoldController.ProgramSize.y, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm);
 			var owner = new ResourceOwnerKey("program-display", ResourceOwnerKind.ProgramPresenter, "program-display", 1, "display", LeaseRole.Output);
 			var acquired = _pool.Acquire(descriptor, owner, Math.Max(1UL, frameNumber));
-			if (acquired.IsFailure) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(acquired.Error);
+			if (acquired.IsFailure) return UnitResult.Failure<Diagnostic>(acquired.Error);
 			_displaySurface = new ProgramDisplaySurface { Lease = acquired.Value };
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		private CSharpFunctionalExtensions.Result<PreviewDisplaySurface, Diagnostic> EnsurePreviewDisplayLease(string surfaceId, int width, int height, ulong frameNumber) {
+		private Result<PreviewDisplaySurface, Diagnostic> EnsurePreviewDisplayLease(string surfaceId, int width, int height, ulong frameNumber) {
 			if (string.IsNullOrWhiteSpace(surfaceId) || width <= 0 || height <= 0)
-				return CSharpFunctionalExtensions.Result.Failure<PreviewDisplaySurface, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.display.preview_invalid"), Severity.Error, "Preview display surface identity or size is invalid.", module: "bootstrap"));
+				return Result.Failure<PreviewDisplaySurface, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.display.preview_invalid"), Severity.Error, "Preview display surface identity or size is invalid.", module: "bootstrap"));
 			if (_previewDisplaySurfaces.TryGetValue(surfaceId, out var existing) && existing != null && existing.Lease != null && !existing.Lease.IsReleased && existing.Lease.Descriptor.Width == width && existing.Lease.Descriptor.Height == height)
-				return CSharpFunctionalExtensions.Result.Success<PreviewDisplaySurface, Diagnostic>(existing);
+				return Result.Success<PreviewDisplaySurface, Diagnostic>(existing);
 			if (_pool == null)
-				return CSharpFunctionalExtensions.Result.Failure<PreviewDisplaySurface, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.display.pool_missing"), Severity.Error, "Preview display conversion pool is unavailable.", module: "bootstrap"));
+				return Result.Failure<PreviewDisplaySurface, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.display.pool_missing"), Severity.Error, "Preview display conversion pool is unavailable.", module: "bootstrap"));
 			var owner = new ResourceOwnerKey("preview-display", ResourceOwnerKind.ProgramPresenter, surfaceId, Math.Max(1UL, _bindingGeneration), "display", LeaseRole.Output);
 			var acquired = _pool.Acquire(new TextureDescriptor(width, height, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm), owner, Math.Max(1UL, frameNumber));
-			if (acquired.IsFailure) return CSharpFunctionalExtensions.Result.Failure<PreviewDisplaySurface, Diagnostic>(acquired.Error);
+			if (acquired.IsFailure) return Result.Failure<PreviewDisplaySurface, Diagnostic>(acquired.Error);
 			var replacement = new PreviewDisplaySurface { SurfaceId = surfaceId, Lease = acquired.Value, GraphicsFormat = acquired.Value.Descriptor.GraphicsFormat.ToString() };
 			if (existing != null) RetirePreviewDisplaySurface(existing);
 			_previewDisplaySurfaces[surfaceId] = replacement;
-			return CSharpFunctionalExtensions.Result.Success<PreviewDisplaySurface, Diagnostic>(replacement);
+			return Result.Success<PreviewDisplaySurface, Diagnostic>(replacement);
 		}
 
 		internal bool TryCapturePreviewSurface(string surfaceId, out int width, out int height, out string graphicsFormat, out ulong frameNumber) {
@@ -947,11 +948,11 @@ namespace ShitDesigner.Bootstrap {
 	/// <summary>Optional external-device boundary. Composition creates the
 	/// service; startup performs device discovery and connection explicitly.</summary>
 	public interface ICapabilityHandshake {
-		CSharpFunctionalExtensions.Result<CapabilityStatus, Diagnostic> Handshake();
+		Result<CapabilityStatus, Diagnostic> Handshake();
 	}
 
 	public interface ICapabilityProbe : ICapabilityHandshake {
-		CSharpFunctionalExtensions.Result<CapabilityStatus, Diagnostic> Probe();
+		Result<CapabilityStatus, Diagnostic> Probe();
 	}
 
 	public sealed class NullApplicationInputPoller : IApplicationInputPoller {
@@ -999,15 +1000,15 @@ namespace ShitDesigner.Bootstrap {
 			_injectedMidiSource = midiSource;
 		}
 
-		public CSharpFunctionalExtensions.Result<CapabilityStatus, Diagnostic> Handshake() {
+		public Result<CapabilityStatus, Diagnostic> Handshake() {
 			if (_disposed)
-				return CSharpFunctionalExtensions.Result.Failure<CapabilityStatus, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.handshake.input_disposed"), Severity.Error, "Production input is disposed.", module: "bootstrap"));
-			if (_handshakeComplete) return CSharpFunctionalExtensions.Result.Success<CapabilityStatus, Diagnostic>(_handshakeStatus);
+				return Result.Failure<CapabilityStatus, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.handshake.input_disposed"), Severity.Error, "Production input is disposed.", module: "bootstrap"));
+			if (_handshakeComplete) return Result.Success<CapabilityStatus, Diagnostic>(_handshakeStatus);
 			_handshakeComplete = true;
 			if (_midiManager != null) {
 				_midiManager.Configure(_application, _application, _injectedMidiSource);
 				_handshakeStatus = ManagerStatus();
-				return CSharpFunctionalExtensions.Result.Success<CapabilityStatus, Diagnostic>(_handshakeStatus);
+				return Result.Success<CapabilityStatus, Diagnostic>(_handshakeStatus);
 			}
 			if (_injectedMidiSource != null) {
 				_midiSource = _injectedMidiSource;
@@ -1017,17 +1018,17 @@ namespace ShitDesigner.Bootstrap {
 			_handshakeStatus = _midiSource == null
 				? MidiUnavailable("No MIDI input device is available.")
 				: CapabilityStatus.Ready("midi");
-			return CSharpFunctionalExtensions.Result.Success<CapabilityStatus, Diagnostic>(_handshakeStatus);
+			return Result.Success<CapabilityStatus, Diagnostic>(_handshakeStatus);
 		}
 
-		public CSharpFunctionalExtensions.Result<CapabilityStatus, Diagnostic> Probe() {
+		public Result<CapabilityStatus, Diagnostic> Probe() {
 			if (_disposed)
-				return CSharpFunctionalExtensions.Result.Failure<CapabilityStatus, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.capability.input_disposed"), Severity.Error, "Production input is disposed.", module: "bootstrap"));
+				return Result.Failure<CapabilityStatus, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.capability.input_disposed"), Severity.Error, "Production input is disposed.", module: "bootstrap"));
 			if (!_handshakeComplete) return Handshake();
 			if (_midiManager != null) {
 				if (!_midiManager.IsOpen) _midiManager.TryReconnect();
 				_handshakeStatus = ManagerStatus();
-				return CSharpFunctionalExtensions.Result.Success<CapabilityStatus, Diagnostic>(_handshakeStatus);
+				return Result.Success<CapabilityStatus, Diagnostic>(_handshakeStatus);
 			}
 			if (_midiSource is IMidiInputAvailability availability && !availability.IsAvailable) {
 				if (_injectedMidiSource == null) _midiSource.Dispose();
@@ -1041,7 +1042,7 @@ namespace ShitDesigner.Bootstrap {
 			_handshakeStatus = _midiSource == null
 				? MidiUnavailable("No MIDI input device is available.")
 				: CapabilityStatus.Ready("midi");
-			return CSharpFunctionalExtensions.Result.Success<CapabilityStatus, Diagnostic>(_handshakeStatus);
+			return Result.Success<CapabilityStatus, Diagnostic>(_handshakeStatus);
 		}
 
 		public void Poll() {
@@ -1665,12 +1666,12 @@ namespace ShitDesigner.Bootstrap {
 			Capabilities.Changed += OnCapabilitiesChanged;
 		}
 
-		public static CSharpFunctionalExtensions.Result<CompositionRoot, Diagnostic> Create(IProjectFileSystem fileSystem, IVisualBindingProvider provider, IApplicationInputPoller input = null, RenderTexturePool pool = null, PresentationRoot presentationRoot = null, Func<ProjectApplication, IApplicationInputPoller> inputFactory = null, IPlatformFileInteractionAdapter platformFiles = null, NodeTypeCatalog nodeTypeCatalog = null, Shader displayTransformShader = null) {
+		public static Result<CompositionRoot, Diagnostic> Create(IProjectFileSystem fileSystem, IVisualBindingProvider provider, IApplicationInputPoller input = null, RenderTexturePool pool = null, PresentationRoot presentationRoot = null, Func<ProjectApplication, IApplicationInputPoller> inputFactory = null, IPlatformFileInteractionAdapter platformFiles = null, NodeTypeCatalog nodeTypeCatalog = null, Shader displayTransformShader = null) {
 			if (fileSystem == null || provider == null) return Failure("bootstrap.root.arguments", "A file system and production binding provider are required.");
 			if (nodeTypeCatalog == null) return Failure("bootstrap.root.catalog_missing", "The generated NodeTypeCatalog asset is required before the project can open.");
 			if (displayTransformShader == null) return Failure("bootstrap.root.display_transform_missing", "The serialized DisplayTransform shader is required before the project can open.");
 			var catalogManifest = nodeTypeCatalog.BuildRuntimeCatalog();
-			if (catalogManifest.IsFailure) return CSharpFunctionalExtensions.Result.Failure<CompositionRoot, Diagnostic>(catalogManifest.Error);
+			if (catalogManifest.IsFailure) return Result.Failure<CompositionRoot, Diagnostic>(catalogManifest.Error);
 			var renderPool = pool ?? new RenderTexturePool();
 			var surfaces = new OutputSurfaceBridge(displayTransformShader);
 			var ownedPlatformFiles = platformFiles == null ? new PlatformFileInteractionAdapter() : null;
@@ -1682,7 +1683,7 @@ namespace ShitDesigner.Bootstrap {
 				var catalogResult = catalogManifest;
 				var registry = new NodeTypeRegistry();
 				var ensured = NodeCatalogBootstrap.EnsureDefinitions(catalogResult.Value, registry);
-				if (ensured.IsFailure) { renderPool.Dispose(); surfaces.Dispose(); ownedPlatformFiles?.Dispose(); (provider as IDisposable)?.Dispose(); return CSharpFunctionalExtensions.Result.Failure<CompositionRoot, Diagnostic>(ensured.Error); }
+				if (ensured.IsFailure) { renderPool.Dispose(); surfaces.Dispose(); ownedPlatformFiles?.Dispose(); (provider as IDisposable)?.Dispose(); return Result.Failure<CompositionRoot, Diagnostic>(ensured.Error); }
 				var factory = new RuntimeSessionFactory(provider, renderPool, surfaces, nodeTypeCatalog);
 				var userSettingsStorage = new ProjectUserSettingsStorage(fileSystem);
 				var application = new ProjectApplication(fileSystem, registry, runtimeFactory: factory, recentProjectStore: userSettingsStorage);
@@ -1694,13 +1695,13 @@ namespace ShitDesigner.Bootstrap {
 				var capabilities = new CapabilitySupervisor(
 					() => ProbeInput(poller),
 					() => factory.CurrentComposition == null
-						? CSharpFunctionalExtensions.Result.Success<CapabilityStatus, Diagnostic>(CapabilityStatus.Deferred("display"))
+						? Result.Success<CapabilityStatus, Diagnostic>(CapabilityStatus.Deferred("display"))
 						: surfaces.Probe());
 				// The Unity host requests the same 60 Hz pacing as the
 				// Program. ApplicationLoopDriver follows each LateUpdate;
 				// it does not gate or accumulate application ticks.
 				var loop = new ApplicationLoopDriverCore(application, poller, frame, new FrameTimingSource(), capabilities);
-				return CSharpFunctionalExtensions.Result.Success<CompositionRoot, Diagnostic>(new CompositionRoot(application, factory, renderPool, surfaces, adapter, coordinator,
+				return Result.Success<CompositionRoot, Diagnostic>(new CompositionRoot(application, factory, renderPool, surfaces, adapter, coordinator,
 					actualPlatformFiles, poller, loop, capabilities, provider as IDisposable, ownedPlatformFiles));
 			}
 			catch (Exception exception) {
@@ -1712,9 +1713,9 @@ namespace ShitDesigner.Bootstrap {
 
 		/// <summary>Connects optional external devices after the application
 		/// and its first runtime session have been composed.</summary>
-		public CSharpFunctionalExtensions.Result<HandshakeReport, Diagnostic> Handshake() {
+		public Result<HandshakeReport, Diagnostic> Handshake() {
 			if (_disposed)
-				return CSharpFunctionalExtensions.Result.Failure<HandshakeReport, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.handshake.composition_disposed"), Severity.Error, "Production composition is disposed.", module: "bootstrap"));
+				return Result.Failure<HandshakeReport, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.handshake.composition_disposed"), Severity.Error, "Production composition is disposed.", module: "bootstrap"));
 			var report = Capabilities.Handshake();
 			if (report.IsFailure) return report;
 			LastHandshakeReport = report.Value;
@@ -1735,17 +1736,17 @@ namespace ShitDesigner.Bootstrap {
 			_providerLifetime?.Dispose();
 		}
 
-		private static CSharpFunctionalExtensions.Result<CompositionRoot, Diagnostic> Failure(string code, string message, Exception exception = null) =>
-			CSharpFunctionalExtensions.Result.Failure<CompositionRoot, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
+		private static Result<CompositionRoot, Diagnostic> Failure(string code, string message, Exception exception = null) =>
+			Result.Failure<CompositionRoot, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
 
 		private static IApplicationInputPoller CreateDefaultInputPoller(ProjectApplication application) {
 			return new InputPoller(application);
 		}
 
-		private static CSharpFunctionalExtensions.Result<CapabilityStatus, Diagnostic> ProbeInput(IApplicationInputPoller input) {
+		private static Result<CapabilityStatus, Diagnostic> ProbeInput(IApplicationInputPoller input) {
 			if (input is ICapabilityProbe probe) return probe.Probe();
 			if (input is ICapabilityHandshake handshake) return handshake.Handshake();
-			return CSharpFunctionalExtensions.Result.Success<CapabilityStatus, Diagnostic>(CapabilityStatus.Deferred("midi"));
+			return Result.Success<CapabilityStatus, Diagnostic>(CapabilityStatus.Deferred("midi"));
 		}
 
 		private void OnCapabilitiesChanged(HandshakeReport report) => LastHandshakeReport = report;

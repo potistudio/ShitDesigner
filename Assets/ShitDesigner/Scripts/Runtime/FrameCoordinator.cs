@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -31,8 +32,8 @@ namespace ShitDesigner.Runtime {
 
 	public sealed class GraphCommandExecutionResult {
 		public string CommandRequestId { get; }
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Result { get; }
-		internal GraphCommandExecutionResult(string commandRequestId, CSharpFunctionalExtensions.UnitResult<Diagnostic> result) { CommandRequestId = commandRequestId ?? string.Empty; Result = result; }
+		public UnitResult<Diagnostic> Result { get; }
+		internal GraphCommandExecutionResult(string commandRequestId, UnitResult<Diagnostic> result) { CommandRequestId = commandRequestId ?? string.Empty; Result = result; }
 	}
 
 	public sealed class RuntimeCommandExecutionResult {
@@ -57,15 +58,15 @@ namespace ShitDesigner.Runtime {
 		public ProgramRuntimeState ProgramState { get; }
 		public IReadOnlyList<RuntimePhase> Phases => _phases;
 		public IReadOnlyList<Diagnostic> Diagnostics { get; }
-		public IReadOnlyList<CSharpFunctionalExtensions.UnitResult<Diagnostic>> GraphCommandResults { get; }
+		public IReadOnlyList<UnitResult<Diagnostic>> GraphCommandResults { get; }
 		public IReadOnlyList<GraphCommandExecutionResult> GraphCommandExecutionResults { get; }
 		public IReadOnlyList<ParameterEventResult> ParameterEventResults { get; }
 		public IReadOnlyList<RuntimeCommandExecutionResult> RuntimeCommandResults { get; }
-		internal FrameExecutionReport(ulong frameNumber, bool succeeded, FrameSnapshot snapshot, OutputPresentation presentation, ProgramRuntimeState programState, IEnumerable<RuntimePhase> phases, IEnumerable<Diagnostic> diagnostics, IEnumerable<CSharpFunctionalExtensions.UnitResult<Diagnostic>> graphCommandResults = null, IEnumerable<GraphCommandExecutionResult> graphCommandExecutionResults = null, IEnumerable<ParameterEventResult> parameterEventResults = null, IEnumerable<RuntimeCommandExecutionResult> runtimeCommandResults = null) {
+		internal FrameExecutionReport(ulong frameNumber, bool succeeded, FrameSnapshot snapshot, OutputPresentation presentation, ProgramRuntimeState programState, IEnumerable<RuntimePhase> phases, IEnumerable<Diagnostic> diagnostics, IEnumerable<UnitResult<Diagnostic>> graphCommandResults = null, IEnumerable<GraphCommandExecutionResult> graphCommandExecutionResults = null, IEnumerable<ParameterEventResult> parameterEventResults = null, IEnumerable<RuntimeCommandExecutionResult> runtimeCommandResults = null) {
 			FrameNumber = frameNumber; Succeeded = succeeded; Snapshot = snapshot; Presentation = presentation; ProgramState = programState;
 			_phases = new ReadOnlyCollection<RuntimePhase>((phases ?? Enumerable.Empty<RuntimePhase>()).ToList());
 			Diagnostics = new ReadOnlyCollection<Diagnostic>((diagnostics ?? Enumerable.Empty<Diagnostic>()).ToList());
-			GraphCommandResults = new ReadOnlyCollection<CSharpFunctionalExtensions.UnitResult<Diagnostic>>((graphCommandResults ?? Enumerable.Empty<CSharpFunctionalExtensions.UnitResult<Diagnostic>>()).ToList());
+			GraphCommandResults = new ReadOnlyCollection<UnitResult<Diagnostic>>((graphCommandResults ?? Enumerable.Empty<UnitResult<Diagnostic>>()).ToList());
 			GraphCommandExecutionResults = new ReadOnlyCollection<GraphCommandExecutionResult>((graphCommandExecutionResults ?? Enumerable.Empty<GraphCommandExecutionResult>()).ToList());
 			ParameterEventResults = new ReadOnlyCollection<ParameterEventResult>((parameterEventResults ?? Enumerable.Empty<ParameterEventResult>()).ToList());
 			RuntimeCommandResults = new ReadOnlyCollection<RuntimeCommandExecutionResult>((runtimeCommandResults ?? Enumerable.Empty<RuntimeCommandExecutionResult>()).ToList());
@@ -116,7 +117,7 @@ namespace ShitDesigner.Runtime {
 		private readonly RuntimeQueue<RuntimeCommand> _runtimeQueue = new RuntimeQueue<RuntimeCommand>(QueueCapacity);
 		private bool _ticking;
 		private ulong _frameNumber;
-		private readonly List<CSharpFunctionalExtensions.UnitResult<Diagnostic>> _graphCommandResults = new List<CSharpFunctionalExtensions.UnitResult<Diagnostic>>();
+		private readonly List<UnitResult<Diagnostic>> _graphCommandResults = new List<UnitResult<Diagnostic>>();
 		private readonly List<GraphCommandExecutionResult> _graphCommandExecutionResults = new List<GraphCommandExecutionResult>();
 		private readonly List<ParameterEventResult> _parameterEventResults = new List<ParameterEventResult>();
 		private readonly List<RuntimeCommandExecutionResult> _runtimeCommandResults = new List<RuntimeCommandExecutionResult>();
@@ -132,19 +133,19 @@ namespace ShitDesigner.Runtime {
 			_clock = clock ?? new GraphClock();
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> EnqueueGraphEdit(GraphEditCommand command) {
-			if (command == null) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("runtime.queue.invalid", "Graph command is required."));
-			return _graphQueue.TryEnqueue(command) ? CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>() : QueueFull("graph");
+		public UnitResult<Diagnostic> EnqueueGraphEdit(GraphEditCommand command) {
+			if (command == null) return UnitResult.Failure<Diagnostic>(Failure("runtime.queue.invalid", "Graph command is required."));
+			return _graphQueue.TryEnqueue(command) ? UnitResult.Success<Diagnostic>() : QueueFull("graph");
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> EnqueueParameterEvent(RuntimeParameterEvent item) {
-			if (item == null) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("runtime.queue.invalid", "Parameter event is required."));
-			return _parameterQueue.TryEnqueue(item) ? CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>() : QueueFull("parameter");
+		public UnitResult<Diagnostic> EnqueueParameterEvent(RuntimeParameterEvent item) {
+			if (item == null) return UnitResult.Failure<Diagnostic>(Failure("runtime.queue.invalid", "Parameter event is required."));
+			return _parameterQueue.TryEnqueue(item) ? UnitResult.Success<Diagnostic>() : QueueFull("parameter");
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> EnqueueRuntimeCommand(RuntimeCommand command) {
-			if (command == null) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("runtime.queue.invalid", "Runtime command is required."));
-			return _runtimeQueue.TryEnqueue(command) ? CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>() : QueueFull("runtime");
+		public UnitResult<Diagnostic> EnqueueRuntimeCommand(RuntimeCommand command) {
+			if (command == null) return UnitResult.Failure<Diagnostic>(Failure("runtime.queue.invalid", "Runtime command is required."));
+			return _runtimeQueue.TryEnqueue(command) ? UnitResult.Success<Diagnostic>() : QueueFull("runtime");
 		}
 
 		public FrameExecutionReport Tick() {
@@ -359,8 +360,8 @@ namespace ShitDesigner.Runtime {
 			for (var i = 0; i < _graphCommandExecutionResults.Count; i++) {
 				var item = _graphCommandExecutionResults[i];
 				if (!item.Result.IsSuccess) continue;
-				_graphCommandExecutionResults[i] = new GraphCommandExecutionResult(item.CommandRequestId, CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(diagnostic));
-				if (i < _graphCommandResults.Count) _graphCommandResults[i] = CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(diagnostic);
+				_graphCommandExecutionResults[i] = new GraphCommandExecutionResult(item.CommandRequestId, UnitResult.Failure<Diagnostic>(diagnostic));
+				if (i < _graphCommandResults.Count) _graphCommandResults[i] = UnitResult.Failure<Diagnostic>(diagnostic);
 			}
 		}
 
@@ -592,15 +593,15 @@ namespace ShitDesigner.Runtime {
 			}
 		}
 
-		private CSharpFunctionalExtensions.Result<PortValue, Diagnostic> Convert(ConnectionRecord edge, PortValue value, PortType destination) {
-			if (value.Type == destination) return CSharpFunctionalExtensions.Result.Success<PortValue, Diagnostic>(value);
+		private Result<PortValue, Diagnostic> Convert(ConnectionRecord edge, PortValue value, PortType destination) {
+			if (value.Type == destination) return Result.Success<PortValue, Diagnostic>(value);
 			if (value.Type == PortType.Color && destination == PortType.Vector4 && edge.ConversionId == GraphConstants.ColorToVector4ConversionId) {
-				var color = value.AsColor(); return CSharpFunctionalExtensions.Result.Success<PortValue, Diagnostic>(PortValue.FromVector4(new Vector4Value(color.R, color.G, color.B, color.A)));
+				var color = value.AsColor(); return Result.Success<PortValue, Diagnostic>(PortValue.FromVector4(new Vector4Value(color.R, color.G, color.B, color.A)));
 			}
 			if (value.Type == PortType.Vector4 && destination == PortType.Color && edge.ConversionId == GraphConstants.Vector4ToColorConversionId) {
-				var vector = value.AsVector4(); return CSharpFunctionalExtensions.Result.Success<PortValue, Diagnostic>(PortValue.FromColor(new ColorValue(vector.X, vector.Y, vector.Z, vector.W)));
+				var vector = value.AsVector4(); return Result.Success<PortValue, Diagnostic>(PortValue.FromColor(new ColorValue(vector.X, vector.Y, vector.Z, vector.W)));
 			}
-			return CSharpFunctionalExtensions.Result.Failure<PortValue, Diagnostic>(Failure("runtime.input.conversion_failed", "Saved port conversion is missing or incompatible."));
+			return Result.Failure<PortValue, Diagnostic>(Failure("runtime.input.conversion_failed", "Saved port conversion is missing or incompatible."));
 		}
 
 		private ResolvedInput ResolveFeedbackInput(NodeInstanceId nodeId) {
@@ -643,7 +644,7 @@ namespace ShitDesigner.Runtime {
 		}
 
 		private static OutputPresentation EmptyPresentation() => new OutputPresentation(default(NodeOutputResult), new ReadOnlyDictionary<NodeInstanceId, NodeOutputResult>(new Dictionary<NodeInstanceId, NodeOutputResult>()));
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> QueueFull(string name) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("runtime.queue.overloaded", name + " command queue is full."));
+		private static UnitResult<Diagnostic> QueueFull(string name) => UnitResult.Failure<Diagnostic>(Failure("runtime.queue.overloaded", name + " command queue is full."));
 		private static Diagnostic Failure(string code, string message, NodeInstanceId? nodeId = null, PortId? portId = null, NodeTypeId? typeId = null) => new Diagnostic(new DiagnosticCode(code), Severity.Error, message, nodeId: nodeId, portId: portId, nodeTypeId: typeId);
 
 	}

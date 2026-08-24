@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections.Generic;
 using NUnit.Framework;
 using ShitDesigner.Bootstrap;
@@ -43,7 +44,7 @@ namespace ShitDesigner.Nodes.Tests {
 			public bool IsAvailable { get; }
 			public Diagnostic AvailabilityDiagnostic => IsAvailable ? null : new Diagnostic(new DiagnosticCode("nodes.factory.unavailable"), Severity.Error, "fake unavailable");
 			public FakeBinding(NodeTypeId typeId, bool available) { TypeId = typeId; IsAvailable = available; }
-			public CSharpFunctionalExtensions.Result<IRuntimeNode, Diagnostic> Create(RuntimeNodeCreateInfo node, ulong generationId) => CSharpFunctionalExtensions.Result.Success<IRuntimeNode, Diagnostic>(new FakeNode(node.Id, TypeId, generationId));
+			public Result<IRuntimeNode, Diagnostic> Create(RuntimeNodeCreateInfo node, ulong generationId) => Result.Success<IRuntimeNode, Diagnostic>(new FakeNode(node.Id, TypeId, generationId));
 		}
 
 		private sealed class FakeNode : IRuntimeNode {

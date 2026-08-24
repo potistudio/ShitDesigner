@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -365,7 +366,7 @@ namespace ShitDesigner.Application {
 	}
 
 	public interface IApplicationRuntimeSessionFactory {
-		CSharpFunctionalExtensions.Result<ApplicationRuntimeComposition, Diagnostic> Create(ProjectDocument document, NodeTypeRegistry registry);
+		Result<ApplicationRuntimeComposition, Diagnostic> Create(ProjectDocument document, NodeTypeRegistry registry);
 	}
 
 	/// <summary>Optional Bootstrap seam for project-scoped services.  The
@@ -378,10 +379,10 @@ namespace ShitDesigner.Application {
 
 	/// <summary>Core-only fallback used by EditMode tests and headless tools.</summary>
 	public sealed class MinimalApplicationRuntimeSessionFactory : IApplicationRuntimeSessionFactory {
-		public CSharpFunctionalExtensions.Result<ApplicationRuntimeComposition, Diagnostic> Create(ProjectDocument document, NodeTypeRegistry registry) {
-			if (document == null || registry == null) return CSharpFunctionalExtensions.Result.Failure<ApplicationRuntimeComposition, Diagnostic>(new Diagnostic(new DiagnosticCode("application.runtime.composition_invalid"), Severity.Error, "Runtime composition requires a document and node registry."));
+		public Result<ApplicationRuntimeComposition, Diagnostic> Create(ProjectDocument document, NodeTypeRegistry registry) {
+			if (document == null || registry == null) return Result.Failure<ApplicationRuntimeComposition, Diagnostic>(new Diagnostic(new DiagnosticCode("application.runtime.composition_invalid"), Severity.Error, "Runtime composition requires a document and node registry."));
 			var session = new RuntimeSession(document, registry, new DiagnosticHub("application.runtime"));
-			return CSharpFunctionalExtensions.Result.Success<ApplicationRuntimeComposition, Diagnostic>(new ApplicationRuntimeComposition(session, new FrameCoordinator(session), false, "No application runtime bindings were supplied by Bootstrap."));
+			return Result.Success<ApplicationRuntimeComposition, Diagnostic>(new ApplicationRuntimeComposition(session, new FrameCoordinator(session), false, "No application runtime bindings were supplied by Bootstrap."));
 		}
 	}
 
@@ -595,14 +596,14 @@ namespace ShitDesigner.Application {
 		/// beginning a Save, publishing a task, or touching the filesystem.
 		/// This is the persistence identity used for restart verification,
 		/// rather than a projection that may also contain runtime UI state.</summary>
-		public CSharpFunctionalExtensions.Result<string, Diagnostic> CaptureCanonicalProjectFingerprint() {
-			if (_document == null) return CSharpFunctionalExtensions.Result.Failure<string, Diagnostic>(Failure("application.fingerprint.project_missing", "A canonical Project fingerprint requires a current project."));
+		public Result<string, Diagnostic> CaptureCanonicalProjectFingerprint() {
+			if (_document == null) return Result.Failure<string, Diagnostic>(Failure("application.fingerprint.project_missing", "A canonical Project fingerprint requires a current project."));
 			var snapshot = _document.TryCreateSaveSnapshot();
-			if (snapshot.IsFailure) return CSharpFunctionalExtensions.Result.Failure<string, Diagnostic>(snapshot.Error);
+			if (snapshot.IsFailure) return Result.Failure<string, Diagnostic>(snapshot.Error);
 			var serialized = ProjectSerializer.Serialize(snapshot.Value);
-			if (serialized.IsFailure) return CSharpFunctionalExtensions.Result.Failure<string, Diagnostic>(serialized.Error);
-			try { return CSharpFunctionalExtensions.Result.Success<string, Diagnostic>(AssetIntegrity.Hash(Encoding.UTF8.GetBytes(serialized.Value))); }
-			catch (Exception exception) { return CSharpFunctionalExtensions.Result.Failure<string, Diagnostic>(Failure("application.fingerprint.hash_failed", "Canonical Project fingerprint hashing failed: " + exception.Message)); }
+			if (serialized.IsFailure) return Result.Failure<string, Diagnostic>(serialized.Error);
+			try { return Result.Success<string, Diagnostic>(AssetIntegrity.Hash(Encoding.UTF8.GetBytes(serialized.Value))); }
+			catch (Exception exception) { return Result.Failure<string, Diagnostic>(Failure("application.fingerprint.hash_failed", "Canonical Project fingerprint hashing failed: " + exception.Message)); }
 		}
 
 		public ReadModelEnvelope<ProjectReadModel> ReadProject(bool fullSnapshot = true) {
@@ -618,13 +619,13 @@ namespace ShitDesigner.Application {
 		/// <summary>Resets runtime diagnostics for a measurement interval
 		/// through the public Application boundary. Active conditions are
 		/// intentionally retained and remain visible to the next read model.</summary>
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ResetDiagnosticsForMeasurement(ulong measurementFrame = 0) {
-			if (_runtime == null) return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+		public UnitResult<Diagnostic> ResetDiagnosticsForMeasurement(ulong measurementFrame = 0) {
+			if (_runtime == null) return UnitResult.Success<Diagnostic>();
 			_runtime.Diagnostics.ResetMeasurement(measurementFrame);
 			_runtime.ResetPerformanceForMeasurement(measurementFrame);
 			_previousDiagnostics.Clear();
 			_nextSnapshotFull = true;
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
 		/// <summary>Returns the last published snapshot without advancing its version.
@@ -741,7 +742,7 @@ namespace ShitDesigner.Application {
 
 		public ApplicationCommandResult RenameLogicalControl(string logicalControlId, string name) {
 			if (!LogicalControlId.TryParse(logicalControlId, out var id)) return Rejected(Guid.Empty, Failure("application.input.control_invalid", "Logical control ID is invalid."));
-			return CompleteProjectMutation(_projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.RenameLogicalControl(id, name));
+			return CompleteProjectMutation(_projectCommands == null ? UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.RenameLogicalControl(id, name));
 		}
 
 		public ApplicationCommandResult SetLogicalControlTargets(string logicalControlId, IEnumerable<ApplicationLogicalControlTargetRequest> targets) {
@@ -751,7 +752,7 @@ namespace ShitDesigner.Application {
 					if (!NodeInstanceId.TryParse(target.NodeId, out var node) || !ParameterId.TryParse(target.ParameterId, out var parameter)) throw new ArgumentException("Logical control target IDs are invalid.");
 					return new LogicalControlTargetRecord(node, parameter, target.TargetMin.Type, target.TargetMin, target.TargetMax, target.Invert);
 				});
-				return CompleteProjectMutation(_projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetLogicalControlTargets(id, records));
+				return CompleteProjectMutation(_projectCommands == null ? UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetLogicalControlTargets(id, records));
 			}
 			catch (Exception exception) { return Rejected(Guid.Empty, new Diagnostic(new DiagnosticCode("application.input.target_invalid"), Severity.Error, exception.Message, module: "application")); }
 		}
@@ -763,7 +764,7 @@ namespace ShitDesigner.Application {
 				ParameterRange? range = null;
 				if (request.OutputMinimum.HasValue != request.OutputMaximum.HasValue) throw new ArgumentException("Expression output clamp requires both bounds.");
 				if (request.OutputMinimum.HasValue) range = new ParameterRange(request.OutputMinimum.Value, request.OutputMaximum.Value);
-				return CompleteProjectMutation(_projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.AddExpression(new ParameterExpressionRecord(node, parameter, expression, range)));
+				return CompleteProjectMutation(_projectCommands == null ? UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.AddExpression(new ParameterExpressionRecord(node, parameter, expression, range)));
 			}
 			catch (Exception exception) { return Rejected(Guid.Empty, new Diagnostic(new DiagnosticCode("application.expression.invalid"), Severity.Error, exception.Message, module: "application")); }
 		}
@@ -850,7 +851,7 @@ namespace ShitDesigner.Application {
 			if (!MediaAssetId.TryParseUuidV4(mediaAssetId, out var media) || !NodeInstanceId.TryParse(nodeId, out var node) || !ParameterId.TryParse(parameterId, out var parameter)) return Rejected(Guid.Empty, Failure("application.media.rebind_invalid", "Media rebind IDs are invalid."));
 			var record = _document?.FindNode(node)?.FindParameter(parameter);
 			if (record == null || record.Definition.Type != ParameterType.MediaAssetReference) return Rejected(Guid.Empty, Failure("application.media.rebind_target", "The target parameter is not a media reference."));
-			return CompleteProjectMutation(_projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetBaseValue(node, parameter, ParameterValue.FromMediaAsset(media)));
+			return CompleteProjectMutation(_projectCommands == null ? UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetBaseValue(node, parameter, ParameterValue.FromMediaAsset(media)));
 		}
 
 		public ApplicationCommandResult ConfirmDeleteMedia(string mediaAssetId, ApplicationMediaDeleteDecision decision) {
@@ -893,7 +894,7 @@ namespace ShitDesigner.Application {
 
 		public ApplicationCommandResult RenamePreset(string presetId, string name) {
 			if (!PresetId.TryParse(presetId, out var id)) return Rejected(Guid.Empty, Failure("application.preset.invalid", "Preset ID is invalid."));
-			return CompleteProjectMutation(_projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.RenamePreset(id, name));
+			return CompleteProjectMutation(_projectCommands == null ? UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.RenamePreset(id, name));
 		}
 
 		public ApplicationCommandResult DuplicatePreset(string presetId, string newPresetId, string name) {
@@ -907,13 +908,13 @@ namespace ShitDesigner.Application {
 			if (!PresetId.TryParse(presetId, out var id) || entry == null || !NodeInstanceId.TryParse(entry.NodeId, out var node) || !ParameterId.TryParse(entry.ParameterId, out var parameter)) return Rejected(Guid.Empty, Failure("application.preset.entry_invalid", "Preset entry is invalid."));
 			var preset = _document?.FindPreset(id); if (preset == null) return Rejected(Guid.Empty, Failure("application.preset.missing", "Preset does not exist."));
 			var entries = preset.Entries.Where(x => x.NodeId != node || x.ParameterId != parameter).Concat(new[] { new PresetEntryRecord(node, parameter, entry.Value.Type, entry.Value) });
-			return CompleteProjectMutation(_projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetPresetEntries(id, entries));
+			return CompleteProjectMutation(_projectCommands == null ? UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetPresetEntries(id, entries));
 		}
 
 		public ApplicationCommandResult RemovePresetEntry(string presetId, string nodeId, string parameterId) {
 			if (!PresetId.TryParse(presetId, out var id) || !NodeInstanceId.TryParse(nodeId, out var node) || !ParameterId.TryParse(parameterId, out var parameter)) return Rejected(Guid.Empty, Failure("application.preset.entry_invalid", "Preset entry is invalid."));
 			var preset = _document?.FindPreset(id); if (preset == null) return Rejected(Guid.Empty, Failure("application.preset.missing", "Preset does not exist."));
-			return CompleteProjectMutation(_projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetPresetEntries(id, preset.Entries.Where(x => x.NodeId != node || x.ParameterId != parameter)));
+			return CompleteProjectMutation(_projectCommands == null ? UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetPresetEntries(id, preset.Entries.Where(x => x.NodeId != node || x.ParameterId != parameter)));
 		}
 
 		public ApplicationCommandResult AddDashboardPage(ApplicationDashboardPageRequest request) => UpdateDashboardPage(request, false);
@@ -931,7 +932,7 @@ namespace ShitDesigner.Application {
 				if (index >= 0 && !replace) return Rejected(Guid.Empty, Failure("application.dashboard.exists", "Dashboard page already exists."));
 				var page = new DashboardPageRecord(request.PageId, request.Name, widgets);
 				if (index >= 0) pages[index] = page; else pages.Add(page);
-				return CompleteProjectMutation(_projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.ReplaceUi(_document.Ui.WithDashboardPages(pages)));
+				return CompleteProjectMutation(_projectCommands == null ? UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.ReplaceUi(_document.Ui.WithDashboardPages(pages)));
 			}
 			catch (Exception exception) { return Rejected(Guid.Empty, new Diagnostic(new DiagnosticCode("application.dashboard.invalid"), Severity.Error, exception.Message, module: "application")); }
 		}
@@ -1024,7 +1025,7 @@ namespace ShitDesigner.Application {
 			if (!Enum.IsDefined(typeof(ApplicationOutputFitMode), request.FitMode)) return Rejected(Guid.Empty, Failure("application.preview.fit_invalid", "Preview fit mode must be Fit, Fill or Stretch."));
 			if (!string.Equals(request.BackgroundMode, "Checker", StringComparison.OrdinalIgnoreCase) && !string.Equals(request.BackgroundMode, "Black", StringComparison.OrdinalIgnoreCase)) return Rejected(Guid.Empty, Failure("application.preview.background_invalid", "Preview background must be Checker or Black."));
 			var raw = MergePreviewState(node.RawState, request);
-			var result = CompleteProjectMutation(_projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetNodeRawState(node.Id, raw));
+			var result = CompleteProjectMutation(_projectCommands == null ? UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetNodeRawState(node.Id, raw));
 			if (result.IsSuccess) _previewSettings[request.PreviewId] = request;
 			return result;
 		}
@@ -1049,13 +1050,13 @@ namespace ShitDesigner.Application {
 			// alter the project document or saved tab assignment. Runtime is
 			// explicitly told to hide active demands, while quality state is
 			// retained for a later host show.
-			var queued = visible ? QueueVisiblePreviewDemands() : (_runtime == null ? CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>() : _runtime.HideAllPreviews());
+			var queued = visible ? QueueVisiblePreviewDemands() : (_runtime == null ? UnitResult.Success<Diagnostic>() : _runtime.HideAllPreviews());
 			return CompleteImmediate(queued.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, queued.IsSuccess ? null : queued.Error);
 		}
 
 		public ApplicationCommandResult SetProgramDisplay(int display) {
 			if (display < 1) return Rejected(Guid.Empty, Failure("application.output.display_invalid", "Program display must be positive."));
-			return CompleteProjectMutation(_projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetOutputSettings((_document?.Settings ?? ProjectOutputSettings.CreateDefault()).WithProgramDisplay(display)));
+			return CompleteProjectMutation(_projectCommands == null ? UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.SetOutputSettings((_document?.Settings ?? ProjectOutputSettings.CreateDefault()).WithProgramDisplay(display)));
 		}
 
 		public ApplicationCommandResult ResetFeedback(string nodeId) {
@@ -1440,8 +1441,8 @@ namespace ShitDesigner.Application {
 			_runtime.ObserveFrameTiming(sample);
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ExportDiagnostics(string path) {
-			if (string.IsNullOrWhiteSpace(path)) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.diagnostics.path", "Diagnostic export path is required."));
+		public UnitResult<Diagnostic> ExportDiagnostics(string path) {
+			if (string.IsNullOrWhiteSpace(path)) return UnitResult.Failure<Diagnostic>(Failure("application.diagnostics.path", "Diagnostic export path is required."));
 			try {
 				var directory = Path.GetDirectoryName(path);
 				if (!string.IsNullOrEmpty(directory)) _fileSystem.EnsureDirectory(directory);
@@ -1449,15 +1450,15 @@ namespace ShitDesigner.Application {
 				foreach (var diagnostic in (_runtime == null ? Enumerable.Empty<Diagnostic>() : _runtime.Diagnostics.History))
 					lines.Add(diagnostic.Code.Value + "\t" + diagnostic.Severity + "\t" + diagnostic.Message.Replace("\r", " ").Replace("\n", " "));
 				_fileSystem.WriteAllBytes(path, new UTF8Encoding(false, true).GetBytes(string.Join("\n", lines)));
-				return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+				return UnitResult.Success<Diagnostic>();
 			}
 			catch (Exception exception) {
-				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("application.diagnostics.export_failed"), Severity.Error, "Diagnostic export failed.", exception: DiagnosticExceptionInfo.FromException(exception)));
+				return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("application.diagnostics.export_failed"), Severity.Error, "Diagnostic export failed.", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ExportDiagnosticsJson(string path) {
-			if (string.IsNullOrWhiteSpace(path)) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.diagnostics.path", "Diagnostic export path is required."));
+		public UnitResult<Diagnostic> ExportDiagnosticsJson(string path) {
+			if (string.IsNullOrWhiteSpace(path)) return UnitResult.Failure<Diagnostic>(Failure("application.diagnostics.path", "Diagnostic export path is required."));
 			try {
 				var directory = Path.GetDirectoryName(path);
 				if (!string.IsNullOrEmpty(directory)) _fileSystem.EnsureDirectory(directory);
@@ -1472,10 +1473,10 @@ namespace ShitDesigner.Application {
 				}
 				builder.Append("]}");
 				_fileSystem.WriteAllBytes(path, new UTF8Encoding(false, true).GetBytes(builder.ToString()));
-				return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+				return UnitResult.Success<Diagnostic>();
 			}
 			catch (Exception exception) {
-				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("application.diagnostics.export_failed"), Severity.Error, "Diagnostic JSON export failed.", exception: DiagnosticExceptionInfo.FromException(exception)));
+				return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("application.diagnostics.export_failed"), Severity.Error, "Diagnostic JSON export failed.", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 		}
 
@@ -1531,13 +1532,13 @@ namespace ShitDesigner.Application {
 			_recovered = recovered;
 			_sessionId = Guid.NewGuid();
 			_learningControl = null;
-			CSharpFunctionalExtensions.Result<ApplicationRuntimeComposition, Diagnostic> composition;
+			Result<ApplicationRuntimeComposition, Diagnostic> composition;
 			try {
 				if (_runtimeFactory is IProjectRootAwareRuntimeSessionFactory rootAware) rootAware.SetProjectRoot(root);
 				composition = _runtimeFactory.Create(document, _registry);
 			}
 			catch (Exception exception) {
-				composition = CSharpFunctionalExtensions.Result.Failure<ApplicationRuntimeComposition, Diagnostic>(new Diagnostic(new DiagnosticCode("application.runtime.composition_failed"), Severity.Error, "Runtime composition could not be created.", module: "application", exception: DiagnosticExceptionInfo.FromException(exception)));
+				composition = Result.Failure<ApplicationRuntimeComposition, Diagnostic>(new Diagnostic(new DiagnosticCode("application.runtime.composition_failed"), Severity.Error, "Runtime composition could not be created.", module: "application", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 			if (composition.IsSuccess && composition.Value != null) {
 				_runtimeComposition = composition.Value;
@@ -1644,7 +1645,7 @@ namespace ShitDesigner.Application {
 			if (operation.Transaction == null) {
 				if (operation.Index >= operation.Requests.Count) {
 					SetTaskProgress("Register", operation.Imported.Count, operation.Requests.Count, null);
-					var command = _projectCommands == null ? CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.AddMediaAssets(operation.Imported);
+					var command = _projectCommands == null ? UnitResult.Failure<Diagnostic>(Failure("application.project.missing", "There is no current project.")) : _projectCommands.AddMediaAssets(operation.Imported);
 					if (command.IsFailure) {
 						FailMediaImportBatch(operation, command.Error);
 						return;
@@ -1723,8 +1724,8 @@ namespace ShitDesigner.Application {
 			}
 		}
 
-		private CSharpFunctionalExtensions.UnitResult<Diagnostic> QueueVisiblePreviewDemands() {
-			if (_runtime == null) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("application.preview.runtime_missing", "Preview demands require a current runtime session."));
+		private UnitResult<Diagnostic> QueueVisiblePreviewDemands() {
+			if (_runtime == null) return UnitResult.Failure<Diagnostic>(Failure("application.preview.runtime_missing", "Preview demands require a current runtime session."));
 			if (!_previewHostVisible) return _runtime.SetOutputDemands(Enumerable.Empty<OutputDemand>());
 			var demands = new List<OutputDemand>();
 			foreach (var previewId in (_document?.Ui?.PreviewNodeIds ?? Enumerable.Empty<string>()).Take(8)) {
@@ -1797,7 +1798,7 @@ namespace ShitDesigner.Application {
 			return Complete(request, status, diagnostic, _state);
 		}
 
-		private ApplicationCommandResult CompleteProjectMutation(CSharpFunctionalExtensions.UnitResult<Diagnostic> result) {
+		private ApplicationCommandResult CompleteProjectMutation(UnitResult<Diagnostic> result) {
 			var request = BeginRequest(Guid.Empty);
 			if (result.IsSuccess) SynchronizeRuntime();
 			return Complete(request, result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, result.IsSuccess ? null : result.Error, _state);

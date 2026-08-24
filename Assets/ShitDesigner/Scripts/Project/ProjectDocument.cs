@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -79,9 +80,9 @@ namespace ShitDesigner.Project {
 		public bool MarkSaved(StateToken completedSavingToken) => TryMarkSaved(completedSavingToken);
 		public void MarkSavedAtCurrentToken() { SavingToken = CurrentToken; SavedToken = CurrentToken; }
 
-		public CSharpFunctionalExtensions.Result<ProjectSaveSnapshot, Diagnostic> TryCreateSaveSnapshot() {
-			if (HasDuplicateIds()) return CSharpFunctionalExtensions.Result.Failure<ProjectSaveSnapshot, Diagnostic>(ProjectDiagnostics.Rejected("project.snapshot.duplicate_id", "Project snapshot contains duplicate stable IDs."));
-			return CSharpFunctionalExtensions.Result.Success<ProjectSaveSnapshot, Diagnostic>(new ProjectSaveSnapshot(ProjectName, ProjectFormatVersion, DocumentRevision, _nodes, _connections, _logicalControls, _expressions, _presets, _mediaAssets, _ui, Settings, SavingToken));
+		public Result<ProjectSaveSnapshot, Diagnostic> TryCreateSaveSnapshot() {
+			if (HasDuplicateIds()) return Result.Failure<ProjectSaveSnapshot, Diagnostic>(ProjectDiagnostics.Rejected("project.snapshot.duplicate_id", "Project snapshot contains duplicate stable IDs."));
+			return Result.Success<ProjectSaveSnapshot, Diagnostic>(new ProjectSaveSnapshot(ProjectName, ProjectFormatVersion, DocumentRevision, _nodes, _connections, _logicalControls, _expressions, _presets, _mediaAssets, _ui, Settings, SavingToken));
 		}
 
 		internal DocumentSnapshot CaptureSnapshot() {

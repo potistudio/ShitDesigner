@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.IO;
 using NUnit.Framework;
 using ShitDesigner.Application;
@@ -390,10 +391,10 @@ namespace ShitDesigner.TestHarness.Tests
 		{
 			public RuntimeSession Session { get; private set; }
 
-			public CSharpFunctionalExtensions.Result<ApplicationRuntimeComposition, Diagnostic> Create(ProjectDocument document, NodeTypeRegistry registry)
+			public Result<ApplicationRuntimeComposition, Diagnostic> Create(ProjectDocument document, NodeTypeRegistry registry)
 			{
 				Session = new RuntimeSession(document, registry, new DiagnosticHub("test.measurement"));
-				return CSharpFunctionalExtensions.Result.Success<ApplicationRuntimeComposition, Diagnostic>(new ApplicationRuntimeComposition(
+				return Result.Success<ApplicationRuntimeComposition, Diagnostic>(new ApplicationRuntimeComposition(
 					Session, new FrameCoordinator(Session), true));
 			}
 		}

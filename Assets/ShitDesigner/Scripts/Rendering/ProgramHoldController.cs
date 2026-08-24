@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using ShitDesigner.Core;
 using ShitDesigner.Runtime;
 using UnityEngine;
@@ -64,44 +65,44 @@ namespace ShitDesigner.Rendering {
 
 		private static GraphicsFormat roleDepth() => GraphicsFormat.None;
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Ensure(ulong frameNumber) {
-			if (_disposed) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.program.disposed", "The Program Hold controller is disposed."));
-			if (frameNumber == 0) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.program.frame_invalid", "Program frame number must be positive."));
-			if (_hold != null && !_hold.IsReleased) return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+		public UnitResult<Diagnostic> Ensure(ulong frameNumber) {
+			if (_disposed) return UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.program.disposed", "The Program Hold controller is disposed."));
+			if (frameNumber == 0) return UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.program.frame_invalid", "Program frame number must be positive."));
+			if (_hold != null && !_hold.IsReleased) return UnitResult.Success<Diagnostic>();
 			var acquired = _pool.Acquire(_descriptor, _owner, frameNumber);
-			if (acquired.IsFailure) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(acquired.Error);
+			if (acquired.IsFailure) return UnitResult.Failure<Diagnostic>(acquired.Error);
 			_hold = acquired.Value;
 			try {
 				ClearOpaqueBlack(_hold.Texture);
 				State = ProgramOutputState.OpaqueBlack;
 				HasNormalFrame = false;
 				_lastNormalFrame = 0;
-				return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+				return UnitResult.Success<Diagnostic>();
 			}
 			catch (Exception exception) {
 				_hold.Release(_owner, frameNumber);
 				_hold = null;
-				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.program.clear_failed"), Severity.Error, "Program Hold initialization failed.", exception: DiagnosticExceptionInfo.FromException(exception)));
+				return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.program.clear_failed"), Severity.Error, "Program Hold initialization failed.", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SubmitAvailable(ImageFrame source, ulong frameNumber) {
-			if (frameNumber == 0) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.program.frame_invalid", "Program frame number must be positive."));
+		public UnitResult<Diagnostic> SubmitAvailable(ImageFrame source, ulong frameNumber) {
+			if (frameNumber == 0) return UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.program.frame_invalid", "Program frame number must be positive."));
 			var ensured = Ensure(frameNumber);
 			if (ensured.IsFailure) return ensured;
 			if (source.Texture == null || source.Size != ProgramSize || source.ColorFormat != _descriptor.GraphicsFormat)
-				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.program.input_mismatch", "Program input must match the fixed Program Hold descriptor."));
-			if (source.Texture == _hold.Texture) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.program.self_copy", "Program input cannot be the Program Hold texture."));
+				return UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.program.input_mismatch", "Program input must match the fixed Program Hold descriptor."));
+			if (source.Texture == _hold.Texture) return UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.program.self_copy", "Program input cannot be the Program Hold texture."));
 			try {
 				Graphics.Blit(source.Texture, _hold.Texture);
 				HasNormalFrame = true;
 				_lastNormalFrame = source.FrameNumber;
 				State = ProgramOutputState.Available;
-				return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+				return UnitResult.Success<Diagnostic>();
 			}
 			catch (Exception exception) {
 				State = HasNormalFrame ? ProgramOutputState.HoldingLastFrame : ProgramOutputState.OpaqueBlack;
-				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.program.copy_failed"), Severity.Error, "Program Hold copy failed.", exception: DiagnosticExceptionInfo.FromException(exception)));
+				return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.program.copy_failed"), Severity.Error, "Program Hold copy failed.", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 		}
 
@@ -109,46 +110,46 @@ namespace ShitDesigner.Rendering {
 		/// Runtime never receives the pool or this controller; the concrete
 		/// Rendering boundary performs the copy into the session-owned Hold
 		/// lease after Phase 8.</summary>
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SubmitAvailable(IRuntimeImageFrame source, ulong frameNumber) {
+		public UnitResult<Diagnostic> SubmitAvailable(IRuntimeImageFrame source, ulong frameNumber) {
 			if (source == null || !(source is IRuntimeImageFrameSurface surface) || !(surface.NativeSurface is RenderTexture texture))
-				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.program.input_invalid", "Program Hold requires a RenderTexture-backed Runtime image frame."));
+				return UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.program.input_invalid", "Program Hold requires a RenderTexture-backed Runtime image frame."));
 			if (source.Width != ProgramSize.x || source.Height != ProgramSize.y)
-				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.program.input_mismatch", "Program input must match the fixed Program Hold dimensions."));
+				return UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.program.input_mismatch", "Program input must match the fixed Program Hold dimensions."));
 			// The neutral frame seam carries the actual surface format. Do
 			// this check before Ensure so a cross HDR/LDR submission cannot
 			// allocate or overwrite the existing Hold frame.
 			if (!string.Equals(source.ColorFormat, _descriptor.GraphicsFormat.ToString(), StringComparison.Ordinal))
-				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.program.format_mismatch", "Program input format must match the configured Hold dynamic range."));
+				return UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.program.format_mismatch", "Program input format must match the configured Hold dynamic range."));
 			var ensured = Ensure(frameNumber);
 			if (ensured.IsFailure) return ensured;
-			if (ReferenceEquals(texture, _hold.Texture)) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.program.self_copy", "Program input cannot be the Program Hold texture."));
+			if (ReferenceEquals(texture, _hold.Texture)) return UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.program.self_copy", "Program input cannot be the Program Hold texture."));
 			try {
 				Graphics.Blit(texture, _hold.Texture);
 				HasNormalFrame = true;
 				_lastNormalFrame = source.FrameNumber == 0 ? frameNumber : source.FrameNumber;
 				State = ProgramOutputState.Available;
-				return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+				return UnitResult.Success<Diagnostic>();
 			}
 			catch (Exception exception) {
 				State = HasNormalFrame ? ProgramOutputState.HoldingLastFrame : ProgramOutputState.OpaqueBlack;
-				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.program.copy_failed"), Severity.Error, "Program Hold copy failed.", exception: DiagnosticExceptionInfo.FromException(exception), module: "rendering"));
+				return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.program.copy_failed"), Severity.Error, "Program Hold copy failed.", exception: DiagnosticExceptionInfo.FromException(exception), module: "rendering"));
 			}
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SubmitUnavailable(ulong frameNumber) {
-			if (frameNumber == 0) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.program.frame_invalid", "Program frame number must be positive."));
+		public UnitResult<Diagnostic> SubmitUnavailable(ulong frameNumber) {
+			if (frameNumber == 0) return UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.program.frame_invalid", "Program frame number must be positive."));
 			var ensured = Ensure(frameNumber);
 			if (ensured.IsFailure) return ensured;
 			State = HasNormalFrame ? ProgramOutputState.HoldingLastFrame : ProgramOutputState.OpaqueBlack;
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		public CSharpFunctionalExtensions.Result<ImageFrame, Diagnostic> GetFrame(ulong frameNumber) {
-			if (_hold == null || _hold.IsReleased) return CSharpFunctionalExtensions.Result.Failure<ImageFrame, Diagnostic>(RenderingDiagnostics.Error("rendering.program.hold_missing", "Program Hold has not been acquired."));
+		public Result<ImageFrame, Diagnostic> GetFrame(ulong frameNumber) {
+			if (_hold == null || _hold.IsReleased) return Result.Failure<ImageFrame, Diagnostic>(RenderingDiagnostics.Error("rendering.program.hold_missing", "Program Hold has not been acquired."));
 			var borrowed = _hold.Borrow(frameNumber);
-			if (borrowed.IsFailure) return CSharpFunctionalExtensions.Result.Failure<ImageFrame, Diagnostic>(borrowed.Error);
+			if (borrowed.IsFailure) return Result.Failure<ImageFrame, Diagnostic>(borrowed.Error);
 			var frame = borrowed.Value.Frame;
-			return CSharpFunctionalExtensions.Result.Success<ImageFrame, Diagnostic>(new ImageFrame(frame.Texture, frame.Size, frame.ColorFormat, HasNormalFrame ? _lastNormalFrame : frameNumber, frame.LeaseId));
+			return Result.Success<ImageFrame, Diagnostic>(new ImageFrame(frame.Texture, frame.Size, frame.ColorFormat, HasNormalFrame ? _lastNormalFrame : frameNumber, frame.LeaseId));
 		}
 
 		public void Dispose() {

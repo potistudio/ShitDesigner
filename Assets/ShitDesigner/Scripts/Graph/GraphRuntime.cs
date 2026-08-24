@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -149,7 +150,7 @@ namespace ShitDesigner.Graph {
 			return registry;
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Register(PortConversionDefinition definition) {
+		public UnitResult<Diagnostic> Register(PortConversionDefinition definition) {
 			if (definition == null) return Failure("graph.conversion.invalid", "Conversion definition is required.");
 			if (!definition.IsLossless) return Failure("graph.conversion.lossy_implicit", "Lossy conversions must be explicit nodes.");
 			if (_byId.ContainsKey(definition.Id)) return Failure("graph.conversion.duplicate_id", "Conversion ID is already registered.");
@@ -162,7 +163,7 @@ namespace ShitDesigner.Graph {
 				}
 				_defaults.Add(key, definition.Id);
 			}
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
 		public bool TryGet(string id, out PortConversionDefinition definition) {
@@ -173,11 +174,11 @@ namespace ShitDesigner.Graph {
 			return _byId.TryGetValue(id, out definition);
 		}
 
-		public CSharpFunctionalExtensions.Result<string, Diagnostic> Resolve(PortType source, PortType destination) {
-			if (source == destination) return CSharpFunctionalExtensions.Result.Success<string, Diagnostic>(null);
+		public Result<string, Diagnostic> Resolve(PortType source, PortType destination) {
+			if (source == destination) return Result.Success<string, Diagnostic>(null);
 			return _defaults.TryGetValue(Tuple.Create(source, destination), out var id)
-				? CSharpFunctionalExtensions.Result.Success<string, Diagnostic>(id)
-				: CSharpFunctionalExtensions.Result.Failure<string, Diagnostic>(FailureDiagnostic("graph.conversion.not_found", "No direct implicit conversion is registered."));
+				? Result.Success<string, Diagnostic>(id)
+				: Result.Failure<string, Diagnostic>(FailureDiagnostic("graph.conversion.not_found", "No direct implicit conversion is registered."));
 		}
 
 		public bool IsCompatible(PortType source, PortType destination, string conversionId) {
@@ -203,7 +204,7 @@ namespace ShitDesigner.Graph {
 				&& definition.DestinationType == destination;
 		}
 
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(FailureDiagnostic(code, message));
+		private static UnitResult<Diagnostic> Failure(string code, string message) => UnitResult.Failure<Diagnostic>(FailureDiagnostic(code, message));
 		private static Diagnostic FailureDiagnostic(string code, string message) => new Diagnostic(new DiagnosticCode(code), Severity.Error, message);
 	}
 
@@ -219,17 +220,17 @@ namespace ShitDesigner.Graph {
 			Conversions = conversions ?? PortConversionRegistry.CreateInitial();
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Register(NodeTypeDefinition definition) {
+		public UnitResult<Diagnostic> Register(NodeTypeDefinition definition) {
 			if (definition == null) return Failure("graph.registry.invalid", "Node type definition is required.");
 			if (_definitions.ContainsKey(definition.TypeId)) return Failure("graph.registry.duplicate_type", "Node type ID is already registered.");
 			_definitions.Add(definition.TypeId, definition);
 			Revision++;
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
 		public bool TryGet(NodeTypeId typeId, out NodeTypeDefinition definition) => _definitions.TryGetValue(typeId, out definition);
 		public bool Contains(NodeTypeId typeId) => _definitions.ContainsKey(typeId);
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static UnitResult<Diagnostic> Failure(string code, string message) => UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
 	}
 
 	/// <summary>
@@ -297,19 +298,19 @@ namespace ShitDesigner.Graph {
 			Kind = kind;
 		}
 
-		internal abstract CSharpFunctionalExtensions.UnitResult<Diagnostic> Apply(GraphBatchWorkspace workspace);
+		internal abstract UnitResult<Diagnostic> Apply(GraphBatchWorkspace workspace);
 	}
 
 	public sealed class AddNodeEditCommand : GraphEditCommand {
 		public NodeRecord Node { get; }
 		public AddNodeEditCommand(NodeRecord node, string commandRequestId = null, long requestedDocumentRevision = -1) : base(GraphEditCommandKind.AddNode, commandRequestId, requestedDocumentRevision) { Node = node ?? throw new ArgumentNullException(nameof(node)); }
-		internal override CSharpFunctionalExtensions.UnitResult<Diagnostic> Apply(GraphBatchWorkspace workspace) => workspace.AddNode(Node);
+		internal override UnitResult<Diagnostic> Apply(GraphBatchWorkspace workspace) => workspace.AddNode(Node);
 	}
 
 	public sealed class DeleteNodeEditCommand : GraphEditCommand {
 		public NodeInstanceId NodeId { get; }
 		public DeleteNodeEditCommand(NodeInstanceId nodeId, string commandRequestId = null, long requestedDocumentRevision = -1) : base(GraphEditCommandKind.DeleteNode, commandRequestId, requestedDocumentRevision) { NodeId = nodeId; }
-		internal override CSharpFunctionalExtensions.UnitResult<Diagnostic> Apply(GraphBatchWorkspace workspace) => workspace.DeleteNode(NodeId);
+		internal override UnitResult<Diagnostic> Apply(GraphBatchWorkspace workspace) => workspace.DeleteNode(NodeId);
 	}
 
 	public sealed class RestoreNodesEditCommand : GraphEditCommand {
@@ -319,39 +320,39 @@ namespace ShitDesigner.Graph {
 			Nodes = new ReadOnlyCollection<NodeRecord>((nodes ?? Enumerable.Empty<NodeRecord>()).ToList());
 			Connections = new ReadOnlyCollection<ConnectionRecord>((connections ?? Enumerable.Empty<ConnectionRecord>()).ToList());
 		}
-		internal override CSharpFunctionalExtensions.UnitResult<Diagnostic> Apply(GraphBatchWorkspace workspace) => workspace.RestoreNodes(Nodes, Connections);
+		internal override UnitResult<Diagnostic> Apply(GraphBatchWorkspace workspace) => workspace.RestoreNodes(Nodes, Connections);
 	}
 
 	public sealed class ConnectEditCommand : GraphEditCommand {
 		public ConnectionRecord Connection { get; }
 		public ConnectEditCommand(ConnectionRecord connection, string commandRequestId = null, long requestedDocumentRevision = -1) : base(GraphEditCommandKind.Connect, commandRequestId, requestedDocumentRevision) { Connection = connection ?? throw new ArgumentNullException(nameof(connection)); }
-		internal override CSharpFunctionalExtensions.UnitResult<Diagnostic> Apply(GraphBatchWorkspace workspace) => workspace.Connect(Connection, false);
+		internal override UnitResult<Diagnostic> Apply(GraphBatchWorkspace workspace) => workspace.Connect(Connection, false);
 	}
 
 	public sealed class ReplaceInputConnectionEditCommand : GraphEditCommand {
 		public ConnectionRecord Connection { get; }
 		public ReplaceInputConnectionEditCommand(ConnectionRecord connection, string commandRequestId = null, long requestedDocumentRevision = -1) : base(GraphEditCommandKind.ReplaceInputConnection, commandRequestId, requestedDocumentRevision) { Connection = connection ?? throw new ArgumentNullException(nameof(connection)); }
-		internal override CSharpFunctionalExtensions.UnitResult<Diagnostic> Apply(GraphBatchWorkspace workspace) => workspace.Connect(Connection, true);
+		internal override UnitResult<Diagnostic> Apply(GraphBatchWorkspace workspace) => workspace.Connect(Connection, true);
 	}
 
 	public sealed class DisconnectEditCommand : GraphEditCommand {
 		public ConnectionId ConnectionId { get; }
 		public DisconnectEditCommand(ConnectionId connectionId, string commandRequestId = null, long requestedDocumentRevision = -1) : base(GraphEditCommandKind.Disconnect, commandRequestId, requestedDocumentRevision) { ConnectionId = connectionId; }
-		internal override CSharpFunctionalExtensions.UnitResult<Diagnostic> Apply(GraphBatchWorkspace workspace) => workspace.Disconnect(ConnectionId);
+		internal override UnitResult<Diagnostic> Apply(GraphBatchWorkspace workspace) => workspace.Disconnect(ConnectionId);
 	}
 
 	public sealed class SetNodeEnabledEditCommand : GraphEditCommand {
 		public NodeInstanceId NodeId { get; }
 		public bool Enabled { get; }
 		public SetNodeEnabledEditCommand(NodeInstanceId nodeId, bool enabled, string commandRequestId = null, long requestedDocumentRevision = -1) : base(GraphEditCommandKind.SetEnabled, commandRequestId, requestedDocumentRevision) { NodeId = nodeId; Enabled = enabled; }
-		internal override CSharpFunctionalExtensions.UnitResult<Diagnostic> Apply(GraphBatchWorkspace workspace) => workspace.SetEnabled(NodeId, Enabled);
+		internal override UnitResult<Diagnostic> Apply(GraphBatchWorkspace workspace) => workspace.SetEnabled(NodeId, Enabled);
 	}
 
 	public sealed class RestoreUnknownNodeEditCommand : GraphEditCommand {
 		public NodeInstanceId NodeId { get; }
 		public UnknownNodeRecord Unknown { get; }
 		public RestoreUnknownNodeEditCommand(NodeInstanceId nodeId, UnknownNodeRecord unknown, string commandRequestId = null, long requestedDocumentRevision = -1) : base(GraphEditCommandKind.RestoreUnknownNode, commandRequestId, requestedDocumentRevision) { NodeId = nodeId; Unknown = unknown ?? throw new ArgumentNullException(nameof(unknown)); }
-		internal override CSharpFunctionalExtensions.UnitResult<Diagnostic> Apply(GraphBatchWorkspace workspace) => workspace.RestoreUnknown(NodeId, Unknown);
+		internal override UnitResult<Diagnostic> Apply(GraphBatchWorkspace workspace) => workspace.RestoreUnknown(NodeId, Unknown);
 	}
 
 	public sealed class GraphBatchWorkspace {
@@ -367,7 +368,7 @@ namespace ShitDesigner.Graph {
 			_registry = registry ?? throw new ArgumentNullException(nameof(registry));
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Apply(GraphEditCommand command) {
+		public UnitResult<Diagnostic> Apply(GraphEditCommand command) {
 			if (command == null) return Failure("graph.command.invalid", "Graph command is required.");
 			var before = State.Clone();
 			var result = command.Apply(this);
@@ -376,23 +377,23 @@ namespace ShitDesigner.Graph {
 			return result;
 		}
 
-		internal CSharpFunctionalExtensions.UnitResult<Diagnostic> AddNode(NodeRecord node) {
+		internal UnitResult<Diagnostic> AddNode(NodeRecord node) {
 			if (State.FindNode(node.Id) != null) return Failure("graph.node.exists", "Node ID already exists.");
 			if (node.SystemOwned || !node.UserAddable || node.TypeId.Value == GraphConstants.ProgramOutputTypeId) return Failure("graph.node.not_addable", "Node is not user-addable.");
 			if (!_registry.Contains(node.TypeId) && !node.IsUnknown) return Failure("graph.node.type_unknown", "Node type is not registered.");
 			State.AddNode(node);
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		internal CSharpFunctionalExtensions.UnitResult<Diagnostic> DeleteNode(NodeInstanceId nodeId) {
+		internal UnitResult<Diagnostic> DeleteNode(NodeInstanceId nodeId) {
 			var node = State.FindNode(nodeId);
 			if (node == null) return Failure("graph.node.missing", "Node does not exist.");
 			if (node.SystemOwned || node.TypeId.Value == GraphConstants.ProgramOutputTypeId) return Failure("graph.node.protected", "System-owned nodes cannot be deleted.");
 			State.RemoveNode(nodeId);
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		internal CSharpFunctionalExtensions.UnitResult<Diagnostic> RestoreNodes(IReadOnlyList<NodeRecord> nodes, IReadOnlyList<ConnectionRecord> connections) {
+		internal UnitResult<Diagnostic> RestoreNodes(IReadOnlyList<NodeRecord> nodes, IReadOnlyList<ConnectionRecord> connections) {
 			if (nodes.GroupBy(x => x.Id).Any(x => x.Count() > 1)) return Failure("graph.restore.node_duplicate", "A restore batch contains duplicate node IDs.");
 			if (connections.GroupBy(x => x.Id).Any(x => x.Count() > 1)) return Failure("graph.restore.connection_duplicate", "A restore batch contains duplicate connection IDs.");
 			foreach (var node in nodes) {
@@ -428,9 +429,9 @@ namespace ShitDesigner.Graph {
 			return ValidateAcyclic();
 		}
 
-		internal CSharpFunctionalExtensions.UnitResult<Diagnostic> Connect(ConnectionRecord connection, bool replace) {
+		internal UnitResult<Diagnostic> Connect(ConnectionRecord connection, bool replace) {
 			var resolved = ResolveConnectionConversion(connection);
-			if (resolved.IsFailure) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(resolved.Error);
+			if (resolved.IsFailure) return UnitResult.Failure<Diagnostic>(resolved.Error);
 			var candidate = resolved.Value;
 			var validation = ValidateConnection(candidate, replace);
 			if (validation.IsFailure) return validation;
@@ -438,40 +439,40 @@ namespace ShitDesigner.Graph {
 			return ValidateAcyclic();
 		}
 
-		private CSharpFunctionalExtensions.Result<ConnectionRecord, Diagnostic> ResolveConnectionConversion(ConnectionRecord connection) {
-			if (connection == null) return CSharpFunctionalExtensions.Result.Failure<ConnectionRecord, Diagnostic>(new Diagnostic(new DiagnosticCode("graph.connection.invalid"), Severity.Error, "Connection is required."));
+		private Result<ConnectionRecord, Diagnostic> ResolveConnectionConversion(ConnectionRecord connection) {
+			if (connection == null) return Result.Failure<ConnectionRecord, Diagnostic>(new Diagnostic(new DiagnosticCode("graph.connection.invalid"), Severity.Error, "Connection is required."));
 			var sourceNode = State.FindNode(connection.SourceNodeId);
 			var destinationNode = State.FindNode(connection.DestinationNodeId);
-			if (sourceNode == null || destinationNode == null) return CSharpFunctionalExtensions.Result.Failure<ConnectionRecord, Diagnostic>(new Diagnostic(new DiagnosticCode("graph.connection.node_missing"), Severity.Error, "Connection endpoint node does not exist."));
+			if (sourceNode == null || destinationNode == null) return Result.Failure<ConnectionRecord, Diagnostic>(new Diagnostic(new DiagnosticCode("graph.connection.node_missing"), Severity.Error, "Connection endpoint node does not exist."));
 			var source = sourceNode.FindPort(connection.SourcePortId);
 			var destination = destinationNode.FindPort(connection.DestinationPortId);
-			if (source == null || destination == null) return CSharpFunctionalExtensions.Result.Success<ConnectionRecord, Diagnostic>(connection);
+			if (source == null || destination == null) return Result.Success<ConnectionRecord, Diagnostic>(connection);
 			if (source.Type == destination.Type) {
-				if (!string.IsNullOrEmpty(connection.ConversionId)) return CSharpFunctionalExtensions.Result.Failure<ConnectionRecord, Diagnostic>(new Diagnostic(new DiagnosticCode("graph.connection.conversion_mismatch"), Severity.Error, "An exact type connection cannot carry a conversion."));
-				return CSharpFunctionalExtensions.Result.Success<ConnectionRecord, Diagnostic>(connection);
+				if (!string.IsNullOrEmpty(connection.ConversionId)) return Result.Failure<ConnectionRecord, Diagnostic>(new Diagnostic(new DiagnosticCode("graph.connection.conversion_mismatch"), Severity.Error, "An exact type connection cannot carry a conversion."));
+				return Result.Success<ConnectionRecord, Diagnostic>(connection);
 			}
-			if (!string.IsNullOrEmpty(connection.ConversionId)) return CSharpFunctionalExtensions.Result.Success<ConnectionRecord, Diagnostic>(connection);
+			if (!string.IsNullOrEmpty(connection.ConversionId)) return Result.Success<ConnectionRecord, Diagnostic>(connection);
 			var resolved = _registry.Conversions.Resolve(source.Type, destination.Type);
 			return resolved.IsSuccess
-				? CSharpFunctionalExtensions.Result.Success<ConnectionRecord, Diagnostic>(new ConnectionRecord(connection.Id, connection.SourceNodeId, connection.SourcePortId, connection.DestinationNodeId, connection.DestinationPortId, resolved.Value, connection.IsBroken, connection.BrokenReason))
-				: CSharpFunctionalExtensions.Result.Failure<ConnectionRecord, Diagnostic>(resolved.Error);
+				? Result.Success<ConnectionRecord, Diagnostic>(new ConnectionRecord(connection.Id, connection.SourceNodeId, connection.SourcePortId, connection.DestinationNodeId, connection.DestinationPortId, resolved.Value, connection.IsBroken, connection.BrokenReason))
+				: Result.Failure<ConnectionRecord, Diagnostic>(resolved.Error);
 		}
 
-		internal CSharpFunctionalExtensions.UnitResult<Diagnostic> Disconnect(ConnectionId id) {
+		internal UnitResult<Diagnostic> Disconnect(ConnectionId id) {
 			if (State.FindConnection(id) == null) return Failure("graph.connection.missing", "Connection does not exist.");
 			State.RemoveConnection(id);
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		internal CSharpFunctionalExtensions.UnitResult<Diagnostic> SetEnabled(NodeInstanceId nodeId, bool enabled) {
+		internal UnitResult<Diagnostic> SetEnabled(NodeInstanceId nodeId, bool enabled) {
 			var node = State.FindNode(nodeId);
 			if (node == null) return Failure("graph.node.missing", "Node does not exist.");
 			if (node.TypeId.Value == GraphConstants.ProgramOutputTypeId && !enabled) return Failure("graph.node.program_enabled", "ProgramOutput must remain enabled.");
 			State.ReplaceNode(CopyNode(node, enabled));
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		internal CSharpFunctionalExtensions.UnitResult<Diagnostic> RestoreUnknown(NodeInstanceId nodeId, UnknownNodeRecord unknown) {
+		internal UnitResult<Diagnostic> RestoreUnknown(NodeInstanceId nodeId, UnknownNodeRecord unknown) {
 			var node = State.FindNode(nodeId);
 			if (node == null) return Failure("graph.node.missing", "Node does not exist.");
 			if (!node.IsUnknown) return Failure("graph.unknown.not_placeholder", "Only an UnknownNode placeholder can be restored.");
@@ -484,16 +485,16 @@ namespace ShitDesigner.Graph {
 			var parameters = definition.Parameters.Select(x => new ParameterRecord(x, x.DefaultValue));
 			var restored = new NodeRecord(node.Id, definition.TypeId, definition.SchemaVersion, definition.DisplayName, node.Enabled, node.Position, parameters, definition.Ports.Select(x => x.ToSnapshot()), node.RawState, definition.SystemOwned, definition.UserAddable);
 			State.ReplaceNode(restored);
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ValidateFinalPlan(IEnumerable<OutputDemand> demands = null) {
+		public UnitResult<Diagnostic> ValidateFinalPlan(IEnumerable<OutputDemand> demands = null) {
 			return EvaluationPlan.TryBuild(State, _registry, demands, out _, out var diagnostic)
-				? CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>()
-				: CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(diagnostic);
+				? UnitResult.Success<Diagnostic>()
+				: UnitResult.Failure<Diagnostic>(diagnostic);
 		}
 
-		private CSharpFunctionalExtensions.UnitResult<Diagnostic> ValidateConnection(ConnectionRecord connection, bool replace, bool savedConnection = false) {
+		private UnitResult<Diagnostic> ValidateConnection(ConnectionRecord connection, bool replace, bool savedConnection = false) {
 			if (connection == null) return Failure("graph.connection.invalid", "Connection is required.");
 			if (connection.IsBroken) return Failure("graph.connection.broken_active", "Broken connections cannot be activated.");
 			if (State.FindConnection(connection.Id) != null) return Failure("graph.connection.exists", "Connection ID already exists.");
@@ -511,7 +512,7 @@ namespace ShitDesigner.Graph {
 			if (existing != null && !replace) return Failure("graph.connection.input_occupied", "Input port already has a connection; use replacement.");
 			if (State.Connections.Count - (existing == null ? 0 : 1) >= GraphConstants.MaxConnections) return Failure("graph.connection.limit", "The project connection limit is 4096.");
 			if (WouldCycle(connection, existing)) return Failure("graph.connection.cycle", "The connection would create a same-frame cycle.");
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
 		private static bool IsSaveEdgeRepairableFailure(Diagnostic diagnostic) {
@@ -529,10 +530,10 @@ namespace ShitDesigner.Graph {
 			return HasCycle(edges, State.Nodes);
 		}
 
-		private CSharpFunctionalExtensions.UnitResult<Diagnostic> ValidateAcyclic() {
+		private UnitResult<Diagnostic> ValidateAcyclic() {
 			return HasCycle(State.Connections.Where(x => !x.IsBroken).ToList(), State.Nodes)
 				? Failure("graph.plan.cycle", "The graph contains a cycle not separated by Feedback.")
-				: CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+				: UnitResult.Success<Diagnostic>();
 		}
 
 		internal static bool HasCycle(IEnumerable<ConnectionRecord> edges, IEnumerable<NodeRecord> nodes) {
@@ -567,7 +568,7 @@ namespace ShitDesigner.Graph {
 			return new NodeRecord(node.Id, node.TypeId, node.SchemaVersion, node.DisplayName, enabled, node.Position, node.Parameters, node.Ports, node.RawState, node.SystemOwned, node.UserAddable, node.Unknown);
 		}
 
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static UnitResult<Diagnostic> Failure(string code, string message) => UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
 		internal GraphState Original => _original;
 		internal NodeTypeRegistry Registry => _registry;
 	}
@@ -608,14 +609,14 @@ namespace ShitDesigner.Graph {
 		/// validated, instead of rebuilding the graph a second time.
 		/// </summary>
 		public EvaluationPlan Plan { get; }
-		public IReadOnlyList<CSharpFunctionalExtensions.UnitResult<Diagnostic>> CommandResults { get; }
+		public IReadOnlyList<UnitResult<Diagnostic>> CommandResults { get; }
 		/// <summary>True only after the candidate has been installed in the editor.</summary>
 		public bool IsCommitted { get; }
 		public Diagnostic Diagnostic { get; }
 
-		internal GraphBatchResult(GraphPatch patch, EvaluationPlan plan, IEnumerable<CSharpFunctionalExtensions.UnitResult<Diagnostic>> commandResults, Diagnostic diagnostic, bool isCommitted = false) {
+		internal GraphBatchResult(GraphPatch patch, EvaluationPlan plan, IEnumerable<UnitResult<Diagnostic>> commandResults, Diagnostic diagnostic, bool isCommitted = false) {
 			Patch = patch; Plan = plan;
-			CommandResults = new ReadOnlyCollection<CSharpFunctionalExtensions.UnitResult<Diagnostic>>((commandResults ?? Enumerable.Empty<CSharpFunctionalExtensions.UnitResult<Diagnostic>>()).ToList());
+			CommandResults = new ReadOnlyCollection<UnitResult<Diagnostic>>((commandResults ?? Enumerable.Empty<UnitResult<Diagnostic>>()).ToList());
 			Diagnostic = diagnostic; IsCommitted = isCommitted;
 		}
 
@@ -637,11 +638,11 @@ namespace ShitDesigner.Graph {
 			_registry = registry ?? throw new ArgumentNullException(nameof(registry));
 		}
 
-		public CSharpFunctionalExtensions.Result<GraphPatch, Diagnostic> ApplyBatch(IEnumerable<GraphEditCommand> commands, IEnumerable<OutputDemand> demands = null) {
+		public Result<GraphPatch, Diagnostic> ApplyBatch(IEnumerable<GraphEditCommand> commands, IEnumerable<OutputDemand> demands = null) {
 			var detailed = ApplyBatchDetailed(commands, demands);
 			return detailed.IsCommitted
-				? CSharpFunctionalExtensions.Result.Success<GraphPatch, Diagnostic>(detailed.Patch)
-				: CSharpFunctionalExtensions.Result.Failure<GraphPatch, Diagnostic>(detailed.Diagnostic ?? FailureDiagnostic("graph.batch.failed", "No graph command was accepted."));
+				? Result.Success<GraphPatch, Diagnostic>(detailed.Patch)
+				: Result.Failure<GraphPatch, Diagnostic>(detailed.Diagnostic ?? FailureDiagnostic("graph.batch.failed", "No graph command was accepted."));
 		}
 
 		/// <summary>
@@ -670,7 +671,7 @@ namespace ShitDesigner.Graph {
 			if (commandList.Count == 0)
 				return new GraphBatchResult(null, null, null, FailureDiagnostic("graph.batch.empty", "At least one graph command is required."));
 			var workspace = new GraphBatchWorkspace(_state, _registry);
-			var commandResults = new List<CSharpFunctionalExtensions.UnitResult<Diagnostic>>(commandList.Count);
+			var commandResults = new List<UnitResult<Diagnostic>>(commandList.Count);
 			Diagnostic firstFailure = null;
 			foreach (var command in commandList) {
 				var result = workspace.Apply(command);
@@ -697,7 +698,7 @@ namespace ShitDesigner.Graph {
 		/// before the first mutation, so a caller can persist the patch first
 		/// and this second phase cannot partially update graph history.
 		/// </summary>
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> CommitCandidate(GraphPatch patch, bool clearRedo = true) {
+		public UnitResult<Diagnostic> CommitCandidate(GraphPatch patch, bool clearRedo = true) {
 			if (patch == null) return Failure("graph.commit.invalid", "Graph patch is required.");
 			if (_state.Revision != patch.SourceRevision || !SameState(_state, patch.Before))
 				return Failure("graph.commit.conflict", "The graph changed after the candidate was prepared.");
@@ -706,15 +707,15 @@ namespace ShitDesigner.Graph {
 			_undo.Add(patch);
 			if (_undo.Count > GraphConstants.MaxUndoEntries) _undo.RemoveAt(0);
 			if (clearRedo) _redo.Clear();
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
 		/// <summary>Completes the second phase of a deferred graph commit.</summary>
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> FinalizeCommit(GraphPatch patch) {
+		public UnitResult<Diagnostic> FinalizeCommit(GraphPatch patch) {
 			if (patch == null || _undo.Count == 0 || !ReferenceEquals(_undo[_undo.Count - 1], patch))
 				return Failure("graph.commit.invalid", "The graph patch is not the current commit.");
 			_redo.Clear();
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
 		/// <summary>
@@ -722,7 +723,7 @@ namespace ShitDesigner.Graph {
 		/// advancing the structural revision. This is the rollback half of the
 		/// Runtime two-phase graph/document commit.
 		/// </summary>
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Rollback(GraphPatch patch) {
+		public UnitResult<Diagnostic> Rollback(GraphPatch patch) {
 			if (patch == null) return Failure("graph.rollback.invalid", "Graph patch is required.");
 			if (_state.Revision != patch.TargetRevision || !SameState(_state, patch.After))
 				return Failure("graph.rollback.conflict", "The graph changed after the candidate was committed.");
@@ -730,17 +731,17 @@ namespace ShitDesigner.Graph {
 				return Failure("graph.rollback.history", "The candidate is not the current graph history entry.");
 			_state = patch.Before.Clone();
 			_undo.RemoveAt(_undo.Count - 1);
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
 		/// <summary>Builds a normalization repair patch without mutating history.</summary>
-		public CSharpFunctionalExtensions.Result<GraphPatch, Diagnostic> PrepareNormalized(GraphState normalized) {
-			if (normalized == null) return CSharpFunctionalExtensions.Result.Failure<GraphPatch, Diagnostic>(FailureDiagnostic("graph.normalization.invalid", "Normalized graph state is required."));
-			if (normalized.HasDuplicateIds()) return CSharpFunctionalExtensions.Result.Failure<GraphPatch, Diagnostic>(FailureDiagnostic("graph.normalization.duplicate_id", "Normalized graph contains duplicate stable IDs."));
+		public Result<GraphPatch, Diagnostic> PrepareNormalized(GraphState normalized) {
+			if (normalized == null) return Result.Failure<GraphPatch, Diagnostic>(FailureDiagnostic("graph.normalization.invalid", "Normalized graph state is required."));
+			if (normalized.HasDuplicateIds()) return Result.Failure<GraphPatch, Diagnostic>(FailureDiagnostic("graph.normalization.duplicate_id", "Normalized graph contains duplicate stable IDs."));
 			var before = _state.Clone();
 			var after = normalized.Clone();
 			after.Revision = before.Revision + 1;
-			return CSharpFunctionalExtensions.Result.Success<GraphPatch, Diagnostic>(new GraphPatch(before, after, Enumerable.Empty<GraphEditCommand>(), before.Revision, after.Revision));
+			return Result.Success<GraphPatch, Diagnostic>(new GraphPatch(before, after, Enumerable.Empty<GraphEditCommand>(), before.Revision, after.Revision));
 		}
 
 		/// <summary>
@@ -749,13 +750,13 @@ namespace ShitDesigner.Graph {
 		/// regular undo stack. The revision still advances monotonically and
 		/// redo is cleared because it no longer describes the repaired state.
 		/// </summary>
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> CommitNormalizedRepair(GraphPatch patch) {
+		public UnitResult<Diagnostic> CommitNormalizedRepair(GraphPatch patch) {
 			if (patch == null) return Failure("graph.normalization.invalid", "Normalization patch is required.");
 			if (_state.Revision != patch.SourceRevision || !SameState(_state, patch.Before))
 				return Failure("graph.normalization.conflict", "The graph changed after normalization was prepared.");
 			_state = patch.After.Clone();
 			_redo.Clear();
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
 		/// <summary>
@@ -763,24 +764,24 @@ namespace ShitDesigner.Graph {
 		/// state. It uses the repair path and intentionally does not create an
 		/// ordinary user undo entry.
 		/// </summary>
-		public CSharpFunctionalExtensions.Result<GraphPatch, Diagnostic> CommitNormalized(GraphState normalized, bool deferRedoClear = false) {
+		public Result<GraphPatch, Diagnostic> CommitNormalized(GraphState normalized, bool deferRedoClear = false) {
 			var prepared = PrepareNormalized(normalized);
 			if (prepared.IsFailure) return prepared;
 			var committed = CommitNormalizedRepair(prepared.Value);
-			return committed.IsSuccess ? prepared : CSharpFunctionalExtensions.Result.Failure<GraphPatch, Diagnostic>(committed.Error);
+			return committed.IsSuccess ? prepared : Result.Failure<GraphPatch, Diagnostic>(committed.Error);
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Undo() {
+		public UnitResult<Diagnostic> Undo() {
 			if (_undo.Count == 0) return Failure("graph.history.empty", "There is nothing to undo.");
 			var patch = _undo[_undo.Count - 1];
 			var restored = patch.RestoreBefore(_state.Revision + 1);
 			_state = restored;
 			_undo.RemoveAt(_undo.Count - 1);
 			_redo.Add(patch);
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Redo() {
+		public UnitResult<Diagnostic> Redo() {
 			if (_redo.Count == 0) return Failure("graph.history.empty", "There is nothing to redo.");
 			var patch = _redo[_redo.Count - 1];
 			var restored = patch.RestoreAfter(_state.Revision + 1);
@@ -788,11 +789,11 @@ namespace ShitDesigner.Graph {
 			_redo.RemoveAt(_redo.Count - 1);
 			_undo.Add(patch);
 			if (_undo.Count > GraphConstants.MaxUndoEntries) _undo.RemoveAt(0);
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
 		private static Diagnostic FailureDiagnostic(string code, string message) => new Diagnostic(new DiagnosticCode(code), Severity.Error, message);
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
+		private static UnitResult<Diagnostic> Failure(string code, string message) => UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message));
 
 		private static bool SameState(GraphState left, GraphState right) {
 			if (left == null || right == null || left.Revision != right.Revision) return false;

@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -327,7 +328,7 @@ namespace ShitDesigner.Nodes {
 	/// <summary>Manifest validation is deliberately independent of Unity so
 	/// EditMode and external catalog tooling can run it deterministically.</summary>
 	public static class ShaderNodeManifestValidator {
-		public static CSharpFunctionalExtensions.UnitResult<Diagnostic> Validate(ShaderNodeManifest manifest) {
+		public static UnitResult<Diagnostic> Validate(ShaderNodeManifest manifest) {
 			if (manifest == null) return Failure("nodes.shader_manifest_missing", "Shader node manifest is required.");
 			if (manifest.SchemaVersion != ShaderNodeManifest.CurrentSchemaVersion) return Failure("nodes.shader_manifest_schema", "Unsupported shader node manifest schema.");
 			if (manifest.Entries == null || manifest.Entries.Count == 0) return Failure("nodes.shader_manifest_empty", "Shader node manifest contains no entries.");
@@ -337,10 +338,10 @@ namespace ShitDesigner.Nodes {
 				var result = ValidateEntry(entry);
 				if (result.IsFailure) return result;
 			}
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		public static CSharpFunctionalExtensions.UnitResult<Diagnostic> ValidateEntry(ShaderNodeManifestEntry entry) {
+		public static UnitResult<Diagnostic> ValidateEntry(ShaderNodeManifestEntry entry) {
 			if (entry == null) return Failure("nodes.shader_manifest_entry", "Shader manifest entry is required.");
 			if (entry.SchemaVersion < 1 || entry.TypeId.IsEmpty || string.IsNullOrWhiteSpace(entry.DisplayName)
 				|| string.IsNullOrWhiteSpace(entry.Category) || string.IsNullOrWhiteSpace(entry.ShaderKey)
@@ -367,31 +368,31 @@ namespace ShitDesigner.Nodes {
 				entry.ToShaderBinding();
 			}
 			catch (Exception exception) {
-				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("nodes.shader_manifest_contract"), Severity.Error,
+				return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("nodes.shader_manifest_contract"), Severity.Error,
 					"Manifest entry " + entry.TypeId.Value + " failed runtime binding conversion: " + exception.ToString(),
 					module: "nodes", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "nodes"));
+		private static UnitResult<Diagnostic> Failure(string code, string message) => UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "nodes"));
 	}
 
 	/// <summary>Small generator seam used by the editor validator and tests.
 	/// It creates the same runtime catalog path as production bootstrap.</summary>
 	public static class ShaderNodeManifestGenerator {
-		public static CSharpFunctionalExtensions.Result<IReadOnlyList<NodeDefinition>, Diagnostic> GenerateDefinitions(ShaderNodeManifest manifest) {
+		public static Result<IReadOnlyList<NodeDefinition>, Diagnostic> GenerateDefinitions(ShaderNodeManifest manifest) {
 			var valid = ShaderNodeManifestValidator.Validate(manifest);
-			if (valid.IsFailure) return CSharpFunctionalExtensions.Result.Failure<IReadOnlyList<NodeDefinition>, Diagnostic>(valid.Error);
-			return CSharpFunctionalExtensions.Result.Success<IReadOnlyList<NodeDefinition>, Diagnostic>(new ReadOnlyCollection<NodeDefinition>(manifest.Entries.Select(x => x.ToNodeDefinition()).ToList()));
+			if (valid.IsFailure) return Result.Failure<IReadOnlyList<NodeDefinition>, Diagnostic>(valid.Error);
+			return Result.Success<IReadOnlyList<NodeDefinition>, Diagnostic>(new ReadOnlyCollection<NodeDefinition>(manifest.Entries.Select(x => x.ToNodeDefinition()).ToList()));
 		}
 
-		public static CSharpFunctionalExtensions.Result<NodeDefinitionCatalog, Diagnostic> GenerateCatalog(ShaderNodeManifest manifest, NodeFactoryBindings bindings = null) {
+		public static Result<NodeDefinitionCatalog, Diagnostic> GenerateCatalog(ShaderNodeManifest manifest, NodeFactoryBindings bindings = null) {
 			var valid = ShaderNodeManifestValidator.Validate(manifest);
-			if (valid.IsFailure) return CSharpFunctionalExtensions.Result.Failure<NodeDefinitionCatalog, Diagnostic>(valid.Error);
+			if (valid.IsFailure) return Result.Failure<NodeDefinitionCatalog, Diagnostic>(valid.Error);
 			var catalog = NodeDefinitionCatalog.CreateInitial(manifest, bindings);
 			var catalogValid = catalog.Validate();
-			return catalogValid.IsFailure ? CSharpFunctionalExtensions.Result.Failure<NodeDefinitionCatalog, Diagnostic>(catalogValid.Error) : CSharpFunctionalExtensions.Result.Success<NodeDefinitionCatalog, Diagnostic>(catalog);
+			return catalogValid.IsFailure ? Result.Failure<NodeDefinitionCatalog, Diagnostic>(catalogValid.Error) : Result.Success<NodeDefinitionCatalog, Diagnostic>(catalog);
 		}
 	}
 }

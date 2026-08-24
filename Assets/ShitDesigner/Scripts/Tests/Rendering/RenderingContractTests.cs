@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections;
 using System.Linq;
 using NUnit.Framework;
@@ -1153,8 +1154,8 @@ namespace ShitDesigner.Rendering.Tests {
 		private sealed class SurfaceFactory : IRuntimeNodeFactory {
 			public NodeTypeId TypeId { get; }
 			public SurfaceFactory(NodeTypeId typeId) { TypeId = typeId; }
-			public CSharpFunctionalExtensions.Result<IRuntimeNode, Diagnostic> Create(RuntimeNodeCreateInfo node, ulong generationId) =>
-				CSharpFunctionalExtensions.Result.Success<IRuntimeNode, Diagnostic>(new SurfaceNode(node.Id, TypeId, generationId));
+			public Result<IRuntimeNode, Diagnostic> Create(RuntimeNodeCreateInfo node, ulong generationId) =>
+				Result.Success<IRuntimeNode, Diagnostic>(new SurfaceNode(node.Id, TypeId, generationId));
 		}
 
 		private sealed class SurfaceNode : IRuntimeNode {
@@ -1361,12 +1362,12 @@ namespace ShitDesigner.Rendering.Tests {
 
 			public FakeDisplayPort(int displayCount) { DisplayCount = displayCount; }
 
-			public CSharpFunctionalExtensions.Result<ProgramDisplaySelection, Diagnostic> Activate(int requestedDisplay) {
+			public Result<ProgramDisplaySelection, Diagnostic> Activate(int requestedDisplay) {
 				LastRequestedDisplay = requestedDisplay;
-				return CSharpFunctionalExtensions.Result.Success<ProgramDisplaySelection, Diagnostic>(ProgramDisplayPolicy.Resolve(requestedDisplay, DisplayCount));
+				return Result.Success<ProgramDisplaySelection, Diagnostic>(ProgramDisplayPolicy.Resolve(requestedDisplay, DisplayCount));
 			}
 
-			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Present(RenderTexture surface, ProgramDisplaySelection selection) => CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			public UnitResult<Diagnostic> Present(RenderTexture surface, ProgramDisplaySelection selection) => UnitResult.Success<Diagnostic>();
 		}
 
 		private sealed class RuntimeSurfaceFrame : IRuntimeImageFrameSurface {

@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections;
 using System.Diagnostics;
 using System.IO;
@@ -1044,19 +1045,19 @@ namespace ShitDesigner.Application.Tests {
 
 		private sealed class TrackingRuntimeFactory : IApplicationRuntimeSessionFactory {
 			public readonly System.Collections.Generic.List<ApplicationRuntimeComposition> Compositions = new System.Collections.Generic.List<ApplicationRuntimeComposition>();
-			public CSharpFunctionalExtensions.Result<ApplicationRuntimeComposition, Diagnostic> Create(ProjectDocument document, NodeTypeRegistry registry) {
+			public Result<ApplicationRuntimeComposition, Diagnostic> Create(ProjectDocument document, NodeTypeRegistry registry) {
 				var session = new RuntimeSession(document, registry, new DiagnosticHub("test.runtime"));
 				var composition = new ApplicationRuntimeComposition(session, new FrameCoordinator(session), true);
 				Compositions.Add(composition);
-				return CSharpFunctionalExtensions.Result.Success<ApplicationRuntimeComposition, Diagnostic>(composition);
+				return Result.Success<ApplicationRuntimeComposition, Diagnostic>(composition);
 			}
 		}
 
 		private sealed class ReadyRuntimeFactory : IRuntimeNodeFactory {
 			public NodeTypeId TypeId { get; }
 			public ReadyRuntimeFactory(NodeTypeId typeId) { TypeId = typeId; }
-			public CSharpFunctionalExtensions.Result<IRuntimeNode, Diagnostic> Create(RuntimeNodeCreateInfo node, ulong generationId)
-				=> CSharpFunctionalExtensions.Result.Success<IRuntimeNode, Diagnostic>(new ReadyRuntimeNode(node.Id, node.TypeId, generationId));
+			public Result<IRuntimeNode, Diagnostic> Create(RuntimeNodeCreateInfo node, ulong generationId)
+				=> Result.Success<IRuntimeNode, Diagnostic>(new ReadyRuntimeNode(node.Id, node.TypeId, generationId));
 		}
 
 		private sealed class ReadyRuntimeNode : IRuntimeNode {
@@ -1084,17 +1085,17 @@ namespace ShitDesigner.Application.Tests {
 		}
 
 		private sealed class WarningProbe : IMediaAssetProbe {
-			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Probe(Stream stagedStream, string extension) {
-				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("media.probe.unsupported"), Severity.Warning, "Format requires confirmation."));
+			public UnitResult<Diagnostic> Probe(Stream stagedStream, string extension) {
+				return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("media.probe.unsupported"), Severity.Warning, "Format requires confirmation."));
 			}
 		}
 
 		private sealed class RejectingProbe : IMediaAssetProbe {
-			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Probe(Stream stagedStream, string extension) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("media.probe.rejected"), Severity.Error, "Probe rejected content."));
+			public UnitResult<Diagnostic> Probe(Stream stagedStream, string extension) => UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("media.probe.rejected"), Severity.Error, "Probe rejected content."));
 		}
 
 		private sealed class ThrowingProbe : IMediaAssetProbe {
-			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Probe(Stream stagedStream, string extension) => throw new InvalidDataException("Probe failed.");
+			public UnitResult<Diagnostic> Probe(Stream stagedStream, string extension) => throw new InvalidDataException("Probe failed.");
 		}
 	}
 }

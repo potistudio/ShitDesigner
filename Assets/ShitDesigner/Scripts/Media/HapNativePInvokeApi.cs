@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using ShitDesigner.Core;
@@ -31,7 +32,7 @@ namespace ShitDesigner.Media {
 		bool OpensPrepared { get; }
 	}
 
-	/// <summary>CSharpFunctionalExtensions.UnitResult<Diagnostic> of loading the installed native binary and querying its
+	/// <summary>UnitResult<Diagnostic> of loading the installed native binary and querying its
 	/// C ABI.  Source files and CMake configuration are deliberately not
 	/// considered a capability; the exported functions must be callable.</summary>
 	public sealed class HapNativePluginProbeResult {
@@ -109,7 +110,7 @@ namespace ShitDesigner.Media {
 			}
 		}
 
-		public CSharpFunctionalExtensions.Result<IntPtr, Diagnostic> Open(VideoPrepareRequest request) {
+		public Result<IntPtr, Diagnostic> Open(VideoPrepareRequest request) {
 			if (!IsSupportedPlatform) return Failure<IntPtr>(UnsupportedCode, UnsupportedMessage);
 			if (request == null || string.IsNullOrWhiteSpace(request.Url)) return Failure<IntPtr>("media.prepare.request", "A verified media path is required.");
 			IntPtr handle = IntPtr.Zero;
@@ -123,7 +124,7 @@ namespace ShitDesigner.Media {
 				}
 				if (sd_hap_prepare(handle) != 0) { sd_hap_close(handle); return Failure<IntPtr>("media.hap.prepare_failed", "The Hap native plugin could not decode the first sample."); }
 				lock (_gate) _activeHandles.Add(handle);
-				return CSharpFunctionalExtensions.Result.Success<IntPtr, Diagnostic>(handle);
+				return Result.Success<IntPtr, Diagnostic>(handle);
 			}
 			catch (DllNotFoundException) { return Failure<IntPtr>("media.hap.plugin_missing", "The Hap native plugin binary is not installed for this platform."); }
 			catch (EntryPointNotFoundException) { return Failure<IntPtr>("media.hap.plugin_api_missing", "The Hap native plugin is missing the required C API."); }
@@ -133,13 +134,13 @@ namespace ShitDesigner.Media {
 			}
 		}
 
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Play(IntPtr handle) => Call(() => sd_hap_play(handle), "media.hap.play_failed");
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Pause(IntPtr handle) => Call(() => sd_hap_pause(handle), "media.hap.pause_failed");
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Stop(IntPtr handle) => Call(() => sd_hap_stop(handle), "media.hap.stop_failed");
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SetSpeed(IntPtr handle, double speed) => Call(() => sd_hap_set_speed(handle, speed), "media.hap.speed_failed");
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SetLoop(IntPtr handle, bool loop) => Call(() => sd_hap_set_loop(handle, loop ? 1 : 0), "media.hap.loop_failed");
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Seek(IntPtr handle, double seconds) => Call(() => sd_hap_seek(handle, seconds), "media.hap.seek_failed");
-		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SyncToGraphClock(IntPtr handle, double logicalSeconds, bool demanded) => Call(() => sd_hap_sync(handle, logicalSeconds, demanded ? 1 : 0), "media.hap.clock_failed");
+		public UnitResult<Diagnostic> Play(IntPtr handle) => Call(() => sd_hap_play(handle), "media.hap.play_failed");
+		public UnitResult<Diagnostic> Pause(IntPtr handle) => Call(() => sd_hap_pause(handle), "media.hap.pause_failed");
+		public UnitResult<Diagnostic> Stop(IntPtr handle) => Call(() => sd_hap_stop(handle), "media.hap.stop_failed");
+		public UnitResult<Diagnostic> SetSpeed(IntPtr handle, double speed) => Call(() => sd_hap_set_speed(handle, speed), "media.hap.speed_failed");
+		public UnitResult<Diagnostic> SetLoop(IntPtr handle, bool loop) => Call(() => sd_hap_set_loop(handle, loop ? 1 : 0), "media.hap.loop_failed");
+		public UnitResult<Diagnostic> Seek(IntPtr handle, double seconds) => Call(() => sd_hap_seek(handle, seconds), "media.hap.seek_failed");
+		public UnitResult<Diagnostic> SyncToGraphClock(IntPtr handle, double logicalSeconds, bool demanded) => Call(() => sd_hap_sync(handle, logicalSeconds, demanded ? 1 : 0), "media.hap.clock_failed");
 
 		public object GetBorrowedTexture(IntPtr handle) {
 			lock (_gate) {
@@ -194,10 +195,10 @@ namespace ShitDesigner.Media {
 			}
 		}
 
-		public CSharpFunctionalExtensions.Result<HapDecodedFrame, Diagnostic> AcquireFrame(IntPtr handle, long index)
+		public Result<HapDecodedFrame, Diagnostic> AcquireFrame(IntPtr handle, long index)
 			=> AcquireFrameCore(handle, index, compressedOnly: false);
 
-		private CSharpFunctionalExtensions.Result<HapDecodedFrame, Diagnostic> AcquireFrameCore(IntPtr handle, long index, bool compressedOnly) {
+		private Result<HapDecodedFrame, Diagnostic> AcquireFrameCore(IntPtr handle, long index, bool compressedOnly) {
 			if (!IsSupportedPlatform) return Failure<HapDecodedFrame>(UnsupportedCode, UnsupportedMessage);
 			if (handle == IntPtr.Zero) return Failure<HapDecodedFrame>("media.hap.frame_handle", "A native Hap handle is required.");
 			lock (_gate) {
@@ -216,7 +217,7 @@ namespace ShitDesigner.Media {
 							var data = new byte[nativePlane.Bytes]; Marshal.Copy(nativePlane.Data, data, 0, data.Length); planes[i] = new HapDecodedPlane(nativePlane.Format, data);
 						}
 						if (rgba.Length > 0) rgba = HapColorConversion.ToLinearPremultipliedRgba8(rgba);
-						return CSharpFunctionalExtensions.Result.Success<HapDecodedFrame, Diagnostic>(new HapDecodedFrame(native.Width, native.Height, native.FrameIndex, native.PresentationTicks, rgba, planes, usesCpuFallback: native.DecodePath != 1u, isYCoCg: native.TextureFormat == 0x0Fu));
+						return Result.Success<HapDecodedFrame, Diagnostic>(new HapDecodedFrame(native.Width, native.Height, native.FrameIndex, native.PresentationTicks, rgba, planes, usesCpuFallback: native.DecodePath != 1u, isYCoCg: native.TextureFormat == 0x0Fu));
 					}
 					finally {
 						// The native lease is always released after the
@@ -242,12 +243,12 @@ namespace ShitDesigner.Media {
 			try { sd_hap_close(handle); } catch (DllNotFoundException) { } catch (EntryPointNotFoundException) { }
 		}
 
-		private CSharpFunctionalExtensions.UnitResult<Diagnostic> Call(Func<int> call, string code) {
+		private UnitResult<Diagnostic> Call(Func<int> call, string code) {
 			if (!IsSupportedPlatform) return Failure(UnsupportedCode, UnsupportedMessage);
 			lock (_gate) {
 				try {
 					var status = call();
-					return status == 0 ? CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>() : Failure(code, "The Hap native plugin rejected the operation.");
+					return status == 0 ? UnitResult.Success<Diagnostic>() : Failure(code, "The Hap native plugin rejected the operation.");
 				}
 				catch (DllNotFoundException) { return Failure("media.hap.plugin_missing", "The Hap native plugin binary is not installed for this platform."); }
 				catch (EntryPointNotFoundException) { return Failure("media.hap.plugin_api_missing", "The Hap native plugin is missing the required C API."); }
@@ -260,8 +261,8 @@ namespace ShitDesigner.Media {
 		private static readonly string UnsupportedMessage = "Hap native decoding is unsupported on this platform.";
 		private const uint NativeCpuRgbaCapability = 1u << 3;
 		private const uint NativeCompressedPlaneCapability = (1u << 0) | (1u << 1) | (1u << 2);
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "media"));
-		private static CSharpFunctionalExtensions.Result<T, Diagnostic> Failure<T>(string code, string message) => CSharpFunctionalExtensions.Result.Failure<T, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "media"));
+		private static UnitResult<Diagnostic> Failure(string code, string message) => UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "media"));
+		private static Result<T, Diagnostic> Failure<T>(string code, string message) => Result.Failure<T, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "media"));
 
 		[StructLayout(LayoutKind.Sequential)] private struct NativePlane { public uint Format; public uint Bytes; public IntPtr Data; }
 		[StructLayout(LayoutKind.Sequential)]

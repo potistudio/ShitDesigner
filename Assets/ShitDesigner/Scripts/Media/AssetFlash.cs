@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -56,7 +57,7 @@ namespace ShitDesigner.Media {
 	}
 
 	public interface IAssetFlashPrepareResolver {
-		CSharpFunctionalExtensions.Result<AssetFlashPrepareRequest, Diagnostic> Resolve(MediaAssetId mediaAssetId);
+		Result<AssetFlashPrepareRequest, Diagnostic> Resolve(MediaAssetId mediaAssetId);
 	}
 
 	/// <summary>Pure rising-edge and expiry policy shared by production and
@@ -108,11 +109,11 @@ namespace ShitDesigner.Media {
 		public AssetFlashVisualNodeBinding(IAssetFlashPrepareResolver resolver, IVideoBackendFactory backends,
 			IVideoFrameAdapter frames, IVideoGraphicsCapabilities graphics = null) { _resolver = resolver; _backends = backends; _frames = frames; _graphics = graphics; }
 
-		public CSharpFunctionalExtensions.Result<IRuntimeNode, Diagnostic> Create(RuntimeNodeCreateInfo node, ulong generationId) {
-			if (!IsAvailable) return CSharpFunctionalExtensions.Result.Failure<IRuntimeNode, Diagnostic>(AvailabilityDiagnostic);
+		public Result<IRuntimeNode, Diagnostic> Create(RuntimeNodeCreateInfo node, ulong generationId) {
+			if (!IsAvailable) return Result.Failure<IRuntimeNode, Diagnostic>(AvailabilityDiagnostic);
 			if (node == null || node.TypeId != TypeId || generationId == 0)
-				return CSharpFunctionalExtensions.Result.Failure<IRuntimeNode, Diagnostic>(Error("media.flash.node", "Asset Flash factory input does not match its binding."));
-			return CSharpFunctionalExtensions.Result.Success<IRuntimeNode, Diagnostic>(new AssetFlashRuntimeNode(node, generationId, _resolver, _backends, _frames, _graphics));
+				return Result.Failure<IRuntimeNode, Diagnostic>(Error("media.flash.node", "Asset Flash factory input does not match its binding."));
+			return Result.Success<IRuntimeNode, Diagnostic>(new AssetFlashRuntimeNode(node, generationId, _resolver, _backends, _frames, _graphics));
 		}
 
 		private static Diagnostic Error(string code, string message) => new Diagnostic(new DiagnosticCode(code), Severity.Error, message, nodeTypeId: new NodeTypeId(AssetFlashContract.NodeTypeId), module: "media");
@@ -333,7 +334,7 @@ namespace ShitDesigner.Media {
 			return initial != null && initial.Value.Type == ParameterType.Float ? initial.Value.AsFloat() : fallback;
 		}
 
-		private void Report(CSharpFunctionalExtensions.UnitResult<Diagnostic> result, NodeExecutionContext context) { if (result.IsFailure) context.Diagnostics.Report(result.Error); }
+		private void Report(UnitResult<Diagnostic> result, NodeExecutionContext context) { if (result.IsFailure) context.Diagnostics.Report(result.Error); }
 
 		private Diagnostic Error(string code, string message, NodeExecutionContext context, Exception exception = null)
 			=> new Diagnostic(new DiagnosticCode(code), Severity.Error, message, nodeId: NodeId, nodeTypeId: TypeId, generationId: GenerationId,

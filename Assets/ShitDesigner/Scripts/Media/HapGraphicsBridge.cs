@@ -1,4 +1,5 @@
 using System;
+using CSharpFunctionalExtensions;
 using ShitDesigner.Core;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
@@ -114,7 +115,7 @@ namespace ShitDesigner.Media {
 		/// EditMode tests without allocating Unity objects.</summary>
 		public HapDecodePath SelectDecodePath(HapDecodedFrame frame) => SelectPath(frame);
 
-		public CSharpFunctionalExtensions.Result<HapTextureLease, Diagnostic> Upload(HapDecodedFrame frame) {
+		public Result<HapTextureLease, Diagnostic> Upload(HapDecodedFrame frame) {
 			if (_disposed) return Failure<HapTextureLease>("media.hap.graphics.disposed", "Hap graphics bridge is disposed.");
 			if (frame == null || frame.Width == 0 || frame.Height == 0) return Failure<HapTextureLease>("media.hap.graphics.frame", "A decoded Hap frame is required.");
 			var path = SelectPath(frame);
@@ -139,7 +140,7 @@ namespace ShitDesigner.Media {
 						RenderCpu(frame, output, sources, out sources);
 						break;
 				}
-				return CSharpFunctionalExtensions.Result.Success<HapTextureLease, Diagnostic>(new HapTextureLease(output, sources, intermediates.ToArray(), computeBuffers, path, _probe.Diagnostic));
+				return Result.Success<HapTextureLease, Diagnostic>(new HapTextureLease(output, sources, intermediates.ToArray(), computeBuffers, path, _probe.Diagnostic));
 			}
 			catch (Exception exception) {
 				if (output != null) Destroy(output);
@@ -325,7 +326,7 @@ namespace ShitDesigner.Media {
 			// it.  Only Hap Q Alpha (the YCoCg two-plane form) uses the
 			// second buffer as an alpha plane.
 			_computeShader.SetBuffer(kernel, "AlphaBlocks", buffers.Length > 1 ? buffers[1] : buffers[0]);
-			_computeShader.SetTexture(kernel, "CSharpFunctionalExtensions.UnitResult<Diagnostic>", output);
+			_computeShader.SetTexture(kernel, "UnitResult<Diagnostic>", output);
 			_computeShader.SetInt("Width", (int)frame.Width);
 			_computeShader.SetInt("Height", (int)frame.Height);
 			_computeShader.SetInt("ColorFormat", (int)frame.Planes[0].Format);
@@ -377,6 +378,6 @@ namespace ShitDesigner.Media {
 		private static Material LoadMaterial(string shaderName) { var shader = Shader.Find(shaderName); return shader == null ? null : new Material(shader); }
 		private static Texture2D[] Append(Texture2D[] array, Texture2D item) { var result = new Texture2D[array.Length + 1]; Array.Copy(array, result, array.Length); result[array.Length] = item; return result; }
 		private static void Destroy(UnityEngine.Object value) { if (UnityEngine.Application.isPlaying) UnityEngine.Object.Destroy(value); else UnityEngine.Object.DestroyImmediate(value); }
-		private static CSharpFunctionalExtensions.Result<T, Diagnostic> Failure<T>(string code, string message) => CSharpFunctionalExtensions.Result.Failure<T, Diagnostic>(new ShitDesigner.Core.Diagnostic(new ShitDesigner.Core.DiagnosticCode(code), ShitDesigner.Core.Severity.Error, message ?? string.Empty, module: "media"));
+		private static Result<T, Diagnostic> Failure<T>(string code, string message) => Result.Failure<T, Diagnostic>(new ShitDesigner.Core.Diagnostic(new ShitDesigner.Core.DiagnosticCode(code), ShitDesigner.Core.Severity.Error, message ?? string.Empty, module: "media"));
 	}
 }

@@ -1,4 +1,5 @@
 using System.Collections;
+using CSharpFunctionalExtensions;
 using NUnit.Framework;
 using ShitDesigner.Core;
 using ShitDesigner.Scene;
@@ -259,9 +260,9 @@ namespace ShitDesigner.Tests.Scene {
 
 		private sealed class RecordingPhysicsStepper : IScenePhysicsStepper {
 			public int Calls { get; private set; }
-			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Simulate(SceneNodeRuntime node, float stepSeconds) {
+			public UnitResult<Diagnostic> Simulate(SceneNodeRuntime node, float stepSeconds) {
 				Calls++;
-				return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+				return UnitResult.Success<Diagnostic>();
 			}
 		}
 	}

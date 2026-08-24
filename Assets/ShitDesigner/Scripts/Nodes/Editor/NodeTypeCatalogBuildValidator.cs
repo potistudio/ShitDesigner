@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System;
+using CSharpFunctionalExtensions;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -38,9 +39,9 @@ namespace ShitDesigner.Nodes.Editor {
 			Debug.Log("ShitDesigner node catalog generated and validated.");
 		}
 
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> GenerateAndValidate(BuildTarget target) {
+		private static UnitResult<Diagnostic> GenerateAndValidate(BuildTarget target) {
 			var generated = ShaderNodeManifestAssetGenerator.GenerateAndValidate();
-			if (generated.IsFailure) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(generated.Error);
+			if (generated.IsFailure) return UnitResult.Failure<Diagnostic>(generated.Error);
 			var asset = AssetDatabase.LoadAssetAtPath<NodeTypeCatalog>(AssetPath);
 			var runtime = asset == null ? null : asset.BuildRuntimeCatalog().Value;
 			if (asset == null || runtime == null) return Failure("nodes.catalog.asset_missing", "Generated NodeTypeCatalog asset is missing.");
@@ -58,10 +59,10 @@ namespace ShitDesigner.Nodes.Editor {
 			if (apiValidation.IsFailure) return apiValidation;
 			var nativeValidation = ValidateNativePlugin(target);
 			if (nativeValidation.IsFailure) return nativeValidation;
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> AttachDirectReferences(NodeTypeCatalog asset) {
+		private static UnitResult<Diagnostic> AttachDirectReferences(NodeTypeCatalog asset) {
 			var scene3d = AssetDatabase.LoadAssetAtPath<GameObject>(Scene3dPath);
 			var scene2d = AssetDatabase.LoadAssetAtPath<GameObject>(Scene2dPath);
 			var generator = AssetDatabase.LoadAssetAtPath<Shader>(GeneratorShaderPath);
@@ -80,10 +81,10 @@ namespace ShitDesigner.Nodes.Editor {
 				var configured = asset.ConfigureReference(pair.Item1, pair.Item2, pair.Item3);
 				if (configured.IsFailure) return configured;
 			}
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> ValidateShaderBindings(NodeTypeCatalog asset, NodeDefinitionCatalog runtime) {
+		private static UnitResult<Diagnostic> ValidateShaderBindings(NodeTypeCatalog asset, NodeDefinitionCatalog runtime) {
 			foreach (var entry in runtime.Entries.Where(x => x.ShaderBinding != null)) {
 				var record = asset.Entries.FirstOrDefault(x => x.TypeId == entry.TypeId.Value);
 				if (record == null) return Failure("nodes.catalog.shader_record_missing", "Shader binding record is missing for " + entry.TypeId.Value + ".");
@@ -96,7 +97,7 @@ namespace ShitDesigner.Nodes.Editor {
 					if (!HasShaderProperty(shader, property) && (record.TemplateMaterial == null || !record.TemplateMaterial.HasProperty(property))) return Failure("nodes.catalog.shader_property", "Shader parameter property is missing: " + property + " for " + entry.TypeId.Value + " (" + shader.name + ").");
 				if (shader.passCount == 0) return Failure("nodes.catalog.shader_variant", "Shader has no compiled pass/variant for " + entry.TypeId.Value + ".");
 			}
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
 		private static bool HasShaderProperty(Shader shader, string property) {
@@ -106,7 +107,7 @@ namespace ShitDesigner.Nodes.Editor {
 			return false;
 		}
 
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> ValidateScenePrefabs(NodeTypeCatalog asset, NodeDefinitionCatalog runtime) {
+		private static UnitResult<Diagnostic> ValidateScenePrefabs(NodeTypeCatalog asset, NodeDefinitionCatalog runtime) {
 			foreach (var entry in runtime.Entries.Where(x => x.SceneBinding != null)) {
 				var record = asset.Entries.FirstOrDefault(x => x.TypeId == entry.TypeId.Value);
 				if (record == null || record.ScenePrefab == null) return Failure("nodes.catalog.prefab_missing", "Scene prefab is missing for " + entry.TypeId.Value + ".");
@@ -114,30 +115,30 @@ namespace ShitDesigner.Nodes.Editor {
 				if (entry.SceneBinding.RequiresExactlyOneCamera && cameras.Length != 1) return Failure("nodes.catalog.prefab_camera", "Scene prefab must contain exactly one Camera: " + entry.TypeId.Value + ".");
 				if (entry.SceneBinding.RequiresCanvasValidation && record.ScenePrefab.GetComponentsInChildren<Canvas>(true).Length != 1) return Failure("nodes.catalog.prefab_canvas", "2D Scene prefab must contain exactly one Canvas.");
 			}
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> ValidateGraphicsApis(BuildTarget target) {
-			if (target != BuildTarget.StandaloneWindows64) return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+		private static UnitResult<Diagnostic> ValidateGraphicsApis(BuildTarget target) {
+			if (target != BuildTarget.StandaloneWindows64) return UnitResult.Success<Diagnostic>();
 			if (PlayerSettings.GetUseDefaultGraphicsAPIs(target)) return Failure("nodes.graphics.api_default", "Windows Standalone must use explicit graphics APIs.");
 			var apis = PlayerSettings.GetGraphicsAPIs(target) ?? Array.Empty<GraphicsDeviceType>();
 			if (apis.Length < 2 || apis[0] != GraphicsDeviceType.Direct3D12 || apis[1] != GraphicsDeviceType.Vulkan)
 				return Failure("nodes.graphics.api_order", "Windows Standalone must list Direct3D12 first and Vulkan second.");
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> ValidateNativePlugin(BuildTarget target) {
-			if (target != BuildTarget.StandaloneWindows64 && target != BuildTarget.StandaloneOSX) return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+		private static UnitResult<Diagnostic> ValidateNativePlugin(BuildTarget target) {
+			if (target != BuildTarget.StandaloneWindows64 && target != BuildTarget.StandaloneOSX) return UnitResult.Success<Diagnostic>();
 			var path = target == BuildTarget.StandaloneWindows64 ? WindowsNativePath : MacNativePath;
 			if (!File.Exists(path)) return Failure("nodes.native.missing", "Required Hap native plugin is missing for " + target + ": " + path + ".");
 			var importer = AssetImporter.GetAtPath(path) as PluginImporter;
 			if (importer == null) return Failure("nodes.native.importer", "Required Hap native plugin has no PluginImporter: " + path + ".");
 			if (target == BuildTarget.StandaloneWindows64 && !importer.GetCompatibleWithPlatform(BuildTarget.StandaloneWindows64)) return Failure("nodes.native.platform", "Windows Hap native plugin is not enabled for Standalone Windows.");
 			if (target == BuildTarget.StandaloneOSX && !importer.GetCompatibleWithPlatform(BuildTarget.StandaloneOSX)) return Failure("nodes.native.platform", "macOS Hap native plugin is not enabled for Standalone macOS.");
-			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			return UnitResult.Success<Diagnostic>();
 		}
 
-		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "nodes"));
+		private static UnitResult<Diagnostic> Failure(string code, string message) => UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "nodes"));
 	}
 }
 #endif
