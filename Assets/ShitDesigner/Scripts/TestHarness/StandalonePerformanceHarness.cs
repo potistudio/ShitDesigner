@@ -12,6 +12,7 @@ using ShitDesigner.Persistence;
 using ShitDesigner.Project;
 using ShitDesigner.Rendering;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.Profiling;
 using UnityEngine.Rendering;
 using Unity.Profiling;
@@ -29,7 +30,8 @@ namespace ShitDesigner.TestHarness
     /// </summary>
     public sealed partial class StandalonePerformanceHarness : MonoBehaviour
     {
-        [SerializeField] private ProductionBootstrapBehaviour _bootstrap;
+        [FormerlySerializedAs("_bootstrap")]
+        [SerializeField] private ApplicationHost _host;
         [SerializeField] private ProductionBootstrapAssets _assets;
         [SerializeField] private bool _runOnStart = true;
         [SerializeField] private string _corpusRoot;
@@ -284,15 +286,15 @@ namespace ShitDesigner.TestHarness
 
         private bool TryAcquireComposition()
         {
-            _bootstrap = _bootstrap == null ? GetComponent<ProductionBootstrapBehaviour>() : _bootstrap;
-            if (_bootstrap == null) _bootstrap = FindAnyObjectByType<ProductionBootstrapBehaviour>();
+            _host = _host == null ? GetComponent<ApplicationHost>() : _host;
+            if (_host == null) _host = FindAnyObjectByType<ApplicationHost>();
             _assets = _assets == null ? GetComponent<ProductionBootstrapAssets>() : _assets;
             if (_assets == null) _assets = FindAnyObjectByType<ProductionBootstrapAssets>();
             // A normal production scene already owns the root. Reuse it so
             // the Player harness observes exactly the same provider/session.
-            if (_bootstrap != null && _bootstrap.Composition != null)
+            if (_host != null && _host.Composition != null)
             {
-                _composition = _bootstrap.Composition;
+                _composition = _host.Composition;
                 return true;
             }
             return false;

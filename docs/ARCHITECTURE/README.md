@@ -111,6 +111,7 @@ flowchart LR
 | [ModuleBoundaries.md](ModuleBoundaries.md) | モジュール責務と依存方向 | 確定 |
 | [StateModel.md](StateModel.md) | ProjectDocument／RuntimeSession／FrameSnapshot | 確定 |
 | [FrameLifecycle.md](FrameLifecycle.md) | フレーム処理、コマンド、更新キュー | 確定 |
+| [StartupLifecycle.md](StartupLifecycle.md) | Preflight、Handshake、起動・終了順 | 確定 |
 | [GraphRuntime.md](GraphRuntime.md) | グラフ編集、評価計画、ノード契約 | 確定 |
 | [ExecutionPerformance.md](ExecutionPerformance.md) | Burst、Job System、GPU、非同期処理の使い分け | 確定 |
 | [ResourceOwnership.md](ResourceOwnership.md) | Scene、Texture、動画リソースの所有権 | 確定 |

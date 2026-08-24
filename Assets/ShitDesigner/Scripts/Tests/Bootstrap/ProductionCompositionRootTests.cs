@@ -13,14 +13,143 @@ using ShitDesigner.Presentation;
 using ShitDesigner.Project;
 using ShitDesigner.Rendering;
 using ShitDesigner.Runtime;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
+using UnityEngine.SceneManagement;
 
 namespace ShitDesigner.Bootstrap.Tests
 {
     [TestFixture]
     public sealed class ProductionCompositionRootTests
     {
+        [Test]
+        public void EntrySceneKeepsSerializedApplicationHostAfterRename()
+        {
+            var scene = EditorSceneManager.OpenScene("Assets/ShitDesigner/Scenes/ShitDesignerBootstrap.unity", OpenSceneMode.Additive);
+            try
+            {
+                var root = scene.GetRootGameObjects().SingleOrDefault(item => item.name == "Host");
+                Assert.That(root, Is.Not.Null);
+                Assert.That(root.GetComponent<ApplicationHost>(), Is.Not.Null, "The preserved MonoScript GUID must resolve to ApplicationHost.");
+            }
+            finally { EditorSceneManager.CloseScene(scene, removeScene: true); }
+        }
+
+        [Test]
+        public void StartupSequenceRunsNamedBoundariesInOrderAndReachesOnline()
+        {
+            var order = new List<string>();
+            var startup = new ProductionStartupSequence();
+
+            var result = startup.Run(
+                () => RecordSuccessfulPhase(order, "preflight"),
+                () => RecordSuccessfulPhase(order, "compose"),
+                () => RecordSuccessfulHandshake(order),
+                () => RecordSuccessfulPhase(order, "activate"));
+
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(startup.State, Is.EqualTo(ProductionSystemState.Online));
+            Assert.That(startup.LastDiagnostic, Is.Null);
+            CollectionAssert.AreEqual(new[] { "preflight", "compose", "handshake", "activate" }, order);
+        }
+
+        [Test]
+        public void StartupSequenceFaultsAtFailedBoundaryAndDoesNotRunLaterPhases()
+        {
+            var order = new List<string>();
+            var startup = new ProductionStartupSequence();
+            var expected = new Diagnostic(new DiagnosticCode("test.handshake.unavailable"), Severity.Error, "Handshake failed.");
+
+            var result = startup.Run(
+                () => RecordSuccessfulPhase(order, "preflight"),
+                () =>
+                {
+                    order.Add("compose");
+                    startup.RegisterShutdown(ShutdownStage.Stop, () => order.Add("rollback"));
+                    return Result.Success();
+                },
+                () => { order.Add("handshake"); return Result<HandshakeReport>.Failure(expected); },
+                () => RecordSuccessfulPhase(order, "activate"));
+
+            Assert.That(result.IsFailure, Is.True);
+            Assert.That(result.Diagnostic, Is.SameAs(expected));
+            Assert.That(startup.State, Is.EqualTo(ProductionSystemState.Faulted));
+            Assert.That(startup.LastDiagnostic, Is.SameAs(expected));
+            CollectionAssert.AreEqual(new[] { "preflight", "compose", "handshake", "rollback" }, order);
+        }
+
+        [Test]
+        public void StartupSequencePublishesDegradedWhenOptionalCapabilityIsUnavailable()
+        {
+            var startup = new ProductionStartupSequence();
+            var unavailable = CapabilityStatus.Unavailable("midi", new Diagnostic(new DiagnosticCode("test.midi.unavailable"), Severity.Warning, "No MIDI."));
+
+            var result = startup.Run(
+                () => Result.Success(),
+                () => Result.Success(),
+                () => Result<HandshakeReport>.Success(new HandshakeReport(unavailable, CapabilityStatus.Ready("display"))),
+                () => Result.Success());
+
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(startup.State, Is.EqualTo(ProductionSystemState.Degraded));
+            Assert.That(startup.HandshakeReport.IsDegraded, Is.True);
+            Assert.That(startup.HandshakeReport.Midi.Diagnostic.Code.Value, Is.EqualTo("test.midi.unavailable"));
+        }
+
+        [Test]
+        public void StartupShutdownDrainsStopsAndTearsDownInOrder()
+        {
+            var order = new List<string>();
+            var startup = new ProductionStartupSequence();
+            Assert.That(startup.Run(
+                () => Result.Success(),
+                () =>
+                {
+                    startup.RegisterShutdown(ShutdownStage.Teardown, () => order.Add("teardown"));
+                    startup.RegisterShutdown(ShutdownStage.Stop, () => order.Add("stop"));
+                    return Result.Success();
+                },
+                () => Result<HandshakeReport>.Success(HandshakeReport.Ready),
+                () =>
+                {
+                    startup.RegisterShutdown(ShutdownStage.Drain, () => order.Add("drain"));
+                    return Result.Success();
+                }).IsSuccess, Is.True);
+
+            startup.Shutdown();
+
+            Assert.That(startup.State, Is.EqualTo(ProductionSystemState.Offline));
+            CollectionAssert.AreEqual(new[] { "drain", "stop", "teardown" }, order);
+        }
+
+        [Test]
+        public void StartupShutdownContinuesAfterOneBoundaryThrows()
+        {
+            var order = new List<string>();
+            var startup = new ProductionStartupSequence();
+            Assert.That(startup.Run(
+                () => Result.Success(),
+                () =>
+                {
+                    startup.RegisterShutdown(ShutdownStage.Stop, () => order.Add("stop"));
+                    startup.RegisterShutdown(ShutdownStage.Teardown, () => order.Add("teardown"));
+                    return Result.Success();
+                },
+                () => Result<HandshakeReport>.Success(HandshakeReport.Ready),
+                () =>
+                {
+                    startup.RegisterShutdown(ShutdownStage.Drain, () => throw new InvalidOperationException("drain failed"));
+                    return Result.Success();
+                }).IsSuccess, Is.True);
+
+            startup.Shutdown();
+
+            Assert.That(startup.State, Is.EqualTo(ProductionSystemState.Offline));
+            Assert.That(startup.LastDiagnostic?.Code.Value, Is.EqualTo("bootstrap.shutdown.phase_failed"));
+            CollectionAssert.AreEqual(new[] { "stop", "teardown" }, order);
+        }
+
         [Test]
         public void ApplicationRegistryUsesImmutableDefinitionsWithoutCreatingDisposableSessionBindings()
         {
@@ -778,6 +907,16 @@ namespace ShitDesigner.Bootstrap.Tests
                 CreateCount++;
                 return Result<ProductionVisualBindingSet>.Failure(new Diagnostic(new DiagnosticCode("test.unexpected_session_create"), Severity.Error, "Unexpected session binding creation."));
             }
+        }
+        private static Result RecordSuccessfulPhase(ICollection<string> order, string phase)
+        {
+            order.Add(phase);
+            return Result.Success();
+        }
+        private static Result<HandshakeReport> RecordSuccessfulHandshake(ICollection<string> order)
+        {
+            order.Add("handshake");
+            return Result<HandshakeReport>.Success(HandshakeReport.Ready);
         }
         private sealed class NullPresentationFrame : IApplicationPresentationFrame
         {

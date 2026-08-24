@@ -25,9 +25,11 @@ namespace ShitDesigner.Bootstrap.Tests
         {
             yield return SceneManager.LoadSceneAsync("ShitDesignerBootstrap", LoadSceneMode.Single);
             yield return null;
-            var behaviour = UnityEngine.Object.FindAnyObjectByType<ProductionBootstrapBehaviour>();
+            var behaviour = UnityEngine.Object.FindAnyObjectByType<ApplicationHost>();
             Assert.That(behaviour, Is.Not.Null);
             Assert.That(behaviour.Composition, Is.Not.Null);
+            Assert.That(behaviour.State, Is.EqualTo(ProductionSystemState.Online).Or.EqualTo(ProductionSystemState.Degraded), behaviour.StartupDiagnostic?.Message);
+            Assert.That(behaviour.HandshakeReport, Is.Not.Null);
             var presentation = UnityEngine.Object.FindAnyObjectByType<ShitDesigner.Presentation.PresentationRoot>();
             Assert.That(presentation, Is.Not.Null);
             var document = presentation.GetComponent<UIDocument>();
@@ -50,11 +52,11 @@ namespace ShitDesigner.Bootstrap.Tests
             {
                 yield return SceneManager.LoadSceneAsync("ShitDesignerBootstrap", LoadSceneMode.Single);
                 var deadline = Time.realtimeSinceStartupAsDouble + 10d;
-                var behaviour = UnityEngine.Object.FindAnyObjectByType<ProductionBootstrapBehaviour>();
+                var behaviour = UnityEngine.Object.FindAnyObjectByType<ApplicationHost>();
                 while ((behaviour == null || behaviour.Composition == null) && Time.realtimeSinceStartupAsDouble < deadline)
                 {
                     yield return null;
-                    behaviour = UnityEngine.Object.FindAnyObjectByType<ProductionBootstrapBehaviour>();
+                    behaviour = UnityEngine.Object.FindAnyObjectByType<ApplicationHost>();
                 }
 
                 Assert.That(behaviour, Is.Not.Null);
@@ -177,12 +179,12 @@ namespace ShitDesigner.Bootstrap.Tests
             {
                 yield return SceneManager.LoadSceneAsync("ShitDesignerBootstrap", LoadSceneMode.Single);
                 var deadline = Time.realtimeSinceStartupAsDouble + 10d;
-                var behaviour = UnityEngine.Object.FindAnyObjectByType<ProductionBootstrapBehaviour>();
+                var behaviour = UnityEngine.Object.FindAnyObjectByType<ApplicationHost>();
                 var presentation = UnityEngine.Object.FindAnyObjectByType<ShitDesigner.Presentation.PresentationRoot>();
                 while ((behaviour == null || behaviour.Composition == null || presentation == null || presentation.RootVisualElement == null) && Time.realtimeSinceStartupAsDouble < deadline)
                 {
                     yield return null;
-                    behaviour = UnityEngine.Object.FindAnyObjectByType<ProductionBootstrapBehaviour>();
+                    behaviour = UnityEngine.Object.FindAnyObjectByType<ApplicationHost>();
                     presentation = UnityEngine.Object.FindAnyObjectByType<ShitDesigner.Presentation.PresentationRoot>();
                 }
 
@@ -367,7 +369,7 @@ namespace ShitDesigner.Bootstrap.Tests
             yield return SceneManager.LoadSceneAsync("ShitDesignerBootstrap", LoadSceneMode.Single);
             yield return null;
 
-            var behaviour = UnityEngine.Object.FindAnyObjectByType<ProductionBootstrapBehaviour>();
+            var behaviour = UnityEngine.Object.FindAnyObjectByType<ApplicationHost>();
             var presentation = UnityEngine.Object.FindAnyObjectByType<ShitDesigner.Presentation.PresentationRoot>();
             Assert.That(behaviour, Is.Not.Null);
             Assert.That(presentation, Is.Not.Null);

@@ -162,8 +162,8 @@ namespace ShitDesigner.Editor
                 }
 
                 var sourceScene = EditorSceneManager.OpenScene(sourcePath, OpenSceneMode.Single);
-                var root = sourceScene.GetRootGameObjects().FirstOrDefault(x => x.GetComponent<ShitDesigner.Bootstrap.ProductionBootstrapBehaviour>() != null);
-                if (root == null) throw new InvalidOperationException("The Harness source scene does not contain ProductionBootstrapBehaviour.");
+                var root = sourceScene.GetRootGameObjects().FirstOrDefault(x => x.GetComponent<ShitDesigner.Bootstrap.ApplicationHost>() != null);
+                if (root == null) throw new InvalidOperationException("The Harness source scene does not contain ApplicationHost.");
                 var harnessType = AppDomain.CurrentDomain.GetAssemblies().Select(x => x.GetType("ShitDesigner.TestHarness.StandalonePerformanceHarness", false)).FirstOrDefault(x => x != null);
                 if (harnessType == null) throw new InvalidOperationException("ShitDesigner.TestHarness is not compiled. Run EnableHarnessDefine once before building.");
                 if (root.GetComponent(harnessType) == null) root.AddComponent(harnessType);
