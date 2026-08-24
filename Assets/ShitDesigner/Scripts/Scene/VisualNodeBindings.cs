@@ -24,20 +24,20 @@ namespace ShitDesigner.Scene {
 			TypeId = typeId; Kind = kind; _manager = manager; _prefabResolver = prefabResolver; _applyEffectiveParameters = applyEffectiveParameters;
 		}
 
-		public Result<IRuntimeNode> Create(RuntimeNodeCreateInfo node, ulong generationId) {
-			if (!IsAvailable) return Result<IRuntimeNode>.Failure(AvailabilityDiagnostic);
+		public CSharpFunctionalExtensions.Result<IRuntimeNode, Diagnostic> Create(RuntimeNodeCreateInfo node, ulong generationId) {
+			if (!IsAvailable) return CSharpFunctionalExtensions.Result.Failure<IRuntimeNode, Diagnostic>(AvailabilityDiagnostic);
 			if (node == null || node.TypeId != TypeId || generationId == 0) return FailureNode("scene.factory.node", "Scene factory input does not match its binding.", node, generationId);
 			GameObject prefab;
 			try { prefab = _prefabResolver(node); }
 			catch (Exception exception) { return FailureNode("scene.prefab.resolve", exception.Message, node, generationId, exception); }
 			if (prefab == null) return FailureNode("scene.prefab.missing", "Scene node requires an explicit prefab/camera binding.", node, generationId);
 			var created = _manager.Create(new SceneCreateRequest(node.Id, Kind, "ShitDesigner." + TypeId.Value + "." + node.Id.Value, generationId, prefab));
-			if (created.IsFailure) return Result<IRuntimeNode>.Failure(created.Diagnostic);
-			return Result<IRuntimeNode>.Success(new SceneRuntimeNode(node, generationId, created.Value, _applyEffectiveParameters));
+			if (created.IsFailure) return CSharpFunctionalExtensions.Result.Failure<IRuntimeNode, Diagnostic>(created.Error);
+			return CSharpFunctionalExtensions.Result.Success<IRuntimeNode, Diagnostic>(new SceneRuntimeNode(node, generationId, created.Value, _applyEffectiveParameters));
 		}
 
-		private Result<IRuntimeNode> FailureNode(string code, string message, RuntimeNodeCreateInfo node, ulong generationId, Exception exception = null) =>
-			Result<IRuntimeNode>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, nodeId: node?.Id ?? default(NodeInstanceId), nodeTypeId: TypeId, generationId: generationId, module: "scene", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
+		private CSharpFunctionalExtensions.Result<IRuntimeNode, Diagnostic> FailureNode(string code, string message, RuntimeNodeCreateInfo node, ulong generationId, Exception exception = null) =>
+			CSharpFunctionalExtensions.Result.Failure<IRuntimeNode, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, nodeId: node?.Id ?? default(NodeInstanceId), nodeTypeId: TypeId, generationId: generationId, module: "scene", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
 	}
 
 	public sealed class SceneRuntimeNode : IRuntimeNode, IRuntimeDemandAwareNode {
@@ -67,7 +67,7 @@ namespace ShitDesigner.Scene {
 			var width = demand.Width; var height = demand.Height;
 			var surface = context.OutputSurfaces?.TryGetPrepared(NodeId, image, width, height, context.Snapshot.FrameNumber);
 			if (!surface.HasValue || surface.Value.IsFailure || surface.Value.Value == null) {
-				WriteLast(context, outputs, image, surface.HasValue && surface.Value.IsFailure ? surface.Value.Diagnostic : Failure("scene.surface_missing", "Scene output requires a prepared Phase-5 surface.", context));
+				WriteLast(context, outputs, image, surface.HasValue && surface.Value.IsFailure ? surface.Value.Error : Failure("scene.surface_missing", "Scene output requires a prepared Phase-5 surface.", context));
 				State = RuntimeNodeState.Faulted; return;
 			}
 			var prepared = surface.Value.Value;
@@ -75,10 +75,10 @@ namespace ShitDesigner.Scene {
 				_applyEffectiveParameters?.Invoke(_scene, context.Snapshot);
 				var delta = Math.Max(0d, context.Snapshot.GraphClockTime - _lastClock);
 				var physics = _scene.AdvancePhysics(delta);
-				if (physics.IsFailure) throw new InvalidOperationException(physics.Diagnostic.Message);
+				if (physics.IsFailure) throw new InvalidOperationException(physics.Error.Message);
 				_lastClock = context.Snapshot.GraphClockTime;
 				var rendered = _scene.Render(prepared.NativeSurface, width, height, context.Snapshot.FrameNumber);
-				if (rendered.IsFailure || rendered.Value == null || !rendered.Value.Rendered) throw new InvalidOperationException(rendered.IsFailure ? rendered.Diagnostic.Message : "Scene render source did not render.");
+				if (rendered.IsFailure || rendered.Value == null || !rendered.Value.Rendered) throw new InvalidOperationException(rendered.IsFailure ? rendered.Error.Message : "Scene render source did not render.");
 				if (prepared is IRuntimeOutputSurfaceCompletion completion) completion.MarkRendered();
 				var frame = new SceneRuntimeImageFrame(prepared, context.Snapshot.FrameNumber);
 				_lastFrame = frame; State = RuntimeNodeState.Ready; outputs.SetAvailable(image, PortValue.FromImageFrame(frame));

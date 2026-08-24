@@ -310,7 +310,7 @@ namespace ShitDesigner.Nodes {
 			shaderParameters = (entry.ShaderBinding?.Parameters ?? Array.Empty<ShaderParameterBinding>()).Select(x => new ShaderParameterCatalogRecord(x)).ToList();
 			shaderPasses = (entry.ShaderBinding?.Passes ?? Array.Empty<ShaderPassBinding>()).Select(x => new ShaderPassCatalogRecord(x)).ToList();
 		}
-		public Result Validate() {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Validate() {
 			if (!NodeTypeId.TryParse(TypeId, out _)) return Failure("nodes.catalog.asset_type", "Catalog record TypeId is invalid.");
 			if (SchemaVersion < 1 || string.IsNullOrWhiteSpace(DisplayName) || string.IsNullOrWhiteSpace(Category)) return Failure("nodes.catalog.asset_metadata", "Catalog record metadata is incomplete.");
 			if (portIds == null || parameterIds == null || ports == null || parameters == null) return Failure("nodes.catalog.asset_members", "Catalog record members are missing.");
@@ -333,15 +333,15 @@ namespace ShitDesigner.Nodes {
 				if (shaderStateful != (shaderHistorySlots > 0) || (!shaderStateful && shaderHistorySlots != 0))
 					return Failure("nodes.catalog.asset_shader_history", "Shader catalog history metadata is inconsistent.");
 			}
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
-		internal Result ValidateAssetReferenceRequirements() {
+		internal CSharpFunctionalExtensions.UnitResult<Diagnostic> ValidateAssetReferenceRequirements() {
 			if ((Category == "3D" || Category == "2D") && (ScenePrefab == null || string.IsNullOrWhiteSpace(PrefabKey)))
 				return Failure("nodes.catalog.prefab_missing", "Scene records require a direct prefab reference and key.");
 			if (!string.IsNullOrWhiteSpace(ShaderKey)
 				&& ((Shader == null && TemplateMaterial == null) || string.IsNullOrWhiteSpace(ShaderKey)))
 				return Failure("nodes.catalog.shader_missing", "Shader records require a direct Shader or template Material reference and key.");
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 		internal bool Matches(NodeCatalogEntry expected) {
 			if (expected == null || !string.Equals(TypeId, expected.TypeId.Value, StringComparison.Ordinal) || SchemaVersion != expected.SchemaVersion
@@ -370,7 +370,7 @@ namespace ShitDesigner.Nodes {
 		internal void SetAssetReferences(GameObject prefab, Shader shaderAsset, Material material, string prefabBindingKey, string shaderBindingKey, int pass) {
 			scenePrefab = prefab; shader = shaderAsset; templateMaterial = material; prefabKey = prefabBindingKey ?? string.Empty; shaderKey = shaderBindingKey ?? string.Empty; outputPass = pass;
 		}
-		private static Result Failure(string code, string message) => Result.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "nodes"));
+		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "nodes"));
 	}
 
 	/// <summary>Build-generated immutable catalog consumed by Standalone.</summary>
@@ -383,7 +383,7 @@ namespace ShitDesigner.Nodes {
 		public ShaderNodeManifestAsset ShaderManifest => shaderManifest;
 		public IReadOnlyList<NodeTypeCatalogRecord> Entries => entries ?? (IReadOnlyList<NodeTypeCatalogRecord>)Array.Empty<NodeTypeCatalogRecord>();
 
-		public Result ValidateManifest() {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ValidateManifest() {
 			if (catalogSchemaVersion != 1) return Failure("nodes.catalog.asset_schema", "Unsupported node catalog schema.");
 			if (entries == null || entries.Count == 0) return Failure("nodes.catalog.asset_empty", "Node catalog asset contains no entries.");
 			if (entries.Any(x => x == null)) return Failure("nodes.catalog.asset_null", "Node catalog asset contains a null entry.");
@@ -399,32 +399,32 @@ namespace ShitDesigner.Nodes {
 				var result = entry.Validate(); if (result.IsFailure) return result;
 				var references = entry.ValidateAssetReferenceRequirements(); if (references.IsFailure) return references;
 			}
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
 		/// <summary>Strictly compares every catalog field with explicit code
 		/// definitions. Port IDs alone never satisfy this check.</summary>
-		public Result ValidateAgainst(NodeDefinitionCatalog expected) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ValidateAgainst(NodeDefinitionCatalog expected) {
 			var manifest = ValidateManifest(); if (manifest.IsFailure) return manifest;
 			if (expected == null) return Failure("nodes.catalog.expected_missing", "Expected runtime node catalog is required.");
 			var valid = expected.Validate(); if (valid.IsFailure) return valid;
 			if (Entries.Count != expected.Entries.Count) return Failure("nodes.catalog.asset_mismatch", "Catalog entry count differs from runtime definitions.");
 			for (var i = 0; i < Entries.Count; i++) if (!Entries[i].Matches(expected.Entries[i])) return Failure("nodes.catalog.asset_mismatch", "Catalog metadata, ports, parameters or bindings differ from runtime definitions.");
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
-		public Result ValidateAssetReferences(GameObject scene3dPrefab, GameObject scene2dPrefab, Shader shaderGenerator, Shader shaderEffect, Shader shaderBlend2) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ValidateAssetReferences(GameObject scene3dPrefab, GameObject scene2dPrefab, Shader shaderGenerator, Shader shaderEffect, Shader shaderBlend2) {
 			var manifest = ValidateManifest(); if (manifest.IsFailure) return manifest;
 			if (Find("shitdesigner.scene.3d")?.ScenePrefab != scene3dPrefab || Find("shitdesigner.scene.2d")?.ScenePrefab != scene2dPrefab) return Failure("nodes.catalog.prefab_mismatch", "Production scene prefabs do not match direct catalog references.");
 			if (Find("shitdesigner.shader.generator")?.Shader != shaderGenerator || Find("shitdesigner.shader.effect")?.Shader != shaderEffect || Find("shitdesigner.shader.blend2")?.Shader != shaderBlend2) return Failure("nodes.catalog.shader_mismatch", "Production shaders do not match direct catalog references.");
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
-		public Result<NodeDefinitionCatalog> BuildRuntimeCatalog(NodeFactoryBindings bindings = null) {
+		public CSharpFunctionalExtensions.Result<NodeDefinitionCatalog, Diagnostic> BuildRuntimeCatalog(NodeFactoryBindings bindings = null) {
 			var manifest = shaderManifest == null ? ShaderNodeManifest.CreateBuiltIn() : shaderManifest.BuildRuntimeManifest();
 			var expected = NodeDefinitionCatalog.CreateInitial(manifest, bindings);
 			var validation = ValidateAgainst(expected);
-			return validation.IsFailure ? Result<NodeDefinitionCatalog>.Failure(validation.Diagnostic) : Result<NodeDefinitionCatalog>.Success(expected);
+			return validation.IsFailure ? CSharpFunctionalExtensions.Result.Failure<NodeDefinitionCatalog, Diagnostic>(validation.Error) : CSharpFunctionalExtensions.Result.Success<NodeDefinitionCatalog, Diagnostic>(expected);
 		}
 
 		public void ReplaceManifest(IEnumerable<NodeCatalogEntry> source) {
@@ -437,7 +437,7 @@ namespace ShitDesigner.Nodes {
 
 		/// <summary>Editor generation attaches direct Unity asset references
 		/// without changing the neutral descriptor or its save contract.</summary>
-		public Result ConfigureReference(string typeId, GameObject prefab = null, Shader shader = null, Material templateMaterial = null) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ConfigureReference(string typeId, GameObject prefab = null, Shader shader = null, Material templateMaterial = null) {
 			var entry = Find(typeId); if (entry == null) return Failure("nodes.catalog.reference_type", "Catalog reference type is not present.");
 			var expected = (shaderManifest == null ? ShaderNodeManifest.CreateBuiltIn() : shaderManifest.BuildRuntimeManifest()).Find(typeId);
 			var expectedNode = NodeDefinitionCatalog.CreateInitial(shaderManifest: shaderManifest == null ? ShaderNodeManifest.CreateBuiltIn() : shaderManifest.BuildRuntimeManifest(), bindings: null).Entries.FirstOrDefault(x => x.TypeId.Value == typeId);
@@ -446,17 +446,17 @@ namespace ShitDesigner.Nodes {
 				expectedNode?.SceneBinding?.PrefabKey,
 				expected?.ShaderKey ?? expectedNode?.ShaderBinding?.ShaderKey,
 				expected?.OutputPass ?? expectedNode?.ShaderBinding?.OutputPass ?? 0);
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
-		public Result ConfigureShaderReference(string typeId, Shader shader) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ConfigureShaderReference(string typeId, Shader shader) {
 			var entry = Find(typeId);
 			if (entry == null) return Failure("nodes.catalog.reference_type", "Catalog reference type is not present: " + typeId + ".");
 			if (shader == null) return Failure("nodes.catalog.shader_missing", "A direct Shader reference is required: " + typeId + ".");
 			entry.SetAssetReferences(null, shader, null, string.Empty, entry.ShaderKey, entry.OutputPass);
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 		private NodeTypeCatalogRecord Find(string typeId) => Entries.FirstOrDefault(x => x != null && string.Equals(x.TypeId, typeId, StringComparison.Ordinal));
-		private static Result Failure(string code, string message) => Result.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "nodes"));
+		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "nodes"));
 	}
 }

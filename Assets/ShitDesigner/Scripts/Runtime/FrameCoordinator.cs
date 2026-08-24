@@ -31,8 +31,8 @@ namespace ShitDesigner.Runtime {
 
 	public sealed class GraphCommandExecutionResult {
 		public string CommandRequestId { get; }
-		public Result Result { get; }
-		internal GraphCommandExecutionResult(string commandRequestId, Result result) { CommandRequestId = commandRequestId ?? string.Empty; Result = result; }
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Result { get; }
+		internal GraphCommandExecutionResult(string commandRequestId, CSharpFunctionalExtensions.UnitResult<Diagnostic> result) { CommandRequestId = commandRequestId ?? string.Empty; Result = result; }
 	}
 
 	public sealed class RuntimeCommandExecutionResult {
@@ -57,15 +57,15 @@ namespace ShitDesigner.Runtime {
 		public ProgramRuntimeState ProgramState { get; }
 		public IReadOnlyList<RuntimePhase> Phases => _phases;
 		public IReadOnlyList<Diagnostic> Diagnostics { get; }
-		public IReadOnlyList<Result> GraphCommandResults { get; }
+		public IReadOnlyList<CSharpFunctionalExtensions.UnitResult<Diagnostic>> GraphCommandResults { get; }
 		public IReadOnlyList<GraphCommandExecutionResult> GraphCommandExecutionResults { get; }
 		public IReadOnlyList<ParameterEventResult> ParameterEventResults { get; }
 		public IReadOnlyList<RuntimeCommandExecutionResult> RuntimeCommandResults { get; }
-		internal FrameExecutionReport(ulong frameNumber, bool succeeded, FrameSnapshot snapshot, OutputPresentation presentation, ProgramRuntimeState programState, IEnumerable<RuntimePhase> phases, IEnumerable<Diagnostic> diagnostics, IEnumerable<Result> graphCommandResults = null, IEnumerable<GraphCommandExecutionResult> graphCommandExecutionResults = null, IEnumerable<ParameterEventResult> parameterEventResults = null, IEnumerable<RuntimeCommandExecutionResult> runtimeCommandResults = null) {
+		internal FrameExecutionReport(ulong frameNumber, bool succeeded, FrameSnapshot snapshot, OutputPresentation presentation, ProgramRuntimeState programState, IEnumerable<RuntimePhase> phases, IEnumerable<Diagnostic> diagnostics, IEnumerable<CSharpFunctionalExtensions.UnitResult<Diagnostic>> graphCommandResults = null, IEnumerable<GraphCommandExecutionResult> graphCommandExecutionResults = null, IEnumerable<ParameterEventResult> parameterEventResults = null, IEnumerable<RuntimeCommandExecutionResult> runtimeCommandResults = null) {
 			FrameNumber = frameNumber; Succeeded = succeeded; Snapshot = snapshot; Presentation = presentation; ProgramState = programState;
 			_phases = new ReadOnlyCollection<RuntimePhase>((phases ?? Enumerable.Empty<RuntimePhase>()).ToList());
 			Diagnostics = new ReadOnlyCollection<Diagnostic>((diagnostics ?? Enumerable.Empty<Diagnostic>()).ToList());
-			GraphCommandResults = new ReadOnlyCollection<Result>((graphCommandResults ?? Enumerable.Empty<Result>()).ToList());
+			GraphCommandResults = new ReadOnlyCollection<CSharpFunctionalExtensions.UnitResult<Diagnostic>>((graphCommandResults ?? Enumerable.Empty<CSharpFunctionalExtensions.UnitResult<Diagnostic>>()).ToList());
 			GraphCommandExecutionResults = new ReadOnlyCollection<GraphCommandExecutionResult>((graphCommandExecutionResults ?? Enumerable.Empty<GraphCommandExecutionResult>()).ToList());
 			ParameterEventResults = new ReadOnlyCollection<ParameterEventResult>((parameterEventResults ?? Enumerable.Empty<ParameterEventResult>()).ToList());
 			RuntimeCommandResults = new ReadOnlyCollection<RuntimeCommandExecutionResult>((runtimeCommandResults ?? Enumerable.Empty<RuntimeCommandExecutionResult>()).ToList());
@@ -116,7 +116,7 @@ namespace ShitDesigner.Runtime {
 		private readonly RuntimeQueue<RuntimeCommand> _runtimeQueue = new RuntimeQueue<RuntimeCommand>(QueueCapacity);
 		private bool _ticking;
 		private ulong _frameNumber;
-		private readonly List<Result> _graphCommandResults = new List<Result>();
+		private readonly List<CSharpFunctionalExtensions.UnitResult<Diagnostic>> _graphCommandResults = new List<CSharpFunctionalExtensions.UnitResult<Diagnostic>>();
 		private readonly List<GraphCommandExecutionResult> _graphCommandExecutionResults = new List<GraphCommandExecutionResult>();
 		private readonly List<ParameterEventResult> _parameterEventResults = new List<ParameterEventResult>();
 		private readonly List<RuntimeCommandExecutionResult> _runtimeCommandResults = new List<RuntimeCommandExecutionResult>();
@@ -132,19 +132,19 @@ namespace ShitDesigner.Runtime {
 			_clock = clock ?? new GraphClock();
 		}
 
-		public Result EnqueueGraphEdit(GraphEditCommand command) {
-			if (command == null) return Result.Failure(Failure("runtime.queue.invalid", "Graph command is required."));
-			return _graphQueue.TryEnqueue(command) ? Result.Success() : QueueFull("graph");
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> EnqueueGraphEdit(GraphEditCommand command) {
+			if (command == null) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("runtime.queue.invalid", "Graph command is required."));
+			return _graphQueue.TryEnqueue(command) ? CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>() : QueueFull("graph");
 		}
 
-		public Result EnqueueParameterEvent(RuntimeParameterEvent item) {
-			if (item == null) return Result.Failure(Failure("runtime.queue.invalid", "Parameter event is required."));
-			return _parameterQueue.TryEnqueue(item) ? Result.Success() : QueueFull("parameter");
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> EnqueueParameterEvent(RuntimeParameterEvent item) {
+			if (item == null) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("runtime.queue.invalid", "Parameter event is required."));
+			return _parameterQueue.TryEnqueue(item) ? CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>() : QueueFull("parameter");
 		}
 
-		public Result EnqueueRuntimeCommand(RuntimeCommand command) {
-			if (command == null) return Result.Failure(Failure("runtime.queue.invalid", "Runtime command is required."));
-			return _runtimeQueue.TryEnqueue(command) ? Result.Success() : QueueFull("runtime");
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> EnqueueRuntimeCommand(RuntimeCommand command) {
+			if (command == null) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("runtime.queue.invalid", "Runtime command is required."));
+			return _runtimeQueue.TryEnqueue(command) ? CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>() : QueueFull("runtime");
 		}
 
 		public FrameExecutionReport Tick() {
@@ -193,7 +193,7 @@ namespace ShitDesigner.Runtime {
 				phases.Add(RuntimePhase.FrameSnapshot);
 				_clock.Update(frameMonotonicTime);
 				var effective = _session.Parameters.EvaluateEffective(_session.GraphEditor.State, _session.Document, _session.Diagnostics);
-				if (effective.IsFailure) diagnostics.Add(effective.Diagnostic);
+				if (effective.IsFailure) diagnostics.Add(effective.Error);
 				snapshot = new FrameSnapshot(frame, _clock.Time, _clock.IsPaused, _session.Document.DocumentRevision, _session.Plan == null ? _session.GraphEditor.State.Revision : _session.Plan.SourceRevision, _session.ResolutionProjection, _session.Parameters.FrameValues, _session.OutputDemandSnapshot);
 
 				phases.Add(RuntimePhase.OutputDemand);
@@ -214,7 +214,7 @@ namespace ShitDesigner.Runtime {
 							// failed frame result so callers can retain an
 							// active lease and retry the candidate later.
 							succeeded = false;
-							diagnostics.Add(prepared.Diagnostic);
+							diagnostics.Add(prepared.Error);
 						}
 					}
 					catch (Exception exception) {
@@ -263,7 +263,7 @@ namespace ShitDesigner.Runtime {
 						var finalized = _session.ResourceFinalization is IRuntimeResourceFinalizationWithPlan withPlan
 							? withPlan.Finalize(snapshot, evaluation, succeeded)
 							: _session.ResourceFinalization.Finalize(snapshot, succeeded);
-						if (finalized.IsFailure) { succeeded = false; diagnostics.Add(finalized.Diagnostic); }
+						if (finalized.IsFailure) { succeeded = false; diagnostics.Add(finalized.Error); }
 					}
 					catch (Exception exception) {
 						succeeded = false;
@@ -295,7 +295,7 @@ namespace ShitDesigner.Runtime {
 						else if (_session.FeedbackCommitter is IFeedbackResetter resetter) {
 							try {
 								var reset = resetter.Reset(command.NodeId.Value);
-								if (reset.IsFailure) { failure = reset.Diagnostic; diagnostics.Add(reset.Diagnostic); }
+								if (reset.IsFailure) { failure = reset.Error; diagnostics.Add(reset.Error); }
 							}
 							catch (Exception exception) {
 								failure = new Diagnostic(new DiagnosticCode("runtime.feedback.reset_failed"), Severity.Error, "Feedback history reset failed.", nodeId: command.NodeId, frameNumber: (long)_frameNumber, graphClockTime: _clock.Time, module: "runtime", exception: DiagnosticExceptionInfo.FromException(exception));
@@ -329,8 +329,8 @@ namespace ShitDesigner.Runtime {
 					if (persisted.IsFailure) {
 						// PrepareBatchDetailed is non-destructive, so a failed
 						// document write leaves every graph/history value intact.
-						diagnostics.Add(persisted.Diagnostic);
-						ReplaceSuccessfulGraphResultsWithFailure(persisted.Diagnostic);
+						diagnostics.Add(persisted.Error);
+						ReplaceSuccessfulGraphResultsWithFailure(persisted.Error);
 					}
 					else {
 						var committed = _session.GraphEditor.CommitCandidate(detailed.Patch);
@@ -338,8 +338,8 @@ namespace ShitDesigner.Runtime {
 							// CommitCandidate validates the unchanged source
 							// state before mutating. A conflict is unexpected
 							// on the main-thread boundary; report it clearly.
-							diagnostics.Add(committed.Diagnostic);
-							ReplaceSuccessfulGraphResultsWithFailure(committed.Diagnostic);
+							diagnostics.Add(committed.Error);
+							ReplaceSuccessfulGraphResultsWithFailure(committed.Error);
 							return;
 						}
 						// ApplyBatchDetailed already built and validated this
@@ -359,8 +359,8 @@ namespace ShitDesigner.Runtime {
 			for (var i = 0; i < _graphCommandExecutionResults.Count; i++) {
 				var item = _graphCommandExecutionResults[i];
 				if (!item.Result.IsSuccess) continue;
-				_graphCommandExecutionResults[i] = new GraphCommandExecutionResult(item.CommandRequestId, Result.Failure(diagnostic));
-				if (i < _graphCommandResults.Count) _graphCommandResults[i] = Result.Failure(diagnostic);
+				_graphCommandExecutionResults[i] = new GraphCommandExecutionResult(item.CommandRequestId, CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(diagnostic));
+				if (i < _graphCommandResults.Count) _graphCommandResults[i] = CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(diagnostic);
 			}
 		}
 
@@ -377,11 +377,11 @@ namespace ShitDesigner.Runtime {
 				var persisted = _session.Persistence.ApplyParameterTransaction(updates);
 				if (persisted.IsFailure) {
 					_session.Parameters.RestoreState(state);
-					diagnostics.Add(persisted.Diagnostic);
+					diagnostics.Add(persisted.Error);
 					for (var i = 0; i < _parameterEventResults.Count; i++) {
 						var item = _parameterEventResults[i];
 						if (item.Applied)
-							_parameterEventResults[i] = new ParameterEventResult(item.SequenceNumber, item.Kind, false, persisted.Diagnostic);
+							_parameterEventResults[i] = new ParameterEventResult(item.SequenceNumber, item.Kind, false, persisted.Error);
 					}
 				}
 			}
@@ -399,7 +399,7 @@ namespace ShitDesigner.Runtime {
 				}
 				try {
 					var result = completion.Apply(_session);
-					if (result.IsFailure) diagnostics.Add(result.Diagnostic);
+					if (result.IsFailure) diagnostics.Add(result.Error);
 				}
 				catch (Exception exception) {
 					diagnostics.Add(new Diagnostic(new DiagnosticCode("runtime.completion.failed"), Severity.Error, "Runtime completion failed.", nodeId: completion.NodeId, generationId: completion.GenerationId, frameNumber: (long)_frameNumber, graphClockTime: _clock.Time, module: "runtime", exception: DiagnosticExceptionInfo.FromException(exception)));
@@ -419,7 +419,7 @@ namespace ShitDesigner.Runtime {
 			if (requestChanged || scheduledChanged || _session.Plan == null) {
 				var rebuilt = _session.RebuildPlan();
 				if (rebuilt.IsFailure) {
-					diagnostics.Add(rebuilt.Diagnostic);
+					diagnostics.Add(rebuilt.Error);
 					return new FrameEvaluationContext(snapshot, _session.ResolutionProjection ?? snapshot.ResolutionProjection, _session.OutputDemandSnapshot);
 				}
 			}
@@ -506,7 +506,7 @@ namespace ShitDesigner.Runtime {
 				var input = ResolveFeedbackInput(nodeId);
 				var inputResult = input.HasValue ? NodeOutputResult.Available(input.Value) : NodeOutputResult.Blocked(input.Diagnostic ?? Failure("runtime.feedback.input_missing", "Feedback input is unavailable."));
 				var result = _session.FeedbackCommitter.Commit(nodeId, inputResult, snapshot);
-				if (result.IsFailure) { diagnostics.Add(result.Diagnostic); _session.Diagnostics.BeginOrContinueFault(result.Diagnostic); }
+				if (result.IsFailure) { diagnostics.Add(result.Error); _session.Diagnostics.BeginOrContinueFault(result.Error); }
 			}
 		}
 
@@ -561,7 +561,7 @@ namespace ShitDesigner.Runtime {
 				if (edge == null) {
 					if (!port.Required && port.Type == PortType.ImageFrame && port.DefaultImage.HasValue && _session.DefaultImageProvider != null) {
 						var image = _session.DefaultImageProvider.Get(ToRuntimeDefaultImageKind(port.DefaultImage.Value), snapshot == null ? 1920 : demands.FirstOrDefault(x => x.TargetKind == OutputTargetKind.Program)?.Width ?? 1920, snapshot == null ? 1080 : demands.FirstOrDefault(x => x.TargetKind == OutputTargetKind.Program)?.Height ?? 1080, snapshot == null ? _frameNumber : snapshot.FrameNumber);
-						result[port.Id] = image.IsSuccess ? ResolvedInput.Fallback(port.Id, port.Type, image.Value, Failure("runtime.input.fallback", "Optional Image input is using its declared default.", record.Id, port.Id)) : ResolvedInput.Unavailable(port.Id, port.Type, image.Diagnostic);
+						result[port.Id] = image.IsSuccess ? ResolvedInput.Fallback(port.Id, port.Type, image.Value, Failure("runtime.input.fallback", "Optional Image input is using its declared default.", record.Id, port.Id)) : ResolvedInput.Unavailable(port.Id, port.Type, image.Error);
 					}
 					else if (!port.Required && port.Type != PortType.ImageFrame) result[port.Id] = ResolvedInput.Fallback(port.Id, port.Type, PortValue.Default(port.Type), Failure("runtime.input.fallback", "Optional input is using its default value.", record.Id, port.Id));
 					else result[port.Id] = ResolvedInput.Unavailable(port.Id, port.Type, Failure("runtime.input.missing", "Input is not connected.", record.Id, port.Id));
@@ -571,7 +571,7 @@ namespace ShitDesigner.Runtime {
 				if (sourceResult.Status != NodeOutputStatus.Available || !sourceResult.HasValue) {
 					if (!port.Required && port.Type == PortType.ImageFrame && port.DefaultImage.HasValue && _session.DefaultImageProvider != null) {
 						var image = _session.DefaultImageProvider.Get(ToRuntimeDefaultImageKind(port.DefaultImage.Value), demands.FirstOrDefault(x => x.TargetKind == OutputTargetKind.Program)?.Width ?? 1920, demands.FirstOrDefault(x => x.TargetKind == OutputTargetKind.Program)?.Height ?? 1080, snapshot.FrameNumber);
-						result[port.Id] = image.IsSuccess ? ResolvedInput.Fallback(port.Id, port.Type, image.Value, sourceResult.Diagnostic) : ResolvedInput.Unavailable(port.Id, port.Type, image.Diagnostic);
+						result[port.Id] = image.IsSuccess ? ResolvedInput.Fallback(port.Id, port.Type, image.Value, sourceResult.Diagnostic) : ResolvedInput.Unavailable(port.Id, port.Type, image.Error);
 					}
 					else if (!port.Required && port.Type != PortType.ImageFrame) result[port.Id] = ResolvedInput.Fallback(port.Id, port.Type, PortValue.Default(port.Type), sourceResult.Diagnostic);
 					else if (sourceResult.Status == NodeOutputStatus.Faulted) result[port.Id] = ResolvedInput.Faulted(port.Id, port.Type, sourceResult.Diagnostic ?? Failure("runtime.input.upstream_faulted", "Upstream output is faulted.", record.Id, port.Id));
@@ -579,7 +579,7 @@ namespace ShitDesigner.Runtime {
 					continue;
 				}
 				var converted = Convert(edge, sourceResult.Value, port.Type);
-				result[port.Id] = converted.IsSuccess ? ResolvedInput.Available(port.Id, port.Type, converted.Value) : ResolvedInput.Unavailable(port.Id, port.Type, converted.Diagnostic);
+				result[port.Id] = converted.IsSuccess ? ResolvedInput.Available(port.Id, port.Type, converted.Value) : ResolvedInput.Unavailable(port.Id, port.Type, converted.Error);
 			}
 			return new ReadOnlyDictionary<PortId, ResolvedInput>(result);
 		}
@@ -592,15 +592,15 @@ namespace ShitDesigner.Runtime {
 			}
 		}
 
-		private Result<PortValue> Convert(ConnectionRecord edge, PortValue value, PortType destination) {
-			if (value.Type == destination) return Result<PortValue>.Success(value);
+		private CSharpFunctionalExtensions.Result<PortValue, Diagnostic> Convert(ConnectionRecord edge, PortValue value, PortType destination) {
+			if (value.Type == destination) return CSharpFunctionalExtensions.Result.Success<PortValue, Diagnostic>(value);
 			if (value.Type == PortType.Color && destination == PortType.Vector4 && edge.ConversionId == GraphConstants.ColorToVector4ConversionId) {
-				var color = value.AsColor(); return Result<PortValue>.Success(PortValue.FromVector4(new Vector4Value(color.R, color.G, color.B, color.A)));
+				var color = value.AsColor(); return CSharpFunctionalExtensions.Result.Success<PortValue, Diagnostic>(PortValue.FromVector4(new Vector4Value(color.R, color.G, color.B, color.A)));
 			}
 			if (value.Type == PortType.Vector4 && destination == PortType.Color && edge.ConversionId == GraphConstants.Vector4ToColorConversionId) {
-				var vector = value.AsVector4(); return Result<PortValue>.Success(PortValue.FromColor(new ColorValue(vector.X, vector.Y, vector.Z, vector.W)));
+				var vector = value.AsVector4(); return CSharpFunctionalExtensions.Result.Success<PortValue, Diagnostic>(PortValue.FromColor(new ColorValue(vector.X, vector.Y, vector.Z, vector.W)));
 			}
-			return Result<PortValue>.Failure(Failure("runtime.input.conversion_failed", "Saved port conversion is missing or incompatible."));
+			return CSharpFunctionalExtensions.Result.Failure<PortValue, Diagnostic>(Failure("runtime.input.conversion_failed", "Saved port conversion is missing or incompatible."));
 		}
 
 		private ResolvedInput ResolveFeedbackInput(NodeInstanceId nodeId) {
@@ -643,7 +643,7 @@ namespace ShitDesigner.Runtime {
 		}
 
 		private static OutputPresentation EmptyPresentation() => new OutputPresentation(default(NodeOutputResult), new ReadOnlyDictionary<NodeInstanceId, NodeOutputResult>(new Dictionary<NodeInstanceId, NodeOutputResult>()));
-		private static Result QueueFull(string name) => Result.Failure(Failure("runtime.queue.overloaded", name + " command queue is full."));
+		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> QueueFull(string name) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("runtime.queue.overloaded", name + " command queue is full."));
 		private static Diagnostic Failure(string code, string message, NodeInstanceId? nodeId = null, PortId? portId = null, NodeTypeId? typeId = null) => new Diagnostic(new DiagnosticCode(code), Severity.Error, message, nodeId: nodeId, portId: portId, nodeTypeId: typeId);
 
 	}

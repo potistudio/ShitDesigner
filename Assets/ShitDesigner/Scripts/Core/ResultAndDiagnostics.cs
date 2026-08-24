@@ -3,32 +3,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text.RegularExpressions;
-using CSharpFunctionalExtensions;
 
 namespace ShitDesigner.Core {
-	public readonly struct Result {
-		private readonly UnitResult<Diagnostic> _result;
-		private readonly bool _initialized;
-		public bool IsSuccess => _initialized && _result.IsSuccess;
-		public bool IsFailure => !IsSuccess;
-		public Diagnostic Diagnostic => IsFailure && _initialized ? _result.Error : null;
-		private Result(UnitResult<Diagnostic> result) { _result = result; _initialized = true; }
-		public static Result Success() => new Result(CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>());
-		public static Result Failure(Diagnostic diagnostic) => new Result(CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(diagnostic ?? throw new ArgumentNullException(nameof(diagnostic))));
-	}
-
-	public readonly struct Result<T> {
-		private readonly CSharpFunctionalExtensions.Result<T, Diagnostic> _result;
-		private readonly bool _initialized;
-		public bool IsSuccess => _initialized && _result.IsSuccess;
-		public bool IsFailure => !IsSuccess;
-		public T Value => IsSuccess ? _result.Value : throw new InvalidOperationException("Result has no value.");
-		public Diagnostic Diagnostic => IsFailure && _initialized ? _result.Error : null;
-		private Result(CSharpFunctionalExtensions.Result<T, Diagnostic> result) { _result = result; _initialized = true; }
-		public static Result<T> Success(T value) => new Result<T>(CSharpFunctionalExtensions.Result.Success<T, Diagnostic>(value));
-		public static Result<T> Failure(Diagnostic diagnostic) => new Result<T>(CSharpFunctionalExtensions.Result.Failure<T, Diagnostic>(diagnostic ?? throw new ArgumentNullException(nameof(diagnostic))));
-	}
-
 	public enum Severity {
 		Info,
 		Warning,

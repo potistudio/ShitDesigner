@@ -116,21 +116,21 @@ namespace ShitDesigner.Rendering {
 			: this((capabilityPort ?? throw new ArgumentNullException(nameof(capabilityPort))).Capabilities) {
 		}
 
-		public Result SetBudget(long budgetBytes) {
-			if (_disposed) return Result.Failure(RenderingDiagnostics.Error("rendering.pool.disposed", "The RenderTexturePool is disposed."));
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SetBudget(long budgetBytes) {
+			if (_disposed) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.pool.disposed", "The RenderTexturePool is disposed."));
 			var valid = RenderingBudgetPolicy.ValidateUserBudget(Capabilities, budgetBytes, _leasedBytes);
 			if (valid.IsFailure) return valid;
 			_budgetBytes = budgetBytes;
 			TrimToBudget();
 			UpdateBudgetWarning();
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
-		public Result<TextureLeaseHandle> Acquire(TextureDescriptor descriptor, ResourceOwnerKey owner, ulong frameNumber) {
-			if (_disposed) return Result<TextureLeaseHandle>.Failure(RenderingDiagnostics.Error("rendering.pool.disposed", "The RenderTexturePool is disposed."));
-			if (!owner.IsValid) return Result<TextureLeaseHandle>.Failure(RenderingDiagnostics.Error("rendering.pool.owner_invalid", "A valid resource owner is required."));
-			if (frameNumber == 0) return Result<TextureLeaseHandle>.Failure(RenderingDiagnostics.Error("rendering.pool.frame_invalid", "Frame number must be positive."));
-			if (descriptor.SRgb) return Result<TextureLeaseHandle>.Failure(RenderingDiagnostics.Error("rendering.pool.internal_srgb", "Internal pooled surfaces must use a linear, non-sRGB descriptor."));
+		public CSharpFunctionalExtensions.Result<TextureLeaseHandle, Diagnostic> Acquire(TextureDescriptor descriptor, ResourceOwnerKey owner, ulong frameNumber) {
+			if (_disposed) return CSharpFunctionalExtensions.Result.Failure<TextureLeaseHandle, Diagnostic>(RenderingDiagnostics.Error("rendering.pool.disposed", "The RenderTexturePool is disposed."));
+			if (!owner.IsValid) return CSharpFunctionalExtensions.Result.Failure<TextureLeaseHandle, Diagnostic>(RenderingDiagnostics.Error("rendering.pool.owner_invalid", "A valid resource owner is required."));
+			if (frameNumber == 0) return CSharpFunctionalExtensions.Result.Failure<TextureLeaseHandle, Diagnostic>(RenderingDiagnostics.Error("rendering.pool.frame_invalid", "Frame number must be positive."));
+			if (descriptor.SRgb) return CSharpFunctionalExtensions.Result.Failure<TextureLeaseHandle, Diagnostic>(RenderingDiagnostics.Error("rendering.pool.internal_srgb", "Internal pooled surfaces must use a linear, non-sRGB descriptor."));
 			CurrentFrame = Math.Max(CurrentFrame, frameNumber);
 			var reusable = _entries.Values
 				.Where(entry => entry.State == TextureLeaseState.Free && entry.Descriptor == descriptor)
@@ -138,11 +138,11 @@ namespace ShitDesigner.Rendering {
 				.ThenBy(entry => entry.CreationSequence)
 				.FirstOrDefault();
 			if (reusable != null)
-				return Result<TextureLeaseHandle>.Success(Lease(reusable, owner, frameNumber));
+				return CSharpFunctionalExtensions.Result.Success<TextureLeaseHandle, Diagnostic>(Lease(reusable, owner, frameNumber));
 
 			var bytes = EstimateBytes(descriptor);
 			if (!MakeRoom(bytes))
-				return Result<TextureLeaseHandle>.Failure(RenderingDiagnostics.Error("rendering.pool.budget_exceeded", "The RenderTexture budget cannot satisfy the request without reclaiming a leased texture."));
+				return CSharpFunctionalExtensions.Result.Failure<TextureLeaseHandle, Diagnostic>(RenderingDiagnostics.Error("rendering.pool.budget_exceeded", "The RenderTexture budget cannot satisfy the request without reclaiming a leased texture."));
 
 			RenderTexture texture = null;
 			try {
@@ -153,7 +153,7 @@ namespace ShitDesigner.Rendering {
 			}
 			catch (Exception exception) {
 				if (texture != null) DestroyTexture(texture);
-				return Result<TextureLeaseHandle>.Failure(new Diagnostic(new DiagnosticCode("rendering.pool.create_failed"), Severity.Error, "RenderTexture creation failed.", exception: DiagnosticExceptionInfo.FromException(exception)));
+				return CSharpFunctionalExtensions.Result.Failure<TextureLeaseHandle, Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.pool.create_failed"), Severity.Error, "RenderTexture creation failed.", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 
 			var entry = new Entry {
@@ -170,7 +170,7 @@ namespace ShitDesigner.Rendering {
 			_currentBytes += bytes;
 			_highWaterBytes = Math.Max(_highWaterBytes, _currentBytes);
 			UpdateBudgetWarning();
-			return Result<TextureLeaseHandle>.Success(Lease(entry, owner, frameNumber));
+			return CSharpFunctionalExtensions.Result.Success<TextureLeaseHandle, Diagnostic>(Lease(entry, owner, frameNumber));
 		}
 
 		private TextureLeaseHandle Lease(Entry entry, ResourceOwnerKey owner, ulong frameNumber) {
@@ -184,35 +184,35 @@ namespace ShitDesigner.Rendering {
 			return handle;
 		}
 
-		internal Result<BorrowedOutputSurface> Borrow(TextureLeaseHandle handle, ulong frameNumber) {
-			if (_disposed) return Result<BorrowedOutputSurface>.Failure(RenderingDiagnostics.Error("rendering.pool.disposed", "The RenderTexturePool is disposed."));
-			if (handle == null) return Result<BorrowedOutputSurface>.Failure(RenderingDiagnostics.Error("rendering.pool.lease_invalid", "A lease handle is required."));
-			if (frameNumber == 0) return Result<BorrowedOutputSurface>.Failure(RenderingDiagnostics.Error("rendering.pool.frame_invalid", "Frame number must be positive."));
+		internal CSharpFunctionalExtensions.Result<BorrowedOutputSurface, Diagnostic> Borrow(TextureLeaseHandle handle, ulong frameNumber) {
+			if (_disposed) return CSharpFunctionalExtensions.Result.Failure<BorrowedOutputSurface, Diagnostic>(RenderingDiagnostics.Error("rendering.pool.disposed", "The RenderTexturePool is disposed."));
+			if (handle == null) return CSharpFunctionalExtensions.Result.Failure<BorrowedOutputSurface, Diagnostic>(RenderingDiagnostics.Error("rendering.pool.lease_invalid", "A lease handle is required."));
+			if (frameNumber == 0) return CSharpFunctionalExtensions.Result.Failure<BorrowedOutputSurface, Diagnostic>(RenderingDiagnostics.Error("rendering.pool.frame_invalid", "Frame number must be positive."));
 			if (!_entries.TryGetValue(handle.Texture, out var entry) || entry.State != TextureLeaseState.Leased || entry.LeaseId != handle.LeaseId)
-				return Result<BorrowedOutputSurface>.Failure(RenderingDiagnostics.Error("rendering.pool.lease_invalid", "The lease is no longer active."));
+				return CSharpFunctionalExtensions.Result.Failure<BorrowedOutputSurface, Diagnostic>(RenderingDiagnostics.Error("rendering.pool.lease_invalid", "The lease is no longer active."));
 			if (entry.Owner != handle.Owner)
-				return Result<BorrowedOutputSurface>.Failure(RenderingDiagnostics.Error("rendering.pool.owner_mismatch", "The lease owner does not match the current owner."));
+				return CSharpFunctionalExtensions.Result.Failure<BorrowedOutputSurface, Diagnostic>(RenderingDiagnostics.Error("rendering.pool.owner_mismatch", "The lease owner does not match the current owner."));
 			CurrentFrame = Math.Max(CurrentFrame, frameNumber);
 			entry.LastUsedFrame = frameNumber;
 			try {
-				return Result<BorrowedOutputSurface>.Success(new BorrowedOutputSurface(new ImageFrame(entry.Texture, new Vector2Int(entry.Descriptor.Width, entry.Descriptor.Height), entry.Descriptor.GraphicsFormat, frameNumber, entry.LeaseId)));
+				return CSharpFunctionalExtensions.Result.Success<BorrowedOutputSurface, Diagnostic>(new BorrowedOutputSurface(new ImageFrame(entry.Texture, new Vector2Int(entry.Descriptor.Width, entry.Descriptor.Height), entry.Descriptor.GraphicsFormat, frameNumber, entry.LeaseId)));
 			}
 			catch (Exception exception) {
-				return Result<BorrowedOutputSurface>.Failure(new Diagnostic(new DiagnosticCode("rendering.pool.frame_invalid"), Severity.Error, "The leased texture cannot be exposed as an ImageFrame.", exception: DiagnosticExceptionInfo.FromException(exception)));
+				return CSharpFunctionalExtensions.Result.Failure<BorrowedOutputSurface, Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.pool.frame_invalid"), Severity.Error, "The leased texture cannot be exposed as an ImageFrame.", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 		}
 
-		internal Result Release(TextureLeaseHandle handle, ResourceOwnerKey requester, ulong frameNumber) {
-			if (_disposed) return Result.Failure(RenderingDiagnostics.Error("rendering.pool.disposed", "The RenderTexturePool is disposed."));
-			if (handle == null) return Result.Failure(RenderingDiagnostics.Error("rendering.pool.lease_invalid", "A lease handle is required."));
-			if (!requester.IsValid) return Result.Failure(RenderingDiagnostics.Error("rendering.pool.owner_invalid", "A valid release owner is required."));
-			if (frameNumber == 0) return Result.Failure(RenderingDiagnostics.Error("rendering.pool.frame_invalid", "Frame number must be positive."));
+		internal CSharpFunctionalExtensions.UnitResult<Diagnostic> Release(TextureLeaseHandle handle, ResourceOwnerKey requester, ulong frameNumber) {
+			if (_disposed) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.pool.disposed", "The RenderTexturePool is disposed."));
+			if (handle == null) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.pool.lease_invalid", "A lease handle is required."));
+			if (!requester.IsValid) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.pool.owner_invalid", "A valid release owner is required."));
+			if (frameNumber == 0) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.pool.frame_invalid", "Frame number must be positive."));
 			if (!_entries.TryGetValue(handle.Texture, out var entry) || entry.LeaseId != handle.LeaseId)
-				return Result.Failure(RenderingDiagnostics.Error("rendering.pool.double_release", "The lease was already released or is unknown."));
+				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.pool.double_release", "The lease was already released or is unknown."));
 			if (entry.State != TextureLeaseState.Leased)
-				return Result.Failure(RenderingDiagnostics.Error("rendering.pool.double_release", "The lease was already released."));
+				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.pool.double_release", "The lease was already released."));
 			if (entry.Owner != requester)
-				return Result.Failure(RenderingDiagnostics.Error("rendering.pool.owner_mismatch", "The release owner or generation does not match the current lease."));
+				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.pool.owner_mismatch", "The release owner or generation does not match the current lease."));
 			CurrentFrame = Math.Max(CurrentFrame, frameNumber);
 			entry.State = TextureLeaseState.Free;
 			// A returned entry no longer has a live OutputLeaseId.  Keeping
@@ -229,7 +229,7 @@ namespace ShitDesigner.Rendering {
 			entry.LastReturnedAtUtc = DateTime.UtcNow;
 			_leasedBytes -= entry.EstimatedBytes;
 			UpdateBudgetWarning();
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
 		private bool MakeRoom(long requiredBytes) {
@@ -408,15 +408,15 @@ namespace ShitDesigner.Rendering {
 		public ResourceOwnerKey Owner { get; }
 		public bool IsReleased => _released;
 
-		public Result<BorrowedOutputSurface> Borrow(ulong frameNumber) {
-			if (_released) return Result<BorrowedOutputSurface>.Failure(RenderingDiagnostics.Error("rendering.pool.double_release", "A released lease cannot be borrowed."));
+		public CSharpFunctionalExtensions.Result<BorrowedOutputSurface, Diagnostic> Borrow(ulong frameNumber) {
+			if (_released) return CSharpFunctionalExtensions.Result.Failure<BorrowedOutputSurface, Diagnostic>(RenderingDiagnostics.Error("rendering.pool.double_release", "A released lease cannot be borrowed."));
 			return _pool.Borrow(this, frameNumber);
 		}
 
-		public Result Release() => Release(Owner, _pool.CurrentFrame);
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Release() => Release(Owner, _pool.CurrentFrame);
 
-		public Result Release(ResourceOwnerKey requester, ulong frameNumber) {
-			if (_released) return Result.Failure(RenderingDiagnostics.Error("rendering.pool.double_release", "A lease can only be released once."));
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Release(ResourceOwnerKey requester, ulong frameNumber) {
+			if (_released) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(RenderingDiagnostics.Error("rendering.pool.double_release", "A lease can only be released once."));
 			var result = _pool.Release(this, requester, frameNumber);
 			if (result.IsSuccess) _released = true;
 			return result;

@@ -124,37 +124,37 @@ namespace ShitDesigner.Core {
 		public static bool operator ==(ParameterValue left, ParameterValue right) => left.Equals(right);
 		public static bool operator !=(ParameterValue left, ParameterValue right) => !left.Equals(right);
 
-		public static Result<ParameterValue> Clamp(ParameterValue value, ParameterValue min, ParameterValue max) {
+		public static CSharpFunctionalExtensions.Result<ParameterValue, Diagnostic> Clamp(ParameterValue value, ParameterValue min, ParameterValue max) {
 			if (value.Type != min.Type || value.Type != max.Type || !IsLogicalControlTargetType(value.Type))
-				return Result<ParameterValue>.Failure(new Diagnostic(new DiagnosticCode("core.parameter.type_mismatch"), Severity.Error, "Parameter range type mismatch."));
+				return CSharpFunctionalExtensions.Result.Failure<ParameterValue, Diagnostic>(new Diagnostic(new DiagnosticCode("core.parameter.type_mismatch"), Severity.Error, "Parameter range type mismatch."));
 			if (!IsOrdered(min, max))
-				return Result<ParameterValue>.Failure(new Diagnostic(new DiagnosticCode("core.parameter.invalid_range"), Severity.Error, "Parameter range minimum cannot exceed maximum."));
+				return CSharpFunctionalExtensions.Result.Failure<ParameterValue, Diagnostic>(new Diagnostic(new DiagnosticCode("core.parameter.invalid_range"), Severity.Error, "Parameter range minimum cannot exceed maximum."));
 			switch (value.Type) {
-				case ParameterType.Float: return Result<ParameterValue>.Success(FromFloat(Math.Min(Math.Max(value._float, min._float), max._float)));
-				case ParameterType.Int: return Result<ParameterValue>.Success(FromInt(Math.Min(Math.Max(value._int, min._int), max._int)));
-				case ParameterType.Bool: return Result<ParameterValue>.Success(value);
-				case ParameterType.Vector2: return Result<ParameterValue>.Success(FromVector2(new Vector2Value(Clamp(value._vector2.X, min._vector2.X, max._vector2.X), Clamp(value._vector2.Y, min._vector2.Y, max._vector2.Y))));
-				case ParameterType.Vector3: return Result<ParameterValue>.Success(FromVector3(new Vector3Value(Clamp(value._vector3.X, min._vector3.X, max._vector3.X), Clamp(value._vector3.Y, min._vector3.Y, max._vector3.Y), Clamp(value._vector3.Z, min._vector3.Z, max._vector3.Z))));
-				case ParameterType.Vector4: return Result<ParameterValue>.Success(FromVector4(new Vector4Value(Clamp(value._vector4.X, min._vector4.X, max._vector4.X), Clamp(value._vector4.Y, min._vector4.Y, max._vector4.Y), Clamp(value._vector4.Z, min._vector4.Z, max._vector4.Z), Clamp(value._vector4.W, min._vector4.W, max._vector4.W))));
-				case ParameterType.Color: return Result<ParameterValue>.Success(FromColor(new ColorValue(Clamp(value._color.R, min._color.R, max._color.R), Clamp(value._color.G, min._color.G, max._color.G), Clamp(value._color.B, min._color.B, max._color.B), Clamp(value._color.A, min._color.A, max._color.A))));
+				case ParameterType.Float: return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(FromFloat(Math.Min(Math.Max(value._float, min._float), max._float)));
+				case ParameterType.Int: return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(FromInt(Math.Min(Math.Max(value._int, min._int), max._int)));
+				case ParameterType.Bool: return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(value);
+				case ParameterType.Vector2: return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(FromVector2(new Vector2Value(Clamp(value._vector2.X, min._vector2.X, max._vector2.X), Clamp(value._vector2.Y, min._vector2.Y, max._vector2.Y))));
+				case ParameterType.Vector3: return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(FromVector3(new Vector3Value(Clamp(value._vector3.X, min._vector3.X, max._vector3.X), Clamp(value._vector3.Y, min._vector3.Y, max._vector3.Y), Clamp(value._vector3.Z, min._vector3.Z, max._vector3.Z))));
+				case ParameterType.Vector4: return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(FromVector4(new Vector4Value(Clamp(value._vector4.X, min._vector4.X, max._vector4.X), Clamp(value._vector4.Y, min._vector4.Y, max._vector4.Y), Clamp(value._vector4.Z, min._vector4.Z, max._vector4.Z), Clamp(value._vector4.W, min._vector4.W, max._vector4.W))));
+				case ParameterType.Color: return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(FromColor(new ColorValue(Clamp(value._color.R, min._color.R, max._color.R), Clamp(value._color.G, min._color.G, max._color.G), Clamp(value._color.B, min._color.B, max._color.B), Clamp(value._color.A, min._color.A, max._color.A))));
 				default: throw new InvalidOperationException();
 			}
 		}
 		private static float Clamp(float value, float min, float max) => Math.Min(Math.Max(value, min), max);
-		public static Result<ParameterValue> Lerp(ParameterValue min, ParameterValue max, float t) {
+		public static CSharpFunctionalExtensions.Result<ParameterValue, Diagnostic> Lerp(ParameterValue min, ParameterValue max, float t) {
 			if (min.Type != max.Type || !IsLogicalControlTargetType(min.Type) || float.IsNaN(t) || float.IsInfinity(t))
-				return Result<ParameterValue>.Failure(new Diagnostic(new DiagnosticCode("core.parameter.invalid_mapping"), Severity.Error, "Parameter mapping is invalid."));
+				return CSharpFunctionalExtensions.Result.Failure<ParameterValue, Diagnostic>(new Diagnostic(new DiagnosticCode("core.parameter.invalid_mapping"), Severity.Error, "Parameter mapping is invalid."));
 			if (!IsOrdered(min, max))
-				return Result<ParameterValue>.Failure(new Diagnostic(new DiagnosticCode("core.parameter.invalid_range"), Severity.Error, "Parameter mapping minimum cannot exceed maximum."));
+				return CSharpFunctionalExtensions.Result.Failure<ParameterValue, Diagnostic>(new Diagnostic(new DiagnosticCode("core.parameter.invalid_range"), Severity.Error, "Parameter mapping minimum cannot exceed maximum."));
 			t = Clamp(t, 0f, 1f);
 			switch (min.Type) {
-				case ParameterType.Float: return Result<ParameterValue>.Success(FromFloat(min._float + (max._float - min._float) * t));
-				case ParameterType.Int: return Result<ParameterValue>.Success(FromInt(RoundAwayFromZero(min._int + ((float)max._int - min._int) * t)));
-				case ParameterType.Bool: return Result<ParameterValue>.Success(FromBool(t >= 0.5f));
-				case ParameterType.Vector2: return Result<ParameterValue>.Success(FromVector2(new Vector2Value(Lerp(min._vector2.X, max._vector2.X, t), Lerp(min._vector2.Y, max._vector2.Y, t))));
-				case ParameterType.Vector3: return Result<ParameterValue>.Success(FromVector3(new Vector3Value(Lerp(min._vector3.X, max._vector3.X, t), Lerp(min._vector3.Y, max._vector3.Y, t), Lerp(min._vector3.Z, max._vector3.Z, t))));
-				case ParameterType.Vector4: return Result<ParameterValue>.Success(FromVector4(new Vector4Value(Lerp(min._vector4.X, max._vector4.X, t), Lerp(min._vector4.Y, max._vector4.Y, t), Lerp(min._vector4.Z, max._vector4.Z, t), Lerp(min._vector4.W, max._vector4.W, t))));
-				case ParameterType.Color: return Result<ParameterValue>.Success(FromColor(new ColorValue(Lerp(min._color.R, max._color.R, t), Lerp(min._color.G, max._color.G, t), Lerp(min._color.B, max._color.B, t), Lerp(min._color.A, max._color.A, t))));
+				case ParameterType.Float: return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(FromFloat(min._float + (max._float - min._float) * t));
+				case ParameterType.Int: return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(FromInt(RoundAwayFromZero(min._int + ((float)max._int - min._int) * t)));
+				case ParameterType.Bool: return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(FromBool(t >= 0.5f));
+				case ParameterType.Vector2: return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(FromVector2(new Vector2Value(Lerp(min._vector2.X, max._vector2.X, t), Lerp(min._vector2.Y, max._vector2.Y, t))));
+				case ParameterType.Vector3: return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(FromVector3(new Vector3Value(Lerp(min._vector3.X, max._vector3.X, t), Lerp(min._vector3.Y, max._vector3.Y, t), Lerp(min._vector3.Z, max._vector3.Z, t))));
+				case ParameterType.Vector4: return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(FromVector4(new Vector4Value(Lerp(min._vector4.X, max._vector4.X, t), Lerp(min._vector4.Y, max._vector4.Y, t), Lerp(min._vector4.Z, max._vector4.Z, t), Lerp(min._vector4.W, max._vector4.W, t))));
+				case ParameterType.Color: return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(FromColor(new ColorValue(Lerp(min._color.R, max._color.R, t), Lerp(min._color.G, max._color.G, t), Lerp(min._color.B, max._color.B, t), Lerp(min._color.A, max._color.A, t))));
 				default: throw new InvalidOperationException();
 			}
 		}
@@ -176,20 +176,20 @@ namespace ShitDesigner.Core {
 				default: return false;
 			}
 		}
-		public static Result<ParameterValue> Min(ParameterValue left, ParameterValue right) => Combine(left, right, false);
-		public static Result<ParameterValue> Max(ParameterValue left, ParameterValue right) => Combine(left, right, true);
-		private static Result<ParameterValue> Combine(ParameterValue left, ParameterValue right, bool max) {
-			if (left.Type != right.Type || !IsLogicalControlTargetType(left.Type)) return Result<ParameterValue>.Failure(new Diagnostic(new DiagnosticCode("core.parameter.type_mismatch"), Severity.Error, "Parameter operation type mismatch."));
+		public static CSharpFunctionalExtensions.Result<ParameterValue, Diagnostic> Min(ParameterValue left, ParameterValue right) => Combine(left, right, false);
+		public static CSharpFunctionalExtensions.Result<ParameterValue, Diagnostic> Max(ParameterValue left, ParameterValue right) => Combine(left, right, true);
+		private static CSharpFunctionalExtensions.Result<ParameterValue, Diagnostic> Combine(ParameterValue left, ParameterValue right, bool max) {
+			if (left.Type != right.Type || !IsLogicalControlTargetType(left.Type)) return CSharpFunctionalExtensions.Result.Failure<ParameterValue, Diagnostic>(new Diagnostic(new DiagnosticCode("core.parameter.type_mismatch"), Severity.Error, "Parameter operation type mismatch."));
 			float Pick(float a, float b) => max ? Math.Max(a, b) : Math.Min(a, b);
 			switch (left.Type) {
-				case ParameterType.Bool: return Result<ParameterValue>.Success(FromBool(max ? left._bool || right._bool : left._bool && right._bool));
-				case ParameterType.Float: return Result<ParameterValue>.Success(FromFloat(Pick(left._float, right._float)));
-				case ParameterType.Int: return Result<ParameterValue>.Success(FromInt(max ? Math.Max(left._int, right._int) : Math.Min(left._int, right._int)));
-				case ParameterType.Vector2: return Result<ParameterValue>.Success(FromVector2(new Vector2Value(Pick(left._vector2.X, right._vector2.X), Pick(left._vector2.Y, right._vector2.Y))));
-				case ParameterType.Vector3: return Result<ParameterValue>.Success(FromVector3(new Vector3Value(Pick(left._vector3.X, right._vector3.X), Pick(left._vector3.Y, right._vector3.Y), Pick(left._vector3.Z, right._vector3.Z))));
-				case ParameterType.Vector4: return Result<ParameterValue>.Success(FromVector4(new Vector4Value(Pick(left._vector4.X, right._vector4.X), Pick(left._vector4.Y, right._vector4.Y), Pick(left._vector4.Z, right._vector4.Z), Pick(left._vector4.W, right._vector4.W))));
-				case ParameterType.Color: return Result<ParameterValue>.Success(FromColor(new ColorValue(Pick(left._color.R, right._color.R), Pick(left._color.G, right._color.G), Pick(left._color.B, right._color.B), Pick(left._color.A, right._color.A))));
-				default: return Result<ParameterValue>.Failure(new Diagnostic(new DiagnosticCode("core.parameter.type_not_supported"), Severity.Error, "Parameter type is not supported for Min/Max."));
+				case ParameterType.Bool: return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(FromBool(max ? left._bool || right._bool : left._bool && right._bool));
+				case ParameterType.Float: return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(FromFloat(Pick(left._float, right._float)));
+				case ParameterType.Int: return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(FromInt(max ? Math.Max(left._int, right._int) : Math.Min(left._int, right._int)));
+				case ParameterType.Vector2: return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(FromVector2(new Vector2Value(Pick(left._vector2.X, right._vector2.X), Pick(left._vector2.Y, right._vector2.Y))));
+				case ParameterType.Vector3: return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(FromVector3(new Vector3Value(Pick(left._vector3.X, right._vector3.X), Pick(left._vector3.Y, right._vector3.Y), Pick(left._vector3.Z, right._vector3.Z))));
+				case ParameterType.Vector4: return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(FromVector4(new Vector4Value(Pick(left._vector4.X, right._vector4.X), Pick(left._vector4.Y, right._vector4.Y), Pick(left._vector4.Z, right._vector4.Z), Pick(left._vector4.W, right._vector4.W))));
+				case ParameterType.Color: return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(FromColor(new ColorValue(Pick(left._color.R, right._color.R), Pick(left._color.G, right._color.G), Pick(left._color.B, right._color.B), Pick(left._color.A, right._color.A))));
+				default: return CSharpFunctionalExtensions.Result.Failure<ParameterValue, Diagnostic>(new Diagnostic(new DiagnosticCode("core.parameter.type_not_supported"), Severity.Error, "Parameter type is not supported for Min/Max."));
 			}
 		}
 	}

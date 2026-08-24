@@ -39,10 +39,10 @@ namespace ShitDesigner.Rendering {
 	}
 
 	public static class ResolutionDemandIntegrator {
-		public static Result<ResolutionDemandResult> Merge(IEnumerable<ResolutionDemand> demands) {
+		public static CSharpFunctionalExtensions.Result<ResolutionDemandResult, Diagnostic> Merge(IEnumerable<ResolutionDemand> demands) {
 			var list = (demands ?? Enumerable.Empty<ResolutionDemand>()).ToList();
 			if (list.Count == 0)
-				return Result<ResolutionDemandResult>.Failure(new Diagnostic(new DiagnosticCode("rendering.demand.empty"), Severity.Error, "At least one resolution demand is required."));
+				return CSharpFunctionalExtensions.Result.Failure<ResolutionDemandResult, Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.demand.empty"), Severity.Error, "At least one resolution demand is required."));
 			var winner = list
 				.OrderBy(demand => Priority(demand.Kind))
 				.ThenByDescending(demand => demand.Kind == ResolutionDemandKind.Program ? 0 : demand.FocusOrder)
@@ -53,7 +53,7 @@ namespace ShitDesigner.Rendering {
 			var height = list.Max(demand => Math.Max(demand.Size.y, (int)Math.Ceiling(demand.Size.x / aspect)));
 			width = Math.Max(width, (int)Math.Ceiling(height * aspect));
 			height = Math.Max(height, (int)Math.Ceiling(width / aspect));
-			return Result<ResolutionDemandResult>.Success(new ResolutionDemandResult(new Vector2Int(width, height), winner));
+			return CSharpFunctionalExtensions.Result.Success<ResolutionDemandResult, Diagnostic>(new ResolutionDemandResult(new Vector2Int(width, height), winner));
 		}
 
 		private static int Priority(ResolutionDemandKind kind) => kind == ResolutionDemandKind.Program ? 0 : kind == ResolutionDemandKind.FocusedPreview ? 1 : 2;

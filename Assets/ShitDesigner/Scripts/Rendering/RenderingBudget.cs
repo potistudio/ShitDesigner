@@ -97,16 +97,16 @@ namespace ShitDesigner.Rendering {
 			return Math.Max(1L, budget);
 		}
 
-		public static Result ValidateUserBudget(RenderingPlatformCapabilities capabilities, long requestedBytes, long leasedBytes) {
+		public static CSharpFunctionalExtensions.UnitResult<Diagnostic> ValidateUserBudget(RenderingPlatformCapabilities capabilities, long requestedBytes, long leasedBytes) {
 			if (requestedBytes < 1)
-				return Result.Failure(Error("rendering.pool.budget_invalid", "The rendering budget must be positive."));
+				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Error("rendering.pool.budget_invalid", "The rendering budget must be positive."));
 			if (requestedBytes < leasedBytes)
-				return Result.Failure(Error("rendering.pool.budget_below_leased", "The rendering budget cannot be smaller than currently leased resources."));
+				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Error("rendering.pool.budget_below_leased", "The rendering budget cannot be smaller than currently leased resources."));
 			if (!capabilities.IsUnified && capabilities.DedicatedMemoryKnown && requestedBytes > capabilities.DedicatedMemoryBytes - DedicatedReservedBytes)
-				return Result.Failure(Error("rendering.pool.budget_dedicated_limit", "The dedicated GPU budget must leave at least 1 GiB available to the application."));
+				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Error("rendering.pool.budget_dedicated_limit", "The dedicated GPU budget must leave at least 1 GiB available to the application."));
 			if (capabilities.IsUnified && capabilities.SystemMemoryKnown && requestedBytes > capabilities.SystemMemoryBytes * 0.40d)
-				return Result.Failure(Error("rendering.pool.budget_unified_limit", "The unified-memory budget cannot exceed 40 percent of system memory."));
-			return Result.Success();
+				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Error("rendering.pool.budget_unified_limit", "The unified-memory budget cannot exceed 40 percent of system memory."));
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
 		private static Diagnostic Error(string code, string message) => new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "rendering");

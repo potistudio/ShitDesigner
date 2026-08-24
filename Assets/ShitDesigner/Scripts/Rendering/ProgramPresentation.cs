@@ -39,8 +39,8 @@ namespace ShitDesigner.Rendering {
 
 	public interface IProgramDisplayPort {
 		int DisplayCount { get; }
-		Result<ProgramDisplaySelection> Activate(int requestedDisplay);
-		Result Present(RenderTexture surface, ProgramDisplaySelection selection);
+		CSharpFunctionalExtensions.Result<ProgramDisplaySelection, Diagnostic> Activate(int requestedDisplay);
+		CSharpFunctionalExtensions.UnitResult<Diagnostic> Present(RenderTexture surface, ProgramDisplaySelection selection);
 	}
 
 	/// <summary>Unity boundary for selected Display activation and surface presentation.</summary>
@@ -51,24 +51,24 @@ namespace ShitDesigner.Rendering {
 		private bool _disposed;
 		public int DisplayCount => Display.displays == null || Display.displays.Length == 0 ? 1 : Display.displays.Length;
 
-		public Result<ProgramDisplaySelection> Activate(int requestedDisplay) {
+		public CSharpFunctionalExtensions.Result<ProgramDisplaySelection, Diagnostic> Activate(int requestedDisplay) {
 			var selection = ProgramDisplayPolicy.Resolve(requestedDisplay, DisplayCount);
 			if (!selection.UsesProgramMonitor) {
 				try { Display.displays[selection.ResolvedDisplay].Activate(); }
 				catch (Exception exception) {
-					return Result<ProgramDisplaySelection>.Failure(new Diagnostic(new DiagnosticCode("rendering.display.activate_failed"), Severity.Error,
+					return CSharpFunctionalExtensions.Result.Failure<ProgramDisplaySelection, Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.display.activate_failed"), Severity.Error,
 						"The selected Unity Display could not be activated.", exception: DiagnosticExceptionInfo.FromException(exception)));
 				}
 			}
 			var camera = EnsureDisplayCamera(selection.ResolvedDisplay);
-			if (camera.IsFailure) return Result<ProgramDisplaySelection>.Failure(camera.Diagnostic);
-			return Result<ProgramDisplaySelection>.Success(selection);
+			if (camera.IsFailure) return CSharpFunctionalExtensions.Result.Failure<ProgramDisplaySelection, Diagnostic>(camera.Error);
+			return CSharpFunctionalExtensions.Result.Success<ProgramDisplaySelection, Diagnostic>(selection);
 		}
 
-		public Result Present(RenderTexture surface, ProgramDisplaySelection selection) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Present(RenderTexture surface, ProgramDisplaySelection selection) {
 			if (surface == null || !surface.IsCreated())
-				return Result.Failure(new Diagnostic(new DiagnosticCode("rendering.display.surface_invalid"), Severity.Error, "A created Program surface is required."));
-			if (_disposed) return Result.Failure(new Diagnostic(new DiagnosticCode("rendering.display.disposed"), Severity.Error, "The Program display port is disposed."));
+				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.display.surface_invalid"), Severity.Error, "A created Program surface is required."));
+			if (_disposed) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.display.disposed"), Severity.Error, "The Program display port is disposed."));
 			var selected = ProgramDisplayPolicy.Resolve(selection.RequestedDisplay, DisplayCount);
 			var ensured = EnsureDisplayCamera(selected.ResolvedDisplay);
 			if (ensured.IsFailure) return ensured;
@@ -81,19 +81,19 @@ namespace ShitDesigner.Rendering {
 				// end-camera hook below. Calling Camera.Render here would
 				// render a second time in the same frame and would also be
 				// invalid for URP/SRP.
-				return Result.Success();
+				return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 			}
 			catch (Exception exception) {
-				return Result.Failure(new Diagnostic(new DiagnosticCode("rendering.display.present_failed"), Severity.Error,
+				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.display.present_failed"), Severity.Error,
 					"The Program surface could not be presented to the selected Display.", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 		}
 
-		private Result EnsureDisplayCamera(int targetDisplay) {
-			if (targetDisplay < 0 || targetDisplay >= DisplayCount) return Result.Failure(new Diagnostic(new DiagnosticCode("rendering.display.target_invalid"), Severity.Error, "The selected Display is not available."));
+		private CSharpFunctionalExtensions.UnitResult<Diagnostic> EnsureDisplayCamera(int targetDisplay) {
+			if (targetDisplay < 0 || targetDisplay >= DisplayCount) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.display.target_invalid"), Severity.Error, "The selected Display is not available."));
 			if (_displayCamera != null) {
 				_displayCamera.targetDisplay = targetDisplay;
-				return Result.Success();
+				return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 			}
 			try {
 				_displayCameraObject = new GameObject("ShitDesigner.ProgramDisplay");
@@ -109,11 +109,11 @@ namespace ShitDesigner.Rendering {
 				_displayCamera.targetDisplay = targetDisplay;
 				_blit = _displayCameraObject.AddComponent<ProgramDisplayBlitCamera>();
 				_displayCamera.enabled = false;
-				return Result.Success();
+				return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 			}
 			catch (Exception exception) {
 				Dispose();
-				return Result.Failure(new Diagnostic(new DiagnosticCode("rendering.display.camera_create_failed"), Severity.Error, "The Program display camera could not be created.", exception: DiagnosticExceptionInfo.FromException(exception)));
+				return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.display.camera_create_failed"), Severity.Error, "The Program display camera could not be created.", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 		}
 
@@ -168,7 +168,7 @@ namespace ShitDesigner.Rendering {
 			_program = program ?? throw new ArgumentNullException(nameof(program));
 			_displayPort = displayPort ?? throw new ArgumentNullException(nameof(displayPort));
 			var selected = _displayPort.Activate(requestedDisplay);
-			if (selected.IsFailure) throw new InvalidOperationException(selected.Diagnostic.Message);
+			if (selected.IsFailure) throw new InvalidOperationException(selected.Error.Message);
 			Selection = selected.Value;
 		}
 
@@ -180,10 +180,10 @@ namespace ShitDesigner.Rendering {
 			}
 			Selection = next;
 		}
-		public Result<ProgramDisplaySelection> SetRequestedDisplay(int requestedDisplay) {
-			if (requestedDisplay < 0) return Result<ProgramDisplaySelection>.Failure(new Diagnostic(new DiagnosticCode("rendering.display.request_invalid"), Severity.Error, "The requested Display must not be negative."));
+		public CSharpFunctionalExtensions.Result<ProgramDisplaySelection, Diagnostic> SetRequestedDisplay(int requestedDisplay) {
+			if (requestedDisplay < 0) return CSharpFunctionalExtensions.Result.Failure<ProgramDisplaySelection, Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.display.request_invalid"), Severity.Error, "The requested Display must not be negative."));
 			var next = _displayPort == null
-				? Result<ProgramDisplaySelection>.Success(ProgramDisplayPolicy.Resolve(requestedDisplay))
+				? CSharpFunctionalExtensions.Result.Success<ProgramDisplaySelection, Diagnostic>(ProgramDisplayPolicy.Resolve(requestedDisplay))
 				: _displayPort.Activate(requestedDisplay);
 			if (next.IsSuccess) Selection = next.Value;
 			return next;
@@ -191,8 +191,8 @@ namespace ShitDesigner.Rendering {
 		public int DisplayCount => _displayPort?.DisplayCount ?? 1;
 		public void CloseMonitor() => MonitorOpen = false;
 		public void OpenMonitor() => MonitorOpen = true;
-		public Result<ImageFrame> GetPresentedFrame(ulong frameNumber) => _program.GetFrame(frameNumber);
-		public Result Present(RenderTexture surface) => _displayPort == null ? Result.Success() : _displayPort.Present(surface, Selection);
+		public CSharpFunctionalExtensions.Result<ImageFrame, Diagnostic> GetPresentedFrame(ulong frameNumber) => _program.GetFrame(frameNumber);
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Present(RenderTexture surface) => _displayPort == null ? CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>() : _displayPort.Present(surface, Selection);
 		public void Dispose() { if (_displayPort is IDisposable disposable) disposable.Dispose(); }
 	}
 

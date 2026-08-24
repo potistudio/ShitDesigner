@@ -583,8 +583,8 @@ namespace ShitDesigner.Tests.Runtime {
 		private sealed class RecordingPreparation : IRuntimeResourcePreparationWithPlan {
 			public FrameSnapshot Snapshot { get; private set; }
 			public FrameEvaluationContext Evaluation { get; private set; }
-			public Result Prepare(FrameSnapshot snapshot) { Snapshot = snapshot; return Result.Success(); }
-			public Result Prepare(FrameSnapshot snapshot, FrameEvaluationContext evaluation) { Snapshot = snapshot; Evaluation = evaluation; return Result.Success(); }
+			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Prepare(FrameSnapshot snapshot) { Snapshot = snapshot; return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(); }
+			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Prepare(FrameSnapshot snapshot, FrameEvaluationContext evaluation) { Snapshot = snapshot; Evaluation = evaluation; return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(); }
 		}
 
 		private sealed class ManualSource : IMonotonicClock {
@@ -600,7 +600,7 @@ namespace ShitDesigner.Tests.Runtime {
 			private readonly TestNode _node;
 			public NodeTypeId TypeId { get; }
 			public TestFactory(NodeTypeId typeId, TestNode node) { TypeId = typeId; _node = node; }
-			public Result<IRuntimeNode> Create(RuntimeNodeCreateInfo node, ulong generationId) { _node.Generation = generationId; return Result<IRuntimeNode>.Success(_node); }
+			public CSharpFunctionalExtensions.Result<IRuntimeNode, Diagnostic> Create(RuntimeNodeCreateInfo node, ulong generationId) { _node.Generation = generationId; return CSharpFunctionalExtensions.Result.Success<IRuntimeNode, Diagnostic>(_node); }
 		}
 
 		private sealed class TestNode : IRuntimeNode, IRuntimeDemandAwareNode {

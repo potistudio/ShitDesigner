@@ -42,7 +42,7 @@ namespace ShitDesigner.Tests.Media {
 			using (var bridge = new HapUnityGraphicsBridge()) {
 				var api = new PInvokeHapNativeApi(bridge);
 				var opened = api.Open(new VideoPrepareRequest(path, probeResult.Value));
-				Assert.That(opened.IsSuccess, Is.True, opened.IsFailure ? opened.Diagnostic.Message : string.Empty);
+				Assert.That(opened.IsSuccess, Is.True, opened.IsFailure ? opened.Error.Message : string.Empty);
 				try {
 					var first = api.GetBorrowedTexture(opened.Value) as Texture;
 					Assert.That(first, Is.Not.Null);
@@ -92,7 +92,7 @@ namespace ShitDesigner.Tests.Media {
 			var frame = new HapDecodedFrame(1, 1, 0, 0, new byte[] { 128, 40, 128, 128 }, Array.Empty<HapDecodedPlane>());
 			using (var bridge = new HapUnityGraphicsBridge(probe, null, null, null, null)) {
 				var uploaded = bridge.Upload(frame);
-				Assert.That(uploaded.IsSuccess, Is.True, uploaded.IsFailure ? uploaded.Diagnostic.Message : string.Empty);
+				Assert.That(uploaded.IsSuccess, Is.True, uploaded.IsFailure ? uploaded.Error.Message : string.Empty);
 				using (var lease = uploaded.Value) {
 					Assert.That(lease.Path, Is.EqualTo(HapDecodePath.Cpu));
 					Assert.That(lease.Texture.graphicsFormat, Is.EqualTo(GraphicsFormat.R16G16B16A16_SFloat));
@@ -146,7 +146,7 @@ namespace ShitDesigner.Tests.Media {
 
 		private static void AssertFixturePixel(HapUnityGraphicsBridge bridge, HapDecodedFrame expected, int tolerance, string codec = "unknown") {
 			var uploaded = bridge.Upload(expected);
-			Assert.That(uploaded.IsSuccess, Is.True, uploaded.IsFailure ? uploaded.Diagnostic.Message : string.Empty);
+			Assert.That(uploaded.IsSuccess, Is.True, uploaded.IsFailure ? uploaded.Error.Message : string.Empty);
 			using (var lease = uploaded.Value) {
 				RenderTexture.active = lease.Texture;
 				var readback = new Texture2D(1, 1, TextureFormat.RGBA32, false, true);

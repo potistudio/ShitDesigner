@@ -69,9 +69,9 @@ namespace ShitDesigner.Scene {
 		public int AvailableCount => _available.Count;
 		public IReadOnlyCollection<int> AvailableLayers => new ReadOnlyCollection<int>(_available.ToList());
 
-		public Result<SceneLayerLease> Acquire(NodeInstanceId nodeId) => Acquire(nodeId, 1);
+		public CSharpFunctionalExtensions.Result<SceneLayerLease, Diagnostic> Acquire(NodeInstanceId nodeId) => Acquire(nodeId, 1);
 
-		public Result<SceneLayerLease> Acquire(NodeInstanceId nodeId, ulong generationId) {
+		public CSharpFunctionalExtensions.Result<SceneLayerLease, Diagnostic> Acquire(NodeInstanceId nodeId, ulong generationId) {
 			if (nodeId.IsEmpty || generationId == 0) return Failure<SceneLayerLease>("scene.layer.node", "Scene layer owner identity is required.");
 			var key = new OwnerKey(nodeId, generationId);
 			if (_leases.ContainsKey(key)) return Failure<SceneLayerLease>("scene.layer.duplicate", "The node generation already owns a Scene layer.");
@@ -80,15 +80,15 @@ namespace ShitDesigner.Scene {
 			_available.Remove(layer);
 			var lease = new SceneLayerLease(nodeId, generationId, layer, Release);
 			_leases.Add(key, lease);
-			return Result<SceneLayerLease>.Success(lease);
+			return CSharpFunctionalExtensions.Result.Success<SceneLayerLease, Diagnostic>(lease);
 		}
 
 		public bool TryGet(NodeInstanceId nodeId, ulong generationId, out SceneLayerLease lease) => _leases.TryGetValue(new OwnerKey(nodeId, generationId), out lease);
 
-		public Result Release(NodeInstanceId nodeId, ulong generationId) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Release(NodeInstanceId nodeId, ulong generationId) {
 			if (!_leases.TryGetValue(new OwnerKey(nodeId, generationId), out var lease)) return Failure("scene.layer.missing", "Scene layer owner was not found.");
 			lease.Dispose();
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
 		private void Release(SceneLayerLease lease) {
@@ -101,8 +101,8 @@ namespace ShitDesigner.Scene {
 			}
 		}
 
-		private static Result<T> Failure<T>(string code, string message) => Result<T>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "scene"));
-		private static Result Failure(string code, string message) => Result.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "scene"));
+		private static CSharpFunctionalExtensions.Result<T, Diagnostic> Failure<T>(string code, string message) => CSharpFunctionalExtensions.Result.Failure<T, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "scene"));
+		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "scene"));
 	}
 
 	public sealed class SceneCreateRequest {
@@ -151,15 +151,15 @@ namespace ShitDesigner.Scene {
 	/// <summary>Rendering is kept outside Scene. Bootstrap may provide a URP
 	/// StandardRequest implementation, while tests can use a recording source.</summary>
 	public interface ISceneRenderSource {
-		Result<SceneRenderResult> Render(SceneRenderRequest request);
+		CSharpFunctionalExtensions.Result<SceneRenderResult, Diagnostic> Render(SceneRenderRequest request);
 	}
 
 	public interface IScenePhysicsStepper {
-		Result Simulate(SceneNodeRuntime node, float stepSeconds);
+		CSharpFunctionalExtensions.UnitResult<Diagnostic> Simulate(SceneNodeRuntime node, float stepSeconds);
 	}
 
 	public sealed class DefaultScenePhysicsStepper : IScenePhysicsStepper {
-		public Result Simulate(SceneNodeRuntime node, float stepSeconds) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Simulate(SceneNodeRuntime node, float stepSeconds) {
 			if (node == null) return Failure("scene.physics.node", "Scene node is required.");
 			if (stepSeconds <= 0f || float.IsNaN(stepSeconds) || float.IsInfinity(stepSeconds)) return Failure("scene.physics.step", "Physics step must be positive and finite.");
 			if (!node.IsLoaded) return Failure("scene.physics.unloaded", "Scene is not loaded.");
@@ -171,10 +171,10 @@ namespace ShitDesigner.Scene {
 				if (!node.PhysicsScene2D.IsValid()) return Failure("scene.physics.invalid", "Local 2D physics scene is invalid.");
 				node.PhysicsScene2D.Simulate(stepSeconds);
 			}
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
-		private static Result Failure(string code, string message) => Result.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "scene"));
+		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "scene"));
 	}
 
 	public sealed class SceneNodeRuntime : IDisposable {
@@ -204,20 +204,20 @@ namespace ShitDesigner.Scene {
 			State = SceneLifecycleState.Preparing;
 		}
 
-		public Result<SceneRenderResult> Render(object outputTarget, int width, int height, ulong frameNumber) {
+		public CSharpFunctionalExtensions.Result<SceneRenderResult, Diagnostic> Render(object outputTarget, int width, int height, ulong frameNumber) {
 			if (State != SceneLifecycleState.Ready) return Failure<SceneRenderResult>("scene.render.state", "Scene node is not ready for rendering.");
 			return _owner.Render(this, outputTarget, width, height, frameNumber);
 		}
 
-		public Result SimulatePhysics(float stepSeconds) => _owner.SimulatePhysics(this, stepSeconds);
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> SimulatePhysics(float stepSeconds) => _owner.SimulatePhysics(this, stepSeconds);
 
 		/// <summary>Advances local physics in the same fixed-step cadence as
 		/// GraphClock. At most four steps are consumed per evaluation frame;
 		/// remaining time stays queued for the next frame.</summary>
-		public Result<int> AdvancePhysics(double deltaSeconds) {
+		public CSharpFunctionalExtensions.Result<int, Diagnostic> AdvancePhysics(double deltaSeconds) {
 			if (double.IsNaN(deltaSeconds) || double.IsInfinity(deltaSeconds) || deltaSeconds < 0d)
-				return Result<int>.Failure(new Diagnostic(new DiagnosticCode("scene.physics.delta"), Severity.Error, "Physics delta must be finite and non-negative.", module: "scene"));
-			if (State != SceneLifecycleState.Ready) return Result<int>.Failure(new Diagnostic(new DiagnosticCode("scene.physics.state"), Severity.Error, "Scene node is not ready for physics.", module: "scene"));
+				return CSharpFunctionalExtensions.Result.Failure<int, Diagnostic>(new Diagnostic(new DiagnosticCode("scene.physics.delta"), Severity.Error, "Physics delta must be finite and non-negative.", module: "scene"));
+			if (State != SceneLifecycleState.Ready) return CSharpFunctionalExtensions.Result.Failure<int, Diagnostic>(new Diagnostic(new DiagnosticCode("scene.physics.state"), Severity.Error, "Scene node is not ready for physics.", module: "scene"));
 			_physicsAccumulator += deltaSeconds;
 			var steps = 0;
 			// The public cadence is exactly 1/60 s, but FixedStepSeconds is a
@@ -231,12 +231,12 @@ namespace ShitDesigner.Scene {
 			const double stepTolerance = 1e-8d;
 			while (_physicsAccumulator + stepTolerance >= SceneIsolationManager.FixedStepSeconds && steps < 4) {
 				var simulated = SimulatePhysics(SceneIsolationManager.FixedStepSeconds);
-				if (simulated.IsFailure) return Result<int>.Failure(simulated.Diagnostic);
+				if (simulated.IsFailure) return CSharpFunctionalExtensions.Result.Failure<int, Diagnostic>(simulated.Error);
 				_physicsAccumulator -= SceneIsolationManager.FixedStepSeconds;
 				if (_physicsAccumulator < 0d && _physicsAccumulator > -stepTolerance) _physicsAccumulator = 0d;
 				steps++;
 			}
-			return Result<int>.Success(steps);
+			return CSharpFunctionalExtensions.Result.Success<int, Diagnostic>(steps);
 		}
 
 		public void Dispose() {
@@ -245,7 +245,7 @@ namespace ShitDesigner.Scene {
 			_owner.Retire(this);
 		}
 
-		private static Result<T> Failure<T>(string code, string message) => Result<T>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, nodeId: default(NodeInstanceId), module: "scene"));
+		private static CSharpFunctionalExtensions.Result<T, Diagnostic> Failure<T>(string code, string message) => CSharpFunctionalExtensions.Result.Failure<T, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, nodeId: default(NodeInstanceId), module: "scene"));
 	}
 
 	/// <summary>Owns Additive Scene, root, camera and layer for every Scene
@@ -270,13 +270,13 @@ namespace ShitDesigner.Scene {
 			_physicsStepper = physicsStepper ?? new DefaultScenePhysicsStepper();
 		}
 
-		public Result<SceneNodeRuntime> Create(SceneCreateRequest request) {
+		public CSharpFunctionalExtensions.Result<SceneNodeRuntime, Diagnostic> Create(SceneCreateRequest request) {
 			if (_disposed) return Failure<SceneNodeRuntime>("scene.lifecycle.disposed", "Scene isolation manager is disposed.");
 			if (request == null) return Failure<SceneNodeRuntime>("scene.create.request", "Scene create request is required.");
 			if (_nodes.Count >= MaxSceneNodes) return Failure<SceneNodeRuntime>("scene.node.limit", "At most 24 Scene nodes may exist.");
 			if (_nodes.ContainsKey(request.NodeId)) return Failure<SceneNodeRuntime>("scene.node.duplicate", "A Scene node with this ID already exists.");
 			var layer = _layers.Acquire(request.NodeId, request.GenerationId);
-			if (layer.IsFailure) return Result<SceneNodeRuntime>.Failure(layer.Diagnostic);
+			if (layer.IsFailure) return CSharpFunctionalExtensions.Result.Failure<SceneNodeRuntime, Diagnostic>(layer.Error);
 
 			SceneNodeRuntime runtime = null;
 			UnityEngine.SceneManagement.Scene createdScene = default(UnityEngine.SceneManagement.Scene);
@@ -290,9 +290,9 @@ namespace ShitDesigner.Scene {
 					root.name = "NodeRoot";
 					SceneManager.MoveGameObjectToScene(root, createdScene);
 					var assigned = AssignLayerRecursively(root, layer.Value.Layer);
-					if (assigned.IsFailure) throw new InvalidOperationException(assigned.Diagnostic.Message);
+					if (assigned.IsFailure) throw new InvalidOperationException(assigned.Error.Message);
 					var valid = ValidatePrefab(root, request.Kind, layer.Value.Layer);
-					if (valid.IsFailure) throw new InvalidOperationException(valid.Diagnostic.Message);
+					if (valid.IsFailure) throw new InvalidOperationException(valid.Error.Message);
 					camera = root.GetComponentsInChildren<Camera>(true)[0];
 					ConfigureRuntimeCamera(camera);
 				}
@@ -314,7 +314,7 @@ namespace ShitDesigner.Scene {
 				}
 				runtime = new SceneNodeRuntime(this, request, layer.Value) { Scene = createdScene, Root = root, Camera = camera, State = SceneLifecycleState.Ready };
 				_nodes.Add(request.NodeId, runtime);
-				return Result<SceneNodeRuntime>.Success(runtime);
+				return CSharpFunctionalExtensions.Result.Success<SceneNodeRuntime, Diagnostic>(runtime);
 			}
 			catch (Exception exception) {
 				if (createdScene.IsValid() && createdScene.isLoaded) {
@@ -323,11 +323,11 @@ namespace ShitDesigner.Scene {
 					else layer.Value.Dispose();
 				}
 				else layer.Value.Dispose();
-				return Result<SceneNodeRuntime>.Failure(new Diagnostic(new DiagnosticCode("scene.create.failed"), Severity.Error, exception.Message, nodeId: request.NodeId, exception: DiagnosticExceptionInfo.FromException(exception), module: "scene"));
+				return CSharpFunctionalExtensions.Result.Failure<SceneNodeRuntime, Diagnostic>(new Diagnostic(new DiagnosticCode("scene.create.failed"), Severity.Error, exception.Message, nodeId: request.NodeId, exception: DiagnosticExceptionInfo.FromException(exception), module: "scene"));
 			}
 		}
 
-		internal Result<SceneRenderResult> Render(SceneNodeRuntime node, object outputTarget, int width, int height, ulong frameNumber) {
+		internal CSharpFunctionalExtensions.Result<SceneRenderResult, Diagnostic> Render(SceneNodeRuntime node, object outputTarget, int width, int height, ulong frameNumber) {
 			if (_renderSource == null) return Failure<SceneRenderResult>("scene.render.source", "A Scene render source was not configured.");
 			var request = new SceneRenderRequest(node.NodeId, node.Kind, node.Camera, node.Layer, outputTarget, width, height, frameNumber, node.GenerationId);
 			return _renderSource.Render(request);
@@ -355,21 +355,21 @@ namespace ShitDesigner.Scene {
 			camera.overrideSceneCullingMask = ulong.MaxValue;
 		}
 
-		internal Result SimulatePhysics(SceneNodeRuntime node, float stepSeconds) => _physicsStepper.Simulate(node, stepSeconds);
+		internal CSharpFunctionalExtensions.UnitResult<Diagnostic> SimulatePhysics(SceneNodeRuntime node, float stepSeconds) => _physicsStepper.Simulate(node, stepSeconds);
 
 		/// <summary>Applies a borrowed layer to an entire prefab hierarchy and
 		/// keeps camera/light/renderer culling scoped to that layer.</summary>
-		public static Result AssignLayerRecursively(GameObject root, int layer) {
+		public static CSharpFunctionalExtensions.UnitResult<Diagnostic> AssignLayerRecursively(GameObject root, int layer) {
 			if (root == null) return Failure("scene.layer.root", "A Scene hierarchy root is required.");
 			if (layer < SceneLayerPool.FirstReservedLayer || layer > SceneLayerPool.LastReservedLayer)
 				return Failure("scene.layer.range", "Only reserved Scene layers 8..31 may be assigned.");
 			foreach (var transform in root.GetComponentsInChildren<Transform>(true)) transform.gameObject.layer = layer;
 			foreach (var camera in root.GetComponentsInChildren<Camera>(true)) camera.cullingMask = 1 << layer;
 			foreach (var light in root.GetComponentsInChildren<Light>(true)) light.cullingMask = 1 << layer;
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
-		public static Result ValidatePrefab(GameObject root, SceneNodeKind kind, int layer, Camera expectedCamera = null) {
+		public static CSharpFunctionalExtensions.UnitResult<Diagnostic> ValidatePrefab(GameObject root, SceneNodeKind kind, int layer, Camera expectedCamera = null) {
 			if (root == null) return Failure("scene.prefab.root", "A Scene prefab root is required.");
 			if (layer < SceneLayerPool.FirstReservedLayer || layer > SceneLayerPool.LastReservedLayer)
 				return Failure("scene.layer.range", "Only reserved Scene layers 8..31 may be validated.");
@@ -400,7 +400,7 @@ namespace ShitDesigner.Scene {
 				if (canvas.renderMode == RenderMode.ScreenSpaceCamera && canvas.worldCamera != cameras[0])
 					return Failure("scene.prefab.canvas_camera", "Screen Space - Camera Canvas must use the Scene camera.");
 			}
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
 		internal void Retire(SceneNodeRuntime node) {
@@ -437,7 +437,7 @@ namespace ShitDesigner.Scene {
 			_nodes.Clear();
 		}
 
-		private static Result<T> Failure<T>(string code, string message) => Result<T>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "scene"));
-		private static Result Failure(string code, string message) => Result.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "scene"));
+		private static CSharpFunctionalExtensions.Result<T, Diagnostic> Failure<T>(string code, string message) => CSharpFunctionalExtensions.Result.Failure<T, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "scene"));
+		private static CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "scene"));
 	}
 }

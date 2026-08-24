@@ -67,7 +67,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 				var target = NewTexture(16, 16);
 				try {
 					var first = node.Render(source, target, 1, .25d, false);
-					Assert.That(first.IsSuccess, Is.True, first.IsFailure ? first.Diagnostic.Message : string.Empty);
+					Assert.That(first.IsSuccess, Is.True, first.IsFailure ? first.Error.Message : string.Empty);
 					Assert.That(node.LastPassCount, Is.EqualTo(2));
 					Assert.That(node.ActiveTemporaryLeaseCount, Is.EqualTo(0));
 					Assert.That(node.LastExecutedPassIndices, Is.EqualTo(new[] { 0, 1 }));
@@ -129,7 +129,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 				var target = NewTexture(16, 16);
 				try {
 					var result = node.Render(source, target, 1);
-					Assert.That(result.IsSuccess, Is.True, result.IsFailure ? result.Diagnostic.Message : string.Empty);
+					Assert.That(result.IsSuccess, Is.True, result.IsFailure ? result.Error.Message : string.Empty);
 					Assert.That(node.LastPassCount, Is.EqualTo(4));
 					Assert.That(node.LastTemporaryLeaseCount, Is.EqualTo(3));
 					Assert.That(node.ActiveTemporaryLeaseCount, Is.EqualTo(0));

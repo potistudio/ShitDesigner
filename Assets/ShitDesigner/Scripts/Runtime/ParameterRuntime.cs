@@ -256,8 +256,8 @@ namespace ShitDesigner.Runtime {
 			return new ParameterCommitResult(changed, stagedControls, diagnostics, firedTriggers, eventResults);
 		}
 
-		public Result EvaluateEffective(GraphState graph, ProjectDocument document, IRuntimeDiagnosticSink diagnostics = null) {
-			if (graph == null || document == null) return Result.Failure(Failure("runtime.parameter.invalid", "Graph and document are required."));
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> EvaluateEffective(GraphState graph, ProjectDocument document, IRuntimeDiagnosticSink diagnostics = null) {
+			if (graph == null || document == null) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(Failure("runtime.parameter.invalid", "Graph and document are required."));
 			Synchronize(graph, document);
 			var computed = new Dictionary<ParameterKey, ParameterValue>();
 			foreach (var node in graph.Nodes) {
@@ -275,12 +275,12 @@ namespace ShitDesigner.Runtime {
 							}
 						}
 						else {
-							diagnostics?.Report(evaluated.Diagnostic);
+							diagnostics?.Report(evaluated.Error);
 						}
 					}
 					var hard = parameter.Definition.Clamp(value);
 					if (hard.IsFailure) {
-						diagnostics?.Report(hard.Diagnostic);
+						diagnostics?.Report(hard.Error);
 						value = parameter.BaseValue;
 					}
 					else value = hard.Value;
@@ -289,7 +289,7 @@ namespace ShitDesigner.Runtime {
 			}
 			_effective.Clear(); foreach (var pair in computed) _effective[pair.Key] = pair.Value;
 			PublishEffectiveSnapshot();
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
 		private void PublishEffectiveSnapshot() {
@@ -341,7 +341,7 @@ namespace ShitDesigner.Runtime {
 			var parameter = node?.FindParameter(item.ParameterId);
 			if (node == null || parameter == null) { diagnostics.Add(Failure("runtime.parameter.target_missing", "Base value target does not exist.", item.NodeId, item.ParameterId)); return; }
 			var clamped = parameter.Definition.Clamp(item.Value);
-			if (clamped.IsFailure) { diagnostics.Add(clamped.Diagnostic); return; }
+			if (clamped.IsFailure) { diagnostics.Add(clamped.Error); return; }
 			staged[new ParameterKey(item.NodeId, item.ParameterId)] = clamped.Value;
 		}
 
@@ -389,23 +389,23 @@ namespace ShitDesigner.Runtime {
 					return;
 				}
 				var value = parameter.Definition.Clamp(entry.Value);
-				if (value.IsFailure) { diagnostics.Add(value.Diagnostic); return; }
+				if (value.IsFailure) { diagnostics.Add(value.Error); return; }
 				replacements.Add(new KeyValuePair<ParameterKey, ParameterValue>(new ParameterKey(entry.NodeId, entry.ParameterId), value.Value));
 			}
 			foreach (var replacement in replacements) staged[replacement.Key] = replacement.Value;
 		}
 
-		private Result<ParameterValue> EvaluateExpression(LogicalExpressionNode node, ParameterKey key, ParameterValue baseValue, GraphState graph, ProjectDocument document) {
+		private CSharpFunctionalExtensions.Result<ParameterValue, Diagnostic> EvaluateExpression(LogicalExpressionNode node, ParameterKey key, ParameterValue baseValue, GraphState graph, ProjectDocument document) {
 			var control = node as LogicalControlLeaf;
 			if (control != null) {
-				if (!_controls.TryGetValue(control.ControlId, out var normalized)) return Result<ParameterValue>.Failure(Failure("runtime.expression.control_missing", "Expression control value is unavailable."));
+				if (!_controls.TryGetValue(control.ControlId, out var normalized)) return CSharpFunctionalExtensions.Result.Failure<ParameterValue, Diagnostic>(Failure("runtime.expression.control_missing", "Expression control value is unavailable."));
 				var record = document.FindLogicalControl(control.ControlId);
 				var target = record?.Targets.FirstOrDefault(x => x.NodeId == key.NodeId && x.ParameterId == key.ParameterId && !x.IsBroken);
-				return target == null ? Result<ParameterValue>.Failure(Failure("runtime.expression.target_missing", "Expression target mapping is unavailable.")) : target.Map(normalized);
+				return target == null ? CSharpFunctionalExtensions.Result.Failure<ParameterValue, Diagnostic>(Failure("runtime.expression.target_missing", "Expression target mapping is unavailable.")) : target.Map(normalized);
 			}
-			if (node is BaseValueLeaf) return Result<ParameterValue>.Success(baseValue);
+			if (node is BaseValueLeaf) return CSharpFunctionalExtensions.Result.Success<ParameterValue, Diagnostic>(baseValue);
 			var binary = node as BinaryLogicalExpression;
-			if (binary == null || binary.Left == null || binary.Right == null) return Result<ParameterValue>.Failure(Failure("runtime.expression.invalid", "Expression is incomplete."));
+			if (binary == null || binary.Left == null || binary.Right == null) return CSharpFunctionalExtensions.Result.Failure<ParameterValue, Diagnostic>(Failure("runtime.expression.invalid", "Expression is incomplete."));
 			var left = EvaluateExpression(binary.Left, key, baseValue, graph, document); if (left.IsFailure) return left;
 			var right = EvaluateExpression(binary.Right, key, baseValue, graph, document); if (right.IsFailure) return right;
 			return binary.Operator == LogicalOperator.Min ? ParameterValue.Min(left.Value, right.Value) : ParameterValue.Max(left.Value, right.Value);

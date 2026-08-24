@@ -294,7 +294,7 @@ namespace ShitDesigner.Tests.Media {
 			var unsupported = new HapVideoBackend(new NodeInstanceId("44444444-4444-4444-8444-444444444444"), 1, new HapNativeDecoder(new UnsupportedHapNativeApi()));
 			var result = unsupported.Prepare(request);
 			Assert.That(result.IsFailure, Is.True);
-			Assert.That(result.Diagnostic.Code.Value, Is.EqualTo("media.hap.platform_unsupported"));
+			Assert.That(result.Error.Code.Value, Is.EqualTo("media.hap.platform_unsupported"));
 			unsupported.Dispose();
 		}
 
@@ -589,7 +589,7 @@ namespace ShitDesigner.Tests.Media {
 		private sealed class FakeMetadataProbe : IVideoMetadataProbe {
 			private readonly VideoProbeResult _result;
 			public FakeMetadataProbe(VideoProbeResult result) { _result = result; }
-			public Result<VideoProbeResult> Probe(string absolutePath) => Result<VideoProbeResult>.Success(_result);
+			public CSharpFunctionalExtensions.Result<VideoProbeResult, Diagnostic> Probe(string absolutePath) => CSharpFunctionalExtensions.Result.Success<VideoProbeResult, Diagnostic>(_result);
 		}
 
 		private static string FixtureRoot() {
@@ -631,20 +631,20 @@ namespace ShitDesigner.Tests.Media {
 #pragma warning restore 0649
 
 		private sealed class SwitchingResolver : IVideoPrepareResolver {
-			public Result<VideoPrepareRequest> Resolve(MediaAssetId mediaAssetId) {
+			public CSharpFunctionalExtensions.Result<VideoPrepareRequest, Diagnostic> Resolve(MediaAssetId mediaAssetId) {
 				var codec = mediaAssetId == HapAsset ? VideoCodec.HapM : VideoCodec.H264;
 				var container = mediaAssetId == HapAsset ? VideoContainer.Mov : VideoContainer.Mp4;
-				return Result<VideoPrepareRequest>.Success(new VideoPrepareRequest(VideoSource.FromFile(System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), mediaAssetId == HapAsset ? "hap.mov" : "clip.mp4")), VideoProbeResult.SupportedVideo(container, codec, durationSeconds: 10d)));
+				return CSharpFunctionalExtensions.Result.Success<VideoPrepareRequest, Diagnostic>(new VideoPrepareRequest(VideoSource.FromFile(System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), mediaAssetId == HapAsset ? "hap.mov" : "clip.mp4")), VideoProbeResult.SupportedVideo(container, codec, durationSeconds: 10d)));
 			}
 		}
 
 		private sealed class RecordingFactory : IVideoBackendFactory {
 			private readonly List<RecordingBackend> _created;
 			public RecordingFactory(List<RecordingBackend> created) { _created = created; }
-			public Result<IVideoBackendHandle> Create(NodeInstanceId nodeId, ulong generationId, VideoBackendKind kind) {
+			public CSharpFunctionalExtensions.Result<IVideoBackendHandle, Diagnostic> Create(NodeInstanceId nodeId, ulong generationId, VideoBackendKind kind) {
 				var backend = new RecordingBackend(nodeId, generationId, kind);
 				_created.Add(backend);
-				return Result<IVideoBackendHandle>.Success(backend);
+				return CSharpFunctionalExtensions.Result.Success<IVideoBackendHandle, Diagnostic>(backend);
 			}
 		}
 
@@ -652,14 +652,14 @@ namespace ShitDesigner.Tests.Media {
 			public bool IsSupportedPlatform => true;
 			public int Opened { get; private set; }
 			public int Closed { get; private set; }
-			public Result<IntPtr> Open(VideoPrepareRequest request) { Opened++; return Result<IntPtr>.Success(new IntPtr(42)); }
-			public Result Play(IntPtr handle) => Result.Success();
-			public Result Pause(IntPtr handle) => Result.Success();
-			public Result Stop(IntPtr handle) => Result.Success();
-			public Result SetSpeed(IntPtr handle, double speed) => Result.Success();
-			public Result SetLoop(IntPtr handle, bool loop) => Result.Success();
-			public Result Seek(IntPtr handle, double seconds) => Result.Success();
-			public Result SyncToGraphClock(IntPtr handle, double logicalSeconds, bool demanded) => Result.Success();
+			public CSharpFunctionalExtensions.Result<IntPtr, Diagnostic> Open(VideoPrepareRequest request) { Opened++; return CSharpFunctionalExtensions.Result.Success<IntPtr, Diagnostic>(new IntPtr(42)); }
+			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Play(IntPtr handle) => CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Pause(IntPtr handle) => CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Stop(IntPtr handle) => CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			public CSharpFunctionalExtensions.UnitResult<Diagnostic> SetSpeed(IntPtr handle, double speed) => CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			public CSharpFunctionalExtensions.UnitResult<Diagnostic> SetLoop(IntPtr handle, bool loop) => CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Seek(IntPtr handle, double seconds) => CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
+			public CSharpFunctionalExtensions.UnitResult<Diagnostic> SyncToGraphClock(IntPtr handle, double logicalSeconds, bool demanded) => CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 			public object GetBorrowedTexture(IntPtr handle) => null;
 			public void Close(IntPtr handle) { Closed++; }
 		}
@@ -668,17 +668,17 @@ namespace ShitDesigner.Tests.Media {
 			public List<string> Calls { get; } = new List<string>();
 			public RecordingBackend(NodeInstanceId nodeId, ulong generationId, VideoBackendKind kind = VideoBackendKind.UnityVideoBackend) : base(nodeId, generationId, kind) { }
 			public override object BorrowedTexture => new object();
-			public override Result Prepare(VideoPrepareRequest request) { Calls.Add("prepare"); State = VideoBackendState.Ready; Emit(VideoCompletionKind.Prepared); return Result.Success(); }
-			public override Result Play() { Calls.Add("play"); State = VideoBackendState.Playing; return Result.Success(); }
-			public override Result Pause() { Calls.Add("pause"); State = VideoBackendState.Paused; return Result.Success(); }
-			public override Result Stop() { Calls.Add("stop"); State = VideoBackendState.Ready; return Result.Success(); }
-			public override Result SetSpeed(double speed) { Calls.Add("speed"); return Result.Success(); }
-			public override Result SetLoop(bool loop) { Calls.Add("loop"); return Result.Success(); }
-			public override Result Seek(double seconds) { Calls.Add("seek"); State = VideoBackendState.Ready; Emit(VideoCompletionKind.SeekStarted, seconds); Emit(VideoCompletionKind.SeekCompleted, seconds); return Result.Success(); }
-			public override Result SyncToGraphClock(double logicalSeconds, bool demanded) {
+			public override CSharpFunctionalExtensions.UnitResult<Diagnostic> Prepare(VideoPrepareRequest request) { Calls.Add("prepare"); State = VideoBackendState.Ready; Emit(VideoCompletionKind.Prepared); return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(); }
+			public override CSharpFunctionalExtensions.UnitResult<Diagnostic> Play() { Calls.Add("play"); State = VideoBackendState.Playing; return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(); }
+			public override CSharpFunctionalExtensions.UnitResult<Diagnostic> Pause() { Calls.Add("pause"); State = VideoBackendState.Paused; return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(); }
+			public override CSharpFunctionalExtensions.UnitResult<Diagnostic> Stop() { Calls.Add("stop"); State = VideoBackendState.Ready; return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(); }
+			public override CSharpFunctionalExtensions.UnitResult<Diagnostic> SetSpeed(double speed) { Calls.Add("speed"); return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(); }
+			public override CSharpFunctionalExtensions.UnitResult<Diagnostic> SetLoop(bool loop) { Calls.Add("loop"); return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(); }
+			public override CSharpFunctionalExtensions.UnitResult<Diagnostic> Seek(double seconds) { Calls.Add("seek"); State = VideoBackendState.Ready; Emit(VideoCompletionKind.SeekStarted, seconds); Emit(VideoCompletionKind.SeekCompleted, seconds); return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(); }
+			public override CSharpFunctionalExtensions.UnitResult<Diagnostic> SyncToGraphClock(double logicalSeconds, bool demanded) {
 				Calls.Add("sync:" + demanded.ToString().ToLowerInvariant());
 				if (!demanded && State == VideoBackendState.Playing) { Calls.Add("pause"); State = VideoBackendState.Paused; }
-				return Result.Success();
+				return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 			}
 			public void Emit(VideoCompletionKind kind, double time = 0d) => base.Emit(kind, time);
 			public void ClearCalls() => Calls.Clear();
@@ -689,28 +689,28 @@ namespace ShitDesigner.Tests.Media {
 			public List<string> Calls { get; } = new List<string>();
 			public DeferredPrepareBackend(NodeInstanceId nodeId, ulong generationId) : base(nodeId, generationId, VideoBackendKind.UnityVideoBackend) { }
 			public override object BorrowedTexture => new object();
-			public override Result Prepare(VideoPrepareRequest request) { Calls.Add("prepare"); State = VideoBackendState.Preparing; return Result.Success(); }
-			public override Result Play() { Calls.Add("play"); State = VideoBackendState.Playing; return Result.Success(); }
-			public override Result Pause() { Calls.Add("pause"); State = VideoBackendState.Paused; return Result.Success(); }
-			public override Result Stop() { Calls.Add("stop"); State = VideoBackendState.Ready; return Result.Success(); }
-			public override Result SetSpeed(double speed) { Calls.Add("speed"); return Result.Success(); }
-			public override Result SetLoop(bool loop) { Calls.Add("loop"); return Result.Success(); }
-			public override Result Seek(double seconds) { Calls.Add("seek"); State = VideoBackendState.Ready; Emit(VideoCompletionKind.SeekStarted, seconds); Emit(VideoCompletionKind.SeekCompleted, seconds); return Result.Success(); }
-			public override Result SyncToGraphClock(double logicalSeconds, bool demanded) { Calls.Add("sync:" + demanded.ToString().ToLowerInvariant()); return Result.Success(); }
+			public override CSharpFunctionalExtensions.UnitResult<Diagnostic> Prepare(VideoPrepareRequest request) { Calls.Add("prepare"); State = VideoBackendState.Preparing; return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(); }
+			public override CSharpFunctionalExtensions.UnitResult<Diagnostic> Play() { Calls.Add("play"); State = VideoBackendState.Playing; return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(); }
+			public override CSharpFunctionalExtensions.UnitResult<Diagnostic> Pause() { Calls.Add("pause"); State = VideoBackendState.Paused; return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(); }
+			public override CSharpFunctionalExtensions.UnitResult<Diagnostic> Stop() { Calls.Add("stop"); State = VideoBackendState.Ready; return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(); }
+			public override CSharpFunctionalExtensions.UnitResult<Diagnostic> SetSpeed(double speed) { Calls.Add("speed"); return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(); }
+			public override CSharpFunctionalExtensions.UnitResult<Diagnostic> SetLoop(bool loop) { Calls.Add("loop"); return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(); }
+			public override CSharpFunctionalExtensions.UnitResult<Diagnostic> Seek(double seconds) { Calls.Add("seek"); State = VideoBackendState.Ready; Emit(VideoCompletionKind.SeekStarted, seconds); Emit(VideoCompletionKind.SeekCompleted, seconds); return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(); }
+			public override CSharpFunctionalExtensions.UnitResult<Diagnostic> SyncToGraphClock(double logicalSeconds, bool demanded) { Calls.Add("sync:" + demanded.ToString().ToLowerInvariant()); return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>(); }
 			public void CompletePrepare() { State = VideoBackendState.Ready; Emit(VideoCompletionKind.Prepared); }
 			public void ClearCalls() => Calls.Clear();
 			protected override void DisposeCore() { }
 		}
 
 		private sealed class TestPrepareResolver : IVideoPrepareResolver {
-			public Result<VideoPrepareRequest> Resolve(MediaAssetId mediaAssetId) => Result<VideoPrepareRequest>.Success(
+			public CSharpFunctionalExtensions.Result<VideoPrepareRequest, Diagnostic> Resolve(MediaAssetId mediaAssetId) => CSharpFunctionalExtensions.Result.Success<VideoPrepareRequest, Diagnostic>(
 				new VideoPrepareRequest(VideoSource.FromFile(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "fixture.mp4")),
 					VideoProbeResult.SupportedVideo(VideoContainer.Mp4, VideoCodec.H264, durationSeconds: 10d)));
 		}
 
 		private sealed class TestVideoFrameAdapter : IVideoFrameAdapter {
-			public Result<IRuntimeImageFrame> Create(object borrowedTexture, int width, int height, ulong frameNumber, ulong leaseId)
-				=> Result<IRuntimeImageFrame>.Success(new TestVideoFrame(width, height, frameNumber, leaseId));
+			public CSharpFunctionalExtensions.Result<IRuntimeImageFrame, Diagnostic> Create(object borrowedTexture, int width, int height, ulong frameNumber, ulong leaseId)
+				=> CSharpFunctionalExtensions.Result.Success<IRuntimeImageFrame, Diagnostic>(new TestVideoFrame(width, height, frameNumber, leaseId));
 		}
 
 		private sealed class TestVideoFrame : IRuntimeImageFrame {
@@ -729,8 +729,8 @@ namespace ShitDesigner.Tests.Media {
 		private sealed class TestOutputSurfacePort : IRuntimeOutputSurfacePort {
 			private readonly IRuntimeOutputSurface _surface;
 			public TestOutputSurfacePort(NodeInstanceId nodeId, PortId portId) { _surface = new TestOutputSurface(nodeId, portId); }
-			public Result<IRuntimeOutputSurface> TryGetPrepared(NodeInstanceId nodeId, PortId portId, int width, int height, ulong frameNumber)
-				=> Result<IRuntimeOutputSurface>.Success(_surface);
+			public CSharpFunctionalExtensions.Result<IRuntimeOutputSurface, Diagnostic> TryGetPrepared(NodeInstanceId nodeId, PortId portId, int width, int height, ulong frameNumber)
+				=> CSharpFunctionalExtensions.Result.Success<IRuntimeOutputSurface, Diagnostic>(_surface);
 		}
 
 		private sealed class TestOutputSurface : IRuntimeOutputSurface {

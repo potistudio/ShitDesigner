@@ -63,10 +63,10 @@ namespace ShitDesigner.Persistence.Tests {
 			var document = new ProjectDocument("Canonical");
 			document.BeginSave();
 			var snapshot = document.TryCreateSaveSnapshot();
-			Assert.That(snapshot.IsSuccess, Is.True, snapshot.Diagnostic?.Message);
+			Assert.That(snapshot.IsSuccess, Is.True, snapshot.Error?.Message);
 			var json = ProjectSerializer.Serialize(snapshot.Value);
 
-			Assert.That(json.IsSuccess, Is.True, json.Diagnostic?.Message);
+			Assert.That(json.IsSuccess, Is.True, json.Error?.Message);
 			Assert.That(json.Value[0], Is.EqualTo('{'));
 			Assert.That(json.Value.EndsWith("\n", StringComparison.Ordinal), Is.True);
 			// NUnit's ContainsConstraint treats the BOM as an empty string on
@@ -91,15 +91,15 @@ namespace ShitDesigner.Persistence.Tests {
 			var document = new ProjectDocument("Preview tab order", ui: new ProjectUiStateRecord(previewNodeIds: new[] { second, first }));
 			document.BeginSave();
 			var snapshot = document.TryCreateSaveSnapshot();
-			Assert.That(snapshot.IsSuccess, Is.True, snapshot.Diagnostic?.Message);
+			Assert.That(snapshot.IsSuccess, Is.True, snapshot.Error?.Message);
 
 			var json = ProjectSerializer.Serialize(snapshot.Value);
-			Assert.That(json.IsSuccess, Is.True, json.Diagnostic?.Message);
+			Assert.That(json.IsSuccess, Is.True, json.Error?.Message);
 			Assert.That(json.Value.IndexOf(second, StringComparison.Ordinal), Is.LessThan(json.Value.IndexOf(first, StringComparison.Ordinal)),
 				"Preview tab assignment and order are Project UI State, not a dictionary-like canonical collection.");
 
 			var readback = ProjectSerializer.Deserialize(json.Value);
-			Assert.That(readback.IsSuccess, Is.True, readback.Diagnostic?.Message);
+			Assert.That(readback.IsSuccess, Is.True, readback.Error?.Message);
 			Assert.That(readback.Value.Ui.PreviewNodeIds, Is.EqualTo(new[] { second, first }));
 		}
 
@@ -114,14 +114,14 @@ namespace ShitDesigner.Persistence.Tests {
 				ports: new[] { new PortSnapshotRecord(new PortId("image"), PortDirection.Input, PortType.ImageFrame, true) },
 				systemOwned: false, userAddable: true);
 			var created = ProjectDocumentFactory.TryCreate("Preview persistence", 1, new[] { preview }, Enumerable.Empty<ConnectionRecord>(), Enumerable.Empty<LogicalControlRecord>(), Enumerable.Empty<ParameterExpressionRecord>(), Enumerable.Empty<PresetRecord>(), Enumerable.Empty<MediaAssetRecord>());
-			Assert.That(created.IsSuccess, Is.True, created.Diagnostic?.Message);
+			Assert.That(created.IsSuccess, Is.True, created.Error?.Message);
 			var fileSystem = new FakeFileSystem();
 			Assert.That(new ProjectSaver().Save(created.Value, "source", fileSystem).IsSuccess, Is.True);
 			var sourceBytes = fileSystem.ReadAllBytes("source/project.json");
 
 			var loaded = new ProjectLoader().Load("source", fileSystem);
 
-			Assert.That(loaded.IsSuccess, Is.True, loaded.Diagnostic?.Message);
+			Assert.That(loaded.IsSuccess, Is.True, loaded.Error?.Message);
 			var reloadedPreview = loaded.Value.Document.FindNode(id);
 			Assert.That(reloadedPreview.DisplayName, Is.EqualTo("Acceptance Preview 1"));
 			Assert.That(reloadedPreview.FindParameter(new ParameterId("display.mode")).BaseValue.AsString(), Is.EqualTo("fill"));
@@ -137,7 +137,7 @@ namespace ShitDesigner.Persistence.Tests {
 			var node = new NodeRecord(NodeInstanceId.New(), new NodeTypeId("shitdesigner.video.player"), 1, "Video", true, new ProjectPosition(0, 0),
 				parameters: new[] { new ParameterRecord(definition, definition.DefaultValue) }, rawState: "{}");
 			var created = ProjectDocumentFactory.CreateNew("Float maximum");
-			Assert.That(created.IsSuccess, Is.True, created.Diagnostic?.Message);
+			Assert.That(created.IsSuccess, Is.True, created.Error?.Message);
 			var document = created.Value;
 			Assert.That(new ProjectCommandProcessor(document).AddNode(node).IsSuccess, Is.True);
 			var fileSystem = new FakeFileSystem();
@@ -147,7 +147,7 @@ namespace ShitDesigner.Persistence.Tests {
 
 			var loaded = new ProjectLoader().Load("source", fileSystem);
 
-			Assert.That(loaded.IsSuccess, Is.True, loaded.Diagnostic?.Message);
+			Assert.That(loaded.IsSuccess, Is.True, loaded.Error?.Message);
 			Assert.That(new ProjectSaver().Save(loaded.Value.Document, "resaved", fileSystem).IsSuccess, Is.True);
 			Assert.That(fileSystem.ReadAllBytes("resaved/project.json"), Is.EqualTo(sourceBytes));
 		}
@@ -162,13 +162,13 @@ namespace ShitDesigner.Persistence.Tests {
 			Assert.That(new ProjectCommandProcessor(document).AddNode(node).IsSuccess, Is.True);
 			var fileSystem = new FakeFileSystem();
 			var saved = new ProjectSaver().Save(document, "root", fileSystem);
-			Assert.That(saved.IsSuccess, Is.True, saved.Diagnostic?.Message);
+			Assert.That(saved.IsSuccess, Is.True, saved.Error?.Message);
 			Assert.That(fileSystem.Exists("root/project.json.tmp"), Is.False, "A successfully read-back manifest must be atomically promoted from tmp.");
 			var json = Encoding.UTF8.GetString(fileSystem.ReadAllBytes("root/project.json"));
 			Assert.That(json, Does.Contain("\"type\":\"MediaAssetReference\",\"value\":null"));
 
 			var readback = ProjectSerializer.Deserialize(Encoding.UTF8.GetBytes(json));
-			Assert.That(readback.IsSuccess, Is.True, readback.Diagnostic?.Message);
+			Assert.That(readback.IsSuccess, Is.True, readback.Error?.Message);
 			Assert.That(readback.Value.Nodes.Single().Parameters.Single().BaseValue.Type, Is.EqualTo(ParameterType.MediaAssetReference.ToString()));
 			Assert.That(readback.Value.Nodes.Single().Parameters.Single().BaseValue.TextValue, Is.Null);
 			Assert.That(ProjectSerializer.Deserialize(json.Replace(",\"value\":null", string.Empty)).IsFailure, Is.True, "MediaAssetReference must still require an explicit value property.");
@@ -177,7 +177,7 @@ namespace ShitDesigner.Persistence.Tests {
 			var selectedAsset = MediaAssetId.New();
 			var selectedJson = SerializeSingleParameter(ParameterType.MediaAssetReference, ParameterValue.FromMediaAsset(selectedAsset));
 			var selectedReadback = ProjectSerializer.Deserialize(selectedJson);
-			Assert.That(selectedReadback.IsSuccess, Is.True, selectedReadback.Diagnostic?.Message);
+			Assert.That(selectedReadback.IsSuccess, Is.True, selectedReadback.Error?.Message);
 			Assert.That(selectedReadback.Value.Nodes.Single().Parameters.Single().BaseValue.TextValue, Is.EqualTo(selectedAsset.Value));
 			Assert.That(ProjectSerializer.Deserialize(selectedJson.Replace(selectedAsset.Value, "not-a-uuid")).IsFailure, Is.True, "Selected media values must remain UUID v4 IDs.");
 
@@ -231,7 +231,7 @@ namespace ShitDesigner.Persistence.Tests {
 			var json = ProjectSerializer.Serialize(snapshot.Value);
 			var dto = ProjectSerializer.Deserialize(json.Value);
 
-			Assert.That(dto.IsSuccess, Is.True, dto.Diagnostic?.Message);
+			Assert.That(dto.IsSuccess, Is.True, dto.Error?.Message);
 			Assert.That(json.Value, Does.Contain("\"nodeTypeId\":\"" + original.Value + "\""));
 			Assert.That(json.Value, Does.Contain("\"schemaVersion\":7"));
 			Assert.That(json.Value, Does.Contain("\"state\":{" + "\"z\":1, \"a\": [true]" + "}"));
@@ -243,21 +243,21 @@ namespace ShitDesigner.Persistence.Tests {
 			var fs = new FakeFileSystem();
 			fs.WriteAllBytes("root/project.json", Encoding.UTF8.GetBytes(json.Value));
 			var unknownLoad = new ProjectLoader().Load("root", fs, catalog: new TestNodeCatalog());
-			Assert.That(unknownLoad.IsSuccess, Is.True, unknownLoad.Diagnostic?.Message);
+			Assert.That(unknownLoad.IsSuccess, Is.True, unknownLoad.Error?.Message);
 			Assert.That(unknownLoad.Value.Document.Nodes[0].IsUnknown, Is.True);
 			Assert.That(unknownLoad.Value.Document.Nodes[0].Unknown.OriginalNodeTypeId, Is.EqualTo(original));
 			Assert.That(unknownLoad.Value.Document.Nodes[0].Unknown.OriginalSchemaVersion, Is.EqualTo(7));
 			Assert.That(unknownLoad.Value.Document.Nodes[0].Unknown.RawJsonValue, Is.EqualTo(unknown.RawJsonValue));
 
 			var restored = new ProjectLoader().Load("root", fs, catalog: new TestNodeCatalog(original, 7));
-			Assert.That(restored.IsSuccess, Is.True, restored.Diagnostic?.Message);
+			Assert.That(restored.IsSuccess, Is.True, restored.Error?.Message);
 			Assert.That(restored.Value.Document.Nodes[0].IsUnknown, Is.False);
 			Assert.That(restored.Value.Document.Nodes[0].TypeId, Is.EqualTo(original));
 
 			var migration = new NodeMigrationRegistry();
 			Assert.That(migration.Register(new TestNodeMigrator(original, 7, "{\"migrated\":true}")).IsSuccess, Is.True);
 			var migrated = new ProjectLoader().Load("root", fs, catalog: new TestNodeCatalog(original, 8), migrations: migration);
-			Assert.That(migrated.IsSuccess, Is.True, migrated.Diagnostic?.Message);
+			Assert.That(migrated.IsSuccess, Is.True, migrated.Error?.Message);
 			Assert.That(migrated.Value.Document.Nodes[0].IsUnknown, Is.False);
 			Assert.That(migrated.Value.Document.Nodes[0].SchemaVersion, Is.EqualTo(8));
 			Assert.That(migrated.Value.Document.Nodes[0].RawState, Is.EqualTo("{\"migrated\":true}"));
@@ -274,8 +274,8 @@ namespace ShitDesigner.Persistence.Tests {
 			Assert.That(result.IsFailure, Is.True);
 			Assert.That(document.SavedToken, Is.EqualTo(before));
 			Assert.That(fs.Exists("root/project.json"), Is.False);
-			Assert.That(result.Diagnostic.Message, Does.Contain("stage 'tmp.write'"));
-			Assert.That(result.Diagnostic.Message, Does.Contain("project.json.tmp"));
+			Assert.That(result.Error.Message, Does.Contain("stage 'tmp.write'"));
+			Assert.That(result.Error.Message, Does.Contain("project.json.tmp"));
 		}
 
 		[Test]
@@ -285,8 +285,8 @@ namespace ShitDesigner.Persistence.Tests {
 			var result = new ProjectSaver().Save(new ProjectDocument("NoAtomicPort"), "root", fs);
 
 			Assert.That(result.IsFailure, Is.True);
-			Assert.That(result.Diagnostic.Message, Does.Contain("stage 'manifest.adapter'"));
-			Assert.That(result.Diagnostic.Message, Does.Contain("project.json"));
+			Assert.That(result.Error.Message, Does.Contain("stage 'manifest.adapter'"));
+			Assert.That(result.Error.Message, Does.Contain("project.json"));
 			Assert.That(fs.Exists("root/project.json"), Is.False);
 		}
 
@@ -328,7 +328,7 @@ namespace ShitDesigner.Persistence.Tests {
 			var document = new ProjectDocument("SaveEdit");
 			var result = new ProjectSaver().Save(document, "root", fs, () => Assert.That(new ProjectCommandProcessor(document).AddLogicalControl(new LogicalControlRecord(LogicalControlId.New(), "Edited", LogicalControlKind.Value)).IsSuccess, Is.True));
 
-			Assert.That(result.IsSuccess, Is.True, result.Diagnostic?.Message);
+			Assert.That(result.IsSuccess, Is.True, result.Error?.Message);
 			Assert.That(document.IsDirty, Is.True);
 		}
 
@@ -340,7 +340,7 @@ namespace ShitDesigner.Persistence.Tests {
 			fs.WriteAllBytes("root/project.json.bak", Encoding.UTF8.GetBytes(EmptyManifest("Recovered")));
 			var result = new ProjectLoader().Load("root", fs, new ProjectDocument("Current"));
 
-			Assert.That(result.IsSuccess, Is.True, result.Diagnostic?.Message);
+			Assert.That(result.IsSuccess, Is.True, result.Error?.Message);
 			Assert.That(result.Value.IsRecovered, Is.True);
 			Assert.That(result.Value.Document.IsDirty, Is.True);
 		}
@@ -367,7 +367,7 @@ namespace ShitDesigner.Persistence.Tests {
 			var fs = new FakeFileSystem { EscapeMediaPath = true };
 			fs.WriteAllBytes("root/project.json", Encoding.UTF8.GetBytes(MediaManifest("Outside", id, Array.Empty<byte>())));
 			var result = new ProjectLoader().Load("root", fs, new ProjectDocument("Current"));
-			Assert.That(result.IsSuccess, Is.True, result.Diagnostic?.Message);
+			Assert.That(result.IsSuccess, Is.True, result.Error?.Message);
 			Assert.That(result.Value.Diagnostics.Any(x => x.Code.Value == "persistence.media_outside_project"), Is.True);
 		}
 
@@ -381,7 +381,7 @@ namespace ShitDesigner.Persistence.Tests {
 			fs.WriteAllBytes("root/Assets/" + id.Value + "/source.png", payload);
 			fs.MarkReparse("root/Assets/" + id.Value);
 			var result = new ProjectLoader().Load("root", fs, new ProjectDocument("Current"));
-			Assert.That(result.IsSuccess, Is.True, result.Diagnostic?.Message);
+			Assert.That(result.IsSuccess, Is.True, result.Error?.Message);
 			Assert.That(result.Value.Diagnostics.Any(x => x.Code.Value == "persistence.media_reparse_point"), Is.True);
 		}
 
@@ -412,20 +412,20 @@ namespace ShitDesigner.Persistence.Tests {
 			var target = new LogicalControlTargetRecord(nodeId, parameterId, ParameterType.Float, ParameterValue.FromFloat(-1), ParameterValue.FromFloat(1));
 			Assert.That(new ProjectCommandProcessor(document).AddLogicalControl(new LogicalControlRecord(controlId, "Input", LogicalControlKind.Value, targets: new[] { target })).IsSuccess, Is.True);
 			var expressionResult = new ProjectCommandProcessor(document).AddExpression(new ParameterExpressionRecord(nodeId, parameterId, new LogicalControlLeaf(controlId), new ParameterRange(ParameterValue.FromFloat(-1), ParameterValue.FromFloat(1))));
-			Assert.That(expressionResult.IsSuccess, Is.True, expressionResult.Diagnostic?.Message);
+			Assert.That(expressionResult.IsSuccess, Is.True, expressionResult.Error?.Message);
 			document.BeginSave();
 			var snapshot = document.TryCreateSaveSnapshot();
 			var canonical = ProjectSerializer.Serialize(snapshot.Value);
-			Assert.That(canonical.IsSuccess, Is.True, canonical.Diagnostic?.Message);
+			Assert.That(canonical.IsSuccess, Is.True, canonical.Error?.Message);
 			Assert.That(canonical.Value.IndexOf("\"expressions\"", StringComparison.Ordinal), Is.EqualTo(-1));
 			var parsed = ProjectSerializer.Deserialize(canonical.Value);
-			Assert.That(parsed.IsSuccess, Is.True, parsed.Diagnostic?.Message);
+			Assert.That(parsed.IsSuccess, Is.True, parsed.Error?.Message);
 			Assert.That(parsed.Value.Nodes[0].Parameters[0].Expression.Kind, Is.EqualTo("Control"));
 			Assert.That(parsed.Value.Nodes[0].Parameters[0].OutputMinimum.FloatValue, Is.EqualTo(-1));
 			var fs = new FakeFileSystem();
 			fs.WriteAllBytes("root/project.json", Encoding.UTF8.GetBytes(canonical.Value));
 			var loaded = new ProjectLoader().Load("root", fs);
-			Assert.That(loaded.IsSuccess, Is.True, loaded.Diagnostic?.Message);
+			Assert.That(loaded.IsSuccess, Is.True, loaded.Error?.Message);
 			Assert.That(loaded.Value.Document.FindExpression(nodeId, parameterId), Is.Not.Null);
 		}
 
@@ -476,8 +476,8 @@ namespace ShitDesigner.Persistence.Tests {
 			Assert.That(result.IsFailure, Is.True);
 			Assert.That(document.SavedToken, Is.EqualTo(before));
 			Assert.That(fs.Exists("root/project.json"), Is.False);
-			Assert.That(result.Diagnostic.Message, Does.Contain("stage 'tmp.flush'"));
-			Assert.That(result.Diagnostic.Message, Does.Contain("project.json.tmp"));
+			Assert.That(result.Error.Message, Does.Contain("stage 'tmp.flush'"));
+			Assert.That(result.Error.Message, Does.Contain("project.json.tmp"));
 		}
 
 		[Test]
@@ -490,8 +490,8 @@ namespace ShitDesigner.Persistence.Tests {
 			Assert.That(result.IsFailure, Is.True);
 			Assert.That(document.SavedToken, Is.EqualTo(before));
 			Assert.That(fs.Exists("root/project.json"), Is.False);
-			Assert.That(result.Diagnostic.Message, Does.Contain("stage 'tmp.readback'"));
-			Assert.That(result.Diagnostic.Message, Does.Contain("project.json.tmp"));
+			Assert.That(result.Error.Message, Does.Contain("stage 'tmp.readback'"));
+			Assert.That(result.Error.Message, Does.Contain("project.json.tmp"));
 		}
 
 		[Test]
@@ -506,8 +506,8 @@ namespace ShitDesigner.Persistence.Tests {
 			Assert.That(result.IsFailure, Is.True);
 			Assert.That(document.SavedToken, Is.EqualTo(before));
 			Assert.That(fs.ReadAllBytes("root/project.json"), Is.EqualTo(original));
-			Assert.That(result.Diagnostic.Message, Does.Contain("stage 'manifest.replace'"));
-			Assert.That(result.Diagnostic.Message, Does.Contain("project.json"));
+			Assert.That(result.Error.Message, Does.Contain("stage 'manifest.replace'"));
+			Assert.That(result.Error.Message, Does.Contain("project.json"));
 		}
 
 		[Test]
@@ -528,7 +528,7 @@ namespace ShitDesigner.Persistence.Tests {
 
 			var result = ProjectMigrationBackup.Write(fs, "root", Encoding.UTF8.GetBytes(EmptyManifest("Current")), 1);
 
-			Assert.That(result.IsSuccess, Is.True, result.Diagnostic?.Message);
+			Assert.That(result.IsSuccess, Is.True, result.Error?.Message);
 			var backups = fs.EnumerateFiles("root/Backups")
 				.Where(x => Path.GetFileName(x).StartsWith("pre-migration-", StringComparison.Ordinal))
 				.OrderBy(x => x, StringComparer.Ordinal)
@@ -552,7 +552,7 @@ namespace ShitDesigner.Persistence.Tests {
 			Assert.That(result.IsFailure, Is.True);
 			Assert.That(fs.ReadAllBytes("root/project.json"), Is.EqualTo(original));
 			Assert.That(document.SavedToken, Is.EqualTo(before));
-			Assert.That(result.Diagnostic.Message, Does.Contain("stage 'tmp.flush'"));
+			Assert.That(result.Error.Message, Does.Contain("stage 'tmp.flush'"));
 		}
 
 		[Test]
@@ -587,7 +587,7 @@ namespace ShitDesigner.Persistence.Tests {
 			var fs = new FakeFileSystem();
 			fs.WriteAllBytes("source.png", Encoding.UTF8.GetBytes("asset"));
 			var result = MediaAssetStore.Import("source.png", "root", fs, "asset");
-			Assert.That(result.IsSuccess, Is.True, result.Diagnostic?.Message);
+			Assert.That(result.IsSuccess, Is.True, result.Error?.Message);
 			var finalPath = "root/" + result.Value.Asset.RelativePath.Replace('/', Path.DirectorySeparatorChar);
 			Assert.That(fs.Exists(finalPath), Is.True);
 			Assert.That(fs.EnumerateFiles("root/Assets").Any(x => x.EndsWith(".importing", StringComparison.Ordinal)), Is.False);
@@ -601,7 +601,7 @@ namespace ShitDesigner.Persistence.Tests {
 
 			var result = MediaAssetStore.Import("source.png", "root", fs, "asset");
 
-			Assert.That(result.IsSuccess, Is.True, result.Diagnostic?.Message);
+			Assert.That(result.IsSuccess, Is.True, result.Error?.Message);
 			Assert.That(fs.Operations.Any(x => x.StartsWith("flush:root/Assets/", StringComparison.Ordinal) && x.EndsWith(".importing", StringComparison.Ordinal)), Is.True);
 			Assert.That(fs.Operations.Any(x => x.StartsWith("move:root/Assets/", StringComparison.Ordinal)), Is.True);
 		}
@@ -625,9 +625,9 @@ namespace ShitDesigner.Persistence.Tests {
 			Assert.That(new ProjectCommandProcessor(document).AddNode(node).IsSuccess, Is.True);
 			document.BeginSave();
 			var snapshot = document.TryCreateSaveSnapshot();
-			Assert.That(snapshot.IsSuccess, Is.True, snapshot.Diagnostic?.Message);
+			Assert.That(snapshot.IsSuccess, Is.True, snapshot.Error?.Message);
 			var json = ProjectSerializer.Serialize(snapshot.Value);
-			Assert.That(json.IsSuccess, Is.True, json.Diagnostic?.Message);
+			Assert.That(json.IsSuccess, Is.True, json.Error?.Message);
 			return json.Value;
 		}
 		private static string MediaManifest(string name, MediaAssetId id, byte[] payload) {
@@ -640,7 +640,7 @@ namespace ShitDesigner.Persistence.Tests {
 			public int FromVersion { get; }
 			public int ToVersion => FromVersion + 1;
 			public TestNodeMigrator(NodeTypeId nodeTypeId, int fromVersion, string result) { NodeTypeId = nodeTypeId; FromVersion = fromVersion; _result = result; }
-			public Result<string> Migrate(string rawJson) => Result<string>.Success(_result);
+			public CSharpFunctionalExtensions.Result<string, Diagnostic> Migrate(string rawJson) => CSharpFunctionalExtensions.Result.Success<string, Diagnostic>(_result);
 		}
 
 		private static byte[] CreateOfficialXxh3SanityFixture(int length) {
@@ -672,7 +672,7 @@ namespace ShitDesigner.Persistence.Tests {
 			public int FromVersion { get; }
 			public int ToVersion => FromVersion + 1;
 			public TestProjectMigrator(int fromVersion, int toVersion) { FromVersion = fromVersion; }
-			public Result<ProjectDocumentDto> Migrate(ProjectDocumentDto sourceCopy) { sourceCopy.ProjectFormatVersion = ToVersion; sourceCopy.ProjectName += "-migrated"; return Result<ProjectDocumentDto>.Success(sourceCopy); }
+			public CSharpFunctionalExtensions.Result<ProjectDocumentDto, Diagnostic> Migrate(ProjectDocumentDto sourceCopy) { sourceCopy.ProjectFormatVersion = ToVersion; sourceCopy.ProjectName += "-migrated"; return CSharpFunctionalExtensions.Result.Success<ProjectDocumentDto, Diagnostic>(sourceCopy); }
 		}
 
 		private sealed class TestNodeCatalog : INodeSchemaCatalog {
@@ -688,7 +688,7 @@ namespace ShitDesigner.Persistence.Tests {
 		}
 
 		private sealed class RejectingProbe : IMediaAssetProbe {
-			public Result Probe(Stream stagedStream, string extension) => Result.Failure(new Diagnostic(new DiagnosticCode("test.probe.rejected"), Severity.Error, "rejected"));
+			public CSharpFunctionalExtensions.UnitResult<Diagnostic> Probe(Stream stagedStream, string extension) => CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("test.probe.rejected"), Severity.Error, "rejected"));
 		}
 
 		private sealed class NonAtomicFileSystem : IProjectFileSystem {

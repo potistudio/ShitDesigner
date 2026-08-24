@@ -71,15 +71,15 @@ namespace ShitDesigner.Bootstrap {
 	/// only meaningful transitions.</summary>
 	public sealed class CapabilitySupervisor {
 		public const double DefaultProbeIntervalSeconds = 1d;
-		private readonly Func<Result<CapabilityStatus>> _midiProbe;
-		private readonly Func<Result<CapabilityStatus>> _displayProbe;
+		private readonly Func<CSharpFunctionalExtensions.Result<CapabilityStatus, Diagnostic>> _midiProbe;
+		private readonly Func<CSharpFunctionalExtensions.Result<CapabilityStatus, Diagnostic>> _displayProbe;
 		private readonly double _probeIntervalSeconds;
 		private double _nextProbeTime = double.NegativeInfinity;
 
 		public HandshakeReport CurrentReport { get; private set; }
 		public event Action<HandshakeReport> Changed;
 
-		public CapabilitySupervisor(Func<Result<CapabilityStatus>> midiProbe, Func<Result<CapabilityStatus>> displayProbe,
+		public CapabilitySupervisor(Func<CSharpFunctionalExtensions.Result<CapabilityStatus, Diagnostic>> midiProbe, Func<CSharpFunctionalExtensions.Result<CapabilityStatus, Diagnostic>> displayProbe,
 			double probeIntervalSeconds = DefaultProbeIntervalSeconds) {
 			_midiProbe = midiProbe ?? throw new ArgumentNullException(nameof(midiProbe));
 			_displayProbe = displayProbe ?? throw new ArgumentNullException(nameof(displayProbe));
@@ -88,9 +88,9 @@ namespace ShitDesigner.Bootstrap {
 			_probeIntervalSeconds = probeIntervalSeconds;
 		}
 
-		public Result<HandshakeReport> Handshake() {
+		public CSharpFunctionalExtensions.Result<HandshakeReport, Diagnostic> Handshake() {
 			_nextProbeTime = double.NegativeInfinity;
-			return Result<HandshakeReport>.Success(ProbeAndPublish());
+			return CSharpFunctionalExtensions.Result.Success<HandshakeReport, Diagnostic>(ProbeAndPublish());
 		}
 
 		public void Tick(double monotonicTime) {
@@ -107,11 +107,11 @@ namespace ShitDesigner.Bootstrap {
 			return report;
 		}
 
-		private static CapabilityStatus Probe(Func<Result<CapabilityStatus>> probe, string name) {
+		private static CapabilityStatus Probe(Func<CSharpFunctionalExtensions.Result<CapabilityStatus, Diagnostic>> probe, string name) {
 			try {
 				var result = probe();
 				if (result.IsSuccess && result.Value != null) return result.Value;
-				return CapabilityStatus.Unavailable(name, result.Diagnostic ?? ProbeFailure(name, null));
+				return CapabilityStatus.Unavailable(name, result.Error ?? ProbeFailure(name, null));
 			}
 			catch (Exception exception) { return CapabilityStatus.Unavailable(name, ProbeFailure(name, exception)); }
 		}
@@ -140,7 +140,7 @@ namespace ShitDesigner.Bootstrap {
 		public HandshakeReport HandshakeReport { get; private set; }
 		public IReadOnlyList<Diagnostic> ShutdownDiagnostics => _shutdownDiagnostics;
 
-		public Result Run(Func<Result> preflight, Func<Result> compose, Func<Result<HandshakeReport>> handshake, Func<Result> activate) {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Run(Func<CSharpFunctionalExtensions.UnitResult<Diagnostic>> preflight, Func<CSharpFunctionalExtensions.UnitResult<Diagnostic>> compose, Func<CSharpFunctionalExtensions.Result<HandshakeReport, Diagnostic>> handshake, Func<CSharpFunctionalExtensions.UnitResult<Diagnostic>> activate) {
 			if (State != SystemState.Cold && State != SystemState.Offline)
 				return Failure("bootstrap.startup.state", "Production startup can only begin from Cold or Offline.");
 
@@ -153,12 +153,12 @@ namespace ShitDesigner.Bootstrap {
 			result = Execute(SystemState.Composing, compose);
 			if (result.IsFailure) return result;
 			var handshakeResult = ExecuteHandshake(handshake);
-			if (handshakeResult.IsFailure) return Result.Failure(handshakeResult.Diagnostic);
+			if (handshakeResult.IsFailure) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(handshakeResult.Error);
 			HandshakeReport = handshakeResult.Value;
 			result = Execute(SystemState.Activating, activate);
 			if (result.IsFailure) return result;
 			State = HandshakeReport.IsDegraded ? SystemState.Degraded : SystemState.Online;
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
 		public void RegisterShutdown(ShutdownStage stage, Action action) {
@@ -181,12 +181,12 @@ namespace ShitDesigner.Bootstrap {
 			State = SystemState.Offline;
 		}
 
-		private Result Execute(SystemState state, Func<Result> phase) {
+		private CSharpFunctionalExtensions.UnitResult<Diagnostic> Execute(SystemState state, Func<CSharpFunctionalExtensions.UnitResult<Diagnostic>> phase) {
 			State = state;
 			if (phase == null) return Fail(new Diagnostic(new DiagnosticCode("bootstrap.startup.phase_missing"), Severity.Error, state + " phase is missing.", module: "bootstrap"));
 			try {
 				var result = phase();
-				return result.IsFailure ? Fail(result.Diagnostic) : result;
+				return result.IsFailure ? Fail(result.Error) : result;
 			}
 			catch (Exception exception) {
 				return Fail(new Diagnostic(new DiagnosticCode("bootstrap.startup.phase_failed"), Severity.Error,
@@ -194,13 +194,13 @@ namespace ShitDesigner.Bootstrap {
 			}
 		}
 
-		private Result<HandshakeReport> ExecuteHandshake(Func<Result<HandshakeReport>> phase) {
+		private CSharpFunctionalExtensions.Result<HandshakeReport, Diagnostic> ExecuteHandshake(Func<CSharpFunctionalExtensions.Result<HandshakeReport, Diagnostic>> phase) {
 			State = SystemState.Handshaking;
 			if (phase == null)
 				return FailHandshake(new Diagnostic(new DiagnosticCode("bootstrap.startup.phase_missing"), Severity.Error, "Handshaking phase is missing.", module: "bootstrap"));
 			try {
 				var result = phase();
-				return result.IsFailure ? FailHandshake(result.Diagnostic) : result;
+				return result.IsFailure ? FailHandshake(result.Error) : result;
 			}
 			catch (Exception exception) {
 				return FailHandshake(new Diagnostic(new DiagnosticCode("bootstrap.startup.phase_failed"), Severity.Error,
@@ -228,18 +228,18 @@ namespace ShitDesigner.Bootstrap {
 			}
 		}
 
-		private Result Fail(Diagnostic diagnostic) {
+		private CSharpFunctionalExtensions.UnitResult<Diagnostic> Fail(Diagnostic diagnostic) {
 			var startupDiagnostic = diagnostic ?? new Diagnostic(new DiagnosticCode("bootstrap.startup.unknown_failure"), Severity.Error, "Startup failed without a diagnostic.", module: "bootstrap");
 			LastDiagnostic = startupDiagnostic;
 			ReleaseOwned();
 			LastDiagnostic = startupDiagnostic;
 			State = SystemState.Faulted;
-			return Result.Failure(startupDiagnostic);
+			return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(startupDiagnostic);
 		}
 
-		private Result<HandshakeReport> FailHandshake(Diagnostic diagnostic) {
+		private CSharpFunctionalExtensions.Result<HandshakeReport, Diagnostic> FailHandshake(Diagnostic diagnostic) {
 			var failed = Fail(diagnostic);
-			return Result<HandshakeReport>.Failure(failed.Diagnostic);
+			return CSharpFunctionalExtensions.Result.Failure<HandshakeReport, Diagnostic>(failed.Error);
 		}
 
 		private List<Action> Actions(ShutdownStage stage) {
@@ -257,7 +257,7 @@ namespace ShitDesigner.Bootstrap {
 			_teardown.Clear();
 		}
 
-		private Result Failure(string code, string message) => Fail(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap"));
+		private CSharpFunctionalExtensions.UnitResult<Diagnostic> Failure(string code, string message) => Fail(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap"));
 	}
 
 	internal sealed class WindowLifecycle {
@@ -267,12 +267,12 @@ namespace ShitDesigner.Bootstrap {
 			_adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
 		}
 
-		public Result Activate() {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Activate() {
 			ConfigureFramePacing();
-			if (!_adapter.IsSupported || _adapter.IsFullscreen) return Result.Success();
+			if (!_adapter.IsSupported || _adapter.IsFullscreen) return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 			_adapter.SetWindowedSize(new WindowSize(WindowConstraints.InitialWidth, WindowConstraints.InitialHeight));
 			EnforceMinimumSize();
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
 		public void Tick() => EnforceMinimumSize();
@@ -310,7 +310,7 @@ namespace ShitDesigner.Bootstrap {
 		public PresentationRoot Root => _root;
 		public PanelSettings RuntimePanelSettings { get; private set; }
 
-		public Result Compose() {
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Compose() {
 			if (_root == null) _root = _owner.GetComponent<PresentationRoot>();
 			if (_root == null) _root = _owner.AddComponent<PresentationRoot>();
 			var document = _root.GetComponent<UIDocument>();
@@ -321,13 +321,13 @@ namespace ShitDesigner.Bootstrap {
 			RuntimePanelSettings.hideFlags = HideFlags.DontSave;
 			document.panelSettings = RuntimePanelSettings;
 			_root.ConfigureDocument(document);
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
-		public Result Activate(PresentationCoordinator coordinator) {
-			if (_root == null) return Result.Failure(new Diagnostic(new DiagnosticCode("bootstrap.presentation.root_missing"), Severity.Error, "PresentationRoot was not composed.", module: "bootstrap"));
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> Activate(PresentationCoordinator coordinator) {
+			if (_root == null) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.presentation.root_missing"), Severity.Error, "PresentationRoot was not composed.", module: "bootstrap"));
 			_root.Configure(coordinator ?? throw new ArgumentNullException(nameof(coordinator)));
-			return Result.Success();
+			return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 		}
 
 		public void Dispose() {

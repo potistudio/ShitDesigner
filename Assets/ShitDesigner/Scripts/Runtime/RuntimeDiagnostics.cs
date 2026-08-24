@@ -214,11 +214,11 @@ namespace ShitDesigner.Runtime {
 			}
 		}
 
-		public Result ResolveFault(Diagnostic diagnostic, ulong frameNumber, double graphClockTime) {
-			if (diagnostic == null) return Result.Failure(new Diagnostic(new DiagnosticCode("runtime.diagnostic.invalid"), Severity.Error, "Diagnostic is required."));
+		public CSharpFunctionalExtensions.UnitResult<Diagnostic> ResolveFault(Diagnostic diagnostic, ulong frameNumber, double graphClockTime) {
+			if (diagnostic == null) return CSharpFunctionalExtensions.UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("runtime.diagnostic.invalid"), Severity.Error, "Diagnostic is required."));
 			var key = FaultKey(diagnostic);
 			lock (_gate) {
-				if (!_faults.TryGetValue(key, out var tracker)) return Result.Success();
+				if (!_faults.TryGetValue(key, out var tracker)) return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 				_faults.Remove(key); ClearConditions(tracker.FirstDiagnostic);
 				var original = tracker.FirstDiagnostic;
 				var recovery = new Diagnostic(new DiagnosticCode("runtime.fault.recovered"), Severity.Info, "Runtime fault recovered.", original.ScopeId ?? ScopeId, original.NodeId, original.NodeTypeId, original.GenerationId, original.PortId, original.ParameterId, new DiagnosticDetail(new[]
@@ -229,7 +229,7 @@ namespace ShitDesigner.Runtime {
 					new KeyValuePair<string, string>("last_frame", tracker.LastFrame.ToString())
 				}), (long)frameNumber, graphClockTime, "runtime");
 				AddHistory(recovery, 1, frameNumber, frameNumber);
-				return Result.Success();
+				return CSharpFunctionalExtensions.UnitResult.Success<Diagnostic>();
 			}
 		}
 
