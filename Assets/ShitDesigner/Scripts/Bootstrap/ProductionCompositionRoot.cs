@@ -105,6 +105,7 @@ namespace ShitDesigner.Bootstrap
         private readonly ShaderMaterialRegistry _shaders;
         private readonly IVideoBackendFactory _videoBackends;
         private readonly IVideoPrepareResolver _videoResolver;
+        private readonly IAssetFlashPrepareResolver _assetFlashResolver;
         private readonly IVideoFrameAdapter _videoFrameAdapter;
         private readonly IVideoGraphicsCapabilities _videoGraphics;
         private readonly RenderTexturePool _pool;
@@ -122,6 +123,7 @@ namespace ShitDesigner.Bootstrap
             ShaderMaterialRegistry shaders,
             IVideoBackendFactory videoBackends,
             IVideoPrepareResolver videoResolver,
+            IAssetFlashPrepareResolver assetFlashResolver,
             IVideoFrameAdapter videoFrameAdapter,
             IVideoGraphicsCapabilities videoGraphics,
             RenderTexturePool pool,
@@ -135,6 +137,7 @@ namespace ShitDesigner.Bootstrap
             _shaders = shaders;
             _videoBackends = videoBackends;
             _videoResolver = videoResolver;
+            _assetFlashResolver = assetFlashResolver;
             _videoFrameAdapter = videoFrameAdapter;
             _videoGraphics = videoGraphics;
             _pool = pool;
@@ -173,8 +176,8 @@ namespace ShitDesigner.Bootstrap
                 || !_shaders.TryGet("builtin.shader.effect", out _)
                 || !_shaders.TryGet("builtin.shader.blend2", out _))
                 return Failure("bootstrap.binding.shader_missing", "All three builtin shader/material bindings are required.");
-            if (_videoBackends == null || _videoFrameAdapter == null || _videoResolver == null)
-                return Failure("bootstrap.binding.video_missing", "Unity/Hap backend, verified media resolver, and frame adapter are required.");
+            if (_videoBackends == null || _videoFrameAdapter == null || _videoResolver == null || _assetFlashResolver == null)
+                return Failure("bootstrap.binding.video_missing", "Unity/Hap backend, verified video/flash media resolvers, and frame adapter are required.");
 
             SceneIsolationManager scenes;
             try { scenes = _sceneManagerFactory(); }
@@ -211,6 +214,7 @@ namespace ShitDesigner.Bootstrap
                     bindings.Add(new ShaderVisualNodeBinding(new NodeTypeId("shitdesigner.shader.blend2"), "builtin.shader.blend2", _shaders, blend: true));
                 }
                 bindings.Add(new VideoPlayerVisualNodeBinding(_videoBackends, _videoFrameAdapter, _videoResolver, _videoGraphics));
+                bindings.Add(new AssetFlashVisualNodeBinding(_assetFlashResolver, _videoBackends, _videoFrameAdapter, _videoGraphics));
                 var feedback = new FeedbackVisualNodeBinding(_pool, sessionId, _formatPolicy);
                 if (!feedback.IsAvailable) return Failure("bootstrap.binding.feedback_missing", "Feedback requires the shared RenderTexturePool.");
                 bindings.Add(feedback);
@@ -296,6 +300,75 @@ namespace ShitDesigner.Bootstrap
         }
 
         private static Result<VideoPrepareRequest> Failure(string code, string message, Exception exception = null) => Result<VideoPrepareRequest>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "media", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
+    }
+
+    /// <summary>Resolves both still images and videos through the same project
+    /// containment and integrity boundary used by the video player.</summary>
+    public sealed class ProjectAssetFlashResolver : IAssetFlashPrepareResolver
+    {
+        private readonly Func<ProjectDocument> _document;
+        private readonly Func<string> _projectRoot;
+        private readonly IProjectFileSystem _fileSystem;
+        private readonly IVideoPrepareResolver _videos;
+
+        public ProjectAssetFlashResolver(Func<ProjectDocument> document, Func<string> projectRoot,
+            IProjectFileSystem fileSystem, IVideoPrepareResolver videos)
+        {
+            _document = document ?? throw new ArgumentNullException(nameof(document));
+            _projectRoot = projectRoot ?? throw new ArgumentNullException(nameof(projectRoot));
+            _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
+            _videos = videos ?? throw new ArgumentNullException(nameof(videos));
+        }
+
+        public Result<AssetFlashPrepareRequest> Resolve(MediaAssetId mediaAssetId)
+        {
+            var document = _document();
+            if (document == null || mediaAssetId.IsEmpty) return Failure("media.flash.resolve.asset", "A selected media asset is required.");
+            var asset = document.MediaAssets.FirstOrDefault(x => x.Id == mediaAssetId);
+            if (asset == null) return Failure("media.flash.resolve.missing", "The selected media asset is not in the project manifest.");
+            if (asset.Kind == MediaAssetKind.Video)
+            {
+                var video = _videos.Resolve(mediaAssetId);
+                return video.IsFailure ? Result<AssetFlashPrepareRequest>.Failure(video.Diagnostic)
+                    : Result<AssetFlashPrepareRequest>.Success(AssetFlashPrepareRequest.VideoFile(video.Value));
+            }
+            if (asset.Kind != MediaAssetKind.Image)
+                return Failure("media.flash.resolve.kind", "Asset Flash supports Image and Video media assets only.");
+
+            var relative = MediaPathRules.Normalize(asset.Id, asset.RelativePath);
+            if (relative.IsFailure) return Failure("media.flash.resolve.path", "The media asset path is invalid.");
+            var root = _projectRoot();
+            if (string.IsNullOrWhiteSpace(root)) return Failure("media.flash.resolve.root", "The project root is unavailable.");
+            try
+            {
+                var fullRoot = Path.GetFullPath(root);
+                var fullPath = Path.GetFullPath(Path.Combine(fullRoot, relative.Value.Replace('/', Path.DirectorySeparatorChar)));
+                var normalizedRoot = fullRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+                if (!fullPath.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase)) return Failure("media.flash.resolve.containment", "The media asset is outside the project root.");
+                if (!_fileSystem.Exists(fullPath)) return Failure("media.flash.resolve.missing_file", "The project media file is missing.");
+                try
+                {
+                    if ((_fileSystem.GetAttributes(fullPath) & FileAttributes.ReparsePoint) != 0)
+                        return Failure("media.flash.resolve.containment", "The media asset is a reparse point.");
+                }
+                catch { }
+                byte[] bytes;
+                using (var source = (_fileSystem as IProjectStreamingFileOperations)?.OpenRead(fullPath) ?? File.OpenRead(fullPath))
+                using (var copy = new MemoryStream()) { source.CopyTo(copy); bytes = copy.ToArray(); }
+                using (var integrity = new MemoryStream(bytes, false))
+                    if (bytes.LongLength != asset.ByteSize || !string.Equals(AssetIntegrity.Hash(integrity), asset.IntegrityHash, StringComparison.Ordinal))
+                        return Failure("media.flash.resolve.integrity", "The project media file failed its manifest integrity check.");
+                var color = asset.ColorSpace == MediaColorSpace.Linear ? VideoColorEncoding.Linear
+                    : asset.ColorSpace == MediaColorSpace.Rec709 ? VideoColorEncoding.Rec709 : VideoColorEncoding.Srgb;
+                var alpha = asset.AlphaMode == MediaAlphaMode.Premultiplied ? VideoAlphaMode.Premultiplied
+                    : asset.AlphaMode == MediaAlphaMode.Straight ? VideoAlphaMode.Straight : VideoAlphaMode.Opaque;
+                return Result<AssetFlashPrepareRequest>.Success(AssetFlashPrepareRequest.Image(bytes, new VideoFrameConversionMetadata(color, alpha)));
+            }
+            catch (Exception exception) { return Failure("media.flash.resolve.failed", "The project image could not be prepared.", exception); }
+        }
+
+        private static Result<AssetFlashPrepareRequest> Failure(string code, string message, Exception exception = null)
+            => Result<AssetFlashPrepareRequest>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "media", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
     }
 
     /// <summary>Routes a selected codec to the explicit Unity or Hap factory.

@@ -104,6 +104,7 @@ namespace ShitDesigner.Bootstrap
             var context = new ProductionProjectContext();
             var videoProbe = new ExtensionVideoCapabilityProbe(new FileVideoMetadataProbe());
             var resolver = new ProjectMediaVideoResolver(() => context.Document, () => context.ProjectRoot, fileSystem, videoProbe);
+            var flashResolver = new ProjectAssetFlashResolver(() => context.Document, () => context.ProjectRoot, fileSystem, resolver);
             var unityBackends = new UnityVideoBackendFactory(() => _videoHostPrefab == null
                 ? new GameObject("ShitDesigner.VideoBackend")
                 : Instantiate(_videoHostPrefab));
@@ -129,6 +130,7 @@ namespace ShitDesigner.Bootstrap
                 shaders,
                 backends,
                 resolver,
+                flashResolver,
                 conversion,
                 graphics,
                 pool,
