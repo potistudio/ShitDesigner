@@ -32,33 +32,130 @@
 
 .live-button {
     height: 22px;
-    min-width: 70px;
-    padding-left: 10px;
-    padding-right: 10px;
-    color: rgb(255, 91, 110);
-    background-color: rgba(80, 10, 20, 0.16);
+    min-width: 118px;
+    margin-left: 5px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    padding-left: 8px;
+    padding-right: 8px;
+    color: rgb(157, 205, 213);
+    background-color: rgba(25, 93, 104, 0.14);
     border-width: 1px;
-    border-color: rgb(196, 53, 72);
+    border-color: rgb(69, 124, 134);
     border-radius: 0;
     font-size: 10px;
     letter-spacing: 0.4px;
     -unity-font-style: bold;
 }
 
+.live-icon {
+    width: 14px;
+    height: 14px;
+    align-items: center;
+    justify-content: center;
+    border-width: 1px;
+    border-color: rgb(111, 174, 184);
+    border-radius: 7px;
+}
+
+.live-icon-ring {
+    width: 8px;
+    height: 8px;
+    align-items: center;
+    justify-content: center;
+    border-width: 1px;
+    border-color: rgb(69, 124, 134);
+    border-radius: 4px;
+}
+
+.live-icon-core {
+    width: 3px;
+    height: 3px;
+    background-color: rgb(143, 205, 214);
+    border-radius: 2px;
+}
+
+.live-button-label {
+    margin-left: 6px;
+    font-size: 10px;
+    letter-spacing: 0.7px;
+    -unity-font-style: bold;
+}
+
 .live-button:hover {
-    color: rgb(255, 180, 190);
-    background-color: rgba(153, 27, 45, 0.28);
-    border-color: rgb(255, 91, 110);
+    color: rgb(215, 239, 243);
+    background-color: rgba(48, 104, 114, 0.24);
+    border-color: rgb(93, 158, 169);
 }
 
 .live-button:active {
-    background-color: rgba(255, 73, 98, 0.42);
+    background-color: rgba(74, 136, 147, 0.34);
 }
 
 .live-button.is-off {
-    color: rgb(118, 153, 160);
+    color: rgb(157, 205, 213);
+    background-color: rgba(25, 93, 104, 0.14);
+    border-color: rgb(69, 124, 134);
+}
+
+.live-button.is-off .live-icon,
+.live-button.is-off .live-icon-ring {
+    border-color: rgb(69, 124, 134);
+}
+
+.live-button.is-off .live-icon-core {
+    background-color: rgb(143, 205, 214);
+}
+
+.live-button.is-stop {
+    color: rgb(123, 145, 150);
     background-color: transparent;
-    border-color: rgb(54, 83, 90);
+    border-color: rgb(48, 70, 75);
+}
+
+.live-button.is-stop .live-icon,
+.live-button.is-stop .live-icon-ring {
+    border-color: rgb(69, 83, 87);
+    border-radius: 0;
+}
+
+.live-button.is-stop .live-icon-core {
+    width: 5px;
+    height: 5px;
+    background-color: rgb(126, 142, 146);
+    border-radius: 0;
+}
+
+.live-status {
+    height: 22px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    margin-right: 7px;
+}
+
+.live-status-dot {
+    width: 6px;
+    height: 6px;
+    margin-right: 6px;
+    background-color: rgb(72, 91, 95);
+    border-radius: 3px;
+}
+
+.live-status-label {
+    color: rgb(91, 113, 118);
+    font-size: 9px;
+    letter-spacing: 0.8px;
+    -unity-font-style: bold;
+}
+
+.live-status.is-live .live-status-dot {
+    background-color: rgb(255, 73, 98);
+}
+
+.live-status.is-live .live-status-label {
+    color: rgb(255, 113, 130);
 }
 
 .confirmation-overlay {

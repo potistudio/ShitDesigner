@@ -3,7 +3,18 @@
     <ui:VisualElement name="main-ui" class="main-ui">
         <ui:VisualElement name="top-bar" class="top-bar" style="height: 31px;">
             <ui:VisualElement class="spacer"/>
-            <ui:Button name="live-button" text="○  OFF" tooltip="Live output" class="live-button is-off"/>
+            <ui:VisualElement name="live-status" class="live-status is-idle">
+                <ui:VisualElement class="live-status-dot"/>
+                <ui:Label name="live-status-label" text="IDLE" class="live-status-label"/>
+            </ui:VisualElement>
+            <ui:Button name="live-button" tooltip="Live output" class="live-button is-off">
+                <ui:VisualElement class="live-icon">
+                    <ui:VisualElement class="live-icon-ring">
+                        <ui:VisualElement class="live-icon-core"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:Label name="live-button-label" text="START OUTPUT" class="live-button-label"/>
+            </ui:Button>
         </ui:VisualElement>
         <ui:VisualElement name="live-confirm-overlay" class="confirmation-overlay is-hidden">
             <ui:VisualElement class="confirmation-dialog">

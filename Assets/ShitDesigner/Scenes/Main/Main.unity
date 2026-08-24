@@ -445,12 +445,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1543200000}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1555642061}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1931382934 &1543200003
 PanelRenderer:
@@ -524,6 +524,172 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _panelRenderer: {fileID: 1543200003}
   _externalDisplayOutput: {fileID: 1237988679}
+--- !u!1 &1555642060
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1555642061}
+  - component: {fileID: 1555642063}
+  - component: {fileID: 1555642062}
+  m_Layer: 0
+  m_Name: UI
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1555642061
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1555642060}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1543200001}
+  m_Father: {fileID: 1594496360}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1555642062
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1555642060}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a222604fc9390347b8b0953b0a7ab86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ShitDesigner.Presentation::ShitDesigner.Presentation.PresentationRoot
+  _document: {fileID: 1555642063}
+  _theme: {fileID: 7433441132597879392, guid: b66fa258b8d24dbf9443099c4ae668aa, type: 3}
+--- !u!114 &1555642063
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1555642060}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
+  m_PanelSettings: {fileID: 0}
+  m_ParentUI: {fileID: 0}
+  sourceAsset: {fileID: 0}
+  m_SortingOrder: 0
+  m_Position: 0
+  m_WorldSpaceSizeMode: 1
+  m_WorldSpaceWidth: 1920
+  m_WorldSpaceHeight: 1080
+  m_PivotReferenceSize: 0
+  m_Pivot: 0
+  m_WorldSpaceCollider: {fileID: 0}
+--- !u!1 &1594496358
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1594496360}
+  - component: {fileID: 1594496359}
+  - component: {fileID: 1594496361}
+  - component: {fileID: 1594496362}
+  m_Layer: 0
+  m_Name: Host
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1594496359
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1594496358}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f8dc08e8ed24bf9a1fdb9ec8a5d5e22, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ShitDesigner.Bootstrap::ShitDesigner.Bootstrap.ApplicationHost
+  _presentationRoot: {fileID: 1555642062}
+  _assets: {fileID: 0}
+  _panelSettings: {fileID: 0}
+  _midiInputManager: {fileID: 0}
+  _createOnAwake: 1
+  _createDefaultProject: 1
+  _defaultProjectName: Untitled
+--- !u!4 &1594496360
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1594496358}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1555642061}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1594496361
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1594496358}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7d7c8cffa66e554988cac388e36be19, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ShitDesigner.Bootstrap::ShitDesigner.Bootstrap.ProductionBootstrapAssets
+  _scene3dPrefab: {fileID: 0}
+  _scene2dPrefab: {fileID: 0}
+  _videoHostPrefab: {fileID: 0}
+  _shaderGenerator: {fileID: 0}
+  _shaderEffect: {fileID: 0}
+  _shaderBlend2: {fileID: 0}
+  _displayTransformShader: {fileID: 0}
+  _videoConversionMaterial: {fileID: 0}
+  _hapPremultiplyMaterial: {fileID: 0}
+  _hapYCoCgMaterial: {fileID: 0}
+  _hapAlphaMaterial: {fileID: 0}
+  _hapDecodeShader: {fileID: 0}
+  _nodeTypeCatalog: {fileID: 0}
+  _shaderManifest: {fileID: 0}
+--- !u!114 &1594496362
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1594496358}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c52f4760adeb45ff980c5d0bc525fb9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ShitDesigner.Input::ShitDesigner.Input.MidiInputManager
+  _deviceId: 0
+  _openOnConfigure: 1
+  _bindings: []
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -531,4 +697,4 @@ SceneRoots:
   - {fileID: 1237988678}
   - {fileID: 1184862312}
   - {fileID: 500452140}
-  - {fileID: 1543200001}
+  - {fileID: 1594496360}
