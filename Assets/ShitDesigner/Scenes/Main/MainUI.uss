@@ -1,0 +1,190 @@
+.main-ui {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    color: rgb(190, 211, 218);
+    -unity-font-definition: resource("NotoSansMono");
+}
+
+.top-bar {
+    height: 32px;
+    min-height: 32px;
+    flex-direction: row;
+    align-items: center;
+    padding-left: 8px;
+    padding-right: 5px;
+    background-color: rgba(7, 10, 12, 0.94);
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(69, 102, 111);
+}
+
+.top-bar-rail {
+    width: 48px;
+    height: 1px;
+    background-color: rgb(76, 139, 151);
+}
+
+.spacer {
+    flex-grow: 1;
+}
+
+.live-button {
+    height: 22px;
+    min-width: 70px;
+    padding-left: 10px;
+    padding-right: 10px;
+    color: rgb(255, 91, 110);
+    background-color: rgba(80, 10, 20, 0.16);
+    border-width: 1px;
+    border-color: rgb(196, 53, 72);
+    border-radius: 0;
+    font-size: 10px;
+    letter-spacing: 0.4px;
+    -unity-font-style: bold;
+}
+
+.live-button:hover {
+    color: rgb(255, 180, 190);
+    background-color: rgba(153, 27, 45, 0.28);
+    border-color: rgb(255, 91, 110);
+}
+
+.live-button:active {
+    background-color: rgba(255, 73, 98, 0.42);
+}
+
+.live-button.is-off {
+    color: rgb(118, 153, 160);
+    background-color: transparent;
+    border-color: rgb(54, 83, 90);
+}
+
+.confirmation-overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(2, 4, 5, 0.82);
+}
+
+.confirmation-overlay.is-hidden {
+    display: none;
+}
+
+.confirmation-dialog {
+    width: 380px;
+    padding: 12px 16px 14px 16px;
+    background-color: rgba(8, 12, 14, 0.98);
+    border-width: 1px;
+    border-color: rgb(67, 112, 121);
+    border-radius: 0;
+}
+
+.confirmation-title {
+    color: rgb(224, 244, 247);
+    font-size: 15px;
+    letter-spacing: 1.2px;
+    -unity-font-style: bold;
+}
+
+.confirmation-rule {
+    height: 1px;
+    margin-top: 7px;
+    background-color: rgb(48, 79, 85);
+}
+
+.confirmation-message {
+    margin-top: 7px;
+    max-width: 348px;
+    color: rgb(116, 148, 154);
+    font-size: 10px;
+    letter-spacing: 0.2px;
+    white-space: normal;
+}
+
+.display-selector {
+    height: 30px;
+    min-height: 30px;
+    margin-top: 10px;
+    align-items: center;
+    color: rgb(166, 195, 201);
+    font-size: 11px;
+}
+
+.display-selector .unity-base-field__label {
+    min-width: 104px;
+    color: rgb(85, 127, 135);
+    font-size: 9px;
+    letter-spacing: 0.8px;
+    -unity-font-style: bold;
+}
+
+.display-selector .unity-base-popup-field__input {
+    height: 30px;
+    min-height: 30px;
+    padding-left: 10px;
+    padding-right: 8px;
+    align-items: center;
+    color: rgb(190, 218, 224);
+    background-color: rgb(5, 9, 10);
+    border-width: 1px;
+    border-color: rgb(53, 91, 98);
+    border-radius: 0;
+}
+
+.display-selector .unity-base-popup-field__text {
+    height: 22px;
+    color: rgb(220, 239, 242);
+    font-size: 11px;
+    -unity-text-align: middle-left;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.confirmation-actions {
+    margin-top: 12px;
+    flex-direction: row;
+    justify-content: flex-end;
+}
+
+.confirmation-button {
+    height: 28px;
+    min-width: 78px;
+    margin-left: 8px;
+    color: rgb(134, 169, 176);
+    background-color: transparent;
+    border-width: 1px;
+    border-color: rgb(52, 84, 91);
+    border-radius: 0;
+    font-size: 9px;
+    letter-spacing: 0.5px;
+    -unity-font-style: bold;
+}
+
+.confirmation-button:hover {
+    color: rgb(215, 239, 243);
+    background-color: rgba(48, 104, 114, 0.2);
+    border-color: rgb(93, 158, 169);
+}
+
+.confirmation-button.is-hidden {
+    display: none;
+}
+
+.confirmation-accept {
+    color: rgb(175, 226, 234);
+    background-color: rgba(25, 93, 104, 0.22);
+    border-color: rgb(79, 154, 166);
+}
+
+.confirmation-accept.is-stop {
+    color: rgb(255, 113, 130);
+    background-color: rgba(135, 24, 42, 0.22);
+    border-color: rgb(198, 55, 75);
+}
