@@ -108,8 +108,6 @@ namespace ShitDesigner.Bootstrap
             var unityBackends = new UnityVideoBackendFactory(() => _videoHostPrefab == null
                 ? new GameObject("ShitDesigner.VideoBackend")
                 : Instantiate(_videoHostPrefab));
-            if (_hapPremultiplyMaterial == null || _hapYCoCgMaterial == null || _hapAlphaMaterial == null || _hapDecodeShader == null)
-                return Failure("bootstrap.assets.hap_missing", "Explicit Hap conversion materials and compute shader are required.");
             var hapGraphics = new UnityHapGraphicsCapabilityProbe();
             var hapBridge = new HapUnityGraphicsBridge(hapGraphics, _hapDecodeShader, _hapPremultiplyMaterial, _hapYCoCgMaterial, _hapAlphaMaterial);
             var hapApi = new PInvokeHapNativeApi(hapBridge);

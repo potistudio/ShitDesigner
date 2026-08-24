@@ -13,6 +13,9 @@ namespace ShitDesigner.Rendering
         [SerializeField] private SimpleExternalDisplayOutput _externalDisplayOutput;
 
         private Button _liveButton;
+        private Label _liveButtonLabel;
+        private VisualElement _liveStatus;
+        private Label _liveStatusLabel;
         private Button _cancelButton;
         private Button _confirmButton;
         private DropdownField _displaySelector;
@@ -79,6 +82,9 @@ namespace ShitDesigner.Rendering
             if (root == null) return;
 
             _liveButton = root.Q<Button>("live-button");
+            _liveButtonLabel = root.Q<Label>("live-button-label");
+            _liveStatus = root.Q("live-status");
+            _liveStatusLabel = root.Q<Label>("live-status-label");
             _cancelButton = root.Q<Button>("live-confirm-cancel");
             _confirmButton = root.Q<Button>("live-confirm-accept");
             _displaySelector = root.Q<DropdownField>("live-display-selector");
@@ -103,6 +109,9 @@ namespace ShitDesigner.Rendering
             if (_displaySelector != null) _displaySelector.UnregisterValueChangedCallback(OnDisplaySelectionChanged);
 
             _liveButton = null;
+            _liveButtonLabel = null;
+            _liveStatus = null;
+            _liveStatusLabel = null;
             _cancelButton = null;
             _confirmButton = null;
             _displaySelector = null;
@@ -235,8 +244,15 @@ namespace ShitDesigner.Rendering
         {
             if (_liveButton == null) return;
             var active = _externalDisplayOutput != null && _externalDisplayOutput.IsOutputActive;
-            _liveButton.text = active ? "●  LIVE" : "○  OFF";
+            if (_liveButtonLabel != null) _liveButtonLabel.text = active ? "STOP OUTPUT" : "START OUTPUT";
             _liveButton.EnableInClassList("is-off", !active);
+            _liveButton.EnableInClassList("is-stop", active);
+            _liveStatus?.EnableInClassList("is-idle", !active);
+            _liveStatus?.EnableInClassList("is-live", active);
+            if (_liveStatusLabel != null)
+                _liveStatusLabel.text = active
+                    ? $"LIVE / D{_externalDisplayOutput.DisplayNumber}"
+                    : "IDLE";
         }
 
         private void HideConfirmation()
