@@ -27,7 +27,21 @@ namespace ShitDesigner.Nodes.Tests
             Assert.That(ids, Does.Contain("shitdesigner.shader.effect"));
             Assert.That(ids, Does.Contain("shitdesigner.shader.blend2"));
             Assert.That(ids, Does.Contain("shitdesigner.video.player"));
+            Assert.That(ids, Does.Contain("shitdesigner.media.asset_flash"));
             Assert.That(ids.Count(x => x.StartsWith("shitdesigner.convert.", StringComparison.Ordinal)), Is.EqualTo(13));
+        }
+
+        [Test]
+        public void AssetFlashDefinition_HasEightOptionalTriggersEightAssetsAndDuration()
+        {
+            var flash = NodeDefinitionCatalog.CreateInitial().Entries.Single(x => x.TypeId.Value == "shitdesigner.media.asset_flash");
+            Assert.That(flash.Ports.Count(x => x.Direction == NodePortDirection.Input && x.Type == NodePortType.Bool && !x.Required), Is.EqualTo(8));
+            Assert.That(flash.Ports.Single(x => x.Id.Value == "image").Type, Is.EqualTo(NodePortType.ImageFrame));
+            Assert.That(flash.Parameters.Count(x => x.Type == ParameterType.MediaAssetReference), Is.EqualTo(8));
+            var duration = flash.Parameters.Single(x => x.Id.Value == "flash.duration_seconds");
+            Assert.That(duration.DefaultValue.AsFloat(), Is.EqualTo(.25f));
+            Assert.That(duration.Minimum.Value.AsFloat(), Is.EqualTo(.01f));
+            Assert.That(duration.Maximum.Value.AsFloat(), Is.EqualTo(60f));
         }
 
         [Test]

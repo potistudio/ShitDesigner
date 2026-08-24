@@ -574,6 +574,7 @@ namespace ShitDesigner.Nodes
             };
             definitions.AddRange(shaderManifest.Entries.Select(x => x.ToNodeDefinition()));
             definitions.Add(new NodeDefinition(new NodeTypeId("shitdesigner.video.player"), 1, "VideoPlayer", "Video", new[] { ImageOut }, VideoParameters()));
+            definitions.Add(AssetFlash());
             definitions.AddRange(new[] { FloatToInt(), IntToFloat(), FloatToBool(), BoolToFloat(), Compose("2"), Compose("3"), Compose("4"), Split("2"), Split("3"), Split("4"), VectorComponent(), ColorToLuminance(), FloatToColor() });
             return new ReadOnlyCollection<NodeDefinition>(definitions);
         }
@@ -582,6 +583,21 @@ namespace ShitDesigner.Nodes
         public static SceneNodeBinding SceneBinding(NodeTypeId id) { if (id.Value == "shitdesigner.scene.3d") return new SceneNodeBinding("builtin.scene.3d"); if (id.Value == "shitdesigner.scene.2d") return new SceneNodeBinding("builtin.scene.2d", true, true); return null; }
         private static NodeParameterDefinition PreviewMode() => new NodeParameterDefinition(new ParameterId("display.mode"), "Display Mode", ParameterType.Enum, ParameterValue.FromEnum("fit"), enumOptions: new[] { "fit", "fill", "stretch" });
         private static IEnumerable<NodeParameterDefinition> VideoParameters() => new[] { new NodeParameterDefinition(new ParameterId("transport.media_asset"), "Media Asset", ParameterType.MediaAssetReference, ParameterValue.Default(ParameterType.MediaAssetReference)), new NodeParameterDefinition(new ParameterId("transport.playing"), "Playing", ParameterType.Bool, ParameterValue.FromBool(false)), new NodeParameterDefinition(new ParameterId("transport.playhead_seconds"), "Playhead", ParameterType.Float, ParameterValue.FromFloat(0), ParameterValue.FromFloat(0), ParameterValue.FromFloat(float.MaxValue), true), new NodeParameterDefinition(new ParameterId("transport.speed"), "Speed", ParameterType.Float, ParameterValue.FromFloat(1), ParameterValue.FromFloat(0), ParameterValue.FromFloat(4)), new NodeParameterDefinition(new ParameterId("transport.loop"), "Loop", ParameterType.Bool, ParameterValue.FromBool(true)) };
+        private static NodeDefinition AssetFlash()
+        {
+            var ports = Enumerable.Range(1, 8)
+                .Select(slot => new NodePortDefinition(new PortId("trigger_" + slot), "Trigger " + slot, NodePortDirection.Input, NodePortType.Bool, false))
+                .ToList();
+            ports.Add(ImageOut);
+            var parameters = Enumerable.Range(1, 8)
+                .Select(slot => new NodeParameterDefinition(new ParameterId("slot_" + slot + ".media_asset"), "Slot " + slot + " Asset",
+                    ParameterType.MediaAssetReference, ParameterValue.Default(ParameterType.MediaAssetReference), group: "Slots", displayOrder: slot))
+                .ToList();
+            parameters.Add(new NodeParameterDefinition(new ParameterId("flash.duration_seconds"), "Duration", ParameterType.Float,
+                ParameterValue.FromFloat(.25f), ParameterValue.FromFloat(.01f), ParameterValue.FromFloat(60f),
+                group: "Flash", displayOrder: 0, description: "How long the triggered asset remains visible.", unit: "s", step: .01d));
+            return new NodeDefinition(new NodeTypeId("shitdesigner.media.asset_flash"), 1, "Asset Flash", "Media", ports, parameters);
+        }
         private static NodeDefinition FloatToInt() => Conversion("float_to_int", "Float To Int", NodePortType.Float, NodePortType.Int, new[] { Input("value", NodePortType.Float) }, new[] { new NodeParameterDefinition(new ParameterId("rounding"), "Rounding", ParameterType.Enum, ParameterValue.FromEnum("round"), enumOptions: new[] { "round", "floor", "ceil", "truncate" }) });
         private static NodeDefinition IntToFloat() => Conversion("int_to_float", "Int To Float", NodePortType.Int, NodePortType.Float, new[] { Input("value", NodePortType.Int) });
         private static NodeDefinition FloatToBool() => Conversion("float_to_bool", "Float To Bool", NodePortType.Float, NodePortType.Bool, new[] { Input("value", NodePortType.Float) }, new[] { new NodeParameterDefinition(new ParameterId("threshold"), "Threshold", ParameterType.Float, ParameterValue.FromFloat(.5f), ParameterValue.FromFloat(0), ParameterValue.FromFloat(1)) });

@@ -146840,6 +146840,266 @@ MonoBehaviour:
     shaderInputs: []
     shaderParameters: []
     shaderPasses: []
+  - typeId: shitdesigner.media.asset_flash
+    schemaVersion: 1
+    displayName: Asset Flash
+    category: Media
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - trigger_1
+    - trigger_2
+    - trigger_3
+    - trigger_4
+    - trigger_5
+    - trigger_6
+    - trigger_7
+    - trigger_8
+    - image
+    parameterIds:
+    - slot_1.media_asset
+    - slot_2.media_asset
+    - slot_3.media_asset
+    - slot_4.media_asset
+    - slot_5.media_asset
+    - slot_6.media_asset
+    - slot_7.media_asset
+    - slot_8.media_asset
+    - flash.duration_seconds
+    ports:
+    - id: trigger_1
+      displayName: Trigger 1
+      direction: 0
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_2
+      displayName: Trigger 2
+      direction: 0
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_3
+      displayName: Trigger 3
+      direction: 0
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_4
+      displayName: Trigger 4
+      direction: 0
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_5
+      displayName: Trigger 5
+      direction: 0
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_6
+      displayName: Trigger 6
+      direction: 0
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_7
+      displayName: Trigger 7
+      direction: 0
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_8
+      displayName: Trigger 8
+      direction: 0
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: image
+      displayName: Image
+      direction: 1
+      type: 0
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters:
+    - id: slot_1.media_asset
+      displayName: Slot 1 Asset
+      type: 9
+      defaultValue: 'media:'
+      hasMinimum: 0
+      minimumValue:
+      hasMaximum: 0
+      maximumValue:
+      runtimeStateful: 0
+      enumOptions: []
+      group: Slots
+      displayOrder: 1
+      description:
+      unit:
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: slot_2.media_asset
+      displayName: Slot 2 Asset
+      type: 9
+      defaultValue: 'media:'
+      hasMinimum: 0
+      minimumValue:
+      hasMaximum: 0
+      maximumValue:
+      runtimeStateful: 0
+      enumOptions: []
+      group: Slots
+      displayOrder: 2
+      description:
+      unit:
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: slot_3.media_asset
+      displayName: Slot 3 Asset
+      type: 9
+      defaultValue: 'media:'
+      hasMinimum: 0
+      minimumValue:
+      hasMaximum: 0
+      maximumValue:
+      runtimeStateful: 0
+      enumOptions: []
+      group: Slots
+      displayOrder: 3
+      description:
+      unit:
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: slot_4.media_asset
+      displayName: Slot 4 Asset
+      type: 9
+      defaultValue: 'media:'
+      hasMinimum: 0
+      minimumValue:
+      hasMaximum: 0
+      maximumValue:
+      runtimeStateful: 0
+      enumOptions: []
+      group: Slots
+      displayOrder: 4
+      description:
+      unit:
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: slot_5.media_asset
+      displayName: Slot 5 Asset
+      type: 9
+      defaultValue: 'media:'
+      hasMinimum: 0
+      minimumValue:
+      hasMaximum: 0
+      maximumValue:
+      runtimeStateful: 0
+      enumOptions: []
+      group: Slots
+      displayOrder: 5
+      description:
+      unit:
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: slot_6.media_asset
+      displayName: Slot 6 Asset
+      type: 9
+      defaultValue: 'media:'
+      hasMinimum: 0
+      minimumValue:
+      hasMaximum: 0
+      maximumValue:
+      runtimeStateful: 0
+      enumOptions: []
+      group: Slots
+      displayOrder: 6
+      description:
+      unit:
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: slot_7.media_asset
+      displayName: Slot 7 Asset
+      type: 9
+      defaultValue: 'media:'
+      hasMinimum: 0
+      minimumValue:
+      hasMaximum: 0
+      maximumValue:
+      runtimeStateful: 0
+      enumOptions: []
+      group: Slots
+      displayOrder: 7
+      description:
+      unit:
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: slot_8.media_asset
+      displayName: Slot 8 Asset
+      type: 9
+      defaultValue: 'media:'
+      hasMinimum: 0
+      minimumValue:
+      hasMaximum: 0
+      maximumValue:
+      runtimeStateful: 0
+      enumOptions: []
+      group: Slots
+      displayOrder: 8
+      description:
+      unit:
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: flash.duration_seconds
+      displayName: Duration
+      type: 0
+      defaultValue: float:0.25
+      hasMinimum: 1
+      minimumValue: float:0.01
+      hasMaximum: 1
+      maximumValue: float:60
+      runtimeStateful: 0
+      enumOptions: []
+      group: Flash
+      displayOrder: 0
+      description: How long the triggered asset remains visible.
+      unit: s
+      step: 0.01
+      isReadOnly: 0
+      isHidden: 0
+    shaderKey:
+    prefabKey:
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    scenePrefab: {fileID: 0}
+    outputPass: 0
+    shaderFamily: 13
+    shaderVariantId:
+    shaderSourceVariant: 0
+    shaderRequiredFeatures: 0
+    shaderStateful: 0
+    shaderHistorySlots: 0
+    shaderAliases: []
+    shaderInputs: []
+    shaderParameters: []
+    shaderPasses: []
   - typeId: shitdesigner.convert.float_to_int
     schemaVersion: 1
     displayName: Float To Int
