@@ -6,7 +6,7 @@ using ShitDesigner.Core;
 using ShitDesigner.Runtime;
 
 namespace ShitDesigner.Nodes.Tests {
-	public sealed class ProductionBindingBuilderTests {
+	public sealed class BindingBuilderTests {
 		[Test]
 		public void Builder_RequiresAllSevenAndExposesReadOnlyAvailability() {
 			var missing = NodeCatalogBootstrap.BuildProductionBindings(new IRuntimeVisualNodeBinding[0]);

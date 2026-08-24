@@ -15,7 +15,7 @@ using UnityEngine.Experimental.Rendering;
 using UnityEngine.TestTools;
 
 namespace ShitDesigner.Bootstrap.Tests {
-	public sealed class ProductionOutputSurfaceBridgePlayModeTests {
+	public sealed class OutputSurfaceBridgePlayModeTests {
 		[UnityTest, Category("GPU"), Category("PreviewPresentation")]
 		public IEnumerator OutputSurfaceBridge_RetiresBorrowedSurfacesAcrossClearWithoutAffectingTheNewBinding() {
 			var previewId = new NodeInstanceId("e0000000-0000-4000-8000-000000000123");
@@ -27,7 +27,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 				using (var program = new ProgramHoldController(pool,
 					new ResourceOwnerKey("bridge-test", ResourceOwnerKind.ProgramPresenter, "program", 1, "hold", LeaseRole.ProgramHold), ProgramDynamicRange.Hdr))
 				using (var session = CreatePreviewSession(previewId, 640, 360))
-				using (var bridge = new ProductionOutputSurfaceBridge(RequiredDisplayTransformShader())) {
+				using (var bridge = new OutputSurfaceBridge(RequiredDisplayTransformShader())) {
 					Assert.That(program.Ensure(1).IsSuccess, Is.True);
 					session.LastPresentation = PresentedPreview(previewId, source, 41);
 					bridge.Bind(session, program, pool);
@@ -140,7 +140,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 				using (var program = new ProgramHoldController(pool,
 					new ResourceOwnerKey("bridge-descriptor", ResourceOwnerKind.ProgramPresenter, "program", 1, "hold", LeaseRole.ProgramHold), ProgramDynamicRange.Hdr))
 				using (var session = CreatePreviewSession(previewId, 640, 360))
-				using (var bridge = new ProductionOutputSurfaceBridge(RequiredDisplayTransformShader())) {
+				using (var bridge = new OutputSurfaceBridge(RequiredDisplayTransformShader())) {
 					Assert.That(program.Ensure(1).IsSuccess, Is.True);
 					bridge.Bind(session, program, pool);
 					session.LastPresentation = PresentedPreview(previewId, source, 81);
@@ -176,7 +176,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 				using (var program = new ProgramHoldController(pool,
 					new ResourceOwnerKey("bridge-remove-borrowed", ResourceOwnerKind.ProgramPresenter, "program", 1, "hold", LeaseRole.ProgramHold), ProgramDynamicRange.Hdr))
 				using (var session = CreatePreviewSession(previewId, 640, 360))
-				using (var bridge = new ProductionOutputSurfaceBridge(RequiredDisplayTransformShader())) {
+				using (var bridge = new OutputSurfaceBridge(RequiredDisplayTransformShader())) {
 					Assert.That(program.Ensure(1).IsSuccess, Is.True);
 					session.LastPresentation = PresentedPreview(previewId, source, 51);
 					bridge.Bind(session, program, pool);
@@ -215,7 +215,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 				using (var program = new ProgramHoldController(pool,
 					new ResourceOwnerKey("bridge-remove-unborrowed", ResourceOwnerKind.ProgramPresenter, "program", 1, "hold", LeaseRole.ProgramHold), ProgramDynamicRange.Hdr))
 				using (var session = CreatePreviewSession(previewId, 640, 360))
-				using (var bridge = new ProductionOutputSurfaceBridge(RequiredDisplayTransformShader())) {
+				using (var bridge = new OutputSurfaceBridge(RequiredDisplayTransformShader())) {
 					Assert.That(program.Ensure(1).IsSuccess, Is.True);
 					session.LastPresentation = PresentedPreview(previewId, source, 61);
 					bridge.Bind(session, program, pool);
@@ -250,7 +250,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 				using (var program = new ProgramHoldController(pool,
 					new ResourceOwnerKey("bridge-dispose-borrowed", ResourceOwnerKind.ProgramPresenter, "program", 1, "hold", LeaseRole.ProgramHold), ProgramDynamicRange.Hdr))
 				using (var session = CreatePreviewSession(previewId, 640, 360)) {
-					var bridge = new ProductionOutputSurfaceBridge(RequiredDisplayTransformShader());
+					var bridge = new OutputSurfaceBridge(RequiredDisplayTransformShader());
 					try {
 						Assert.That(program.Ensure(1).IsSuccess, Is.True);
 						session.LastPresentation = PresentedPreview(previewId, source, 71);

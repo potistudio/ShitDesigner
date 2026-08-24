@@ -32,7 +32,7 @@ namespace ShitDesigner.TestHarness
 	{
 		[FormerlySerializedAs("_bootstrap")]
 		[SerializeField] private ApplicationHost _host;
-		[SerializeField] private ProductionBootstrapAssets _assets;
+		[SerializeField] private BootstrapAssets _assets;
 		[SerializeField] private bool _runOnStart = true;
 		[SerializeField] private string _corpusRoot;
 		[SerializeField] private string _artifactDirectory;
@@ -40,7 +40,7 @@ namespace ShitDesigner.TestHarness
 		[SerializeField] private double _measureSeconds = 600d;
 		[SerializeField] private bool _fixtureMode;
 
-		private ProductionCompositionRoot _composition;
+		private CompositionRoot _composition;
 		private HarnessOptions _options;
 		private HarnessMetricAccumulator _metrics;
 		private bool _running;
@@ -80,8 +80,8 @@ namespace ShitDesigner.TestHarness
 		private ProfilerRecorder _gcAllocationRecorder;
 		private bool _gcRecorderStarted;
 		private string _gcRecorderStartFailure;
-		private ProductionOwnershipSnapshot _lastOwnershipSnapshot;
-		private readonly ProductionPerformanceSurfaceSnapshot[] _performancePreviewBuffer = new ProductionPerformanceSurfaceSnapshot[8];
+		private CompositionOwnershipSnapshot _lastOwnershipSnapshot;
+		private readonly PerformanceSurfaceSnapshot[] _performancePreviewBuffer = new PerformanceSurfaceSnapshot[8];
 		private readonly HarnessTimingCompletionTracker _timingCompletions = new HarnessTimingCompletionTracker();
 		private ulong _measurementStartFrame;
 		private bool _timingDrainActive;
@@ -93,7 +93,7 @@ namespace ShitDesigner.TestHarness
 		private ulong _frameTimingGateReadyPerformanceFrame;
 		private double _frameTimingGateStartedAt = double.NaN;
 		private double _frameTimingGateWaitSeconds = double.NaN;
-		private ProductionFrameTimingDiagnostic _lastFrameTimingDiagnostic = ProductionFrameTimingDiagnostic.Unavailable;
+		private FrameTimingDiagnostic _lastFrameTimingDiagnostic = FrameTimingDiagnostic.Unavailable;
 		// Unity may complete the final retained timing after the last measured
 		// presentation.  Application publishes that completion with the next
 		// Tick, so the finite FrameTiming history needs one extra host frame
@@ -288,8 +288,8 @@ namespace ShitDesigner.TestHarness
 		{
 			_host = _host == null ? GetComponent<ApplicationHost>() : _host;
 			if (_host == null) _host = FindAnyObjectByType<ApplicationHost>();
-			_assets = _assets == null ? GetComponent<ProductionBootstrapAssets>() : _assets;
-			if (_assets == null) _assets = FindAnyObjectByType<ProductionBootstrapAssets>();
+			_assets = _assets == null ? GetComponent<BootstrapAssets>() : _assets;
+			if (_assets == null) _assets = FindAnyObjectByType<BootstrapAssets>();
 			// A normal production scene already owns the root. Reuse it so
 			// the Player harness observes exactly the same provider/session.
 			if (_host != null && _host.Composition != null)
@@ -614,7 +614,7 @@ namespace ShitDesigner.TestHarness
 		private void CollectCompletedFrame()
 		{
 			if (_composition == null) return;
-			_lastFrameTimingDiagnostic = _composition.Loop?.FrameTimingDiagnostic ?? ProductionFrameTimingDiagnostic.Unavailable;
+			_lastFrameTimingDiagnostic = _composition.Loop?.FrameTimingDiagnostic ?? FrameTimingDiagnostic.Unavailable;
 			if (HarnessMeasurementBoundaryContract.AllowsMeasurementEvidence(_collecting) && !AccumulateGcAllocations()) return;
 			var model = _composition.Application.ReadModel;
 			var output = model?.Output?.Model;
@@ -669,7 +669,7 @@ namespace ShitDesigner.TestHarness
 				TryStartDuePresetVerification(Time.realtimeSinceStartupAsDouble);
 		}
 
-		private HarnessMetricSample CreateTimingMetricSnapshot(ProductionPerformanceHealthSnapshot health,
+		private HarnessMetricSample CreateTimingMetricSnapshot(PerformanceHealthSnapshot health,
 			HarnessPreviewMetric[] previews, bool healthy, bool faulted, bool fatal, ApplicationOutputSurfaceReadModel program)
 		{
 			return new HarnessMetricSample
@@ -721,7 +721,7 @@ namespace ShitDesigner.TestHarness
 
 		private bool InitialFrameTimingReady()
 		{
-			_lastFrameTimingDiagnostic = _composition?.Loop?.FrameTimingDiagnostic ?? ProductionFrameTimingDiagnostic.Unavailable;
+			_lastFrameTimingDiagnostic = _composition?.Loop?.FrameTimingDiagnostic ?? FrameTimingDiagnostic.Unavailable;
 			var output = _composition?.Application?.ReadModel?.Output?.Model;
 			return output != null && HarnessFrameTimingReadinessContract.IsReady(_frameTimingGateStartPerformanceFrame, output.FrameNumber, output.PerformanceFrameNumber,
 				output.MeasuredFramesPerSecond, output.CpuFrameTimeMilliseconds, output.GpuFrameTimeMilliseconds);
@@ -961,7 +961,7 @@ namespace ShitDesigner.TestHarness
 				_controlEvents, _presetTicks, _measureSeconds);
 			if (string.IsNullOrEmpty(_failure) && !evaluation.Passed) _failure = evaluation.Failure;
 			var outputPreviews = model?.Output?.Model?.Previews ?? Array.Empty<ApplicationOutputSurfaceReadModel>();
-			var previewDescriptors = (before?.Previews ?? Array.Empty<ProductionSurfaceOwnershipSnapshot>())
+			var previewDescriptors = (before?.Previews ?? Array.Empty<SurfaceOwnershipSnapshot>())
 				.Select(x => ToPreviewMetric(x, outputPreviews)).ToArray();
 			var previewQualitySamples = (_metrics?.Samples ?? Array.Empty<HarnessMetricSample>()).Select(x => new HarnessPreviewQualitySample
 			{
@@ -1201,7 +1201,7 @@ namespace ShitDesigner.TestHarness
 			return result;
 		}
 
-		private ProductionOwnershipSnapshot SafeCaptureOwnership(ProductionCompositionRoot composition, string phase)
+		private CompositionOwnershipSnapshot SafeCaptureOwnership(CompositionRoot composition, string phase)
 		{
 			if (composition == null) return _lastOwnershipSnapshot;
 			try { return composition.CaptureOwnershipSnapshot(); }
@@ -1212,7 +1212,7 @@ namespace ShitDesigner.TestHarness
 			}
 		}
 
-		private HarnessOwnershipSnapshotArtifact SafeOwnershipArtifact(ProductionOwnershipSnapshot snapshot)
+		private HarnessOwnershipSnapshotArtifact SafeOwnershipArtifact(CompositionOwnershipSnapshot snapshot)
 		{
 			try { return HarnessOwnershipSnapshotArtifact.From(snapshot); }
 			catch (Exception exception)
@@ -1352,7 +1352,7 @@ namespace ShitDesigner.TestHarness
 			else Debug.LogError(message);
 		}
 
-		private static HarnessPreviewMetric ToPreviewMetric(ProductionSurfaceOwnershipSnapshot ownership,
+		private static HarnessPreviewMetric ToPreviewMetric(SurfaceOwnershipSnapshot ownership,
 			IReadOnlyList<ApplicationOutputSurfaceReadModel> outputPreviews)
 		{
 			var output = (outputPreviews ?? Array.Empty<ApplicationOutputSurfaceReadModel>()).FirstOrDefault(x => x.Id == ownership.Id);
@@ -1369,7 +1369,7 @@ namespace ShitDesigner.TestHarness
 			};
 		}
 
-		private static HarnessPreviewMetric ToPreviewMetric(ProductionPerformanceSurfaceSnapshot ownership,
+		private static HarnessPreviewMetric ToPreviewMetric(PerformanceSurfaceSnapshot ownership,
 			IReadOnlyList<ApplicationOutputSurfaceReadModel> outputPreviews)
 		{
 			ApplicationOutputSurfaceReadModel output = null;
@@ -1388,9 +1388,9 @@ namespace ShitDesigner.TestHarness
 			};
 		}
 
-		private static HarnessFrameTimingSourceArtifact ToFrameTimingArtifact(ProductionFrameTimingDiagnostic diagnostic)
+		private static HarnessFrameTimingSourceArtifact ToFrameTimingArtifact(FrameTimingDiagnostic diagnostic)
 		{
-			diagnostic = diagnostic ?? ProductionFrameTimingDiagnostic.Unavailable;
+			diagnostic = diagnostic ?? FrameTimingDiagnostic.Unavailable;
 			return new HarnessFrameTimingSourceArtifact
 			{
 				rawCount = diagnostic.RawCount,

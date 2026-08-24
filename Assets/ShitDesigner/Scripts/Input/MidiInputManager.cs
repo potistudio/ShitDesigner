@@ -115,11 +115,12 @@ namespace ShitDesigner.Input {
 		private IMidiInputSource _source;
 		private bool _ownsSource;
 		private bool _usesInjectedSource;
+		private string _reportedConnectionError = string.Empty;
 
 		public int DeviceId => _deviceId;
 		public string DeviceName => _source?.DeviceName ?? string.Empty;
 		public string LastError { get; private set; } = string.Empty;
-		public bool IsOpen => _source != null;
+		public bool IsOpen => _source != null && (!(_source is IMidiInputAvailability availability) || availability.IsAvailable);
 		public bool IsConfigured => _midiApplication != null && _liveControlApplication != null;
 		public IReadOnlyList<MidiLiveControlBinding> Bindings => _bindings;
 		public IReadOnlyList<MidiLiveControlBindingState> BindingStates => _bindingStates;
@@ -167,6 +168,16 @@ namespace ShitDesigner.Input {
 			if (_openOnConfigure) OpenConfiguredDevice();
 		}
 
+		/// <summary>Retries an owned device that was absent during startup or
+		/// became unavailable later. Injected sources keep their own lifetime.</summary>
+		public bool TryReconnect() {
+			if (_source != null && !IsOpen) CloseOwnedSource();
+			if (_source != null) return true;
+			if (!IsConfigured || _usesInjectedSource || !_openOnConfigure) return false;
+			OpenConfiguredDevice();
+			return _source != null;
+		}
+
 		public void ResetMonitor() {
 			ReceivedEventCount = 0;
 			MatchedBindingCount = 0;
@@ -188,10 +199,14 @@ namespace ShitDesigner.Input {
 			try {
 				_source = new WindowsMidiInputSource((uint)Math.Max(0, _deviceId));
 				_ownsSource = true;
+				_reportedConnectionError = string.Empty;
 			}
 			catch (Exception exception) {
 				LastError = exception.Message;
-				Debug.LogWarning("MIDI Input Manager could not open device " + _deviceId + ": " + LastError, this);
+				if (!string.Equals(_reportedConnectionError, LastError, StringComparison.Ordinal)) {
+					_reportedConnectionError = LastError;
+					Debug.LogWarning("MIDI Input Manager could not open device " + _deviceId + ": " + LastError, this);
+				}
 			}
 		}
 

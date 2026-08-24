@@ -158,7 +158,7 @@ namespace ShitDesigner.Nodes.Tests {
 		}
 
 		[Test]
-		public void ProductionCatalog_RequiresExplicitVisualServiceBindings() {
+		public void Catalog_RequiresExplicitVisualServiceBindings() {
 			var missing = NodeDefinitionCatalog.CreateProduction(new NodeFactoryBindings());
 			Assert.That(missing.IsFailure, Is.True);
 			var bindings = new NodeFactoryBindings();

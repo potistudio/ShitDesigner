@@ -61,8 +61,8 @@ namespace ShitDesigner.Bootstrap.Editor {
 			var behaviour = root.GetComponent<ApplicationHost>();
 			if (behaviour == null) throw new InvalidOperationException("ApplicationHost is missing.");
 			var midiInputManager = root.GetComponent<ShitDesigner.Input.MidiInputManager>() ?? root.AddComponent<ShitDesigner.Input.MidiInputManager>();
-			var assets = root.GetComponent<ProductionBootstrapAssets>();
-			if (assets == null) throw new InvalidOperationException("ProductionBootstrapAssets is missing.");
+			var assets = root.GetComponent<BootstrapAssets>();
+			if (assets == null) throw new InvalidOperationException("BootstrapAssets is missing.");
 			var displayTransform = AssetDatabase.LoadAssetAtPath<Shader>(DisplayTransformShaderPath);
 			if (displayTransform == null) throw new InvalidOperationException("DisplayTransform shader is missing.");
 			var assetsSerialized = new SerializedObject(assets);

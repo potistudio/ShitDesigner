@@ -14,7 +14,7 @@ namespace ShitDesigner.Bootstrap {
 	/// <summary>Explicit serialized production inputs.  The composition root
 	/// never searches Resources, scenes, or global objects for these assets.
 	/// Missing inputs are a startup failure with a visible diagnostic.</summary>
-	public sealed class ProductionBootstrapAssets : MonoBehaviour {
+	public sealed class BootstrapAssets : MonoBehaviour {
 		[Header("Isolated Scene prefabs")]
 		[SerializeField] private GameObject _scene3dPrefab;
 		[SerializeField] private GameObject _scene2dPrefab;
@@ -65,10 +65,10 @@ namespace ShitDesigner.Bootstrap {
 			return ShaderNodeManifestValidator.Validate(shaderManifestAsset.BuildRuntimeManifest());
 		}
 
-		public Result<IProductionVisualBindingProvider> BuildProvider(IProjectFileSystem fileSystem, RenderTexturePool pool) {
+		public Result<IVisualBindingProvider> BuildProvider(IProjectFileSystem fileSystem, RenderTexturePool pool) {
 			if (fileSystem == null || pool == null) return Failure("bootstrap.assets.arguments", "A file system and shared RenderTexturePool are required.");
 			var preflight = Preflight();
-			if (preflight.IsFailure) return Result<IProductionVisualBindingProvider>.Failure(preflight.Diagnostic);
+			if (preflight.IsFailure) return Result<IVisualBindingProvider>.Failure(preflight.Diagnostic);
 
 			var shaders = new ShaderMaterialRegistry();
 			var shaderManifestAsset = ShaderManifest;
@@ -81,7 +81,7 @@ namespace ShitDesigner.Bootstrap {
 			}) {
 				var entry = shaderManifest.Entries.Single(x => string.Equals(x.ShaderKey, pair.Key, StringComparison.Ordinal));
 				var registered = shaders.Register(new ShaderMaterialBinding(pair.Key, pair.Value, descriptor: entry.ToShaderBinding()));
-				if (registered.IsFailure) return Result<IProductionVisualBindingProvider>.Failure(registered.Diagnostic);
+				if (registered.IsFailure) return Result<IVisualBindingProvider>.Failure(registered.Diagnostic);
 			}
 			// Every generated ledger entry keeps a direct Shader reference in
 			// the manifest asset.  Register by TypeId as well as family key so
@@ -92,10 +92,10 @@ namespace ShitDesigner.Bootstrap {
 				if (assetEntry == null || assetEntry.Shader == null)
 					return Failure("bootstrap.assets.shader_reference_missing", "A generated shader entry is missing its direct Shader reference: " + entry.TypeId.Value + ".");
 				var registered = shaders.Register(new ShaderMaterialBinding(entry.ShaderKey, assetEntry.Shader, descriptor: entry.ToShaderBinding()));
-				if (registered.IsFailure) return Result<IProductionVisualBindingProvider>.Failure(registered.Diagnostic);
+				if (registered.IsFailure) return Result<IVisualBindingProvider>.Failure(registered.Diagnostic);
 			}
 
-			var context = new ProductionProjectContext();
+			var context = new ProjectContext();
 			var videoProbe = new ExtensionVideoCapabilityProbe(new FileVideoMetadataProbe());
 			var resolver = new ProjectMediaVideoResolver(() => context.Document, () => context.ProjectRoot, fileSystem, videoProbe);
 			var flashResolver = new ProjectAssetFlashResolver(() => context.Document, () => context.ProjectRoot, fileSystem, resolver);
@@ -114,7 +114,7 @@ namespace ShitDesigner.Bootstrap {
 			var backends = new CompositeVideoBackendFactory(unityBackends, hapBackends);
 			var conversion = new VideoOutputSurfaceFrameAdapter(new UnityVideoFrameConversionPass(_videoConversionMaterial));
 			var graphics = new VideoGraphicsCapabilities(hapGraphics.SupportsDirectCompressed, hapGraphics.SupportsCompute, hapGraphics.SupportsCpu);
-			var provider = new ExplicitProductionVisualBindingProvider(
+			var provider = new ExplicitVisualBindingProvider(
 				() => NodeCatalogBootstrap.CreateUnitySceneIsolation(),
 				_scene3dPrefab,
 				_scene2dPrefab,
@@ -130,16 +130,16 @@ namespace ShitDesigner.Bootstrap {
 					context.ProjectRoot = root ?? string.Empty;
 				},
 				applicationResources: new IDisposable[] { hapBridge, conversion });
-			return Result<IProductionVisualBindingProvider>.Success(provider);
+			return Result<IVisualBindingProvider>.Success(provider);
 		}
 
-		private static Result<IProductionVisualBindingProvider> Failure(string code, string message)
-			=> Result<IProductionVisualBindingProvider>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap"));
+		private static Result<IVisualBindingProvider> Failure(string code, string message)
+			=> Result<IVisualBindingProvider>.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap"));
 
 		private static Result PreflightFailure(string code, string message)
 			=> Result.Failure(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap"));
 
-		private sealed class ProductionProjectContext {
+		private sealed class ProjectContext {
 			public ProjectDocument Document;
 			public string ProjectRoot = string.Empty;
 		}

@@ -553,12 +553,12 @@ namespace ShitDesigner.TestHarness.Tests
 			var after = HarnessOwnershipContract.CreateTestSnapshot(1, 0, 0, 0, 0, 1920, 1080, "R16G16B16A16_SFloat", 60, true);
 			Assert.That(HarnessOwnershipContract.ValidateTeardown(after), Does.Contain("resources"));
 			Assert.That(HarnessOwnershipContract.ValidateActiveDescriptors(before), Is.Empty);
-			var lowerPreviewQuality = new ProductionOwnershipSnapshot(null, 0, 0, 0, 0, 3,
-				new ProductionSurfaceOwnershipSnapshot("program", "Program", 1920, 1080, "R16G16B16A16_SFloat", 60, 2),
+			var lowerPreviewQuality = new CompositionOwnershipSnapshot(null, 0, 0, 0, 0, 3,
+				new SurfaceOwnershipSnapshot("program", "Program", 1920, 1080, "R16G16B16A16_SFloat", 60, 2),
 				new[]
 				{
-					new ProductionSurfaceOwnershipSnapshot("preview1", "Preview", 320, 180, "R8G8B8A8_UNorm", 20, 2),
-					new ProductionSurfaceOwnershipSnapshot("preview2", "Preview", 160, 90, "R8G8B8A8_UNorm", 10, 2)
+					new SurfaceOwnershipSnapshot("preview1", "Preview", 320, 180, "R8G8B8A8_UNorm", 20, 2),
+					new SurfaceOwnershipSnapshot("preview2", "Preview", 160, 90, "R8G8B8A8_UNorm", 10, 2)
 				}, false);
 			Assert.That(HarnessOwnershipContract.ValidateActiveDescriptors(lowerPreviewQuality), Is.Empty);
 			var wrongProgram = HarnessOwnershipContract.CreateTestSnapshot(2, 2, 1, 1, 1, 1280, 720, "R16G16B16A16_SFloat", 60, false);

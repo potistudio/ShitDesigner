@@ -224,20 +224,20 @@ namespace ShitDesigner.TestHarness
 
 	public static class HarnessOwnershipContract
 	{
-		public static ProductionOwnershipSnapshot CreateTestSnapshot(int sceneCount, int layerCount, int backendCount, int nativeContextCount,
+		public static CompositionOwnershipSnapshot CreateTestSnapshot(int sceneCount, int layerCount, int backendCount, int nativeContextCount,
 			int activeOutputLeases, int programWidth, int programHeight, string programFormat, int programTargetFps, bool runtimeDisposed,
 			int previewTargetFps = 30)
 		{
 			var previews = new[]
 			{
-				new ProductionSurfaceOwnershipSnapshot("preview1", "Preview", 640, 360, "R8G8B8A8_UNorm", previewTargetFps, 10),
-				new ProductionSurfaceOwnershipSnapshot("preview2", "Preview", 640, 360, "R8G8B8A8_UNorm", previewTargetFps, 10)
+				new SurfaceOwnershipSnapshot("preview1", "Preview", 640, 360, "R8G8B8A8_UNorm", previewTargetFps, 10),
+				new SurfaceOwnershipSnapshot("preview2", "Preview", 640, 360, "R8G8B8A8_UNorm", previewTargetFps, 10)
 			};
-			return new ProductionOwnershipSnapshot(null, sceneCount, layerCount, backendCount, nativeContextCount, activeOutputLeases,
-				new ProductionSurfaceOwnershipSnapshot("program", "Program", programWidth, programHeight, programFormat, programTargetFps, 10), previews, runtimeDisposed);
+			return new CompositionOwnershipSnapshot(null, sceneCount, layerCount, backendCount, nativeContextCount, activeOutputLeases,
+				new SurfaceOwnershipSnapshot("program", "Program", programWidth, programHeight, programFormat, programTargetFps, 10), previews, runtimeDisposed);
 		}
 
-		public static string ValidateTeardown(ProductionOwnershipSnapshot snapshot)
+		public static string ValidateTeardown(CompositionOwnershipSnapshot snapshot)
 		{
 			if (snapshot == null) return "Ownership snapshot is missing after teardown.";
 			if (!snapshot.RuntimeDisposed || snapshot.SceneCount != 0 || snapshot.LayerCount != 0 || snapshot.BackendCount != 0 ||
@@ -246,12 +246,12 @@ namespace ShitDesigner.TestHarness
 			return string.Empty;
 		}
 
-		public static string ValidateActiveDescriptors(ProductionOwnershipSnapshot snapshot)
+		public static string ValidateActiveDescriptors(CompositionOwnershipSnapshot snapshot)
 		{
 			if (snapshot?.Program == null || snapshot.Program.Width != 1920 || snapshot.Program.Height != 1080 ||
 				!HarnessMetricEvaluator.IsPermittedProgramFormat(snapshot.Program.GraphicsFormat) || snapshot.Program.TargetFramesPerSecond != 60)
 				return "Program active descriptor is invalid.";
-			var previews = snapshot.Previews ?? Array.Empty<ProductionSurfaceOwnershipSnapshot>();
+			var previews = snapshot.Previews ?? Array.Empty<SurfaceOwnershipSnapshot>();
 			if (previews.Count != 2 || previews.Any(x => x == null || !HarnessPreviewQualityContract.IsValidDescriptor(x.Width, x.Height, x.TargetFramesPerSecond) || string.IsNullOrWhiteSpace(x.GraphicsFormat)))
 				return "Preview active descriptors are invalid.";
 			return string.Empty;
@@ -1417,7 +1417,7 @@ namespace ShitDesigner.TestHarness
 		public HarnessOwnershipSurfaceArtifact[] previews;
 		public HarnessOwnershipTexturePoolArtifact texturePool;
 
-		public static HarnessOwnershipSnapshotArtifact From(ProductionOwnershipSnapshot snapshot)
+		public static HarnessOwnershipSnapshotArtifact From(CompositionOwnershipSnapshot snapshot)
 		{
 			if (snapshot == null) return new HarnessOwnershipSnapshotArtifact { available = false, previews = Array.Empty<HarnessOwnershipSurfaceArtifact>() };
 			return new HarnessOwnershipSnapshotArtifact
@@ -1430,12 +1430,12 @@ namespace ShitDesigner.TestHarness
 				nativeContextCount = snapshot.NativeContextCount,
 				activeOutputLeaseCount = snapshot.ActiveOutputLeaseCount,
 				program = ToSurface(snapshot.Program),
-				previews = (snapshot.Previews ?? Array.Empty<ProductionSurfaceOwnershipSnapshot>()).Select(ToSurface).ToArray(),
+				previews = (snapshot.Previews ?? Array.Empty<SurfaceOwnershipSnapshot>()).Select(ToSurface).ToArray(),
 				texturePool = ToTexturePool(snapshot.TexturePool)
 			};
 		}
 
-		private static HarnessOwnershipSurfaceArtifact ToSurface(ProductionSurfaceOwnershipSnapshot surface)
+		private static HarnessOwnershipSurfaceArtifact ToSurface(SurfaceOwnershipSnapshot surface)
 		{
 			if (surface == null) return null;
 			return new HarnessOwnershipSurfaceArtifact

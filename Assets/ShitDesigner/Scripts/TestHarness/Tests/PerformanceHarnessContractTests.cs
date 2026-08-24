@@ -405,7 +405,7 @@ namespace ShitDesigner.TestHarness.Tests
 			public void Present(ApplicationFrameResult frame) { }
 		}
 
-		private sealed class ExpiredOnceTiming : IProductionFrameTimingSource
+		private sealed class ExpiredOnceTiming : IFrameTimingSource
 		{
 			private int _polls;
 			public ulong FirstPresentedFrame { get; private set; }
@@ -431,7 +431,7 @@ namespace ShitDesigner.TestHarness.Tests
 			}
 		}
 
-		private sealed class CompletesAtPollTiming : IProductionFrameTimingSource
+		private sealed class CompletesAtPollTiming : IFrameTimingSource
 		{
 			private readonly int _completionPoll;
 			private readonly bool _unavailable;
