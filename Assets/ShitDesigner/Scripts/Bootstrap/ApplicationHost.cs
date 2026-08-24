@@ -1,6 +1,4 @@
 using System;
-using System.IO;
-using ShitDesigner.Application;
 using ShitDesigner.Core;
 using ShitDesigner.Input;
 using ShitDesigner.Presentation;
@@ -19,8 +17,6 @@ namespace ShitDesigner.Bootstrap
         [SerializeField] private PanelSettings _panelSettings;
         [SerializeField] private MidiInputManager _midiInputManager;
         [SerializeField] private bool _createOnAwake = true;
-        [SerializeField] private bool _createDefaultProject = true;
-        [SerializeField] private string _defaultProjectName = "Untitled";
         private ProductionCompositionRoot _composition;
         private ProductionCompositionRoot _compositionOverride;
         private ApplicationLoopDriver _driver;
@@ -110,9 +106,8 @@ namespace ShitDesigner.Bootstrap
                 _composition?.Dispose();
                 _composition = null;
             });
-            var project = _createDefaultProject ? CreateDefaultProject() : Result.Success();
-            if (project.IsSuccess) Debug.Log("[Compose] Application services composed", this);
-            return project;
+            Debug.Log("[Compose] Application services composed", this);
+            return Result.Success();
         }
 
         private Result<HandshakeReport> Handshake()
@@ -148,16 +143,6 @@ namespace ShitDesigner.Bootstrap
             EnsureCold();
             _compositionOverride = composition ?? throw new ArgumentNullException(nameof(composition));
             return StartHost();
-        }
-
-        private Result CreateDefaultProject()
-        {
-            var defaultRoot = Path.Combine(UnityEngine.Application.persistentDataPath, "ShitDesigner", "Untitled");
-            var created = _composition.Application.NewProject(string.IsNullOrWhiteSpace(_defaultProjectName) ? "Untitled" : _defaultProjectName,
-                defaultRoot, UnsavedChangesDecision.Discard);
-            if (created.IsSuccess) return Result.Success();
-            return Result.Failure(created.Diagnostic ?? new Diagnostic(new DiagnosticCode("bootstrap.compose.default_project_failed"), Severity.Error,
-                "The default project could not be created.", module: "bootstrap"));
         }
 
         private void OnDestroy()
