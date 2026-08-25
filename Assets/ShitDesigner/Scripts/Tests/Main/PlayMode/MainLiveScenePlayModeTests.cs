@@ -41,6 +41,11 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(host.ReadModel.SelectedSceneId, Is.EqualTo(nextScene.Id));
 			Assert.That(host.ReadModel.RequestResults.Any(result => result.SequenceNumber == enqueue.SequenceNumber && result.Applied), Is.True);
 			Assert.That(host.ReadModel.ProgramFrameNumber, Is.GreaterThan(1));
+
+			var midi = (Component)typeof(ApplicationLiveHost).GetField("_midiInputManager", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(host);
+			host.Shutdown();
+			Assert.That(host.State, Is.EqualTo(ApplicationLiveHostState.Offline));
+			Assert.That((bool)midi.GetType().GetProperty("IsOpen")?.GetValue(midi), Is.False);
 		}
 
 		private static bool HasVisiblePixels(RenderTexture source) {

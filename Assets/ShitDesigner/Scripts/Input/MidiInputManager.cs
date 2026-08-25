@@ -115,6 +115,7 @@ namespace ShitDesigner.Input {
 		private IMidiInputSource _source;
 		private bool _ownsSource;
 		private bool _usesInjectedSource;
+		private bool _deferOpenUntilReconnect;
 		private string _reportedConnectionError = string.Empty;
 
 		public int DeviceId => _deviceId;
@@ -167,6 +168,13 @@ namespace ShitDesigner.Input {
 			if (_usesInjectedSource) return;
 			CloseOwnedSource();
 			if (_openOnConfigure) OpenConfiguredDevice();
+		}
+
+		/// <summary>Prepares host-owned polling while deferring device discovery to its capability loop.</summary>
+		public void InitializeForHostPolling() {
+			Shutdown();
+			RefreshBindings();
+			_deferOpenUntilReconnect = true;
 		}
 
 		/// <summary>Retries an owned device that was absent during startup or
@@ -271,6 +279,7 @@ namespace ShitDesigner.Input {
 			CloseOwnedSource();
 			_source = null;
 			_usesInjectedSource = false;
+			_deferOpenUntilReconnect = false;
 			_midiApplication = null;
 			_liveControlApplication = null;
 			_projectApplication = null;
@@ -291,7 +300,7 @@ namespace ShitDesigner.Input {
 		}
 
 		private void Start() {
-			if (_source != null || !_openOnConfigure) return;
+			if (_source != null || !_openOnConfigure || _deferOpenUntilReconnect) return;
 			RefreshBindings();
 			OpenConfiguredDevice();
 		}
