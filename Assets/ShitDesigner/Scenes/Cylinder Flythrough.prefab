@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 2589893887373257150}
   - component: {fileID: 8028075610238429505}
-  - component: {fileID: 635285470350421817}
   - component: {fileID: 7128075610238429505}
   m_Layer: 0
   m_Name: Flythrough Camera
@@ -85,14 +84,6 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!81 &635285470350421817
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6282053646378543566}
-  m_Enabled: 1
 --- !u!114 &7128075610238429505
 MonoBehaviour:
   m_ObjectHideFlags: 0

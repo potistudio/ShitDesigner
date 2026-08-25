@@ -518,7 +518,8 @@ namespace ShitDesigner.Application.Tests {
 				var nodeId = NodeInstanceId.New().Value;
 				var request = application.SubmitGraph(new ApplicationGraphEditRequest(ApplicationGraphEditKind.AddNode, nodeId, nodeTypeId: "test.graph.node", nodeDisplayName: "Added"));
 				Assert.That(request.Status, Is.EqualTo(ApplicationCommandStatus.Accepted));
-				application.Tick(0d);
+				Assert.DoesNotThrow(() => application.Tick(0d),
+					"A successful graph command result must not read the guarded Error property.");
 				Assert.That(application.ReadModel.Commands.Single(x => x.CommandRequestId == request.CommandRequestId).Status, Is.EqualTo(ApplicationCommandStatus.Applied));
 				Assert.That(application.ReadModel.Graph.Model.Nodes.Any(x => x.Id == nodeId), Is.True);
 				var delete = application.SubmitGraph(new ApplicationGraphEditRequest(ApplicationGraphEditKind.DeleteNode, nodeId));
