@@ -1,55 +1,62 @@
 using System.Linq;
 using NUnit.Framework;
+using ShitDesigner.Bootstrap;
 using ShitDesigner.Input;
+using ShitDesigner.Rendering;
+using ShitDesigner.Scene;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
 
 namespace ShitDesigner.Main.Tests {
 	[TestFixture]
 	public sealed class MainSceneWiringTests {
 		[Test]
-		public void MainWiresItsRenderTextureThroughTheExistingProgramOutput() {
+		public void MainUsesOnlyTheDedicatedLiveHostComposition() {
 			var scene = EditorSceneManager.OpenScene("Assets/ShitDesigner/Scenes/Main/Main.unity", OpenSceneMode.Additive);
 			try {
-				var mainRoot = scene.GetRootGameObjects().Single(root => root.name == "Main");
-				var legacyHost = scene.GetRootGameObjects().Single(root => root.name == "Host");
-				var liveRoot = scene.GetRootGameObjects().Single(root => root.name == "Main Live Runtime");
-				var bootstrap = liveRoot.GetComponent<MainLiveSceneBootstrap>();
-				var input = liveRoot.GetComponent<MainLiveInput>();
-				var midiManager = liveRoot.GetComponent<MidiInputManager>();
-				var midiInput = liveRoot.GetComponent<MainLiveMidiInput>();
-				var output = liveRoot.GetComponent<MainLiveOutput>();
+				var root = scene.GetRootGameObjects().Single();
+				var host = root.GetComponent<ApplicationLiveHost>();
+				var graph = root.GetComponent<LiveGraphBootstrap>();
+				var midi = root.GetComponent<MidiInputManager>();
+				var capability = root.GetComponent<LiveCapabilityMonitor>();
+				var output = root.GetComponent<LiveExternalDisplayOutput>();
+				var ui = root.GetComponent<LiveUiController>();
+				var document = root.GetComponent<UIDocument>();
 
-				Assert.That(legacyHost.activeSelf, Is.True, "The existing Host must remain active because it owns the runtime UI composition.");
-				Assert.That(legacyHost.transform.Find("UI/Top Bar Panel").gameObject.activeInHierarchy, Is.True);
-				Assert.That(bootstrap, Is.Not.Null);
-				Assert.That(input, Is.Not.Null);
-				Assert.That(midiManager, Is.Not.Null);
-				Assert.That(midiInput, Is.Not.Null);
+				Assert.That(root.name, Is.EqualTo("Main Live Host"));
+				Assert.That(host, Is.Not.Null);
+				Assert.That(graph, Is.Not.Null);
+				Assert.That(midi, Is.Not.Null);
+				Assert.That(capability, Is.Not.Null);
 				Assert.That(output, Is.Not.Null);
-				Assert.That(bootstrap.Scenes.Count, Is.EqualTo(2));
-				Assert.That(bootstrap.Scenes.All(definition => definition != null && definition.Prefab != null), Is.True);
-				Assert.That(bootstrap.Scenes.Select(definition => definition.Prefab).Distinct().Count(), Is.EqualTo(2));
+				Assert.That(ui, Is.Not.Null);
+				Assert.That(document, Is.Not.Null);
+				Assert.That(document.visualTreeAsset, Is.Not.Null);
+				Assert.That(document.panelSettings, Is.Not.Null);
+				Assert.That(graph.Scenes.Length, Is.EqualTo(2));
+				Assert.That(graph.Scenes.All(definition => definition != null && !string.IsNullOrWhiteSpace(definition.Id) && definition.Prefab != null), Is.True);
+				Assert.That(graph.Scenes.Select(definition => definition.Id).Distinct().Count(), Is.EqualTo(2));
+				Assert.That(graph.Scenes.All(definition => definition.Prefab.GetComponent<LiveSceneRoot>() != null), Is.True);
 
-				var serializedBootstrap = new SerializedObject(bootstrap);
-				Assert.That(serializedBootstrap.FindProperty("_input").objectReferenceValue, Is.SameAs(input));
-				Assert.That(serializedBootstrap.FindProperty("_midiInput").objectReferenceValue, Is.SameAs(midiInput));
-				Assert.That(serializedBootstrap.FindProperty("_output").objectReferenceValue, Is.SameAs(output));
-				var serializedMidiInput = new SerializedObject(midiInput);
-				Assert.That(serializedMidiInput.FindProperty("_manager").objectReferenceValue, Is.SameAs(midiManager));
-				var applicationHost = legacyHost.GetComponents<MonoBehaviour>().Single(component => component.GetType().Name == "ApplicationHost");
-				var serializedApplicationHost = new SerializedObject(applicationHost);
-				Assert.That(serializedApplicationHost.FindProperty("m_MidiInputManager").objectReferenceValue, Is.SameAs(midiManager));
-				var externalOutput = mainRoot.GetComponents<MonoBehaviour>().Single(component => component.GetType().Name == "SimpleExternalDisplayOutput");
-				var serializedExternalOutput = new SerializedObject(externalOutput);
-				Assert.That(serializedExternalOutput.FindProperty("_displayNumber").intValue, Is.EqualTo(2));
-				Assert.That(serializedExternalOutput.FindProperty("_activateOnStart").boolValue, Is.False, "Camera mirroring must not bypass the Program output surface.");
+				var serializedHost = new SerializedObject(host);
+				Assert.That(serializedHost.FindProperty("_graphBootstrap").objectReferenceValue, Is.SameAs(graph));
+				Assert.That(serializedHost.FindProperty("_midiInputManager").objectReferenceValue, Is.SameAs(midi));
+				Assert.That(serializedHost.FindProperty("_capabilityMonitor").objectReferenceValue, Is.SameAs(capability));
+				Assert.That(serializedHost.FindProperty("_externalDisplay").objectReferenceValue, Is.SameAs(output));
+				Assert.That(serializedHost.FindProperty("_uiController").objectReferenceValue, Is.SameAs(ui));
+				Assert.That(serializedHost.FindProperty("_bootOnAwake").boolValue, Is.True);
 				var serializedOutput = new SerializedObject(output);
-				Assert.That(serializedOutput.FindProperty("m_Width").intValue, Is.EqualTo(1920));
-				Assert.That(serializedOutput.FindProperty("m_Height").intValue, Is.EqualTo(1080));
-				Assert.That(serializedOutput.FindProperty("m_Host").objectReferenceValue, Is.SameAs(applicationHost));
+				Assert.That(serializedOutput.FindProperty("_displayNumber").intValue, Is.EqualTo(2));
+				Assert.That(serializedOutput.FindProperty("_displayTransformShader").objectReferenceValue, Is.Not.Null);
+
+				Assert.That(root.GetComponent<ApplicationHost>(), Is.Null);
+				Assert.That(root.GetComponent<ApplicationLoopDriver>(), Is.Null);
+				Assert.That(root.GetComponent<StartupSceneGraphBootstrap>(), Is.Null);
+				Assert.That(root.GetComponent<Scene3DNode>(), Is.Null);
+				Assert.That(root.GetComponent<SimpleExternalDisplayOutput>(), Is.Null);
 			}
 			finally { EditorSceneManager.CloseScene(scene, removeScene: true); }
 		}

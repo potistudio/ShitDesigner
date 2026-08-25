@@ -13,7 +13,6 @@ namespace ShitDesigner.Scene {
 		public GameObject Prefab => _prefab;
 
 		public UnitResult<Diagnostic> Validate() {
-			if (string.IsNullOrWhiteSpace(Id)) return Failure("scene.definition.id", "A Scene3DDefinition requires an ID.");
 			if (_prefab == null) return Failure("scene.definition.prefab", "A Scene3DDefinition requires a prefab.");
 			return UnitResult.Success<Diagnostic>();
 		}

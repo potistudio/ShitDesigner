@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using NUnit.Framework;
+using ShitDesigner.Application;
 using ShitDesigner.Core;
 using ShitDesigner.Input;
 using UnityEngine;
@@ -17,8 +18,8 @@ namespace ShitDesigner.Main.Tests {
 				var queue = new LiveParameterQueue();
 				using (var input = new LiveMidiInput(manager, queue, new[] { "scene-a", "scene-b" })) {
 					input.SetSelectedScene("scene-a");
-					source.Enqueue(new MidiInputEvent(new MidiControl(MidiControlKind.Note, 1, 37), 127));
-					source.Enqueue(new MidiInputEvent(new MidiControl(MidiControlKind.ControlChange, 1, 21), 64));
+					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.Note, 1, 37), 127));
+					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.ControlChange, 1, 21), 64));
 					manager.Poll();
 				}
 
@@ -45,11 +46,11 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		private sealed class NullMidiApplication : IMidiInputApplicationPort {
-			public void HandleMidi(MidiInputEvent inputEvent) { }
+			public ApplicationCommandResult HandleMidi(MidiInputEvent inputEvent) => ApplicationCommandResult.Ignored();
 		}
 
 		private sealed class NullLiveControlApplication : ILiveControlApplicationPort {
-			public void SetLiveControlValue(LogicalControlId id, float normalizedValue) { }
+			public ApplicationCommandResult SetLiveControlValue(LogicalControlId id, float normalizedValue) => ApplicationCommandResult.Ignored();
 		}
 	}
 }

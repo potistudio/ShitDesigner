@@ -70,6 +70,8 @@ namespace ShitDesigner.Main {
 			if (configured.Length == 0) throw new InvalidOperationException("At least one live scene is required.");
 			if (configured.Any(definition => definition == null || definition.Validate().IsFailure))
 				throw new InvalidOperationException("Every live scene requires a valid Scene3DDefinition.");
+			if (configured.Any(definition => string.IsNullOrWhiteSpace(definition.Id)))
+				throw new InvalidOperationException("Every live scene requires an ID.");
 			if (configured.Select(definition => definition.Id).Distinct(StringComparer.Ordinal).Count() != configured.Length)
 				throw new InvalidOperationException("Live scene IDs must be unique.");
 
