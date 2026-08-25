@@ -29,11 +29,11 @@ namespace ShitDesigner.Bootstrap {
 		private readonly List<Action> _stopShutdown = new List<Action>();
 		private readonly List<Action> _teardownShutdown = new List<Action>();
 		private readonly List<Diagnostic> _shutdownDiagnostics = new List<Diagnostic>();
-		private SystemState _state = SystemState.Cold;
+		private SystemState m_State = SystemState.Cold;
 		private Diagnostic _startupDiagnostic;
 		private HandshakeReport _handshakeReport;
 		public CompositionRoot Composition => m_Composition;
-		public SystemState State => _state;
+		public SystemState State => m_State;
 		public Diagnostic StartupDiagnostic => _startupDiagnostic;
 		public HandshakeReport HandshakeReport => _handshakeReport;
 		public IReadOnlyList<Diagnostic> ShutdownDiagnostics => _shutdownDiagnostics;
@@ -70,7 +70,7 @@ namespace ShitDesigner.Bootstrap {
 		/// scene load; it cannot be restarted after shutdown.
 		/// </summary>
 		private UnitResult<Diagnostic> StartHost() {
-			if (_state != SystemState.Cold && _state != SystemState.Offline)
+			if (m_State != SystemState.Cold && m_State != SystemState.Offline)
 				return Failure("bootstrap.startup.state", "Production startup can only begin from Cold or Offline.");
 
 			_startupDiagnostic = null;
@@ -82,15 +82,9 @@ namespace ShitDesigner.Bootstrap {
 
 			var started = Execute(SystemState.Preflight, Preflight);
 			if (started.IsSuccess) started = Execute(SystemState.Composing, Compose);
-			if (started.IsSuccess) {
-				var handshake = ExecuteHandshake(Handshake);
-				if (handshake.IsFailure) started = UnitResult.Failure<Diagnostic>(handshake.Error);
-				else {
-					_handshakeReport = handshake.Value;
-					started = Execute(SystemState.Activating, Activate);
-				}
-			}
-			if (started.IsSuccess) _state = _handshakeReport.IsDegraded ? SystemState.Degraded : SystemState.Online;
+			if (started.IsSuccess) started = Execute(SystemState.Handshaking, Handshake);
+			if (started.IsSuccess) started = Execute(SystemState.Activating, Activate);
+			if (started.IsSuccess) m_State = _handshakeReport.IsDegraded ? SystemState.Degraded : SystemState.Online;
 			if (started.IsFailure) {
 				Debug.LogError(started.Error == null ? "Production startup failed." : started.Error.Code + ": " + started.Error.Message, this);
 			}
@@ -142,12 +136,17 @@ namespace ShitDesigner.Bootstrap {
 			return UnitResult.Success<Diagnostic>();
 		}
 
-		private Result<HandshakeReport, Diagnostic> Handshake() {
+		private UnitResult<Diagnostic> Handshake() {
 			var result = m_Composition == null
 				? Result.Failure<HandshakeReport, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.handshake.composition_missing"), Severity.Error, "Production composition is unavailable.", module: "bootstrap"))
 				: m_Composition.Handshake();
-			if (result.IsSuccess) Debug.Log(result.Value.IsDegraded ? "[Handshake] Optional capabilities unavailable" : "[Handshake] Capabilities ready", this);
-			return result;
+			if (result.IsFailure) return UnitResult.Failure<Diagnostic>(result.Error);
+			if (result.Value == null)
+				return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.handshake.report_missing"), Severity.Error,
+					"Production handshake completed without a report.", module: "bootstrap"));
+			_handshakeReport = result.Value;
+			Debug.Log(_handshakeReport.IsDegraded ? "[Handshake] Optional capabilities unavailable" : "[Handshake] Capabilities ready", this);
+			return UnitResult.Success<Diagnostic>();
 		}
 
 		private UnitResult<Diagnostic> Activate() {
@@ -170,26 +169,27 @@ namespace ShitDesigner.Bootstrap {
 		private void OnCapabilitiesChanged(HandshakeReport report) {
 			var previous = State;
 			if (report == null) throw new ArgumentNullException(nameof(report));
-			if (_state == SystemState.Online || _state == SystemState.Degraded) {
+			if (m_State == SystemState.Online || m_State == SystemState.Degraded) {
 				_handshakeReport = report;
-				_state = report.IsDegraded ? SystemState.Degraded : SystemState.Online;
+				m_State = report.IsDegraded ? SystemState.Degraded : SystemState.Online;
 			}
 			if (State != previous) Debug.Log(State == SystemState.Degraded ? "[System] Degraded" : "[System] Online", this);
 		}
 
 		private void EnsureCold() {
-			if (_state != SystemState.Cold && _state != SystemState.Offline)
+			if (m_State != SystemState.Cold && m_State != SystemState.Offline)
 				throw new InvalidOperationException("Host configuration is only allowed before startup.");
 		}
 
 		private void Shutdown() {
-			if (_state == SystemState.Cold || _state == SystemState.Offline) return;
+			if (m_State == SystemState.Cold || m_State == SystemState.Offline) return;
 			ReleaseOwned();
-			_state = SystemState.Offline;
+			m_State = SystemState.Offline;
 		}
 
 		private UnitResult<Diagnostic> Execute(SystemState state, Func<UnitResult<Diagnostic>> phase) {
-			_state = state;
+			m_State = state;
+
 			try {
 				var result = phase();
 				return result.IsFailure ? Fail(result.Error) : result;
@@ -197,18 +197,6 @@ namespace ShitDesigner.Bootstrap {
 			catch (Exception exception) {
 				return Fail(new Diagnostic(new DiagnosticCode("bootstrap.startup.phase_failed"), Severity.Error,
 					state + " phase failed.", module: "bootstrap", exception: DiagnosticExceptionInfo.FromException(exception)));
-			}
-		}
-
-		private Result<HandshakeReport, Diagnostic> ExecuteHandshake(Func<Result<HandshakeReport, Diagnostic>> phase) {
-			_state = SystemState.Handshaking;
-			try {
-				var result = phase();
-				return result.IsFailure ? FailHandshake(result.Error) : result;
-			}
-			catch (Exception exception) {
-				return FailHandshake(new Diagnostic(new DiagnosticCode("bootstrap.startup.phase_failed"), Severity.Error,
-					"Handshaking phase failed.", module: "bootstrap", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 		}
 
@@ -220,7 +208,7 @@ namespace ShitDesigner.Bootstrap {
 		}
 
 		private void ExecuteShutdown(SystemState state, List<Action> actions) {
-			_state = state;
+			m_State = state;
 			for (var index = actions.Count - 1; index >= 0; index--) {
 				try { actions[index](); }
 				catch (Exception exception) {
@@ -237,13 +225,8 @@ namespace ShitDesigner.Bootstrap {
 			_startupDiagnostic = startupDiagnostic;
 			ReleaseOwned();
 			_startupDiagnostic = startupDiagnostic;
-			_state = SystemState.Faulted;
+			m_State = SystemState.Faulted;
 			return UnitResult.Failure<Diagnostic>(startupDiagnostic);
-		}
-
-		private Result<HandshakeReport, Diagnostic> FailHandshake(Diagnostic diagnostic) {
-			var failed = Fail(diagnostic);
-			return Result.Failure<HandshakeReport, Diagnostic>(failed.Error);
 		}
 
 		private void ClearShutdownActions() {
