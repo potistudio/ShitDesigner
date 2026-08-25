@@ -16,10 +16,10 @@ namespace ShitDesigner.Bootstrap {
 			if (_definition == null)
 				return Result.Failure<string, Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.graph.scene3d_definition_missing"), Severity.Error,
 					"A Scene3DNode requires a Scene3DDefinition.", module: "bootstrap"));
-			var installed = assets.ValidateInstalled(_definition);
-			return installed.IsFailure
-				? Result.Failure<string, Diagnostic>(installed.Error)
-				: Result.Success<string, Diagnostic>(_definition.CreateRawState());
+			var registered = assets.RegisterScene3dPrefab(NodeId, _definition);
+			return registered.IsFailure
+				? Result.Failure<string, Diagnostic>(registered.Error)
+				: Result.Success<string, Diagnostic>("{}");
 		}
 	}
 }

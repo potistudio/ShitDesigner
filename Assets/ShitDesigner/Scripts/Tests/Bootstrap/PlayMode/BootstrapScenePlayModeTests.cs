@@ -687,8 +687,6 @@ namespace ShitDesigner.Bootstrap.Tests {
 			Assert.That(assets, Is.Not.Null, "BootstrapAssets must be present in the bootstrap scene.");
 			var scene3d = assets.Scene3dPrefab;
 			var scene2d = assets.Scene2dPrefab;
-			Assert.That(assets.Scene3DDefinitionCatalog, Is.Not.Null);
-			Assert.That(assets.Scene3DDefinitionCatalog.Validate().IsSuccess, Is.True);
 			Assert.That(scene3d, Is.Not.Null);
 			Assert.That(scene2d, Is.Not.Null);
 			Assert.That(scene3d.GetComponentsInChildren<Camera>(true), Has.Length.EqualTo(1));
