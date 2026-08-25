@@ -36,6 +36,7 @@ namespace ShitDesigner.Main {
 				autoGenerateMips = false
 			};
 			if (!_displayTexture.Create()) throw new InvalidOperationException("The external Display texture could not be created.");
+			ClearDisplayTexture();
 
 			var cameraObject = new GameObject("Live External Display Camera");
 			cameraObject.transform.SetParent(transform, false);
@@ -107,6 +108,13 @@ namespace ShitDesigner.Main {
 			LastError = error;
 			IsOutputActive = false;
 			return false;
+		}
+
+		private void ClearDisplayTexture() {
+			var previous = RenderTexture.active;
+			RenderTexture.active = _displayTexture;
+			GL.Clear(true, true, Color.black);
+			RenderTexture.active = previous;
 		}
 
 		private static void DestroyUnityObject(UnityEngine.Object value) {
