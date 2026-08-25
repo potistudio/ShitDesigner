@@ -245,10 +245,8 @@ namespace ShitDesigner.Nodes {
 		[SerializeField] private List<NodeTypeCatalogPortRecord> ports = new List<NodeTypeCatalogPortRecord>();
 		[SerializeField] private List<NodeTypeCatalogParameterRecord> parameters = new List<NodeTypeCatalogParameterRecord>();
 		[SerializeField] private string shaderKey;
-		[SerializeField] private string prefabKey;
 		[SerializeField] private Shader shader;
 		[SerializeField] private Material templateMaterial;
-		[SerializeField] private GameObject scenePrefab;
 		[SerializeField] private int outputPass;
 		[SerializeField] private ShaderNodeFamily shaderFamily;
 		[SerializeField] private string shaderVariantId;
@@ -272,10 +270,8 @@ namespace ShitDesigner.Nodes {
 		public IReadOnlyList<NodeTypeCatalogPortRecord> Ports => ports ?? (IReadOnlyList<NodeTypeCatalogPortRecord>)Array.Empty<NodeTypeCatalogPortRecord>();
 		public IReadOnlyList<NodeTypeCatalogParameterRecord> Parameters => parameters ?? (IReadOnlyList<NodeTypeCatalogParameterRecord>)Array.Empty<NodeTypeCatalogParameterRecord>();
 		public string ShaderKey => shaderKey ?? string.Empty;
-		public string PrefabKey => prefabKey ?? string.Empty;
 		public Shader Shader => shader;
 		public Material TemplateMaterial => templateMaterial;
-		public GameObject ScenePrefab => scenePrefab;
 		public int OutputPass => outputPass;
 		public ShaderNodeFamily ShaderFamily => shaderFamily;
 		public string ShaderVariantId => shaderVariantId ?? string.Empty;
@@ -299,7 +295,6 @@ namespace ShitDesigner.Nodes {
 			parameters = entry.Parameters.Select(x => new NodeTypeCatalogParameterRecord(x)).ToList();
 			shaderKey = entry.ShaderBinding?.ShaderKey ?? string.Empty;
 			outputPass = entry.ShaderBinding?.OutputPass ?? 0;
-			prefabKey = entry.SceneBinding?.PrefabKey ?? string.Empty;
 			shaderFamily = entry.ShaderBinding?.Family ?? ShaderNodeFamily.Custom;
 			shaderVariantId = entry.ShaderBinding?.VariantId ?? string.Empty;
 			shaderSourceVariant = entry.ShaderBinding?.SourceVariant ?? 0;
@@ -337,8 +332,6 @@ namespace ShitDesigner.Nodes {
 			return UnitResult.Success<Diagnostic>();
 		}
 		internal UnitResult<Diagnostic> ValidateAssetReferenceRequirements() {
-			if ((Category == "3D" || Category == "2D") && (ScenePrefab == null || string.IsNullOrWhiteSpace(PrefabKey)))
-				return Failure("nodes.catalog.prefab_missing", "Scene records require a direct prefab reference and key.");
 			if (!string.IsNullOrWhiteSpace(ShaderKey)
 				&& ((Shader == null && TemplateMaterial == null) || string.IsNullOrWhiteSpace(ShaderKey)))
 				return Failure("nodes.catalog.shader_missing", "Shader records require a direct Shader or template Material reference and key.");
@@ -349,7 +342,7 @@ namespace ShitDesigner.Nodes {
 				|| !string.Equals(DisplayName, expected.DisplayName, StringComparison.Ordinal) || !string.Equals(Category, expected.Category, StringComparison.Ordinal)
 				|| SystemOwned != expected.SystemOwned || UserAddable != expected.UserAddable
 				|| !string.Equals(ShaderKey, expected.ShaderBinding?.ShaderKey ?? string.Empty, StringComparison.Ordinal)
-				|| OutputPass != (expected.ShaderBinding?.OutputPass ?? 0) || !string.Equals(PrefabKey, expected.SceneBinding?.PrefabKey ?? string.Empty, StringComparison.Ordinal)
+				|| OutputPass != (expected.ShaderBinding?.OutputPass ?? 0)
 				|| ShaderFamily != (expected.ShaderBinding?.Family ?? ShaderNodeFamily.Custom)
 				|| !string.Equals(ShaderVariantId, expected.ShaderBinding?.VariantId ?? string.Empty, StringComparison.Ordinal)
 				|| ShaderSourceVariant != (expected.ShaderBinding?.SourceVariant ?? 0)
@@ -375,7 +368,7 @@ namespace ShitDesigner.Nodes {
 				|| !string.Equals(Category, expected.Category, StringComparison.Ordinal) || SystemOwned != expected.SystemOwned
 				|| UserAddable != expected.UserAddable) return "metadata";
 			if (!string.Equals(ShaderKey, expected.ShaderBinding?.ShaderKey ?? string.Empty, StringComparison.Ordinal)
-				|| OutputPass != (expected.ShaderBinding?.OutputPass ?? 0) || !string.Equals(PrefabKey, expected.SceneBinding?.PrefabKey ?? string.Empty, StringComparison.Ordinal)
+				|| OutputPass != (expected.ShaderBinding?.OutputPass ?? 0)
 				|| ShaderFamily != (expected.ShaderBinding?.Family ?? ShaderNodeFamily.Custom)
 				|| !string.Equals(ShaderVariantId, expected.ShaderBinding?.VariantId ?? string.Empty, StringComparison.Ordinal)
 				|| ShaderSourceVariant != (expected.ShaderBinding?.SourceVariant ?? 0)
@@ -394,8 +387,8 @@ namespace ShitDesigner.Nodes {
 			for (var i = 0; i < ShaderPasses.Count; i++) if (!ShaderPasses[i].Matches(expected.ShaderBinding.Passes[i])) return "shader pass " + ShaderPasses[i].Id;
 			return "unknown";
 		}
-		internal void SetAssetReferences(GameObject prefab, Shader shaderAsset, Material material, string prefabBindingKey, string shaderBindingKey, int pass) {
-			scenePrefab = prefab; shader = shaderAsset; templateMaterial = material; prefabKey = prefabBindingKey ?? string.Empty; shaderKey = shaderBindingKey ?? string.Empty; outputPass = pass;
+		internal void SetShaderAssetReferences(Shader shaderAsset, Material material, string shaderBindingKey, int pass) {
+			shader = shaderAsset; templateMaterial = material; shaderKey = shaderBindingKey ?? string.Empty; outputPass = pass;
 		}
 		private static UnitResult<Diagnostic> Failure(string code, string message) => UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "nodes"));
 	}
@@ -444,9 +437,8 @@ namespace ShitDesigner.Nodes {
 			return UnitResult.Success<Diagnostic>();
 		}
 
-		public UnitResult<Diagnostic> ValidateAssetReferences(GameObject scene3dPrefab, GameObject scene2dPrefab, Shader shaderGenerator, Shader shaderEffect, Shader shaderBlend2) {
+		public UnitResult<Diagnostic> ValidateLegacyShaderReferences(Shader shaderGenerator, Shader shaderEffect, Shader shaderBlend2) {
 			var manifest = ValidateManifest(); if (manifest.IsFailure) return manifest;
-			if (Find("shitdesigner.scene.3d")?.ScenePrefab != scene3dPrefab || Find("shitdesigner.scene.2d")?.ScenePrefab != scene2dPrefab) return Failure("nodes.catalog.prefab_mismatch", "Production scene prefabs do not match direct catalog references.");
 			if (Find("shitdesigner.shader.generator")?.Shader != shaderGenerator || Find("shitdesigner.shader.effect")?.Shader != shaderEffect || Find("shitdesigner.shader.blend2")?.Shader != shaderBlend2) return Failure("nodes.catalog.shader_mismatch", "Production shaders do not match direct catalog references.");
 			return UnitResult.Success<Diagnostic>();
 		}
@@ -466,25 +458,11 @@ namespace ShitDesigner.Nodes {
 			shaderManifest = manifest;
 		}
 
-		/// <summary>Editor generation attaches direct Unity asset references
-		/// without changing the neutral descriptor or its save contract.</summary>
-		public UnitResult<Diagnostic> ConfigureReference(string typeId, GameObject prefab = null, Shader shader = null, Material templateMaterial = null) {
-			var entry = Find(typeId); if (entry == null) return Failure("nodes.catalog.reference_type", "Catalog reference type is not present.");
-			var expected = (shaderManifest == null ? ShaderNodeManifest.CreateBuiltIn() : shaderManifest.BuildRuntimeManifest()).Find(typeId);
-			var expectedNode = NodeDefinitionCatalog.CreateInitial(shaderManifest: shaderManifest == null ? ShaderNodeManifest.CreateBuiltIn() : shaderManifest.BuildRuntimeManifest(), bindings: null).Entries.FirstOrDefault(x => x.TypeId.Value == typeId);
-			if (expected == null && expectedNode == null) return Failure("nodes.catalog.reference_type", "Catalog reference type is not a generated definition.");
-			entry.SetAssetReferences(prefab, shader, templateMaterial,
-				expectedNode?.SceneBinding?.PrefabKey,
-				expected?.ShaderKey ?? expectedNode?.ShaderBinding?.ShaderKey,
-				expected?.OutputPass ?? expectedNode?.ShaderBinding?.OutputPass ?? 0);
-			return UnitResult.Success<Diagnostic>();
-		}
-
 		public UnitResult<Diagnostic> ConfigureShaderReference(string typeId, Shader shader) {
 			var entry = Find(typeId);
 			if (entry == null) return Failure("nodes.catalog.reference_type", "Catalog reference type is not present: " + typeId + ".");
 			if (shader == null) return Failure("nodes.catalog.shader_missing", "A direct Shader reference is required: " + typeId + ".");
-			entry.SetAssetReferences(null, shader, null, string.Empty, entry.ShaderKey, entry.OutputPass);
+			entry.SetShaderAssetReferences(shader, null, entry.ShaderKey, entry.OutputPass);
 			return UnitResult.Success<Diagnostic>();
 		}
 		private NodeTypeCatalogRecord Find(string typeId) => Entries.FirstOrDefault(x => x != null && string.Equals(x.TypeId, typeId, StringComparison.Ordinal));

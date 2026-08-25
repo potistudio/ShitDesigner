@@ -18,8 +18,6 @@ namespace ShitDesigner.Nodes.Editor {
 	public sealed class NodeTypeCatalogBuildValidator : IPreprocessBuildWithReport {
 		public int callbackOrder => 0;
 		private const string AssetPath = "Assets/ShitDesigner/Scripts/Nodes/NodeTypeCatalog.asset";
-		private const string Scene3dPath = "Assets/ShitDesigner/Scenes/Cylinder Flythrough.prefab";
-		private const string Scene2dPath = "Assets/ShitDesigner/Scripts/Bootstrap/Scene2D.prefab";
 		private const string GeneratorShaderPath = "Assets/ShitDesigner/Scripts/Media/Shaders/BuiltinGenerator.shader";
 		private const string EffectShaderPath = "Assets/ShitDesigner/Scripts/Media/Shaders/BuiltinEffect.shader";
 		private const string BlendShaderPath = "Assets/ShitDesigner/Scripts/Media/Shaders/BuiltinBlend2.shader";
@@ -52,34 +50,10 @@ namespace ShitDesigner.Nodes.Editor {
 			if (exact.IsFailure) return exact;
 			var shaderValidation = ValidateShaderBindings(asset, runtime);
 			if (shaderValidation.IsFailure) return shaderValidation;
-			var prefabValidation = ValidateScenePrefabs(asset, runtime);
-			if (prefabValidation.IsFailure) return prefabValidation;
 			var apiValidation = ValidateGraphicsApis(target);
 			if (apiValidation.IsFailure) return apiValidation;
 			var nativeValidation = ValidateNativePlugin(target);
 			if (nativeValidation.IsFailure) return nativeValidation;
-			return UnitResult.Success<Diagnostic>();
-		}
-
-		private static UnitResult<Diagnostic> AttachDirectReferences(NodeTypeCatalog asset) {
-			var scene3d = AssetDatabase.LoadAssetAtPath<GameObject>(Scene3dPath);
-			var scene2d = AssetDatabase.LoadAssetAtPath<GameObject>(Scene2dPath);
-			var generator = AssetDatabase.LoadAssetAtPath<Shader>(GeneratorShaderPath);
-			var effect = AssetDatabase.LoadAssetAtPath<Shader>(EffectShaderPath);
-			var blend = AssetDatabase.LoadAssetAtPath<Shader>(BlendShaderPath);
-			if (scene3d == null || scene2d == null) return Failure("nodes.catalog.prefab_missing", "Required Scene prefabs are missing from the project.");
-			if (generator == null || effect == null || blend == null) return Failure("nodes.catalog.shader_missing", "Required built-in node shaders are missing from the project.");
-			foreach (var pair in new[]
-			{
-				Tuple.Create("shitdesigner.scene.3d", scene3d, (Shader)null),
-				Tuple.Create("shitdesigner.scene.2d", scene2d, (Shader)null),
-				Tuple.Create("shitdesigner.shader.generator", (GameObject)null, generator),
-				Tuple.Create("shitdesigner.shader.effect", (GameObject)null, effect),
-				Tuple.Create("shitdesigner.shader.blend2", (GameObject)null, blend)
-			}) {
-				var configured = asset.ConfigureReference(pair.Item1, pair.Item2, pair.Item3);
-				if (configured.IsFailure) return configured;
-			}
 			return UnitResult.Success<Diagnostic>();
 		}
 
@@ -104,17 +78,6 @@ namespace ShitDesigner.Nodes.Editor {
 			for (var index = 0; index < shader.GetPropertyCount(); index++)
 				if (string.Equals(shader.GetPropertyName(index), property, StringComparison.Ordinal)) return true;
 			return false;
-		}
-
-		private static UnitResult<Diagnostic> ValidateScenePrefabs(NodeTypeCatalog asset, NodeDefinitionCatalog runtime) {
-			foreach (var entry in runtime.Entries.Where(x => x.SceneBinding != null)) {
-				var record = asset.Entries.FirstOrDefault(x => x.TypeId == entry.TypeId.Value);
-				if (record == null || record.ScenePrefab == null) return Failure("nodes.catalog.prefab_missing", "Scene prefab is missing for " + entry.TypeId.Value + ".");
-				var cameras = record.ScenePrefab.GetComponentsInChildren<Camera>(true);
-				if (entry.SceneBinding.RequiresExactlyOneCamera && cameras.Length != 1) return Failure("nodes.catalog.prefab_camera", "Scene prefab must contain exactly one Camera: " + entry.TypeId.Value + ".");
-				if (entry.SceneBinding.RequiresCanvasValidation && record.ScenePrefab.GetComponentsInChildren<Canvas>(true).Length != 1) return Failure("nodes.catalog.prefab_canvas", "2D Scene prefab must contain exactly one Canvas.");
-			}
-			return UnitResult.Success<Diagnostic>();
 		}
 
 		private static UnitResult<Diagnostic> ValidateGraphicsApis(BuildTarget target) {

@@ -34,10 +34,8 @@ MonoBehaviour:
       defaultImage: 0
     parameters: []
     shaderKey: 
-    prefabKey: 
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: 
@@ -89,10 +87,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: 
-    prefabKey: 
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: 
@@ -131,10 +127,8 @@ MonoBehaviour:
       defaultImage: 0
     parameters: []
     shaderKey: 
-    prefabKey: 
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: 
@@ -165,10 +159,8 @@ MonoBehaviour:
       defaultImage: 0
     parameters: []
     shaderKey: 
-    prefabKey: builtin.scene.3d
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 7787689742687978739, guid: 52d135c910953af43a7424639474c3c2, type: 3}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: 
@@ -199,10 +191,8 @@ MonoBehaviour:
       defaultImage: 0
     parameters: []
     shaderKey: 
-    prefabKey: builtin.scene.2d
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 110000, guid: 66666666666666666666666666666666, type: 3}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: 
@@ -251,10 +241,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: builtin.shader.generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: 11111111111111111111111111111111, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: default
@@ -306,10 +294,8 @@ MonoBehaviour:
       defaultImage: 0
     parameters: []
     shaderKey: builtin.shader.effect
-    prefabKey: 
     shader: {fileID: 4800000, guid: 22222222222222222222222222222222, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: default
@@ -371,10 +357,8 @@ MonoBehaviour:
       defaultImage: 0
     parameters: []
     shaderKey: builtin.shader.blend2
-    prefabKey: 
     shader: {fileID: 4800000, guid: 33333333333333333333333333333333, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: default
@@ -679,10 +663,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.00
@@ -1043,10 +1025,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.01
@@ -1407,10 +1387,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.02
@@ -1771,10 +1749,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.03
@@ -2135,10 +2111,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.04
@@ -2499,10 +2473,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.05
@@ -2863,10 +2835,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.06
@@ -3227,10 +3197,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.07
@@ -3591,10 +3559,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.08
@@ -3955,10 +3921,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.09
@@ -4319,10 +4283,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.10
@@ -4683,10 +4645,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.11
@@ -5047,10 +5007,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.12
@@ -5411,10 +5369,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.13
@@ -5775,10 +5731,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.14
@@ -6139,10 +6093,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.15
@@ -6503,10 +6455,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.16
@@ -6867,10 +6817,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.17
@@ -7231,10 +7179,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.18
@@ -7595,10 +7541,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.19
@@ -7959,10 +7903,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.20
@@ -8323,10 +8265,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.21
@@ -8687,10 +8627,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.22
@@ -9051,10 +8989,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.23
@@ -9415,10 +9351,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.24
@@ -9779,10 +9713,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.25
@@ -10143,10 +10075,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.26
@@ -10507,10 +10437,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.27
@@ -10871,10 +10799,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.28
@@ -11235,10 +11161,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.29
@@ -11599,10 +11523,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.30
@@ -11963,10 +11885,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.31
@@ -12327,10 +12247,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.32
@@ -12691,10 +12609,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.33
@@ -13055,10 +12971,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.34
@@ -13419,10 +13333,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.35
@@ -13783,10 +13695,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.36
@@ -14147,10 +14057,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.37
@@ -14511,10 +14419,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.38
@@ -14875,10 +14781,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.39
@@ -15239,10 +15143,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.40
@@ -15603,10 +15505,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.41
@@ -15967,10 +15867,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.42
@@ -16331,10 +16229,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 0
     shaderVariantId: generator.43
@@ -16719,10 +16615,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 0
     shaderVariantId: generator.44
@@ -17134,10 +17028,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 0
     shaderVariantId: generator.45
@@ -17549,10 +17441,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 0
     shaderVariantId: generator.46
@@ -17964,10 +17854,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Generator
-    prefabKey: 
     shader: {fileID: 4800000, guid: bbc33c23e9ee5b94b87571425f40ffdc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 0
     shaderVariantId: generator.47
@@ -18399,10 +18287,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.00
@@ -18824,10 +18710,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.01
@@ -19249,10 +19133,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.02
@@ -19674,10 +19556,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.03
@@ -20099,10 +19979,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.04
@@ -20524,10 +20402,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.05
@@ -20949,10 +20825,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.06
@@ -21374,10 +21248,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.07
@@ -21799,10 +21671,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.08
@@ -22224,10 +22094,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.09
@@ -22649,10 +22517,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.10
@@ -23074,10 +22940,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.11
@@ -23499,10 +23363,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.12
@@ -23924,10 +23786,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.13
@@ -24349,10 +24209,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.14
@@ -24774,10 +24632,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.15
@@ -25199,10 +25055,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.16
@@ -25624,10 +25478,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.17
@@ -26049,10 +25901,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.18
@@ -26474,10 +26324,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.19
@@ -26899,10 +26747,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.20
@@ -27324,10 +27170,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.21
@@ -27749,10 +27593,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.22
@@ -28174,10 +28016,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.23
@@ -28599,10 +28439,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.24
@@ -29024,10 +28862,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.25
@@ -29449,10 +29285,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.26
@@ -29874,10 +29708,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.27
@@ -30299,10 +30131,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.28
@@ -30724,10 +30554,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.29
@@ -31149,10 +30977,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.30
@@ -31574,10 +31400,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.31
@@ -31999,10 +31823,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.32
@@ -32424,10 +32246,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Color
-    prefabKey: 
     shader: {fileID: 4800000, guid: 619ffe88c33e9844494224acdcaf496e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 1
     shaderVariantId: color.33
@@ -32849,10 +32669,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.00
@@ -33274,10 +33092,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.01
@@ -33699,10 +33515,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.02
@@ -34124,10 +33938,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.03
@@ -34549,10 +34361,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.04
@@ -34974,10 +34784,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.05
@@ -35399,10 +35207,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.06
@@ -35824,10 +35630,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.07
@@ -36249,10 +36053,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.08
@@ -36674,10 +36476,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.09
@@ -37099,10 +36899,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.10
@@ -37524,10 +37322,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.11
@@ -37949,10 +37745,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.12
@@ -38374,10 +38168,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.13
@@ -38799,10 +38591,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.14
@@ -39224,10 +39014,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.15
@@ -39649,10 +39437,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.16
@@ -40074,10 +39860,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.17
@@ -40499,10 +40283,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.18
@@ -40924,10 +40706,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.19
@@ -41349,10 +41129,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.20
@@ -41774,10 +41552,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.21
@@ -42199,10 +41975,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.22
@@ -42624,10 +42398,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.23
@@ -43049,10 +42821,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.24
@@ -43474,10 +43244,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.25
@@ -43899,10 +43667,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.26
@@ -44324,10 +44090,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.27
@@ -44749,10 +44513,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.28
@@ -45174,10 +44936,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.29
@@ -45599,10 +45359,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.30
@@ -46024,10 +45782,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.31
@@ -46449,10 +46205,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.32
@@ -46874,10 +46628,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.33
@@ -47299,10 +47051,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.34
@@ -47724,10 +47474,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 2
     shaderVariantId: geometry.35
@@ -48149,10 +47897,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 2
     shaderVariantId: geometry.36
@@ -48580,10 +48326,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 2
     shaderVariantId: geometry.37
@@ -49011,10 +48755,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 2
     shaderVariantId: geometry.38
@@ -49466,10 +49208,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 2
     shaderVariantId: geometry.39
@@ -49942,10 +49682,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 2
     shaderVariantId: geometry.40
@@ -50418,10 +50156,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Geometry
-    prefabKey: 
     shader: {fileID: 4800000, guid: 81f689b04caed59459b11f5b74b6a951, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 2
     shaderVariantId: geometry.41
@@ -50870,10 +50606,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.00
@@ -51295,10 +51029,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.01
@@ -51720,10 +51452,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.02
@@ -52145,10 +51875,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.03
@@ -52570,10 +52298,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.04
@@ -52995,10 +52721,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.05
@@ -53420,10 +53144,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.06
@@ -53845,10 +53567,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.07
@@ -54270,10 +53990,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.08
@@ -54695,10 +54413,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.09
@@ -55120,10 +54836,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.10
@@ -55545,10 +55259,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.11
@@ -55970,10 +55682,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.12
@@ -56395,10 +56105,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.13
@@ -56820,10 +56528,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.14
@@ -57245,10 +56951,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.15
@@ -57670,10 +57374,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.16
@@ -58095,10 +57797,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.17
@@ -58520,10 +58220,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.18
@@ -58945,10 +58643,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.19
@@ -59370,10 +59066,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.20
@@ -59795,10 +59489,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.21
@@ -60220,10 +59912,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.22
@@ -60645,10 +60335,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.23
@@ -61070,10 +60758,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.24
@@ -61495,10 +61181,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.25
@@ -61920,10 +61604,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.26
@@ -62345,10 +62027,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.27
@@ -62770,10 +62450,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.28
@@ -63195,10 +62873,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.29
@@ -63620,10 +63296,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.30
@@ -64069,10 +63743,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Glitch
-    prefabKey: 
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 3
     shaderVariantId: glitch.31
@@ -64515,10 +64187,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 4
     shaderVariantId: blur.00
@@ -64946,10 +64616,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 4
     shaderVariantId: blur.01
@@ -65377,10 +65045,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 4
     shaderVariantId: blur.02
@@ -65808,10 +65474,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 4
     shaderVariantId: blur.03
@@ -66239,10 +65903,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 4
     shaderVariantId: blur.04
@@ -66670,10 +66332,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 4
     shaderVariantId: blur.05
@@ -67101,10 +66761,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 4
     shaderVariantId: blur.06
@@ -67526,10 +67184,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 4
     shaderVariantId: blur.07
@@ -67951,10 +67607,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 3
     shaderFamily: 4
     shaderVariantId: blur.08
@@ -68394,10 +68048,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 4
     shaderVariantId: blur.09
@@ -68831,10 +68483,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 4
     shaderVariantId: blur.10
@@ -69268,10 +68918,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 4
     shaderVariantId: blur.11
@@ -69705,10 +69353,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 3
     shaderFamily: 4
     shaderVariantId: blur.12
@@ -70148,10 +69794,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 4
     shaderVariantId: blur.13
@@ -70585,10 +70229,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 4
     shaderVariantId: blur.14
@@ -71016,10 +70658,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 4
     shaderVariantId: blur.15
@@ -71453,10 +71093,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 4
     shaderVariantId: blur.16
@@ -71884,10 +71522,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 4
     shaderVariantId: blur.17
@@ -72309,10 +71945,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 4
     shaderVariantId: blur.18
@@ -72740,10 +72374,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 4
     shaderVariantId: blur.19
@@ -73171,10 +72803,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 4
     shaderVariantId: blur.20
@@ -73608,10 +73238,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 4
     shaderVariantId: blur.21
@@ -74039,10 +73667,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 4
     shaderVariantId: blur.22
@@ -74470,10 +74096,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 4
     shaderVariantId: blur.23
@@ -74907,10 +74531,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 3
     shaderFamily: 4
     shaderVariantId: blur.24
@@ -75350,10 +74972,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 4
     shaderVariantId: blur.25
@@ -75781,10 +75401,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 4
     shaderVariantId: blur.26
@@ -76218,10 +75836,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Convolution
-    prefabKey: 
     shader: {fileID: 4800000, guid: 8fcf82d41e832c849bcfab56167e3c95, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 4
     shaderVariantId: blur.27
@@ -76649,10 +76265,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.00
@@ -77074,10 +76688,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.01
@@ -77499,10 +77111,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.02
@@ -77924,10 +77534,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.03
@@ -78349,10 +77957,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.04
@@ -78774,10 +78380,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.05
@@ -79199,10 +78803,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.06
@@ -79624,10 +79226,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.07
@@ -80049,10 +79649,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.08
@@ -80474,10 +80072,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.09
@@ -80899,10 +80495,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.10
@@ -81324,10 +80918,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.11
@@ -81749,10 +81341,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.12
@@ -82174,10 +81764,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.13
@@ -82599,10 +82187,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.14
@@ -83024,10 +82610,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.15
@@ -83449,10 +83033,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 5
     shaderVariantId: edge.16
@@ -83886,10 +83468,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 5
     shaderVariantId: edge.17
@@ -84323,10 +83903,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.18
@@ -84748,10 +84326,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.19
@@ -85173,10 +84749,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.20
@@ -85598,10 +85172,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.21
@@ -86023,10 +85595,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.22
@@ -86448,10 +86018,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.23
@@ -86873,10 +86441,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.24
@@ -87298,10 +86864,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.25
@@ -87723,10 +87287,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.26
@@ -88148,10 +87710,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.27
@@ -88573,10 +88133,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.28
@@ -88998,10 +88556,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.29
@@ -89423,10 +88979,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.30
@@ -89848,10 +89402,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.31
@@ -90273,10 +89825,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.32
@@ -90698,10 +90248,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.33
@@ -91123,10 +90671,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.34
@@ -91548,10 +91094,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.35
@@ -91973,10 +91517,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.36
@@ -92398,10 +91940,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Edge
-    prefabKey: 
     shader: {fileID: 4800000, guid: 26a138808f5d2d846a056549c5b52847, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 5
     shaderVariantId: edge.37
@@ -92823,10 +92363,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.00
@@ -93248,10 +92786,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.01
@@ -93673,10 +93209,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.02
@@ -94098,10 +93632,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.03
@@ -94523,10 +94055,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.04
@@ -94948,10 +94478,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.05
@@ -95373,10 +94901,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.06
@@ -95798,10 +95324,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.07
@@ -96223,10 +95747,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.08
@@ -96648,10 +96170,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 6
     shaderVariantId: key.09
@@ -97079,10 +96599,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.10
@@ -97504,10 +97022,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.11
@@ -97929,10 +97445,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.12
@@ -98354,10 +97868,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.13
@@ -98779,10 +98291,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.14
@@ -99204,10 +98714,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.15
@@ -99629,10 +99137,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.16
@@ -100054,10 +99560,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.17
@@ -100479,10 +99983,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.18
@@ -100904,10 +100406,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.19
@@ -101329,10 +100829,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.20
@@ -101754,10 +101252,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.21
@@ -102179,10 +101675,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.22
@@ -102604,10 +102098,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/Key
-    prefabKey: 
     shader: {fileID: 4800000, guid: 6265f31325f43a348a50155f53d6a9dc, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 6
     shaderVariantId: key.23
@@ -102785,10 +102277,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.normal_alpha_over
@@ -102903,10 +102393,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.premultiplied_over
@@ -103021,10 +102509,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.under
@@ -103139,10 +102625,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.add
@@ -103257,10 +102741,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.linear_dodge
@@ -103375,10 +102857,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.subtract
@@ -103493,10 +102973,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.reverse_subtract
@@ -103611,10 +103089,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.multiply
@@ -103729,10 +103205,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.screen
@@ -103847,10 +103321,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.overlay
@@ -103965,10 +103437,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.hard_light
@@ -104083,10 +103553,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.soft_light
@@ -104201,10 +103669,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.vivid_light
@@ -104319,10 +103785,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.linear_light
@@ -104437,10 +103901,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.pin_light
@@ -104555,10 +104017,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.hard_mix
@@ -104673,10 +104133,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.difference
@@ -104791,10 +104249,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.exclusion
@@ -104909,10 +104365,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.darken
@@ -105027,10 +104481,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.lighten
@@ -105145,10 +104597,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.color_dodge
@@ -105263,10 +104713,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.color_burn
@@ -105381,10 +104829,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.linear_burn
@@ -105499,10 +104945,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.divide
@@ -105617,10 +105061,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.average
@@ -105735,10 +105177,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.negation
@@ -105853,10 +105293,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.phoenix
@@ -105971,10 +105409,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.reflect
@@ -106089,10 +105525,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.glow_blend
@@ -106207,10 +105641,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.hue
@@ -106325,10 +105757,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.saturation
@@ -106443,10 +105873,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.color
@@ -106561,10 +105989,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.luminosity
@@ -106679,10 +106105,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.luma_mask_composite
@@ -106797,10 +106221,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.external_mask_composite
@@ -106915,10 +106337,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/BlendFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 7f70a74100e1b7341b379b5b7a679752, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 7
     shaderVariantId: blend.depth_composite
@@ -107087,10 +106507,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.crossfade
@@ -107274,10 +106692,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.dip_to_color
@@ -107461,10 +106877,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.wipe_left_right
@@ -107648,10 +107062,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.wipe_up_down
@@ -107835,10 +107247,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.radial_wipe
@@ -108022,10 +107432,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.iris_circle
@@ -108209,10 +107617,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.iris_box
@@ -108396,10 +107802,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.clock_wipe
@@ -108583,10 +107987,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.linear_dissolve
@@ -108770,10 +108172,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.noise_dissolve
@@ -108957,10 +108357,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.pixel_dissolve
@@ -109144,10 +108542,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.luma_dissolve
@@ -109331,10 +108727,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.push
@@ -109518,10 +108912,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.slide
@@ -109705,10 +109097,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.split
@@ -109892,10 +109282,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.barn_door
@@ -110079,10 +109467,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.venetian_blinds
@@ -110266,10 +109652,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.checker_wipe
@@ -110453,10 +109837,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.grid_flip
@@ -110640,10 +110022,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.page_curl
@@ -110827,10 +110207,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.cube_rotate
@@ -111014,10 +110392,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.perspective_swap
@@ -111201,10 +110577,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.zoom
@@ -111388,10 +110762,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.cross_zoom
@@ -111575,10 +110947,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.blur_crossfade
@@ -111762,10 +111132,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.radial_blur
@@ -111949,10 +111317,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.swirl
@@ -112136,10 +111502,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.kaleidoscope
@@ -112323,10 +111687,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.ripple
@@ -112510,10 +111872,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.displacement_map
@@ -112697,10 +112057,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.glitch
@@ -112884,10 +112242,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.rgb_split
@@ -113071,10 +112427,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.burn
@@ -113258,10 +112612,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.ink_spread
@@ -113445,10 +112797,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.liquid
@@ -113632,10 +112982,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TransitionFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: bc7c9004c418b034192f68413cff42e9, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 8
     shaderVariantId: transition.voronoi_cells
@@ -113897,10 +113245,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 9
     shaderVariantId: temporal.feedback_transform
@@ -114204,10 +113550,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 9
     shaderVariantId: temporal.feedback_zoom
@@ -114511,10 +113855,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 9
     shaderVariantId: temporal.feedback_rotate
@@ -114818,10 +114160,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 9
     shaderVariantId: temporal.feedback_kaleidoscope
@@ -115125,10 +114465,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 9
     shaderVariantId: temporal.echo
@@ -115432,10 +114770,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 9
     shaderVariantId: temporal.trails
@@ -115739,10 +115075,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 9
     shaderVariantId: temporal.frame_delay
@@ -116046,10 +115380,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 9
     shaderVariantId: temporal.strobe
@@ -116353,10 +115685,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 9
     shaderVariantId: temporal.freeze_hold
@@ -116660,10 +115990,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 9
     shaderVariantId: temporal.accumulate_add
@@ -116967,10 +116295,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 9
     shaderVariantId: temporal.accumulate_max
@@ -117274,10 +116600,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 9
     shaderVariantId: temporal.temporal_average
@@ -117587,10 +116911,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 9
     shaderVariantId: temporal.multi_tap_echo
@@ -117900,10 +117222,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 9
     shaderVariantId: temporal.slit_scan_horizontal
@@ -118213,10 +117533,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 9
     shaderVariantId: temporal.slit_scan_vertical
@@ -118526,10 +117844,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 9
     shaderVariantId: temporal.time_displacement_map
@@ -118839,10 +118155,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 9
     shaderVariantId: temporal.temporal_rgb_split
@@ -119152,10 +118466,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 9
     shaderVariantId: temporal.datamosh_feedback
@@ -119465,10 +118777,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 9
     shaderVariantId: temporal.motion_trails
@@ -119778,10 +119088,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 9
     shaderVariantId: temporal.persistence_phosphor
@@ -120091,10 +119399,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 9
     shaderVariantId: temporal.long_exposure
@@ -120404,10 +119710,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 9
     shaderVariantId: temporal.frame_difference
@@ -120717,10 +120021,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 9
     shaderVariantId: temporal.background_subtract
@@ -121030,10 +120332,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 9
     shaderVariantId: temporal.temporal_median
@@ -121343,10 +120643,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 9
     shaderVariantId: temporal.temporal_posterize
@@ -121656,10 +120954,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 9
     shaderVariantId: temporal.beat_repeat
@@ -121969,10 +121265,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 9
     shaderVariantId: temporal.optical_flow_visualizer
@@ -122276,10 +121570,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 9
     shaderVariantId: temporal.optical_flow_warp
@@ -122583,10 +121875,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 2
     shaderFamily: 9
     shaderVariantId: temporal.frame_interpolation
@@ -122896,10 +122186,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 9
     shaderVariantId: temporal.fluid_feedback
@@ -123203,10 +122491,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 9
     shaderVariantId: temporal.reaction_diffusion_feedback
@@ -123510,10 +122796,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/TemporalFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: c6f9bdd9af253674da54f8d7fdfcdd4b, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 9
     shaderVariantId: temporal.multi_buffer_cellular_simulation
@@ -123827,10 +123111,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.waveform_line
@@ -124136,10 +123418,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.waveform_fill
@@ -124445,10 +123725,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.dual_waveform
@@ -124754,10 +124032,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.xy_lissajous_scope
@@ -125063,10 +124339,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.vectorscope
@@ -125372,10 +124646,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.radial_waveform
@@ -125681,10 +124953,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.circular_oscilloscope
@@ -125990,10 +125260,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.spectrum_bars
@@ -126299,10 +125567,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.mirrored_spectrum
@@ -126608,10 +125874,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.radial_spectrum
@@ -126917,10 +126181,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.spectrum_ring
@@ -127226,10 +126488,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.spectrum_terrain
@@ -127535,10 +126795,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.spectrogram
@@ -127844,10 +127102,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.waterfall_spectrum
@@ -128153,10 +127409,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.frequency_dots
@@ -128462,10 +127716,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.frequency_ribbons
@@ -128771,10 +128023,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.beat_rings
@@ -129080,10 +128330,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.beat_tunnel
@@ -129389,10 +128637,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.beat_flash
@@ -129698,10 +128944,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.beat_strobe
@@ -130007,10 +129251,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.bass_pulse
@@ -130316,10 +129558,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.band_colorizer
@@ -130625,10 +129865,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.audio_displacement
@@ -130934,10 +130172,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.audio_kaleidoscope
@@ -131243,10 +130479,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.audio_particle_field
@@ -131552,10 +130786,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.audio_starfield
@@ -131861,10 +131093,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.audio_metaballs
@@ -132186,10 +131416,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 10
     shaderVariantId: audio.audio_fluid
@@ -132515,10 +131743,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 10
     shaderVariantId: audio.audio_fractal_modulator
@@ -132840,10 +132066,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 10
     shaderVariantId: audio.onset_history_grid
@@ -133137,10 +132361,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.raymarched_sphere
@@ -133386,10 +132608,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.box
@@ -133635,10 +132855,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.torus
@@ -133884,10 +133102,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.capsule
@@ -134133,10 +133349,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.rounded_box
@@ -134382,10 +133596,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.sdf_boolean_sculpture
@@ -134631,10 +133843,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.repeated_geometry
@@ -134880,10 +134090,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.infinite_columns
@@ -135129,10 +134337,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.infinite_city
@@ -135378,10 +134584,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.neon_tunnel
@@ -135627,10 +134831,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.fractal_tunnel
@@ -135876,10 +135078,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.menger_sponge
@@ -136125,10 +135325,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.mandelbulb
@@ -136374,10 +135572,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.mandelbox
@@ -136623,10 +135819,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.kaleidoscopic_ifs
@@ -136872,10 +136066,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.gyroid
@@ -137121,10 +136313,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.metaball_sculpture
@@ -137370,10 +136560,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.voxel_landscape
@@ -137619,10 +136807,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.heightfield_terrain
@@ -137868,10 +137054,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.ocean
@@ -138117,10 +137301,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.volumetric_clouds
@@ -138366,10 +137548,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.nebula
@@ -138615,10 +137795,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.black_hole
@@ -138864,10 +138042,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.wormhole
@@ -139113,10 +138289,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.crystal
@@ -139362,10 +138536,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.glass_sdf
@@ -139611,10 +138783,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.emissive_wireframe_sdf
@@ -139860,10 +139030,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.truchet_3d
@@ -140109,10 +139277,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.audio_reactive_sculpture
@@ -140358,10 +139524,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/RaymarchFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 08bddf91c437b12419b0bbbf43daa3c2, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 11
     shaderVariantId: raymarch.signed_distance_text_extrusion
@@ -140576,10 +139740,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.uv_map
@@ -140800,10 +139962,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.test_grid
@@ -141024,10 +140184,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.smpte_bars
@@ -141248,10 +140406,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.hdr_ramp
@@ -141472,10 +140628,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.alpha_checker
@@ -141696,10 +140850,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.safe_area
@@ -141920,10 +141072,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.resolution_label
@@ -142144,10 +141294,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.frame_counter_glyphs
@@ -142368,10 +141516,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.premultiplied_alpha_checker
@@ -142592,10 +141738,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.nan_inf_highlight
@@ -142816,10 +141960,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.out_of_gamut_highlight
@@ -143040,10 +142182,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.luma_visualizer
@@ -143264,10 +142404,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.rgb_parade
@@ -143488,10 +142626,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 12
     shaderVariantId: utility.histogram
@@ -143718,10 +142854,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 12
     shaderVariantId: utility.waveform_monitor
@@ -143948,10 +143082,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 1
     shaderFamily: 12
     shaderVariantId: utility.vectorscope_monitor
@@ -144178,10 +143310,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.false_color_exposure_monitor
@@ -144402,10 +143532,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.channel_viewer
@@ -144626,10 +143754,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.difference_viewer
@@ -144850,10 +143976,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.matte_viewer
@@ -145074,10 +144198,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.pixel_inspector
@@ -145298,10 +144420,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.texture_info
@@ -145522,10 +144642,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.fit_fill_stretch
@@ -145746,10 +144864,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.color_space_convert
@@ -145970,10 +145086,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.linear_srgb_convert
@@ -146194,10 +145308,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.rec601_709_2020_matrix
@@ -146418,10 +145530,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.limited_full_range_convert
@@ -146642,10 +145752,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: Hidden/ShitDesigner/VJ/UtilityFamily
-    prefabKey: 
     shader: {fileID: 4800000, guid: 13f72c964a3c8574094683c253394fc1, type: 3}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 12
     shaderVariantId: utility.sdr_hdr_display_transform_preview
@@ -146825,10 +145933,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: 
-    prefabKey: 
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: 
@@ -147085,10 +146191,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: 
-    prefabKey: 
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: 
@@ -147149,10 +146253,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: 
-    prefabKey: 
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: 
@@ -147191,10 +146293,8 @@ MonoBehaviour:
       defaultImage: 0
     parameters: []
     shaderKey: 
-    prefabKey: 
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: 
@@ -147251,10 +146351,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: 
-    prefabKey: 
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: 
@@ -147329,10 +146427,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: 
-    prefabKey: 
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: 
@@ -147379,10 +146475,8 @@ MonoBehaviour:
       defaultImage: 0
     parameters: []
     shaderKey: 
-    prefabKey: 
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: 
@@ -147437,10 +146531,8 @@ MonoBehaviour:
       defaultImage: 0
     parameters: []
     shaderKey: 
-    prefabKey: 
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: 
@@ -147503,10 +146595,8 @@ MonoBehaviour:
       defaultImage: 0
     parameters: []
     shaderKey: 
-    prefabKey: 
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: 
@@ -147553,10 +146643,8 @@ MonoBehaviour:
       defaultImage: 0
     parameters: []
     shaderKey: 
-    prefabKey: 
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: 
@@ -147611,10 +146699,8 @@ MonoBehaviour:
       defaultImage: 0
     parameters: []
     shaderKey: 
-    prefabKey: 
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: 
@@ -147677,10 +146763,8 @@ MonoBehaviour:
       defaultImage: 0
     parameters: []
     shaderKey: 
-    prefabKey: 
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: 
@@ -147741,10 +146825,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: 
-    prefabKey: 
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: 
@@ -147783,10 +146865,8 @@ MonoBehaviour:
       defaultImage: 0
     parameters: []
     shaderKey: 
-    prefabKey: 
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: 
@@ -147843,10 +146923,8 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     shaderKey: 
-    prefabKey: 
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: 

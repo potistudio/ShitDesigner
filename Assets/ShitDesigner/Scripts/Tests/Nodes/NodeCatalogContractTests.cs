@@ -98,6 +98,20 @@ namespace ShitDesigner.Nodes.Tests {
 		}
 
 		[Test]
+		public void CatalogAsset_DoesNotSerializeScenePrefabReferences() {
+			var asset = AssetDatabase.LoadAssetAtPath<NodeTypeCatalog>("Assets/ShitDesigner/Scripts/Nodes/NodeTypeCatalog.asset");
+			Assert.That(asset, Is.Not.Null);
+			var serialized = new SerializedObject(asset);
+			var entries = serialized.FindProperty("entries");
+			Assert.That(entries, Is.Not.Null);
+			for (var index = 0; index < entries.arraySize; index++) {
+				var entry = entries.GetArrayElementAtIndex(index);
+				Assert.That(entry.FindPropertyRelative("scenePrefab"), Is.Null);
+				Assert.That(entry.FindPropertyRelative("prefabKey"), Is.Null);
+			}
+		}
+
+		[Test]
 		public void WindowsStandaloneGraphicsApis_AreExplicitD3D12ThenVulkan() {
 			var projectRoot = Directory.GetParent(UnityEngine.Application.dataPath).FullName;
 			var settings = File.ReadAllText(Path.Combine(projectRoot, "ProjectSettings", "ProjectSettings.asset"));
