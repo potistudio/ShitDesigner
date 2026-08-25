@@ -6,7 +6,7 @@
 
 ## 起動順
 
-起動は `StartupSequence` が次の境界を順番に実行する。
+起動は `ApplicationHost` が次の境界を順番に実行する。
 
 ```text
 Cold → Preflight → Composing → Handshaking → Activating → Online | Degraded

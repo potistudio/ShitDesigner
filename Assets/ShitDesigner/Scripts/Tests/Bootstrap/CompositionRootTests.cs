@@ -34,60 +34,14 @@ namespace ShitDesigner.Bootstrap.Tests {
 		}
 
 		[Test]
-		public void StartupSequenceRunsNamedBoundariesInOrderAndReachesOnline() {
-			var order = new List<string>();
-			var startup = new StartupSequence();
-
-			var result = startup.Run(
-				() => RecordSuccessfulPhase(order, "preflight"),
-				() => RecordSuccessfulPhase(order, "compose"),
-				() => RecordSuccessfulHandshake(order),
-				() => RecordSuccessfulPhase(order, "activate"));
-
-			Assert.That(result.IsSuccess, Is.True);
-			Assert.That(startup.State, Is.EqualTo(SystemState.Online));
-			Assert.That(startup.LastDiagnostic, Is.Null);
-			CollectionAssert.AreEqual(new[] { "preflight", "compose", "handshake", "activate" }, order);
-		}
-
-		[Test]
-		public void StartupSequenceFaultsAtFailedBoundaryAndDoesNotRunLaterPhases() {
-			var order = new List<string>();
-			var startup = new StartupSequence();
-			var expected = new Diagnostic(new DiagnosticCode("test.handshake.unavailable"), Severity.Error, "Handshake failed.");
-
-			var result = startup.Run(
-				() => RecordSuccessfulPhase(order, "preflight"),
-				() => {
-					order.Add("compose");
-					startup.RegisterShutdown(ShutdownStage.Stop, () => order.Add("rollback"));
-					return UnitResult.Success<Diagnostic>();
-				},
-				() => { order.Add("handshake"); return Result.Failure<HandshakeReport, Diagnostic>(expected); },
-				() => RecordSuccessfulPhase(order, "activate"));
-
-			Assert.That(result.IsFailure, Is.True);
-			Assert.That(result.Error, Is.SameAs(expected));
-			Assert.That(startup.State, Is.EqualTo(SystemState.Faulted));
-			Assert.That(startup.LastDiagnostic, Is.SameAs(expected));
-			CollectionAssert.AreEqual(new[] { "preflight", "compose", "handshake", "rollback" }, order);
-		}
-
-		[Test]
-		public void StartupSequencePublishesDegradedWhenOptionalCapabilityIsUnavailable() {
-			var startup = new StartupSequence();
-			var unavailable = CapabilityStatus.Unavailable("midi", new Diagnostic(new DiagnosticCode("test.midi.unavailable"), Severity.Warning, "No MIDI."));
-
-			var result = startup.Run(
-				() => UnitResult.Success<Diagnostic>(),
-				() => UnitResult.Success<Diagnostic>(),
-				() => Result.Success<HandshakeReport, Diagnostic>(new HandshakeReport(unavailable, CapabilityStatus.Ready("display"))),
-				() => UnitResult.Success<Diagnostic>());
-
-			Assert.That(result.IsSuccess, Is.True);
-			Assert.That(startup.State, Is.EqualTo(SystemState.Degraded));
-			Assert.That(startup.HandshakeReport.IsDegraded, Is.True);
-			Assert.That(startup.HandshakeReport.Midi.Diagnostic.Code.Value, Is.EqualTo("test.midi.unavailable"));
+		public void ApplicationHostStartsColdBeforeAwake() {
+			var gameObject = new GameObject("ApplicationHost test");
+			gameObject.SetActive(false);
+			try {
+				var host = gameObject.AddComponent<ApplicationHost>();
+				Assert.That(host.State, Is.EqualTo(SystemState.Cold));
+			}
+			finally { UnityEngine.Object.DestroyImmediate(gameObject); }
 		}
 
 		[Test]
@@ -99,78 +53,30 @@ namespace ShitDesigner.Bootstrap.Tests {
 			var supervisor = new CapabilitySupervisor(
 				() => { midiProbeCount++; return Result.Success<CapabilityStatus, Diagnostic>(midi); },
 				() => { displayProbeCount++; return Result.Success<CapabilityStatus, Diagnostic>(CapabilityStatus.Ready("display")); });
-			var startup = new StartupSequence();
-			supervisor.Changed += startup.Observe;
-
-			Assert.That(startup.Run(
-				() => UnitResult.Success<Diagnostic>(),
-				() => UnitResult.Success<Diagnostic>(),
-				supervisor.Handshake,
-				() => UnitResult.Success<Diagnostic>()).IsSuccess, Is.True);
-			Assert.That(startup.State, Is.EqualTo(SystemState.Degraded));
+			var reports = new List<HandshakeReport>();
+			supervisor.Changed += reports.Add;
+			supervisor.Handshake();
+			Assert.That(supervisor.CurrentReport.IsDegraded, Is.True);
+			Assert.That(reports, Has.Count.EqualTo(1));
 
 			midi = CapabilityStatus.Ready("midi");
 			supervisor.Tick(0d);
-			Assert.That(startup.State, Is.EqualTo(SystemState.Online));
+			Assert.That(supervisor.CurrentReport.IsDegraded, Is.False);
+			Assert.That(reports, Has.Count.EqualTo(2));
 			Assert.That(midiProbeCount, Is.EqualTo(2));
 			Assert.That(displayProbeCount, Is.EqualTo(2));
 
 			midi = CapabilityStatus.Unavailable("midi",
 				new Diagnostic(new DiagnosticCode("test.midi.disconnected"), Severity.Warning, "MIDI disconnected."));
 			supervisor.Tick(0.5d);
-			Assert.That(startup.State, Is.EqualTo(SystemState.Online), "The supervisor must not probe every frame.");
+			Assert.That(supervisor.CurrentReport.IsDegraded, Is.False, "The supervisor must not probe every frame.");
+			Assert.That(reports, Has.Count.EqualTo(2));
 			supervisor.Tick(1d);
-			Assert.That(startup.State, Is.EqualTo(SystemState.Degraded));
-			Assert.That(startup.HandshakeReport.Midi.Diagnostic.Code.Value, Is.EqualTo("test.midi.disconnected"));
+			Assert.That(supervisor.CurrentReport.IsDegraded, Is.True);
+			Assert.That(supervisor.CurrentReport.Midi.Diagnostic.Code.Value, Is.EqualTo("test.midi.disconnected"));
+			Assert.That(reports, Has.Count.EqualTo(3));
 			Assert.That(midiProbeCount, Is.EqualTo(3));
 			Assert.That(displayProbeCount, Is.EqualTo(3));
-		}
-
-		[Test]
-		public void StartupShutdownDrainsStopsAndTearsDownInOrder() {
-			var order = new List<string>();
-			var startup = new StartupSequence();
-			Assert.That(startup.Run(
-				() => UnitResult.Success<Diagnostic>(),
-				() => {
-					startup.RegisterShutdown(ShutdownStage.Teardown, () => order.Add("teardown"));
-					startup.RegisterShutdown(ShutdownStage.Stop, () => order.Add("stop"));
-					return UnitResult.Success<Diagnostic>();
-				},
-				() => Result.Success<HandshakeReport, Diagnostic>(HandshakeReport.Ready),
-				() => {
-					startup.RegisterShutdown(ShutdownStage.Drain, () => order.Add("drain"));
-					return UnitResult.Success<Diagnostic>();
-				}).IsSuccess, Is.True);
-
-			startup.Shutdown();
-
-			Assert.That(startup.State, Is.EqualTo(SystemState.Offline));
-			CollectionAssert.AreEqual(new[] { "drain", "stop", "teardown" }, order);
-		}
-
-		[Test]
-		public void StartupShutdownContinuesAfterOneBoundaryThrows() {
-			var order = new List<string>();
-			var startup = new StartupSequence();
-			Assert.That(startup.Run(
-				() => UnitResult.Success<Diagnostic>(),
-				() => {
-					startup.RegisterShutdown(ShutdownStage.Stop, () => order.Add("stop"));
-					startup.RegisterShutdown(ShutdownStage.Teardown, () => order.Add("teardown"));
-					return UnitResult.Success<Diagnostic>();
-				},
-				() => Result.Success<HandshakeReport, Diagnostic>(HandshakeReport.Ready),
-				() => {
-					startup.RegisterShutdown(ShutdownStage.Drain, () => throw new InvalidOperationException("drain failed"));
-					return UnitResult.Success<Diagnostic>();
-				}).IsSuccess, Is.True);
-
-			startup.Shutdown();
-
-			Assert.That(startup.State, Is.EqualTo(SystemState.Offline));
-			Assert.That(startup.LastDiagnostic?.Code.Value, Is.EqualTo("bootstrap.shutdown.phase_failed"));
-			CollectionAssert.AreEqual(new[] { "stop", "teardown" }, order);
 		}
 
 		[Test]
@@ -860,14 +766,6 @@ namespace ShitDesigner.Bootstrap.Tests {
 				CreateCount++;
 				return Result.Failure<VisualBindingSet, Diagnostic>(new Diagnostic(new DiagnosticCode("test.unexpected_session_create"), Severity.Error, "Unexpected session binding creation."));
 			}
-		}
-		private static UnitResult<Diagnostic> RecordSuccessfulPhase(ICollection<string> order, string phase) {
-			order.Add(phase);
-			return UnitResult.Success<Diagnostic>();
-		}
-		private static Result<HandshakeReport, Diagnostic> RecordSuccessfulHandshake(ICollection<string> order) {
-			order.Add("handshake");
-			return Result.Success<HandshakeReport, Diagnostic>(HandshakeReport.Ready);
 		}
 		private sealed class NullPresentationFrame : IApplicationPresentationFrame {
 			public void Read(ApplicationFrameResult frame) { }
