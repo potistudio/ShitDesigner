@@ -80,6 +80,7 @@ namespace ShitDesigner.Presentation {
 			if (_coordinator != null) _coordinator.WorkspaceApplied -= ApplyWorkspace;
 			_coordinator = coordinator;
 			BuildOnce();
+			if (!_buildUi || _root == null || _workspace == null) return;
 			PresentationUiComposition.BindCoordinator(_workspace, _coordinator);
 			if (_coordinator != null) { _coordinator.ShellApplied += ApplyShell; _coordinator.PanelsApplied += ApplyPanels; _coordinator.WorkspaceApplied += ApplyWorkspace; }
 		}
