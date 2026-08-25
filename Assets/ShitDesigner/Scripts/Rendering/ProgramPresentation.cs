@@ -59,7 +59,10 @@ namespace ShitDesigner.Rendering {
 				SetDisplayCameraActive(false);
 				return Result.Success<ProgramDisplaySelection, Diagnostic>(selection);
 			}
-			try { Display.displays[selection.ResolvedDisplay].Activate(); }
+			try {
+				var display = Display.displays[selection.ResolvedDisplay];
+				display.Activate(display.systemWidth, display.systemHeight, Screen.currentResolution.refreshRateRatio);
+			}
 			catch (Exception exception) {
 				return Result.Failure<ProgramDisplaySelection, Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.display.activate_failed"), Severity.Error,
 					"The selected Unity Display could not be activated.", exception: DiagnosticExceptionInfo.FromException(exception)));
