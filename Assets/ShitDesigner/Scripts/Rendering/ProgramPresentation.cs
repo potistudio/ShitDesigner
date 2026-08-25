@@ -1,9 +1,4 @@
 using System;
-using System.Collections.Generic;
-#if UNITY_STANDALONE_WIN
-using System.Runtime.InteropServices;
-#endif
-using AOT;
 using CSharpFunctionalExtensions;
 using ShitDesigner.Core;
 using ShitDesigner.Runtime;
@@ -55,7 +50,6 @@ namespace ShitDesigner.Rendering {
 		private GameObject _displayCameraObject;
 		private Camera _displayCamera;
 		private ProgramDisplayBlitCamera _blit;
-		private WindowsSecondaryDisplayWindow _secondaryDisplayWindow;
 		private bool _disposed;
 		public int DisplayCount => Display.displays == null || Display.displays.Length == 0 ? 1 : Display.displays.Length;
 
@@ -65,24 +59,13 @@ namespace ShitDesigner.Rendering {
 				SetDisplayCameraActive(false);
 				return Result.Success<ProgramDisplaySelection, Diagnostic>(selection);
 			}
-			var existingWindows = WindowsSecondaryDisplayWindow.CaptureExistingWindows();
-			try {
-				var display = Display.displays[selection.ResolvedDisplay];
-				display.Activate();
-#if UNITY_STANDALONE_WIN
-				if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Direct3D11 ||
-					SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Direct3D12)
-					display.SetParams(display.systemWidth, display.systemHeight, 0, 0);
-#endif
-			}
+			try { Display.displays[selection.ResolvedDisplay].Activate(); }
 			catch (Exception exception) {
 				return Result.Failure<ProgramDisplaySelection, Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.display.activate_failed"), Severity.Error,
 					"The selected Unity Display could not be activated.", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 			var camera = EnsureDisplayCamera(selection.ResolvedDisplay);
 			if (camera.IsFailure) return Result.Failure<ProgramDisplaySelection, Diagnostic>(camera.Error);
-			_secondaryDisplayWindow?.SetExistingWindows(existingWindows);
-			_secondaryDisplayWindow?.RequestFullscreen();
 			return Result.Success<ProgramDisplaySelection, Diagnostic>(selection);
 		}
 
@@ -155,7 +138,6 @@ namespace ShitDesigner.Rendering {
 				_displayCamera.targetDisplay = targetDisplay;
 				_blit = _displayCameraObject.AddComponent<ProgramDisplayBlitCamera>();
 				_blit.Initialize(_displayCamera, DisplayLayer);
-				_secondaryDisplayWindow = _displayCameraObject.AddComponent<WindowsSecondaryDisplayWindow>();
 				_displayCamera.enabled = false;
 				return UnitResult.Success<Diagnostic>();
 			}
@@ -169,148 +151,7 @@ namespace ShitDesigner.Rendering {
 			if (_disposed) return;
 			_disposed = true;
 			if (_displayCameraObject != null) UnityEngine.Object.DestroyImmediate(_displayCameraObject);
-			_displayCameraObject = null; _displayCamera = null; _blit = null; _secondaryDisplayWindow = null;
-		}
-
-		private sealed class WindowsSecondaryDisplayWindow : MonoBehaviour {
-#if UNITY_STANDALONE_WIN
-			private const int StyleIndex = -16;
-			private const uint Caption = 0x00C00000;
-			private const uint ThickFrame = 0x00040000;
-			private const uint SystemMenu = 0x00080000;
-			private const uint MinimizeBox = 0x00020000;
-			private const uint MaximizeBox = 0x00010000;
-			private const uint Popup = 0x80000000;
-			private const uint FrameChanged = 0x0020;
-			private const uint NoActivate = 0x0010;
-			private const uint ShowWindow = 0x0040;
-			private const uint MonitorDefaultToNearest = 2;
-			private static readonly IntPtr Topmost = new IntPtr(-1);
-			private static readonly EnumWindowsCallback CaptureWindowCallback = CaptureWindow;
-			private static readonly EnumWindowsCallback ConfigureSecondaryWindowCallback = ConfigureSecondaryWindow;
-
-			private HashSet<IntPtr> _existingWindows = new HashSet<IntPtr>();
-			private int _remainingAttempts;
-
-			public static HashSet<IntPtr> CaptureExistingWindows() {
-				var windows = new HashSet<IntPtr>();
-				var handle = GCHandle.Alloc(windows);
-				try {
-					EnumWindows(CaptureWindowCallback, GCHandle.ToIntPtr(handle));
-				}
-				finally {
-					handle.Free();
-				}
-				return windows;
-			}
-
-			public void SetExistingWindows(HashSet<IntPtr> windows) {
-				_existingWindows = windows ?? new HashSet<IntPtr>();
-			}
-
-			public void RequestFullscreen() {
-				_remainingAttempts = 30;
-			}
-
-			private void LateUpdate() {
-				if (_remainingAttempts <= 0) return;
-				_remainingAttempts--;
-				var handle = GCHandle.Alloc(this);
-				try {
-					EnumWindows(ConfigureSecondaryWindowCallback, GCHandle.ToIntPtr(handle));
-				}
-				finally {
-					handle.Free();
-				}
-			}
-
-			[MonoPInvokeCallback(typeof(EnumWindowsCallback))]
-			private static bool CaptureWindow(IntPtr window, IntPtr parameter) {
-				var handle = GCHandle.FromIntPtr(parameter);
-				if (!(handle.Target is HashSet<IntPtr> windows)) return false;
-				GetWindowThreadProcessId(window, out var processId);
-				if (processId == GetCurrentProcessId()) windows.Add(window);
-				return true;
-			}
-
-			[MonoPInvokeCallback(typeof(EnumWindowsCallback))]
-			private static bool ConfigureSecondaryWindow(IntPtr window, IntPtr parameter) {
-				var handle = GCHandle.FromIntPtr(parameter);
-				return handle.Target is WindowsSecondaryDisplayWindow controller && controller.ConfigureWindow(window);
-			}
-
-			private bool ConfigureWindow(IntPtr window) {
-				if (window == IntPtr.Zero || _existingWindows.Contains(window) || !IsWindowVisible(window)) return true;
-				GetWindowThreadProcessId(window, out var processId);
-				if (processId != GetCurrentProcessId()) return true;
-
-				var monitor = MonitorFromWindow(window, MonitorDefaultToNearest);
-				if (monitor == IntPtr.Zero) return true;
-				var monitorInfo = new MonitorInfo { Size = Marshal.SizeOf<MonitorInfo>() };
-				if (!GetMonitorInfo(monitor, ref monitorInfo)) return true;
-
-				var style = unchecked((uint)GetWindowLongPtr(window, StyleIndex).ToInt64());
-				style = (style & ~(Caption | ThickFrame | SystemMenu | MinimizeBox | MaximizeBox)) | Popup;
-				SetWindowLongPtr(window, StyleIndex, new IntPtr(unchecked((int)style)));
-				var bounds = monitorInfo.Monitor;
-				SetWindowPos(window, Topmost, bounds.Left, bounds.Top, bounds.Right - bounds.Left, bounds.Bottom - bounds.Top,
-					FrameChanged | NoActivate | ShowWindow);
-				return true;
-			}
-
-			[StructLayout(LayoutKind.Sequential)]
-			private struct NativeRect {
-				public int Left;
-				public int Top;
-				public int Right;
-				public int Bottom;
-			}
-
-			[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-			private struct MonitorInfo {
-				public int Size;
-				public NativeRect Monitor;
-				public NativeRect Work;
-				public uint Flags;
-			}
-
-			private delegate bool EnumWindowsCallback(IntPtr window, IntPtr parameter);
-
-			[DllImport("user32.dll")]
-			[return: MarshalAs(UnmanagedType.Bool)]
-			private static extern bool EnumWindows(EnumWindowsCallback callback, IntPtr parameter);
-
-			[DllImport("user32.dll")]
-			[return: MarshalAs(UnmanagedType.Bool)]
-			private static extern bool IsWindowVisible(IntPtr window);
-
-			[DllImport("user32.dll")]
-			private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
-
-			[DllImport("kernel32.dll")]
-			private static extern uint GetCurrentProcessId();
-
-			[DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
-			private static extern IntPtr GetWindowLongPtr(IntPtr window, int index);
-
-			[DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
-			private static extern IntPtr SetWindowLongPtr(IntPtr window, int index, IntPtr value);
-
-			[DllImport("user32.dll")]
-			private static extern IntPtr MonitorFromWindow(IntPtr window, uint flags);
-
-			[DllImport("user32.dll", CharSet = CharSet.Auto)]
-			[return: MarshalAs(UnmanagedType.Bool)]
-			private static extern bool GetMonitorInfo(IntPtr monitor, ref MonitorInfo monitorInfo);
-
-			[DllImport("user32.dll")]
-			[return: MarshalAs(UnmanagedType.Bool)]
-			private static extern bool SetWindowPos(IntPtr window, IntPtr insertAfter, int x, int y, int width, int height, uint flags);
-#else
-			public static HashSet<IntPtr> CaptureExistingWindows() => new HashSet<IntPtr>();
-			public void SetExistingWindows(HashSet<IntPtr> windows) { }
-			public void RequestFullscreen() { }
-#endif
+			_displayCameraObject = null; _displayCamera = null; _blit = null;
 		}
 
 		private sealed class ProgramDisplayBlitCamera : MonoBehaviour {
