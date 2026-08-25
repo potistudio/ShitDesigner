@@ -505,7 +505,7 @@ MonoBehaviour:
   _displayNumber: 2
   _outputCamera: {fileID: 1184862311}
   _createTestCameraWhenMissing: 1
-  _activateOnStart: 0
+  _activateOnStart: 1
   _preserveMainWindowMode: 1
   _testBackground: {r: 0.04, g: 0.12, b: 0.2, a: 1}
   _standbyBackground: {r: 0, g: 0, b: 0, a: 1}
