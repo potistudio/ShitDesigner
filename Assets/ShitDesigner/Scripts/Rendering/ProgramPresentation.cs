@@ -54,12 +54,14 @@ namespace ShitDesigner.Rendering {
 
 		public Result<ProgramDisplaySelection, Diagnostic> Activate(int requestedDisplay) {
 			var selection = ProgramDisplayPolicy.Resolve(requestedDisplay, DisplayCount);
-			if (!selection.UsesProgramMonitor) {
-				try { Display.displays[selection.ResolvedDisplay].Activate(); }
-				catch (Exception exception) {
-					return Result.Failure<ProgramDisplaySelection, Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.display.activate_failed"), Severity.Error,
-						"The selected Unity Display could not be activated.", exception: DiagnosticExceptionInfo.FromException(exception)));
-				}
+			if (selection.UsesProgramMonitor) {
+				SetDisplayCameraActive(false);
+				return Result.Success<ProgramDisplaySelection, Diagnostic>(selection);
+			}
+			try { Display.displays[selection.ResolvedDisplay].Activate(); }
+			catch (Exception exception) {
+				return Result.Failure<ProgramDisplaySelection, Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.display.activate_failed"), Severity.Error,
+					"The selected Unity Display could not be activated.", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 			var camera = EnsureDisplayCamera(selection.ResolvedDisplay);
 			if (camera.IsFailure) return Result.Failure<ProgramDisplaySelection, Diagnostic>(camera.Error);
@@ -71,6 +73,10 @@ namespace ShitDesigner.Rendering {
 				return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.display.surface_invalid"), Severity.Error, "A created Program surface is required."));
 			if (_disposed) return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.display.disposed"), Severity.Error, "The Program display port is disposed."));
 			var selected = ProgramDisplayPolicy.Resolve(selection.RequestedDisplay, DisplayCount);
+			if (selected.UsesProgramMonitor) {
+				SetDisplayCameraActive(false);
+				return UnitResult.Success<Diagnostic>();
+			}
 			var ensured = EnsureDisplayCamera(selected.ResolvedDisplay);
 			if (ensured.IsFailure) return ensured;
 			_blit.Source = surface;
@@ -91,6 +97,10 @@ namespace ShitDesigner.Rendering {
 		}
 
 		public void SetOutputActive(bool active) {
+			SetDisplayCameraActive(active);
+		}
+
+		private void SetDisplayCameraActive(bool active) {
 			if (_displayCamera == null) return;
 			_displayCamera.enabled = active;
 			if (!active && _blit != null) _blit.Source = null;

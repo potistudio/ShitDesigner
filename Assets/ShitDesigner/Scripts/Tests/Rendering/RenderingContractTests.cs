@@ -940,16 +940,18 @@ namespace ShitDesigner.Rendering.Tests {
 		}
 
 		[UnityTest, Category("GPU"), Category("ProgramRuntimePolicy"), Category("URP")]
-		public IEnumerator UnityProgramDisplayPort_SrpPresentUsesPlayerLoopHook() {
+		public IEnumerator UnityProgramDisplayPort_ProgramMonitorDoesNotRenderToPrimaryDisplay() {
 			Assert.That(GraphicsSettings.currentRenderPipeline, Is.Not.Null,
 				"The production display contract requires an active Scriptable Render Pipeline.");
 			using (var port = new UnityProgramDisplayPort()) {
 				var activated = port.Activate(ProgramDisplayPolicy.DefaultDisplay + 7);
 				Assert.That(activated.IsSuccess, Is.True, activated.Error?.Message);
+				Assert.That(activated.Value.UsesProgramMonitor, Is.True);
 				var surface = NewTexture(4, 4, Color.magenta);
 				try {
 					Assert.That(port.Present(surface, activated.Value).IsSuccess, Is.True);
 					yield return null;
+					Assert.That(GameObject.Find("ShitDesigner.ProgramDisplay"), Is.Null);
 				}
 				finally { UnityEngine.Object.DestroyImmediate(surface); }
 			}
