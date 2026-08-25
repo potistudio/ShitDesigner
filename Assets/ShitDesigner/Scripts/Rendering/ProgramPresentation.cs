@@ -2,6 +2,7 @@ using System;
 #if UNITY_STANDALONE_WIN
 using System.Runtime.InteropServices;
 #endif
+using AOT;
 using CSharpFunctionalExtensions;
 using ShitDesigner.Core;
 using ShitDesigner.Runtime;
@@ -214,6 +215,7 @@ namespace ShitDesigner.Rendering {
 				}
 			}
 
+			[MonoPInvokeCallback(typeof(EnumWindowsCallback))]
 			private static bool ConfigureSecondaryWindow(IntPtr window, IntPtr parameter) {
 				var handle = GCHandle.FromIntPtr(parameter);
 				return handle.Target is WindowsSecondaryDisplayWindow controller && controller.ConfigureWindow(window);
