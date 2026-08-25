@@ -7,18 +7,18 @@ using UnityEngine.UIElements;
 
 namespace ShitDesigner.Bootstrap {
 	public enum SystemState {
-		Cold,
-		Preflight,
-		Composing,
-		Handshaking,
-		Activating,
-		Online,
-		Degraded,
-		Draining,
-		Stopping,
-		Teardown,
-		Offline,
-		Faulted
+		Cold, // Startup has not yet begun.
+		Preflight, // Startup is performing preflight checks and preparing to compose the presentation and other runtime resources.
+		Composing, // Startup is composing the presentation and other runtime resources.
+		Handshaking, // Startup is probing optional external capabilities.
+		Activating, // Startup is activating the presentation and other runtime resources.
+		Online, // Startup has completed successfully and the system is online.
+		Degraded, // Startup has completed, but one or more optional external capabilities are unavailable.
+		Draining, // Startup is shutting down the system and draining resources.
+		Stopping, // Startup is stopping the system and releasing resources.
+		Teardown, // Startup is tearing down the system and releasing resources.
+		Offline, // Startup has completed and the system is offline.
+		Faulted // Startup has failed and the system is faulted.
 	}
 
 	public enum CapabilityState {

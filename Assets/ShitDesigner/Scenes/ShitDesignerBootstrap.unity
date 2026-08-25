@@ -194,10 +194,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _presentationRoot: {fileID: 114002}
-  _assets: {fileID: 114000}
+  m_Assets: {fileID: 114000}
   _panelSettings: {fileID: 11400000, guid: acdb4ed592be84c4b8cf01d5947806f1, type: 2}
-  _midiInputManager: {fileID: 114004}
-  _createOnAwake: 1
+  m_MidiInputManager: {fileID: 114004}
+  m_CreateOnAwake: 1
 --- !u!114 &114002
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -368,6 +368,32 @@ namespace ShitDesigner.Nodes {
 			for (var i = 0; i < ShaderPasses.Count; i++) if (!ShaderPasses[i].Matches(expected.ShaderBinding.Passes[i])) return false;
 			return true;
 		}
+		internal string MismatchDescription(NodeCatalogEntry expected) {
+			if (expected == null) return "expected entry is null";
+			if (!string.Equals(TypeId, expected.TypeId.Value, StringComparison.Ordinal)) return "type id";
+			if (SchemaVersion != expected.SchemaVersion || !string.Equals(DisplayName, expected.DisplayName, StringComparison.Ordinal)
+				|| !string.Equals(Category, expected.Category, StringComparison.Ordinal) || SystemOwned != expected.SystemOwned
+				|| UserAddable != expected.UserAddable) return "metadata";
+			if (!string.Equals(ShaderKey, expected.ShaderBinding?.ShaderKey ?? string.Empty, StringComparison.Ordinal)
+				|| OutputPass != (expected.ShaderBinding?.OutputPass ?? 0) || !string.Equals(PrefabKey, expected.SceneBinding?.PrefabKey ?? string.Empty, StringComparison.Ordinal)
+				|| ShaderFamily != (expected.ShaderBinding?.Family ?? ShaderNodeFamily.Custom)
+				|| !string.Equals(ShaderVariantId, expected.ShaderBinding?.VariantId ?? string.Empty, StringComparison.Ordinal)
+				|| ShaderSourceVariant != (expected.ShaderBinding?.SourceVariant ?? 0)
+				|| ShaderRequiredFeatures != (expected.ShaderBinding?.RequiredFeatures ?? ShaderFeatureFlags.None)
+				|| ShaderStateful != (expected.ShaderBinding?.Stateful ?? false) || ShaderHistorySlots != (expected.ShaderBinding?.HistorySlots ?? 0)
+				|| !ShaderAliases.SequenceEqual(expected.ShaderBinding?.Aliases ?? Array.Empty<string>(), StringComparer.Ordinal)) return "bindings";
+			if (Ports.Count != expected.Ports.Count) return "port count";
+			for (var i = 0; i < Ports.Count; i++) if (!Ports[i].Matches(expected.Ports[i])) return "port " + Ports[i].Id;
+			if (Parameters.Count != expected.Parameters.Count) return "parameter count";
+			for (var i = 0; i < Parameters.Count; i++) if (!Parameters[i].Matches(expected.Parameters[i])) return "parameter " + Parameters[i].Id;
+			if (ShaderInputs.Count != (expected.ShaderBinding?.Inputs.Count ?? 0)) return "shader input count";
+			for (var i = 0; i < ShaderInputs.Count; i++) if (!ShaderInputs[i].Matches(expected.ShaderBinding.Inputs[i])) return "shader input " + ShaderInputs[i].PortId;
+			if (ShaderParameters.Count != (expected.ShaderBinding?.Parameters.Count ?? 0)) return "shader parameter count";
+			for (var i = 0; i < ShaderParameters.Count; i++) if (!ShaderParameters[i].Matches(expected.ShaderBinding.Parameters[i])) return "shader parameter " + ShaderParameters[i].ParameterId;
+			if (ShaderPasses.Count != (expected.ShaderBinding?.Passes.Count ?? 0)) return "shader pass count";
+			for (var i = 0; i < ShaderPasses.Count; i++) if (!ShaderPasses[i].Matches(expected.ShaderBinding.Passes[i])) return "shader pass " + ShaderPasses[i].Id;
+			return "unknown";
+		}
 		internal void SetAssetReferences(GameObject prefab, Shader shaderAsset, Material material, string prefabBindingKey, string shaderBindingKey, int pass) {
 			scenePrefab = prefab; shader = shaderAsset; templateMaterial = material; prefabKey = prefabBindingKey ?? string.Empty; shaderKey = shaderBindingKey ?? string.Empty; outputPass = pass;
 		}
@@ -410,7 +436,11 @@ namespace ShitDesigner.Nodes {
 			if (expected == null) return Failure("nodes.catalog.expected_missing", "Expected runtime node catalog is required.");
 			var valid = expected.Validate(); if (valid.IsFailure) return valid;
 			if (Entries.Count != expected.Entries.Count) return Failure("nodes.catalog.asset_mismatch", "Catalog entry count differs from runtime definitions.");
-			for (var i = 0; i < Entries.Count; i++) if (!Entries[i].Matches(expected.Entries[i])) return Failure("nodes.catalog.asset_mismatch", "Catalog metadata, ports, parameters or bindings differ from runtime definitions.");
+			for (var i = 0; i < Entries.Count; i++) {
+				if (!Entries[i].Matches(expected.Entries[i])) {
+					return Failure("nodes.catalog.asset_mismatch", "Catalog entry " + i + " ('" + Entries[i].TypeId + "') differs in " + Entries[i].MismatchDescription(expected.Entries[i]) + ".");
+				}
+			}
 			return UnitResult.Success<Diagnostic>();
 		}
 
