@@ -697,7 +697,6 @@ GameObject:
   - component: {fileID: 1594496360}
   - component: {fileID: 1594496359}
   - component: {fileID: 1594496361}
-  - component: {fileID: 1594496362}
   - component: {fileID: 1594496363}
   - component: {fileID: 1594496364}
   m_Layer: 0
@@ -773,7 +772,7 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1594496358}
+  m_GameObject: {fileID: 1800000000}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c52f4760adeb45ff980c5d0bc525fb9f, type: 3}
@@ -825,6 +824,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1800000001}
   - component: {fileID: 1800000002}
+  - component: {fileID: 1594496362}
   - component: {fileID: 1800000005}
   - component: {fileID: 1800000003}
   - component: {fileID: 1800000004}
@@ -897,7 +897,7 @@ MonoBehaviour:
   _scaleControlChange: 22
   _firstSceneNote: 36
   _secondSceneNote: 37
-  _openDefaultDevice: 1
+  _manager: {fileID: 1594496362}
 --- !u!114 &1800000004
 MonoBehaviour:
   m_ObjectHideFlags: 0

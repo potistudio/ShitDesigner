@@ -1,14 +1,16 @@
 using System.Collections.Generic;
 using NUnit.Framework;
+using ShitDesigner.Application;
 using ShitDesigner.Core;
 using ShitDesigner.Input;
+using UnityEditor;
 using UnityEngine;
 
 namespace ShitDesigner.Main.Tests {
 	[TestFixture]
 	public sealed class MainLiveMidiInputTests {
 		[Test]
-		public void CaptureMapsFixedMainControlsIntoTheSharedFrameBuffer() {
+		public void ManagerPollMapsFixedMainControlsIntoTheSharedFrameBuffer() {
 			var gameObject = new GameObject("Main MIDI input test");
 			var source = new FakeMidiInputSource(
 				Event(MidiControlKind.ControlChange, 21, 127),
@@ -16,13 +18,18 @@ namespace ShitDesigner.Main.Tests {
 				Event(MidiControlKind.Note, 37, 127));
 			try {
 				var input = gameObject.AddComponent<MainLiveInput>();
+				var manager = gameObject.AddComponent<MidiInputManager>();
 				var midi = gameObject.AddComponent<MainLiveMidiInput>();
 				var buffer = new MainLiveParameterBuffer();
+				var application = new FakeApplication();
+				var serializedMidi = new SerializedObject(midi);
+				serializedMidi.FindProperty("_manager").objectReferenceValue = manager;
+				serializedMidi.ApplyModifiedPropertiesWithoutUndo();
 				input.Bind(buffer);
-				midi.ConfigureSource(source);
-				midi.Initialize(input);
+				manager.Configure(application, application, source);
+				Assert.That(midi.Initialize(input, 2), Is.True);
 
-				Assert.That(midi.Capture(2), Is.EqualTo(3));
+				Assert.That(manager.Poll(), Is.EqualTo(3));
 				var frame = buffer.Commit(1, 2);
 
 				Assert.That(frame.SceneIndex, Is.EqualTo(1));
@@ -49,6 +56,11 @@ namespace ShitDesigner.Main.Tests {
 				return false;
 			}
 			public void Dispose() => _events.Clear();
+		}
+
+		private sealed class FakeApplication : IMidiInputApplicationPort, ILiveControlApplicationPort {
+			public ApplicationCommandResult HandleMidi(MidiInputEvent inputEvent) => ApplicationCommandResult.Ignored();
+			public ApplicationCommandResult SetLiveControlValue(LogicalControlId id, float normalizedValue) => ApplicationCommandResult.Ignored();
 		}
 	}
 }

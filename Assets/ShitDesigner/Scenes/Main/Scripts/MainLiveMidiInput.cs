@@ -3,69 +3,47 @@ using ShitDesigner.Input;
 using UnityEngine;
 
 namespace ShitDesigner.Main {
-	/// <summary>Maps the Main scene's fixed WinMM MIDI controls to normalized live parameters.</summary>
+	/// <summary>
+	/// Maps events from the shared MIDI input manager to the Main scene's fixed live parameters.
+	/// </summary>
 	[DisallowMultipleComponent]
 	public sealed class MainLiveMidiInput : MonoBehaviour {
-		private const int MaximumEventsPerFrame = 4096;
+		[SerializeField] private MidiInputManager _manager;
 		[SerializeField, Range(1, 16)] private int _channel = 1;
 		[SerializeField, Range(0, 127)] private int _sceneControlChange = 20;
 		[SerializeField, Range(0, 127)] private int _motionControlChange = 21;
 		[SerializeField, Range(0, 127)] private int _scaleControlChange = 22;
 		[SerializeField, Range(0, 127)] private int _firstSceneNote = 36;
 		[SerializeField, Range(0, 127)] private int _secondSceneNote = 37;
-		[SerializeField] private bool _openDefaultDevice = true;
 		private MainLiveInput _target;
-		private IMidiInputSource _source;
-		private bool _ownsSource;
+		private int _sceneCount;
 
-		public bool IsConnected => _source != null && (!(_source is IMidiInputAvailability availability) || availability.IsAvailable);
-		public string DeviceName => _source?.DeviceName ?? string.Empty;
-		public string LastError { get; private set; } = string.Empty;
+		public bool IsConnected => _manager != null && _manager.IsOpen;
+		public string DeviceName => _manager?.DeviceName ?? string.Empty;
+		public string LastError => _manager == null ? "MIDI Input Manager is required." : _manager.LastError;
 
-		public void Initialize(MainLiveInput target) {
+		public bool Initialize(MainLiveInput target, int sceneCount) {
+			Stop();
+			if (target == null || _manager == null || sceneCount < 1) return false;
 			_target = target;
-			if (_source != null || !_openDefaultDevice) return;
-			if (WindowsMidiInputSource.TryOpenDefault(out var source, out var error)) {
-				_source = source;
-				_ownsSource = true;
-				LastError = string.Empty;
-			}
-			else {
-				LastError = error ?? "The default MIDI input device could not be opened.";
-				Debug.LogWarning("[MainLiveMidi] " + LastError + " Keyboard input remains available.", this);
-			}
-		}
-
-		public void ConfigureSource(IMidiInputSource source, bool ownsSource = false) {
-			if (_ownsSource) _source?.Dispose();
-			_source = source;
-			_ownsSource = ownsSource;
-			LastError = string.Empty;
-		}
-
-		public int Capture(int sceneCount) {
-			if (_target == null || _source == null) return 0;
-			var count = 0;
-			while (count < MaximumEventsPerFrame && _source.TryDequeue(out var inputEvent)) {
-				Route(inputEvent, sceneCount);
-				count++;
-			}
-			return count;
+			_sceneCount = sceneCount;
+			_manager.InputReceived += OnInputReceived;
+			return true;
 		}
 
 		public void Stop() {
-			if (_ownsSource) _source?.Dispose();
-			_source = null;
-			_ownsSource = false;
+			if (_manager != null) _manager.InputReceived -= OnInputReceived;
 			_target = null;
+			_sceneCount = 0;
 		}
 
-		private void Route(MidiInputEvent inputEvent, int sceneCount) {
+		private void OnInputReceived(MidiInputEvent inputEvent) {
+			if (_target == null) return;
 			var control = inputEvent.Control;
 			if (control.Channel != _channel) return;
 			if (control.Kind == MidiControlKind.Note && inputEvent.RawValue > 0) {
-				if (control.Number == _firstSceneNote) _target.SetSceneIndex(0, sceneCount);
-				else if (control.Number == _secondSceneNote) _target.SetSceneIndex(1, sceneCount);
+				if (control.Number == _firstSceneNote) _target.SetSceneIndex(0, _sceneCount);
+				else if (control.Number == _secondSceneNote) _target.SetSceneIndex(1, _sceneCount);
 				return;
 			}
 			if (control.Kind != MidiControlKind.ControlChange) return;

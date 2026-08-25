@@ -1,5 +1,6 @@
 using System.Linq;
 using NUnit.Framework;
+using ShitDesigner.Input;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -16,12 +17,14 @@ namespace ShitDesigner.Main.Tests {
 				var liveRoot = scene.GetRootGameObjects().Single(root => root.name == "Main Live Runtime");
 				var bootstrap = liveRoot.GetComponent<MainLiveSceneBootstrap>();
 				var input = liveRoot.GetComponent<MainLiveInput>();
+				var midiManager = liveRoot.GetComponent<MidiInputManager>();
 				var midiInput = liveRoot.GetComponent<MainLiveMidiInput>();
 				var output = liveRoot.GetComponent<MainLiveOutput>();
 
 				Assert.That(legacyHost.activeSelf, Is.False, "The former ApplicationHost loop must not run beside the Main live coordinator.");
 				Assert.That(bootstrap, Is.Not.Null);
 				Assert.That(input, Is.Not.Null);
+				Assert.That(midiManager, Is.Not.Null);
 				Assert.That(midiInput, Is.Not.Null);
 				Assert.That(output, Is.Not.Null);
 				Assert.That(bootstrap.Scenes.Count, Is.EqualTo(2));
@@ -32,6 +35,8 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(serializedBootstrap.FindProperty("_input").objectReferenceValue, Is.SameAs(input));
 				Assert.That(serializedBootstrap.FindProperty("_midiInput").objectReferenceValue, Is.SameAs(midiInput));
 				Assert.That(serializedBootstrap.FindProperty("_output").objectReferenceValue, Is.SameAs(output));
+				var serializedMidiInput = new SerializedObject(midiInput);
+				Assert.That(serializedMidiInput.FindProperty("_manager").objectReferenceValue, Is.SameAs(midiManager));
 				var serializedOutput = new SerializedObject(output);
 				Assert.That(serializedOutput.FindProperty("_targetRenderer").objectReferenceValue, Is.Not.Null);
 			}

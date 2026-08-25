@@ -3,6 +3,7 @@
   "rootNamespace": "ShitDesigner.Main.Tests",
   "references": [
     "ShitDesigner.Main",
+    "ShitDesigner.Application",
     "ShitDesigner.Core",
     "ShitDesigner.Input",
     "ShitDesigner.Runtime",

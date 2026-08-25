@@ -136,6 +136,7 @@ namespace ShitDesigner.Input {
 		public long ForwardedEventCount { get; private set; }
 		public bool HasLastEvent { get; private set; }
 		public MidiInputEvent LastEvent { get; private set; }
+		public event Action<MidiInputEvent> InputReceived;
 
 		public void SetBindings(IEnumerable<MidiLiveControlBinding> bindings) {
 			_bindings = new List<MidiLiveControlBinding>(bindings ?? Array.Empty<MidiLiveControlBinding>());
@@ -242,6 +243,7 @@ namespace ShitDesigner.Input {
 				ReceivedEventCount++;
 				HasLastEvent = true;
 				LastEvent = inputEvent;
+				InputReceived?.Invoke(inputEvent);
 				var handled = false;
 				var matches = 0;
 				foreach (var binding in _runtimeBindings) {
