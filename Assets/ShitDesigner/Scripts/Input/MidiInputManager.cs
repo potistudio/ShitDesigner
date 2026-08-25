@@ -174,7 +174,7 @@ namespace ShitDesigner.Input {
 		public bool TryReconnect() {
 			if (_source != null && !IsOpen) CloseOwnedSource();
 			if (_source != null) return true;
-			if (!IsConfigured || _usesInjectedSource || !_openOnConfigure) return false;
+			if (_usesInjectedSource || !_openOnConfigure) return false;
 			OpenConfiguredDevice();
 			return _source != null;
 		}
