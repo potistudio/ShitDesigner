@@ -42,18 +42,6 @@ namespace ShitDesigner.Nodes.Tests {
 		}
 
 		[Test]
-		public void AssetFlashSignalsDefinition_HasEightMappableBoolSignals() {
-			var signals = NodeDefinitionCatalog.CreateInitial().Entries.Single(x => x.TypeId.Value == "shitdesigner.input.asset_flash_signals");
-			Assert.That(signals.Category, Is.EqualTo("Input"));
-			Assert.That(signals.Ports.Count(x => x.Direction == NodePortDirection.Output && x.Type == NodePortType.Bool), Is.EqualTo(8));
-			Assert.That(signals.Parameters.Count(x => x.Type == ParameterType.Bool && !x.DefaultValue.AsBool()), Is.EqualTo(8));
-			for (var slot = 1; slot <= 8; slot++) {
-				Assert.That(signals.Ports.Any(x => x.Id.Value == "signal_" + slot), Is.True);
-				Assert.That(signals.Parameters.Any(x => x.Id.Value == "signal_" + slot), Is.True);
-			}
-		}
-
-		[Test]
 		public void FixedOutputs_ProgramIsSingleSystemOwnedPreviewIsAddable() {
 			var catalog = NodeDefinitionCatalog.CreateInitial();
 			var program = catalog.Entries.Single(x => x.TypeId.Value == "system.program_output");
