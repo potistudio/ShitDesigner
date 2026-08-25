@@ -101,8 +101,6 @@ namespace ShitDesigner.Nodes.Editor {
 				var configured = catalog.ConfigureShaderReference(pair.Key, pair.Value);
 				if (configured.IsFailure) return Result.Failure<int, Diagnostic>(configured.Error);
 			}
-			var sceneReferences = ConfigureLegacySceneReferences(catalog);
-			if (sceneReferences.IsFailure) return Result.Failure<int, Diagnostic>(sceneReferences.Error);
 			var catalogValid = catalog.ValidateManifest();
 			if (catalogValid.IsFailure) return Result.Failure<int, Diagnostic>(catalogValid.Error);
 			var exact = catalog.ValidateAgainst(runtime);
@@ -119,15 +117,6 @@ namespace ShitDesigner.Nodes.Editor {
 		public static Result<ShaderNodeManifest, Diagnostic> LoadAuthoritativeManifest() {
 			var result = LoadManifest();
 			return result.IsFailure ? Result.Failure<ShaderNodeManifest, Diagnostic>(result.Error) : Result.Success<ShaderNodeManifest, Diagnostic>(result.Value.Manifest);
-		}
-
-		private static UnitResult<Diagnostic> ConfigureLegacySceneReferences(NodeTypeCatalog catalog) {
-			var scene3d = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/ShitDesigner/Scenes/Cylinder Flythrough.prefab");
-			var scene2d = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/ShitDesigner/Scripts/Bootstrap/Scene2D.prefab");
-			if (scene3d == null || scene2d == null) return Failure("nodes.catalog.prefab_missing", "Required Scene prefabs are missing from the project.");
-			var configured3d = catalog.ConfigureReference("shitdesigner.scene.3d", prefab: scene3d);
-			if (configured3d.IsFailure) return configured3d;
-			return catalog.ConfigureReference("shitdesigner.scene.2d", prefab: scene2d);
 		}
 
 		private static Result<LoadedManifest, Diagnostic> LoadManifest() {

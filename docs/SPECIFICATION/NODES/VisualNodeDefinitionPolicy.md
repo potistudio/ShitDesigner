@@ -14,8 +14,8 @@
 
 ## 3D／2D
 
-- 3D／2DのPrefab参照、ポート、パラメーターは `NodeTypeCatalog` の型定義へ含める。
-- ノード型はScene生成後に必要なCameraが1つ存在することをFactory検証する。
+- `NodeTypeCatalog` は3D／2Dノードのポートとパラメーターだけを定義する。Mainで使うPrefab参照は `BootstrapAssets` が所有し、型定義とは独立して差し替えられる。
+- Scene生成後に必要なCameraが1つ存在することは `SceneIsolationManager` が検証する。
 - 追加出力を定義した場合、要求された出力だけを1回の評価で生成する。
 
 ## Shader

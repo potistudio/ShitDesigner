@@ -242,21 +242,10 @@ namespace ShitDesigner.Nodes {
 		}
 	}
 
-	public sealed class SceneNodeBinding {
-		public string PrefabKey { get; }
-		public bool RequiresExactlyOneCamera { get; }
-		public bool RequiresCanvasValidation { get; }
-		public SceneNodeBinding(string prefabKey, bool requiresExactlyOneCamera = true, bool requiresCanvasValidation = false) {
-			if (string.IsNullOrWhiteSpace(prefabKey)) throw new ArgumentException("Prefab key is required.");
-			PrefabKey = prefabKey.Trim(); RequiresExactlyOneCamera = requiresExactlyOneCamera; RequiresCanvasValidation = requiresCanvasValidation;
-		}
-	}
-
 	public sealed class NodeCatalogEntry : INodeTypeDefinition {
 		public NodeDefinition Definition { get; }
 		public INodeFactory Factory { get; }
 		public ShaderNodeBinding ShaderBinding { get; }
-		public SceneNodeBinding SceneBinding { get; }
 		public NodeTypeId TypeId => Definition.TypeId;
 		public int SchemaVersion => Definition.SchemaVersion;
 		public string DisplayName => Definition.DisplayName;
@@ -265,10 +254,10 @@ namespace ShitDesigner.Nodes {
 		public IReadOnlyList<NodeParameterDefinition> Parameters => Definition.Parameters;
 		public bool SystemOwned => Definition.SystemOwned;
 		public bool UserAddable => Definition.UserAddable;
-		public NodeCatalogEntry(NodeDefinition definition, INodeFactory factory, ShaderNodeBinding shaderBinding = null, SceneNodeBinding sceneBinding = null) {
+		public NodeCatalogEntry(NodeDefinition definition, INodeFactory factory, ShaderNodeBinding shaderBinding = null) {
 			Definition = definition ?? throw new ArgumentNullException(nameof(definition)); Factory = factory ?? throw new ArgumentNullException(nameof(factory));
 			if (factory.TypeId != definition.TypeId) throw new ArgumentException("Factory and definition TypeId must match.");
-			ShaderBinding = shaderBinding; SceneBinding = sceneBinding;
+			ShaderBinding = shaderBinding;
 		}
 	}
 
@@ -298,7 +287,6 @@ namespace ShitDesigner.Nodes {
 				if (entry.SchemaVersion != 1 || entry.Factory == null || entry.Factory.TypeId != entry.TypeId) return Failure("nodes.catalog.metadata", "Node definition schema or factory metadata is invalid.");
 				if (entry.Ports.GroupBy(x => x.Id).Any(x => x.Count() > 1) || entry.Parameters.GroupBy(x => x.Id).Any(x => x.Count() > 1)) return Failure("nodes.catalog.duplicate_member", "Port and parameter IDs must be unique.");
 				if (entry.ShaderBinding != null && string.IsNullOrWhiteSpace(entry.ShaderBinding.ShaderKey)) return Failure("nodes.catalog.shader_binding_missing", "Shader definitions require an explicit shader key.");
-				if ((entry.Category == "3D" || entry.Category == "2D") && (entry.SceneBinding == null || !entry.SceneBinding.RequiresExactlyOneCamera)) return Failure("nodes.catalog.scene_binding", "Scene definitions require one-camera prefab bindings.");
 				if (entry.ShaderBinding != null) {
 					if (entry.ShaderBinding.Passes.Count == 0 || entry.ShaderBinding.FindPass(entry.ShaderBinding.OutputPass) == null) return Failure("nodes.catalog.shader_pass", "Shader binding must declare its output pass.");
 					foreach (var binding in entry.ShaderBinding.InputProperties) {
@@ -365,7 +353,7 @@ namespace ShitDesigner.Nodes {
 				var creator = bindings.Resolve(definition.TypeId);
 				var placeholder = creator == null;
 				creator = creator ?? ((node, generation) => Result.Success<IRuntimeNode, Diagnostic>(new CatalogRuntimeNode(node, generation, definition)));
-				return new NodeCatalogEntry(definition, new CatalogNodeFactory(definition.TypeId, creator, placeholder), InitialNodeDefinitions.ShaderBinding(shaderManifest, definition.TypeId), InitialNodeDefinitions.SceneBinding(definition.TypeId));
+				return new NodeCatalogEntry(definition, new CatalogNodeFactory(definition.TypeId, creator, placeholder), InitialNodeDefinitions.ShaderBinding(shaderManifest, definition.TypeId));
 			}), specialized);
 		}
 		private static UnitResult<Diagnostic> Failure(string code, string message) => UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "nodes"));
@@ -525,7 +513,6 @@ namespace ShitDesigner.Nodes {
 		}
 		public static ShaderNodeBinding ShaderBinding(NodeTypeId id) => ShaderBinding(ShaderNodeManifest.CreateBuiltIn(), id);
 		public static ShaderNodeBinding ShaderBinding(ShaderNodeManifest manifest, NodeTypeId id) => manifest?.Find(id)?.ToShaderBinding();
-		public static SceneNodeBinding SceneBinding(NodeTypeId id) { if (id.Value == "shitdesigner.scene.3d") return new SceneNodeBinding("builtin.scene.3d"); if (id.Value == "shitdesigner.scene.2d") return new SceneNodeBinding("builtin.scene.2d", true, true); return null; }
 		private static NodeParameterDefinition PreviewMode() => new NodeParameterDefinition(new ParameterId("display.mode"), "Display Mode", ParameterType.Enum, ParameterValue.FromEnum("fit"), enumOptions: new[] { "fit", "fill", "stretch" });
 		private static IEnumerable<NodeParameterDefinition> VideoParameters() => new[] { new NodeParameterDefinition(new ParameterId("transport.media_asset"), "Media Asset", ParameterType.MediaAssetReference, ParameterValue.Default(ParameterType.MediaAssetReference)), new NodeParameterDefinition(new ParameterId("transport.playing"), "Playing", ParameterType.Bool, ParameterValue.FromBool(false)), new NodeParameterDefinition(new ParameterId("transport.playhead_seconds"), "Playhead", ParameterType.Float, ParameterValue.FromFloat(0), ParameterValue.FromFloat(0), ParameterValue.FromFloat(float.MaxValue), true), new NodeParameterDefinition(new ParameterId("transport.speed"), "Speed", ParameterType.Float, ParameterValue.FromFloat(1), ParameterValue.FromFloat(0), ParameterValue.FromFloat(4)), new NodeParameterDefinition(new ParameterId("transport.loop"), "Loop", ParameterType.Bool, ParameterValue.FromBool(true)) };
 		private static NodeDefinition AssetFlash() {

@@ -56,8 +56,8 @@ namespace ShitDesigner.Bootstrap {
 
 			var catalogManifest = _nodeTypeCatalog.ValidateManifest();
 			if (catalogManifest.IsFailure) return catalogManifest;
-			var catalogReferences = _nodeTypeCatalog.ValidateAssetReferences(_scene3dPrefab, _scene2dPrefab, _shaderGenerator, _shaderEffect, _shaderBlend2);
-			if (catalogReferences.IsFailure) return catalogReferences;
+			var catalogShaders = _nodeTypeCatalog.ValidateLegacyShaderReferences(_shaderGenerator, _shaderEffect, _shaderBlend2);
+			if (catalogShaders.IsFailure) return catalogShaders;
 
 			var shaderManifestAsset = ShaderManifest;
 			if (shaderManifestAsset == null) return PreflightFailure("bootstrap.preflight.shader_manifest_missing", "The generated ShaderNodeManifest asset is required.");
