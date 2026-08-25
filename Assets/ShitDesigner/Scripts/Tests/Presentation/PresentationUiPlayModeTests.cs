@@ -173,6 +173,27 @@ namespace ShitDesigner.Presentation.Tests.PlayMode {
 			Object.DestroyImmediate((Object)(object)gameObject);
 		}
 
+		[Test]
+		public void PresentationRoot_WithUiDisabledDoesNotSubscribeVisualCallbacks() {
+			var gameObject = new GameObject("HeadlessPresentationRoot");
+			gameObject.SetActive(false);
+			try {
+				var presentation = gameObject.AddComponent<PresentationRoot>();
+				var buildUi = typeof(PresentationRoot).GetField("_buildUi", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+				Assert.That(buildUi, Is.Not.Null);
+				buildUi.SetValue(presentation, false);
+				var coordinator = new PresentationCoordinator(new DirtyReadPort(),
+					new RecordingCommandPort(new List<PresentationCommandRequest>()));
+
+				presentation.Configure(coordinator);
+
+				Assert.DoesNotThrow(() => coordinator.ApplyLatestReadModels(1UL),
+					"A headless Main scene must not invoke callbacks for visual elements that were intentionally not built.");
+				Assert.That(presentation.RootVisualElement, Is.Null);
+			}
+			finally { Object.DestroyImmediate(gameObject); }
+		}
+
 		[UnityTest]
 		[Category("GUI_VisualTree")]
 		[Category("GUI_UiScale")]
