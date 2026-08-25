@@ -34,6 +34,7 @@ namespace ShitDesigner.Bootstrap {
 		private Diagnostic _startupDiagnostic;
 		private HandshakeReport m_HandshakeReport;
 		public CompositionRoot Composition => m_Composition;
+		public BootstrapAssets Assets => m_Assets;
 		public SystemState State => m_State;
 		public Diagnostic StartupDiagnostic => _startupDiagnostic;
 		public HandshakeReport HandshakeReport => m_HandshakeReport;
