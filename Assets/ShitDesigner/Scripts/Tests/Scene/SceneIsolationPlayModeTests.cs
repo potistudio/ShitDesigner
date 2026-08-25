@@ -12,6 +12,29 @@ namespace ShitDesigner.Tests.Scene {
 	public sealed class SceneIsolationPlayModeTests {
 		private static NodeInstanceId Node(int index) => new NodeInstanceId($"{index + 10:00000000}-0000-4000-8000-000000000000");
 
+		[UnityTest]
+		public IEnumerator CylindricalFlythroughBuildsConfiguredFieldAndMovesCameraForward() {
+			var root = new GameObject("Cylinder Flythrough Test");
+			try {
+				var cameraObject = new GameObject("Camera");
+				cameraObject.transform.SetParent(root.transform, false);
+				cameraObject.AddComponent<Camera>();
+				var flythrough = root.AddComponent<CylindricalObjectFlythrough>();
+				flythrough.Rebuild();
+				Assert.That(flythrough.GeneratedObjectCount, Is.EqualTo(300));
+				var startingZ = cameraObject.transform.localPosition.z;
+
+				yield return null;
+
+				Assert.That(cameraObject.transform.localPosition.x, Is.EqualTo(0f));
+				Assert.That(cameraObject.transform.localPosition.y, Is.EqualTo(0f));
+				Assert.That(cameraObject.transform.localPosition.z, Is.GreaterThan(startingZ));
+			}
+			finally {
+				Object.DestroyImmediate(root);
+			}
+		}
+
 		[Test]
 		public void PrefabValidation_RequiresOneCameraRecursiveLayerAndCanvasCamera() {
 			var root = new GameObject("ScenePrefabRoot");
