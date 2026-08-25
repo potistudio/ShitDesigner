@@ -35,6 +35,35 @@ namespace ShitDesigner.Tests.Scene {
 			}
 		}
 
+		[UnityTest]
+		public IEnumerator GraphClockMovesTheInstantiatedPrefabCameraBeforeRendering() {
+			var prefab = new GameObject("Cylinder Flythrough Prefab");
+			var cameraObject = new GameObject("Camera");
+			cameraObject.transform.SetParent(prefab.transform, false);
+			cameraObject.AddComponent<Camera>();
+			cameraObject.AddComponent<UniversalAdditionalCameraData>().renderType = CameraRenderType.Base;
+			prefab.AddComponent<CylindricalObjectFlythrough>();
+			var manager = new SceneIsolationManager();
+			var created = manager.Create(new SceneCreateRequest(Node(29), SceneNodeKind.ThreeD, "SceneIsolation.GraphClock", prefab: prefab));
+			try {
+				Assert.That(created.IsSuccess, Is.True, created.IsFailure ? created.Error.Message : string.Empty);
+				created.Value.BindGraphClock();
+				var camera = created.Value.Camera;
+				var startingZ = camera.transform.localPosition.z;
+
+				var advanced = created.Value.AdvanceGraphClock(2d);
+
+				Assert.That(advanced.IsSuccess, Is.True, advanced.IsFailure ? advanced.Error.Message : string.Empty);
+				Assert.That(camera.transform.localPosition.z, Is.EqualTo(startingZ + 3f).Within(0.001f));
+			}
+			finally {
+				if (created.IsSuccess) created.Value.Dispose();
+				Object.DestroyImmediate(prefab);
+			}
+			for (var index = 0; index < 120 && manager.ActiveNodeCount > 0; index++) yield return null;
+			manager.Dispose();
+		}
+
 		[Test]
 		public void PrefabValidation_RequiresOneCameraRecursiveLayerAndCanvasCamera() {
 			var root = new GameObject("ScenePrefabRoot");

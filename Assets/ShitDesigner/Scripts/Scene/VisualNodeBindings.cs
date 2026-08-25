@@ -54,7 +54,7 @@ namespace ShitDesigner.Scene {
 		public RuntimeNodeState State { get; private set; } = RuntimeNodeState.Preparing;
 		public SceneNodeRuntime Scene => _scene;
 
-		internal SceneRuntimeNode(RuntimeNodeCreateInfo record, ulong generationId, SceneNodeRuntime scene, Action<SceneNodeRuntime, FrameSnapshot> applyEffectiveParameters) { _record = record ?? throw new ArgumentNullException(nameof(record)); GenerationId = generationId; _scene = scene ?? throw new ArgumentNullException(nameof(scene)); _applyEffectiveParameters = applyEffectiveParameters; _lastClock = 0d; }
+		internal SceneRuntimeNode(RuntimeNodeCreateInfo record, ulong generationId, SceneNodeRuntime scene, Action<SceneNodeRuntime, FrameSnapshot> applyEffectiveParameters) { _record = record ?? throw new ArgumentNullException(nameof(record)); GenerationId = generationId; _scene = scene ?? throw new ArgumentNullException(nameof(scene)); _scene.BindGraphClock(); _applyEffectiveParameters = applyEffectiveParameters; _lastClock = 0d; }
 		public void OnDemandChanged(bool demanded, FrameEvaluationContext context) { if (context != null) _lastClock = context.Snapshot.GraphClockTime; }
 		public void Evaluate(NodeExecutionContext context, NodeOutputWriter outputs) {
 			var image = new PortId("image");
@@ -75,6 +75,8 @@ namespace ShitDesigner.Scene {
 			try {
 				_applyEffectiveParameters?.Invoke(_scene, context.Snapshot);
 				var delta = Math.Max(0d, context.Snapshot.GraphClockTime - _lastClock);
+				var animation = _scene.AdvanceGraphClock(delta);
+				if (animation.IsFailure) throw new InvalidOperationException(animation.Error.Message);
 				var physics = _scene.AdvancePhysics(delta);
 				if (physics.IsFailure) throw new InvalidOperationException(physics.Error.Message);
 				_lastClock = context.Snapshot.GraphClockTime;
