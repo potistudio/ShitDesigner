@@ -41,6 +41,7 @@ namespace ShitDesigner.Rendering {
 		int DisplayCount { get; }
 		Result<ProgramDisplaySelection, Diagnostic> Activate(int requestedDisplay);
 		UnitResult<Diagnostic> Present(RenderTexture surface, ProgramDisplaySelection selection);
+		void SetOutputActive(bool active);
 	}
 
 	/// <summary>Unity boundary for selected Display activation and surface presentation.</summary>
@@ -97,7 +98,17 @@ namespace ShitDesigner.Rendering {
 		}
 
 		public void SetOutputActive(bool active) {
-			SetDisplayCameraActive(active);
+			if (active) {
+				SetDisplayCameraActive(true);
+				return;
+			}
+			ShowStandbyFrame();
+		}
+
+		private void ShowStandbyFrame() {
+			if (_displayCamera == null) return;
+			if (_blit != null) _blit.Source = null;
+			_displayCamera.enabled = true;
 		}
 
 		private void SetDisplayCameraActive(bool active) {
@@ -252,7 +263,7 @@ namespace ShitDesigner.Rendering {
 		public int DisplayCount => _displayPort?.DisplayCount ?? 1;
 		public void SetOutputActive(bool active) {
 			IsOutputActive = active;
-			if (_displayPort is UnityProgramDisplayPort unityPort) unityPort.SetOutputActive(active);
+			_displayPort?.SetOutputActive(active);
 		}
 		public void CloseMonitor() => MonitorOpen = false;
 		public void OpenMonitor() => MonitorOpen = true;

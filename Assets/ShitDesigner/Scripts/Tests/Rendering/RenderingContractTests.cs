@@ -1131,9 +1131,11 @@ namespace ShitDesigner.Rendering.Tests {
 				try {
 					presenter.SetOutputActive(false);
 					Assert.That(presenter.IsOutputActive, Is.False);
+					Assert.That(port.IsOutputActive, Is.False);
 					Assert.That(presenter.Present(surface).IsSuccess, Is.True);
 					Assert.That(port.PresentCount, Is.EqualTo(0));
 					presenter.SetOutputActive(true);
+					Assert.That(port.IsOutputActive, Is.True);
 					Assert.That(presenter.Present(surface).IsSuccess, Is.True);
 					Assert.That(port.PresentCount, Is.EqualTo(1));
 				}
@@ -1387,6 +1389,7 @@ namespace ShitDesigner.Rendering.Tests {
 			public int DisplayCount { get; }
 			public int LastRequestedDisplay { get; private set; } = -1;
 			public int PresentCount { get; private set; }
+			public bool IsOutputActive { get; private set; } = true;
 
 			public FakeDisplayPort(int displayCount) { DisplayCount = displayCount; }
 
@@ -1398,6 +1401,10 @@ namespace ShitDesigner.Rendering.Tests {
 			public UnitResult<Diagnostic> Present(RenderTexture surface, ProgramDisplaySelection selection) {
 				PresentCount++;
 				return UnitResult.Success<Diagnostic>();
+			}
+
+			public void SetOutputActive(bool active) {
+				IsOutputActive = active;
 			}
 		}
 
