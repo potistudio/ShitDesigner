@@ -184,6 +184,7 @@ namespace ShitDesigner.Rendering {
 			private const uint ShowWindow = 0x0040;
 			private const uint MonitorDefaultToNearest = 2;
 			private static readonly IntPtr Topmost = new IntPtr(-1);
+			private static readonly EnumWindowsCallback ConfigureSecondaryWindowCallback = ConfigureSecondaryWindow;
 
 			private IntPtr _primaryWindow;
 			private int _remainingAttempts;
@@ -204,10 +205,21 @@ namespace ShitDesigner.Rendering {
 			private void LateUpdate() {
 				if (_remainingAttempts <= 0) return;
 				_remainingAttempts--;
-				EnumWindows(ConfigureSecondaryWindow, IntPtr.Zero);
+				var handle = GCHandle.Alloc(this);
+				try {
+					EnumWindows(ConfigureSecondaryWindowCallback, GCHandle.ToIntPtr(handle));
+				}
+				finally {
+					handle.Free();
+				}
 			}
 
-			private bool ConfigureSecondaryWindow(IntPtr window, IntPtr _) {
+			private static bool ConfigureSecondaryWindow(IntPtr window, IntPtr parameter) {
+				var handle = GCHandle.FromIntPtr(parameter);
+				return handle.Target is WindowsSecondaryDisplayWindow controller && controller.ConfigureWindow(window);
+			}
+
+			private bool ConfigureWindow(IntPtr window) {
 				if (_primaryWindow == IntPtr.Zero || window == IntPtr.Zero || window == _primaryWindow || !IsWindowVisible(window)) return true;
 				GetWindowThreadProcessId(window, out var processId);
 				if (processId != GetCurrentProcessId()) return true;
