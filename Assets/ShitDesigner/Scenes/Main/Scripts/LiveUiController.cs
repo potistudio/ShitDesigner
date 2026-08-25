@@ -72,7 +72,7 @@ namespace ShitDesigner.Main {
 				_displaySelector.SetValueWithoutNotify("Display " + model.SelectedDisplayNumber);
 				_outputButton.text = model.IsDisplayOutputActive ? "STOP OUTPUT" : "START OUTPUT";
 				_capabilityLabel.text = $"MIDI: {(model.Capabilities.MidiAvailable ? "READY" : "UNAVAILABLE")}  DISPLAY: {(model.Capabilities.ExternalDisplayAvailable ? "READY" : "UNAVAILABLE")}  FRAME: {model.ProgramFrameNumber}";
-				_diagnosticLabel.text = string.IsNullOrEmpty(model.Diagnostic) ? model.DisplayError : model.Diagnostic;
+				_diagnosticLabel.text = ResolveDiagnostic(model);
 				if (_renderedSceneId != model.SelectedSceneId) RebuildParameters(model);
 				else RefreshParameterValues(model);
 			}
@@ -89,7 +89,7 @@ namespace ShitDesigner.Main {
 				};
 				slider.RegisterValueChangedCallback(change => {
 					if (!_updating && _host?.ReadModel != null)
-						_host.ParameterQueue.EnqueueSetParameter(_host.ReadModel.SelectedSceneId, (string)slider.userData, change.newValue);
+						ShowEnqueueRejection(_host.ParameterQueue.EnqueueSetParameter(_host.ReadModel.SelectedSceneId, (string)slider.userData, change.newValue));
 				});
 				_parameterControls.Add(slider);
 			}
@@ -104,7 +104,7 @@ namespace ShitDesigner.Main {
 		private void OnSceneSelected(ChangeEvent<string> change) {
 			if (_updating || _host?.ReadModel == null) return;
 			var scene = _host.ReadModel.Scenes.FirstOrDefault(candidate => candidate.Name == change.newValue);
-			if (!string.IsNullOrEmpty(scene.Id)) _host.ParameterQueue.EnqueueSelectScene(scene.Id);
+			if (!string.IsNullOrEmpty(scene.Id)) ShowEnqueueRejection(_host.ParameterQueue.EnqueueSelectScene(scene.Id));
 		}
 
 		private void OnDisplaySelected(ChangeEvent<string> change) {
@@ -113,6 +113,17 @@ namespace ShitDesigner.Main {
 		}
 
 		private void ToggleOutput() => _output?.SetOutputActive(!_output.IsOutputActive);
+
+		private void ShowEnqueueRejection(LiveParameterEnqueueResult result) {
+			if (!result.Accepted && _diagnosticLabel != null) _diagnosticLabel.text = result.RejectionReason;
+		}
+
+		private static string ResolveDiagnostic(LiveUiReadModel model) {
+			if (!string.IsNullOrEmpty(model.Diagnostic)) return model.Diagnostic;
+			var rejection = model.RequestResults.LastOrDefault(result => !result.Applied);
+			if (!string.IsNullOrEmpty(rejection.RejectionReason)) return rejection.RejectionReason;
+			return model.DisplayError;
+		}
 
 		private static T Required<T>(VisualElement root, string name) where T : VisualElement {
 			var element = root.Q<T>(name);
