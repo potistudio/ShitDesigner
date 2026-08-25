@@ -1,16 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
-using ShitDesigner.Bootstrap;
-using ShitDesigner.Presentation;
+using ShitDesigner.Rendering;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace ShitDesigner.Rendering {
+namespace ShitDesigner.Presentation {
 	[DisallowMultipleComponent]
 	[RequireComponent(typeof(PanelRenderer))]
 	public sealed class ExternalDisplayTopBarController : MonoBehaviour {
 		[SerializeField] private PanelRenderer _panelRenderer;
-		[SerializeField] private ApplicationHost _applicationHost;
+		[SerializeField] private PresentationRoot _presentationRoot;
 
 		private Button _liveButton;
 		private Label _liveButtonLabel;
@@ -31,7 +30,7 @@ namespace ShitDesigner.Rendering {
 
 		private void OnEnable() {
 			if (_panelRenderer == null) _panelRenderer = GetComponent<PanelRenderer>();
-			if (_applicationHost == null) _applicationHost = FindAnyObjectByType<ApplicationHost>();
+			if (_presentationRoot == null) _presentationRoot = FindAnyObjectByType<PresentationRoot>();
 
 			if (_panelRenderer != null) {
 				_panelRenderer.RegisterUIReloadCallback(OnUiReloaded);
@@ -57,8 +56,8 @@ namespace ShitDesigner.Rendering {
 		}
 
 		private bool BindProgramOutput() {
-			if (_applicationHost == null) _applicationHost = FindAnyObjectByType<ApplicationHost>();
-			var next = _applicationHost?.Composition?.OutputSurfaces;
+			if (_presentationRoot == null) _presentationRoot = FindAnyObjectByType<PresentationRoot>();
+			var next = _presentationRoot?.Coordinator?.ProgramOutputControl;
 			if (ReferenceEquals(_programOutput, next)) return _programOutput != null;
 			UnbindProgramOutput();
 			_programOutput = next;

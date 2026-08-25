@@ -3,7 +3,8 @@
   "rootNamespace": "ShitDesigner.Presentation",
   "references": [
     "ShitDesigner.Core",
-    "ShitDesigner.Application"
+    "ShitDesigner.Application",
+    "ShitDesigner.Rendering"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],
