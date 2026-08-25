@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using ShitDesigner.Bootstrap;
+using ShitDesigner.Presentation;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -8,7 +10,7 @@ namespace ShitDesigner.Rendering {
 	[RequireComponent(typeof(PanelRenderer))]
 	public sealed class ExternalDisplayTopBarController : MonoBehaviour {
 		[SerializeField] private PanelRenderer _panelRenderer;
-		[SerializeField] private SimpleExternalDisplayOutput _externalDisplayOutput;
+		[SerializeField] private ApplicationHost _applicationHost;
 
 		private Button _liveButton;
 		private Label _liveButtonLabel;
@@ -24,21 +26,24 @@ namespace ShitDesigner.Rendering {
 		private int _pendingDisplayNumber;
 		private bool _showingError;
 		private Coroutine _bindRoutine;
+		private IProgramOutputControlPort _programOutput;
 		private readonly List<int> _displayNumbers = new List<int>();
 
 		private void OnEnable() {
 			if (_panelRenderer == null) _panelRenderer = GetComponent<PanelRenderer>();
-			if (_externalDisplayOutput == null) _externalDisplayOutput = FindAnyObjectByType<SimpleExternalDisplayOutput>();
+			if (_applicationHost == null) _applicationHost = FindAnyObjectByType<ApplicationHost>();
 
 			if (_panelRenderer != null) {
 				_panelRenderer.RegisterUIReloadCallback(OnUiReloaded);
 				_bindRoutine = StartCoroutine(ReloadUiAfterPanelInitialization());
 			}
 
-			if (_externalDisplayOutput != null)
-				_externalDisplayOutput.OutputActiveChanged += OnOutputActiveChanged;
-
+			BindProgramOutput();
 			RefreshLiveButton();
+		}
+
+		private void Update() {
+			if (_programOutput == null) BindProgramOutput();
 		}
 
 		private void OnDisable() {
@@ -47,9 +52,25 @@ namespace ShitDesigner.Rendering {
 				_bindRoutine = null;
 			}
 			if (_panelRenderer != null) _panelRenderer.UnregisterUIReloadCallback(OnUiReloaded);
-			if (_externalDisplayOutput != null)
-				_externalDisplayOutput.OutputActiveChanged -= OnOutputActiveChanged;
+			UnbindProgramOutput();
 			Unbind();
+		}
+
+		private bool BindProgramOutput() {
+			if (_applicationHost == null) _applicationHost = FindAnyObjectByType<ApplicationHost>();
+			var next = _applicationHost?.Composition?.OutputSurfaces;
+			if (ReferenceEquals(_programOutput, next)) return _programOutput != null;
+			UnbindProgramOutput();
+			_programOutput = next;
+			if (_programOutput == null) return false;
+			_programOutput.OutputActiveChanged += OnOutputActiveChanged;
+			RefreshLiveButton();
+			return true;
+		}
+
+		private void UnbindProgramOutput() {
+			if (_programOutput != null) _programOutput.OutputActiveChanged -= OnOutputActiveChanged;
+			_programOutput = null;
 		}
 
 		private IEnumerator ReloadUiAfterPanelInitialization() {
@@ -111,13 +132,13 @@ namespace ShitDesigner.Rendering {
 		}
 
 		private void RequestToggle() {
-			if (_externalDisplayOutput == null) return;
+			if (!BindProgramOutput()) return;
 
 			_showingError = false;
 			_cancelButton?.RemoveFromClassList("is-hidden");
-			_pendingActive = !_externalDisplayOutput.IsOutputActive;
+			_pendingActive = !_programOutput.IsOutputActive;
 			PrepareDisplaySelector();
-			if (_pendingActive && !_externalDisplayOutput.CanActivate(_pendingDisplayNumber, out var activationError)) {
+			if (_pendingActive && !_programOutput.CanActivate(_pendingDisplayNumber, out var activationError)) {
 				ShowUnavailable(activationError);
 				return;
 			}
@@ -127,7 +148,7 @@ namespace ShitDesigner.Rendering {
 			if (_confirmationMessage != null)
 				_confirmationMessage.text = _pendingActive
 					? $"Send camera output to Display {_pendingDisplayNumber}."
-					: $"Stop camera output on Display {_externalDisplayOutput.DisplayNumber}.";
+					: $"Stop camera output on Display {_programOutput.DisplayNumber}.";
 			if (_confirmButton != null) {
 				_confirmButton.text = _pendingActive ? "START" : "STOP";
 				_confirmButton.EnableInClassList("is-stop", !_pendingActive);
@@ -139,17 +160,17 @@ namespace ShitDesigner.Rendering {
 		private void PrepareDisplaySelector() {
 			_displayNumbers.Clear();
 			var labels = new List<string>();
-			for (var displayNumber = 2; displayNumber <= _externalDisplayOutput.ConnectedDisplayCount; displayNumber++) {
+			for (var displayNumber = 2; displayNumber <= _programOutput.ConnectedDisplayCount; displayNumber++) {
 				_displayNumbers.Add(displayNumber);
 				labels.Add($"Display {displayNumber}");
 			}
 
 			if (_displayNumbers.Count == 0) {
-				_displayNumbers.Add(_externalDisplayOutput.DisplayNumber);
-				labels.Add($"Display {_externalDisplayOutput.DisplayNumber}");
+				_displayNumbers.Add(_programOutput.DisplayNumber);
+				labels.Add($"Display {_programOutput.DisplayNumber}");
 			}
 
-			var selectedIndex = _displayNumbers.IndexOf(_externalDisplayOutput.DisplayNumber);
+			var selectedIndex = _displayNumbers.IndexOf(_programOutput.DisplayNumber);
 			if (selectedIndex < 0) selectedIndex = 0;
 			_pendingDisplayNumber = _displayNumbers[selectedIndex];
 
@@ -157,7 +178,7 @@ namespace ShitDesigner.Rendering {
 			_displaySelector.choices = labels;
 			_displaySelector.SetValueWithoutNotify(labels[selectedIndex]);
 			_displaySelector.SetEnabled(
-				_pendingActive && !UnityEngine.Application.isEditor && _externalDisplayOutput.ConnectedDisplayCount > 1);
+				_pendingActive && !UnityEngine.Application.isEditor && _programOutput.ConnectedDisplayCount > 1);
 		}
 
 		private void OnDisplaySelectionChanged(ChangeEvent<string> changeEvent) {
@@ -188,24 +209,24 @@ namespace ShitDesigner.Rendering {
 		}
 
 		private void ConfirmToggle() {
-			if (_externalDisplayOutput == null) return;
+			if (!BindProgramOutput()) return;
 			if (_showingError) {
 				_showingError = false;
 				HideConfirmation();
 				return;
 			}
 
-			if (_pendingActive && !_externalDisplayOutput.SelectDisplay(_pendingDisplayNumber)) {
+			if (_pendingActive && !_programOutput.SelectDisplay(_pendingDisplayNumber)) {
 				ShowUnavailable("The output display cannot be changed while LIVE output is active.");
 				return;
 			}
 
-			var succeeded = _externalDisplayOutput.SetOutputActive(_pendingActive);
+			var succeeded = _programOutput.SetOutputActive(_pendingActive);
 			if (succeeded) {
 				HideConfirmation();
 			}
 			else {
-				ShowUnavailable(_externalDisplayOutput.LastError);
+				ShowUnavailable(_programOutput.LastError);
 			}
 			RefreshLiveButton();
 		}
@@ -216,7 +237,7 @@ namespace ShitDesigner.Rendering {
 
 		private void RefreshLiveButton() {
 			if (_liveButton == null) return;
-			var active = _externalDisplayOutput != null && _externalDisplayOutput.IsOutputActive;
+			var active = _programOutput != null && _programOutput.IsOutputActive;
 			if (_liveButtonLabel != null) _liveButtonLabel.text = active ? "STOP OUTPUT" : "START OUTPUT";
 			_liveButton.EnableInClassList("is-off", !active);
 			_liveButton.EnableInClassList("is-stop", active);
@@ -224,7 +245,7 @@ namespace ShitDesigner.Rendering {
 			_liveStatus?.EnableInClassList("is-live", active);
 			if (_liveStatusLabel != null)
 				_liveStatusLabel.text = active
-					? $"LIVE / D{_externalDisplayOutput.DisplayNumber}"
+					? $"LIVE / D{_programOutput.DisplayNumber}"
 					: "IDLE";
 		}
 

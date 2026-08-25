@@ -31,6 +31,8 @@ namespace ShitDesigner.Bootstrap.Tests {
 					Assert.That(program.Ensure(1).IsSuccess, Is.True);
 					session.LastPresentation = PresentedPreview(previewId, source, 41);
 					bridge.Bind(session, program, pool);
+					Assert.That(bridge.Handshake().IsSuccess, Is.True);
+					Assert.That(bridge.IsOutputActive, Is.False, "External Program output must remain stopped until the operator starts LIVE output.");
 
 					bridge.Sync(1);
 					Assert.That(bridge.PreviewDisplayBlitCount, Is.EqualTo(1));
