@@ -13,6 +13,7 @@ namespace ShitDesigner.Main.Tests {
 		public void MainKeepsHostUiAlongsideTheStandaloneLiveRuntime() {
 			var scene = EditorSceneManager.OpenScene("Assets/ShitDesigner/Scenes/Main/Main.unity", OpenSceneMode.Additive);
 			try {
+				var mainRoot = scene.GetRootGameObjects().Single(root => root.name == "Main");
 				var legacyHost = scene.GetRootGameObjects().Single(root => root.name == "Host");
 				var liveRoot = scene.GetRootGameObjects().Single(root => root.name == "Main Live Runtime");
 				var bootstrap = liveRoot.GetComponent<MainLiveSceneBootstrap>();
@@ -41,6 +42,11 @@ namespace ShitDesigner.Main.Tests {
 				var applicationHost = legacyHost.GetComponents<MonoBehaviour>().Single(component => component.GetType().Name == "ApplicationHost");
 				var serializedApplicationHost = new SerializedObject(applicationHost);
 				Assert.That(serializedApplicationHost.FindProperty("m_MidiInputManager").objectReferenceValue, Is.SameAs(midiManager));
+				var externalOutput = mainRoot.GetComponents<MonoBehaviour>().Single(component => component.GetType().Name == "SimpleExternalDisplayOutput");
+				var serializedExternalOutput = new SerializedObject(externalOutput);
+				Assert.That(serializedExternalOutput.FindProperty("_displayNumber").intValue, Is.EqualTo(2));
+				Assert.That(serializedExternalOutput.FindProperty("_activateOnStart").boolValue, Is.True);
+				Assert.That(serializedExternalOutput.FindProperty("_outputCamera").objectReferenceValue, Is.Not.Null);
 				var serializedOutput = new SerializedObject(output);
 				Assert.That(serializedOutput.FindProperty("_targetRenderer").objectReferenceValue, Is.Not.Null);
 			}
