@@ -167,7 +167,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c7d7c8cffa66e554988cac388e36be19, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _scene3dPrefab: {fileID: 100000, guid: 55555555555555555555555555555555, type: 3}
+  _scene3dPrefab: {fileID: 7787689742687978739, guid: 52d135c910953af43a7424639474c3c2, type: 3}
   _scene2dPrefab: {fileID: 110000, guid: 66666666666666666666666666666666, type: 3}
   _videoHostPrefab: {fileID: 100000, guid: 77777777777777777777777777777770, type: 3}
   _shaderGenerator: {fileID: 4800000, guid: 11111111111111111111111111111111, type: 3}

@@ -18,7 +18,7 @@ namespace ShitDesigner.Nodes.Editor {
 	public sealed class NodeTypeCatalogBuildValidator : IPreprocessBuildWithReport {
 		public int callbackOrder => 0;
 		private const string AssetPath = "Assets/ShitDesigner/Scripts/Nodes/NodeTypeCatalog.asset";
-		private const string Scene3dPath = "Assets/ShitDesigner/Scripts/Bootstrap/Scene3D.prefab";
+		private const string Scene3dPath = "Assets/ShitDesigner/Scenes/Cylinder Flythrough.prefab";
 		private const string Scene2dPath = "Assets/ShitDesigner/Scripts/Bootstrap/Scene2D.prefab";
 		private const string GeneratorShaderPath = "Assets/ShitDesigner/Scripts/Media/Shaders/BuiltinGenerator.shader";
 		private const string EffectShaderPath = "Assets/ShitDesigner/Scripts/Media/Shaders/BuiltinEffect.shader";

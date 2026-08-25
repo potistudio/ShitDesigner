@@ -122,7 +122,7 @@ namespace ShitDesigner.Nodes.Editor {
 		}
 
 		private static UnitResult<Diagnostic> ConfigureLegacySceneReferences(NodeTypeCatalog catalog) {
-			var scene3d = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/ShitDesigner/Scripts/Bootstrap/Scene3D.prefab");
+			var scene3d = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/ShitDesigner/Scenes/Cylinder Flythrough.prefab");
 			var scene2d = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/ShitDesigner/Scripts/Bootstrap/Scene2D.prefab");
 			if (scene3d == null || scene2d == null) return Failure("nodes.catalog.prefab_missing", "Required Scene prefabs are missing from the project.");
 			var configured3d = catalog.ConfigureReference("shitdesigner.scene.3d", prefab: scene3d);
