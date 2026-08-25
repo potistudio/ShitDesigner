@@ -4,8 +4,10 @@
   "references": [
     "ShitDesigner.Main",
     "ShitDesigner.Application",
+    "ShitDesigner.Bootstrap",
     "ShitDesigner.Core",
     "ShitDesigner.Input",
+    "ShitDesigner.Rendering",
     "ShitDesigner.Runtime",
     "ShitDesigner.Scene"
   ],

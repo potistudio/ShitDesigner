@@ -30,7 +30,7 @@ namespace ShitDesigner.Graph.Tests {
 				{
 					new PortDefinition(Image, "Image", PortDirection.Output, PortType.ImageFrame, false)
 				}));
-				Assert.That(result.IsSuccess, Is.True, result.Error?.Message);
+				Assert.That(result.IsSuccess, Is.True, result.IsFailure ? result.Error.Message : string.Empty);
 			}
 			return registry;
 		}
@@ -63,11 +63,11 @@ namespace ShitDesigner.Graph.Tests {
 			var editor = new GraphEditor(state, RegistryWith("test.nodes.source", "test.nodes.destination"));
 
 			var exact = editor.ApplyBatch(new[] { new ConnectEditCommand(Connection("exact", "source", "image", "destination", "image")) });
-			Assert.That(exact.IsSuccess, Is.True, exact.Error?.Message);
+			Assert.That(exact.IsSuccess, Is.True, exact.IsFailure ? exact.Error.Message : string.Empty);
 
 			var implicitConnection = Connection("implicit", "source", "color", "destination", "vector");
 			var implicitResult = editor.ApplyBatch(new[] { new ConnectEditCommand(implicitConnection) });
-			Assert.That(implicitResult.IsSuccess, Is.True, implicitResult.Error?.Message);
+			Assert.That(implicitResult.IsSuccess, Is.True, implicitResult.IsFailure ? implicitResult.Error.Message : string.Empty);
 			Assert.That(editor.State.FindConnection(new ConnectionId("implicit")).ConversionId, Is.EqualTo(GraphConstants.ColorToVector4ConversionId));
 		}
 
@@ -288,7 +288,7 @@ namespace ShitDesigner.Graph.Tests {
 
 			var result = editor.ApplyBatch(new[] { new RestoreUnknownNodeEditCommand(placeholder.Id, metadata) });
 
-			Assert.That(result.IsSuccess, Is.True, result.Error?.Message);
+			Assert.That(result.IsSuccess, Is.True, result.IsFailure ? result.Error.Message : string.Empty);
 			var restored = editor.State.FindNode(placeholder.Id);
 			Assert.That(restored.TypeId, Is.EqualTo(unknownType));
 			Assert.That(restored.IsUnknown, Is.False);
@@ -452,7 +452,7 @@ namespace ShitDesigner.Graph.Tests {
 			var editor = new GraphEditor(ProgramGraph(), RegistryWith("test.nodes.extra"));
 			for (var i = 0; i < GraphConstants.MaxUndoEntries + 1; i++) {
 				var result = editor.ApplyBatch(new[] { new AddNodeEditCommand(Node($"extra-{i:D3}", "test.nodes.extra", Out("image", PortType.ImageFrame))) });
-			Assert.That(result.IsSuccess, Is.True, result.Error?.Message);
+			Assert.That(result.IsSuccess, Is.True, result.IsFailure ? result.Error.Message : string.Empty);
 			}
 
 			Assert.That(editor.UndoCount, Is.EqualTo(GraphConstants.MaxUndoEntries));

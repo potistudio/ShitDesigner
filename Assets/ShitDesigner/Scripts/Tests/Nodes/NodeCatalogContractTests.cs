@@ -93,7 +93,7 @@ namespace ShitDesigner.Nodes.Tests {
 			var runtime = asset.BuildRuntimeCatalog();
 			Assert.That(runtime.IsSuccess, Is.True, runtime.IsFailure ? runtime.Error.Message : string.Empty);
 			var result = asset.ValidateAgainst(runtime.Value);
-			Assert.That(result.IsSuccess, Is.True, result.Error == null ? string.Empty : result.Error.Message);
+			Assert.That(result.IsSuccess, Is.True, result.IsFailure ? result.Error.Message : string.Empty);
 			Assert.That(asset.Entries.All(x => x.Ports.Count == x.PortIds.Count && x.Parameters.Count == x.ParameterIds.Count), Is.True);
 		}
 

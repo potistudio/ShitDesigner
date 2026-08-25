@@ -6,8 +6,10 @@ namespace ShitDesigner.Scene {
 	/// <summary>Prefab selected by a Main-authored 3D scene node.</summary>
 	[CreateAssetMenu(fileName = "Scene3DDefinition", menuName = "ShitDesigner/Scene 3D Definition")]
 	public sealed class Scene3DDefinition : ScriptableObject {
+		[SerializeField] private string _id;
 		[SerializeField] private GameObject _prefab;
 
+		public string Id => _id ?? string.Empty;
 		public GameObject Prefab => _prefab;
 
 		public UnitResult<Diagnostic> Validate() {
