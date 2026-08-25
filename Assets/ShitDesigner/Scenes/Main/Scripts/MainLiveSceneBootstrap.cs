@@ -40,11 +40,14 @@ namespace ShitDesigner.Main {
 			if (definitions.Length == 0 || definitions.Any(scene => scene.Validate().IsFailure)) return Fail("Every Main scene requires a valid Scene3DDefinition.");
 			if (_input == null || _midiInput == null || _output == null) return Fail("Main keyboard/MIDI input and output components are required.");
 			_scenes = definitions;
-			if (!_output.Initialize()) return Fail("Main live output could not create its render target.");
+			_input.Bind(_parameters);
+			if (!_midiInput.Initialize(_input, _scenes.Length)) return Fail(_midiInput.LastError);
+			if (!_output.Initialize()) {
+				_midiInput.Stop();
+				return Fail("Main live output could not create its render target.");
+			}
 
 			_sceneManager = new SceneIsolationManager(renderSource: new UnityCameraRenderSource());
-			_input.Bind(_parameters);
-			_midiInput.Initialize(_input);
 			_frameNumber = 1;
 			CurrentParameters = _parameters.Commit(_frameNumber, _scenes.Length);
 			if (!SwitchScene(CurrentParameters.SceneIndex)) {
@@ -72,7 +75,6 @@ namespace ShitDesigner.Main {
 			unchecked { _frameNumber++; }
 			if (_frameNumber == 0) _frameNumber = 1;
 			_input.Capture(_scenes.Length);
-			_midiInput.Capture(_scenes.Length);
 			var frame = _parameters.Commit(_frameNumber, _scenes.Length);
 			if (frame.SceneIndex != _activeSceneIndex && !SwitchScene(frame.SceneIndex)) return;
 
