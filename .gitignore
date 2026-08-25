@@ -47,3 +47,7 @@ refs/
 /Presentation/
 /TestHarness/
 /Tests/
+
+# Locally imported third-party assets
+/Assets/External/
+/Assets/External.meta
