@@ -1,5 +1,6 @@
 using System;
 using CSharpFunctionalExtensions;
+using System.Collections.Generic;
 using ShitDesigner.Core;
 using ShitDesigner.Input;
 using ShitDesigner.Presentation;
@@ -24,11 +25,18 @@ namespace ShitDesigner.Bootstrap {
 		private IWindowAdapter m_WindowAdapter;
 		private WindowLifecycle m_WindowLifecycle;
 		private PresentationHost _presentationHost;
-		private StartupSequence m_Startup;
+		private readonly List<Action> _drainShutdown = new List<Action>();
+		private readonly List<Action> _stopShutdown = new List<Action>();
+		private readonly List<Action> _teardownShutdown = new List<Action>();
+		private readonly List<Diagnostic> _shutdownDiagnostics = new List<Diagnostic>();
+		private SystemState _state = SystemState.Cold;
+		private Diagnostic _startupDiagnostic;
+		private HandshakeReport _handshakeReport;
 		public CompositionRoot Composition => m_Composition;
-		public SystemState State => m_Startup?.State ?? SystemState.Cold;
-		public Diagnostic StartupDiagnostic => m_Startup?.LastDiagnostic;
-		public HandshakeReport HandshakeReport => m_Startup?.HandshakeReport;
+		public SystemState State => _state;
+		public Diagnostic StartupDiagnostic => _startupDiagnostic;
+		public HandshakeReport HandshakeReport => _handshakeReport;
+		public IReadOnlyList<Diagnostic> ShutdownDiagnostics => _shutdownDiagnostics;
 		/// <summary>The Player-owned copy of the serialized PanelSettings.
 		/// It is deliberately distinct from the asset so user UI Scale never
 		/// dirties an authoring asset at runtime.</summary>
@@ -48,7 +56,7 @@ namespace ShitDesigner.Bootstrap {
 		}
 
 		private void OnDestroy() {
-			m_Startup?.Shutdown();
+			Shutdown();
 		}
 
 		// ------------------------------------------------------------------ //
@@ -62,14 +70,34 @@ namespace ShitDesigner.Bootstrap {
 		/// scene load; it cannot be restarted after shutdown.
 		/// </summary>
 		private UnitResult<Diagnostic> StartHost() {
+			if (_state != SystemState.Cold && _state != SystemState.Offline)
+				return Failure("bootstrap.startup.state", "Production startup can only begin from Cold or Offline.");
+
+			_startupDiagnostic = null;
+			_handshakeReport = null;
+			_shutdownDiagnostics.Clear();
+			ClearShutdownActions();
 			m_WindowAdapter ??= new WindowAdapter();
 			m_WindowLifecycle = new WindowLifecycle(m_WindowAdapter);
-			m_Startup ??= new StartupSequence();
-			var started = m_Startup.Run(Preflight, Compose, Handshake, Activate);
+
+			var started = Execute(SystemState.Preflight, Preflight);
+			if (started.IsSuccess) started = Execute(SystemState.Composing, Compose);
+			if (started.IsSuccess) {
+				var handshake = ExecuteHandshake(Handshake);
+				if (handshake.IsFailure) started = UnitResult.Failure<Diagnostic>(handshake.Error);
+				else {
+					_handshakeReport = handshake.Value;
+					started = Execute(SystemState.Activating, Activate);
+				}
+			}
+			if (started.IsSuccess) _state = _handshakeReport.IsDegraded ? SystemState.Degraded : SystemState.Online;
 			if (started.IsFailure) {
 				Debug.LogError(started.Error == null ? "Production startup failed." : started.Error.Code + ": " + started.Error.Message, this);
 			}
-			else Debug.Log(State == SystemState.Degraded ? "[System] Degraded" : "[System] Online", this);
+			else {
+				Debug.Log(State == SystemState.Degraded ? "[System] Degraded" : "[System] Online", this);
+			}
+
 			return started;
 		}
 
@@ -83,8 +111,6 @@ namespace ShitDesigner.Bootstrap {
 			m_WindowAdapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
 		}
 
-
-
 		private UnitResult<Diagnostic> Preflight() {
 			if (_assets == null)
 				return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.preflight.assets_missing"), Severity.Error,
@@ -97,7 +123,7 @@ namespace ShitDesigner.Bootstrap {
 		private UnitResult<Diagnostic> Compose() {
 			if (_midiInputManager == null) _midiInputManager = GetComponent<MidiInputManager>();
 			_presentationHost = new PresentationHost(gameObject, _presentationRoot, _panelSettings);
-			m_Startup.RegisterShutdown(ShutdownStage.Teardown, () => {
+			_teardownShutdown.Add(() => {
 				_presentationHost?.Dispose();
 				_presentationHost = null;
 			});
@@ -108,7 +134,7 @@ namespace ShitDesigner.Bootstrap {
 			var created = new CompositionFactory(_assets, _presentationRoot, _midiInputManager).Create();
 			if (created.IsFailure) return UnitResult.Failure<Diagnostic>(created.Error);
 			m_Composition = created.Value;
-			m_Startup.RegisterShutdown(ShutdownStage.Stop, () => {
+			_stopShutdown.Add(() => {
 				m_Composition?.Dispose();
 				m_Composition = null;
 			});
@@ -131,7 +157,7 @@ namespace ShitDesigner.Bootstrap {
 			if (presentation.IsFailure) return presentation;
 			if (_driver == null) _driver = gameObject.AddComponent<ApplicationLoopDriver>();
 			m_Composition.Capabilities.Changed += OnCapabilitiesChanged;
-			m_Startup.RegisterShutdown(ShutdownStage.Drain, () => {
+			_drainShutdown.Add(() => {
 				if (m_Composition != null) m_Composition.Capabilities.Changed -= OnCapabilitiesChanged;
 				_driver?.Disable();
 				_driver = null;
@@ -143,13 +169,90 @@ namespace ShitDesigner.Bootstrap {
 
 		private void OnCapabilitiesChanged(HandshakeReport report) {
 			var previous = State;
-			m_Startup.Observe(report);
+			if (report == null) throw new ArgumentNullException(nameof(report));
+			if (_state == SystemState.Online || _state == SystemState.Degraded) {
+				_handshakeReport = report;
+				_state = report.IsDegraded ? SystemState.Degraded : SystemState.Online;
+			}
 			if (State != previous) Debug.Log(State == SystemState.Degraded ? "[System] Degraded" : "[System] Online", this);
 		}
 
 		private void EnsureCold() {
-			if (m_Startup != null && m_Startup.State != SystemState.Cold && m_Startup.State != SystemState.Offline)
+			if (_state != SystemState.Cold && _state != SystemState.Offline)
 				throw new InvalidOperationException("Host configuration is only allowed before startup.");
 		}
+
+		private void Shutdown() {
+			if (_state == SystemState.Cold || _state == SystemState.Offline) return;
+			ReleaseOwned();
+			_state = SystemState.Offline;
+		}
+
+		private UnitResult<Diagnostic> Execute(SystemState state, Func<UnitResult<Diagnostic>> phase) {
+			_state = state;
+			try {
+				var result = phase();
+				return result.IsFailure ? Fail(result.Error) : result;
+			}
+			catch (Exception exception) {
+				return Fail(new Diagnostic(new DiagnosticCode("bootstrap.startup.phase_failed"), Severity.Error,
+					state + " phase failed.", module: "bootstrap", exception: DiagnosticExceptionInfo.FromException(exception)));
+			}
+		}
+
+		private Result<HandshakeReport, Diagnostic> ExecuteHandshake(Func<Result<HandshakeReport, Diagnostic>> phase) {
+			_state = SystemState.Handshaking;
+			try {
+				var result = phase();
+				return result.IsFailure ? FailHandshake(result.Error) : result;
+			}
+			catch (Exception exception) {
+				return FailHandshake(new Diagnostic(new DiagnosticCode("bootstrap.startup.phase_failed"), Severity.Error,
+					"Handshaking phase failed.", module: "bootstrap", exception: DiagnosticExceptionInfo.FromException(exception)));
+			}
+		}
+
+		private void ReleaseOwned() {
+			ExecuteShutdown(SystemState.Draining, _drainShutdown);
+			ExecuteShutdown(SystemState.Stopping, _stopShutdown);
+			ExecuteShutdown(SystemState.Teardown, _teardownShutdown);
+			ClearShutdownActions();
+		}
+
+		private void ExecuteShutdown(SystemState state, List<Action> actions) {
+			_state = state;
+			for (var index = actions.Count - 1; index >= 0; index--) {
+				try { actions[index](); }
+				catch (Exception exception) {
+					var diagnostic = new Diagnostic(new DiagnosticCode("bootstrap.shutdown.phase_failed"), Severity.Error,
+						state + " phase failed during shutdown.", module: "bootstrap", exception: DiagnosticExceptionInfo.FromException(exception));
+					_startupDiagnostic = diagnostic;
+					_shutdownDiagnostics.Add(diagnostic);
+				}
+			}
+		}
+
+		private UnitResult<Diagnostic> Fail(Diagnostic diagnostic) {
+			var startupDiagnostic = diagnostic ?? new Diagnostic(new DiagnosticCode("bootstrap.startup.unknown_failure"), Severity.Error, "Startup failed without a diagnostic.", module: "bootstrap");
+			_startupDiagnostic = startupDiagnostic;
+			ReleaseOwned();
+			_startupDiagnostic = startupDiagnostic;
+			_state = SystemState.Faulted;
+			return UnitResult.Failure<Diagnostic>(startupDiagnostic);
+		}
+
+		private Result<HandshakeReport, Diagnostic> FailHandshake(Diagnostic diagnostic) {
+			var failed = Fail(diagnostic);
+			return Result.Failure<HandshakeReport, Diagnostic>(failed.Error);
+		}
+
+		private void ClearShutdownActions() {
+			_drainShutdown.Clear();
+			_stopShutdown.Clear();
+			_teardownShutdown.Clear();
+		}
+
+		private UnitResult<Diagnostic> Failure(string code, string message)
+			=> Fail(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap"));
 	}
 }
