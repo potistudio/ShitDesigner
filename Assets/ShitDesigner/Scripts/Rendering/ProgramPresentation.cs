@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 #if UNITY_STANDALONE_WIN
 using System.Runtime.InteropServices;
 #endif
@@ -64,7 +65,7 @@ namespace ShitDesigner.Rendering {
 				SetDisplayCameraActive(false);
 				return Result.Success<ProgramDisplaySelection, Diagnostic>(selection);
 			}
-			var primaryWindow = WindowsSecondaryDisplayWindow.CapturePrimaryWindow();
+			var existingWindows = WindowsSecondaryDisplayWindow.CaptureExistingWindows();
 			try {
 				var display = Display.displays[selection.ResolvedDisplay];
 				display.Activate();
@@ -80,7 +81,7 @@ namespace ShitDesigner.Rendering {
 			}
 			var camera = EnsureDisplayCamera(selection.ResolvedDisplay);
 			if (camera.IsFailure) return Result.Failure<ProgramDisplaySelection, Diagnostic>(camera.Error);
-			_secondaryDisplayWindow?.SetPrimaryWindow(primaryWindow);
+			_secondaryDisplayWindow?.SetExistingWindows(existingWindows);
 			_secondaryDisplayWindow?.RequestFullscreen();
 			return Result.Success<ProgramDisplaySelection, Diagnostic>(selection);
 		}
@@ -185,18 +186,26 @@ namespace ShitDesigner.Rendering {
 			private const uint ShowWindow = 0x0040;
 			private const uint MonitorDefaultToNearest = 2;
 			private static readonly IntPtr Topmost = new IntPtr(-1);
+			private static readonly EnumWindowsCallback CaptureWindowCallback = CaptureWindow;
 			private static readonly EnumWindowsCallback ConfigureSecondaryWindowCallback = ConfigureSecondaryWindow;
 
-			private IntPtr _primaryWindow;
+			private HashSet<IntPtr> _existingWindows = new HashSet<IntPtr>();
 			private int _remainingAttempts;
 
-			public static IntPtr CapturePrimaryWindow() {
-				var window = GetActiveWindow();
-				return window == IntPtr.Zero ? GetForegroundWindow() : window;
+			public static HashSet<IntPtr> CaptureExistingWindows() {
+				var windows = new HashSet<IntPtr>();
+				var handle = GCHandle.Alloc(windows);
+				try {
+					EnumWindows(CaptureWindowCallback, GCHandle.ToIntPtr(handle));
+				}
+				finally {
+					handle.Free();
+				}
+				return windows;
 			}
 
-			public void SetPrimaryWindow(IntPtr window) {
-				if (window != IntPtr.Zero) _primaryWindow = window;
+			public void SetExistingWindows(HashSet<IntPtr> windows) {
+				_existingWindows = windows ?? new HashSet<IntPtr>();
 			}
 
 			public void RequestFullscreen() {
@@ -216,13 +225,22 @@ namespace ShitDesigner.Rendering {
 			}
 
 			[MonoPInvokeCallback(typeof(EnumWindowsCallback))]
+			private static bool CaptureWindow(IntPtr window, IntPtr parameter) {
+				var handle = GCHandle.FromIntPtr(parameter);
+				if (!(handle.Target is HashSet<IntPtr> windows)) return false;
+				GetWindowThreadProcessId(window, out var processId);
+				if (processId == GetCurrentProcessId()) windows.Add(window);
+				return true;
+			}
+
+			[MonoPInvokeCallback(typeof(EnumWindowsCallback))]
 			private static bool ConfigureSecondaryWindow(IntPtr window, IntPtr parameter) {
 				var handle = GCHandle.FromIntPtr(parameter);
 				return handle.Target is WindowsSecondaryDisplayWindow controller && controller.ConfigureWindow(window);
 			}
 
 			private bool ConfigureWindow(IntPtr window) {
-				if (_primaryWindow == IntPtr.Zero || window == IntPtr.Zero || window == _primaryWindow || !IsWindowVisible(window)) return true;
+				if (window == IntPtr.Zero || _existingWindows.Contains(window) || !IsWindowVisible(window)) return true;
 				GetWindowThreadProcessId(window, out var processId);
 				if (processId != GetCurrentProcessId()) return true;
 
@@ -263,12 +281,6 @@ namespace ShitDesigner.Rendering {
 			private static extern bool EnumWindows(EnumWindowsCallback callback, IntPtr parameter);
 
 			[DllImport("user32.dll")]
-			private static extern IntPtr GetActiveWindow();
-
-			[DllImport("user32.dll")]
-			private static extern IntPtr GetForegroundWindow();
-
-			[DllImport("user32.dll")]
 			[return: MarshalAs(UnmanagedType.Bool)]
 			private static extern bool IsWindowVisible(IntPtr window);
 
@@ -295,8 +307,8 @@ namespace ShitDesigner.Rendering {
 			[return: MarshalAs(UnmanagedType.Bool)]
 			private static extern bool SetWindowPos(IntPtr window, IntPtr insertAfter, int x, int y, int width, int height, uint flags);
 #else
-			public static IntPtr CapturePrimaryWindow() => IntPtr.Zero;
-			public void SetPrimaryWindow(IntPtr window) { }
+			public static HashSet<IntPtr> CaptureExistingWindows() => new HashSet<IntPtr>();
+			public void SetExistingWindows(HashSet<IntPtr> windows) { }
 			public void RequestFullscreen() { }
 #endif
 		}
