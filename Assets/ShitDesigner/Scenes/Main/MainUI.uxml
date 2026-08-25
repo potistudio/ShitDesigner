@@ -16,5 +16,17 @@
                 <ui:Label name="diagnostic-status" class="diagnostic-label"/>
             </ui:VisualElement>
         </ui:VisualElement>
+        <ui:VisualElement name="output-confirm-overlay" class="confirmation-overlay is-hidden">
+            <ui:VisualElement class="confirmation-dialog">
+                <ui:Label name="output-confirm-title" text="START LIVE OUTPUT?" class="confirmation-title"/>
+                <ui:VisualElement class="confirmation-rule"/>
+                <ui:Label name="output-confirm-message" text="Send Program output to Display 2." class="confirmation-message"/>
+                <ui:DropdownField name="output-confirm-display-selector" label="OUTPUT DISPLAY" class="display-selector"/>
+                <ui:VisualElement class="confirmation-actions">
+                    <ui:Button name="output-confirm-cancel" text="CANCEL" class="confirmation-button confirmation-cancel"/>
+                    <ui:Button name="output-confirm-accept" text="START" class="confirmation-button confirmation-accept"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>
