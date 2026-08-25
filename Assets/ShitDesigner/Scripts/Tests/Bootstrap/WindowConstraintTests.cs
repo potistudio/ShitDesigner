@@ -1,5 +1,7 @@
 using NUnit.Framework;
 using ShitDesigner.Bootstrap;
+using UnityEditor;
+using UnityEngine;
 
 namespace ShitDesigner.Bootstrap.Tests {
 	[TestFixture]
@@ -33,14 +35,32 @@ namespace ShitDesigner.Bootstrap.Tests {
 			Assert.That(WindowConstraints.MinimumHeight, Is.EqualTo(720));
 		}
 
+		[Test]
+		public void InitialPlayerWindowContractRestoresTheControllerAfterFullscreenStartup() {
+			var adapter = new RecordingWindowAdapter(new WindowSize(1920, 1080), isFullscreen: true);
+			var lifecycle = new WindowLifecycle(adapter);
+
+			Assert.That(lifecycle.Activate().IsSuccess, Is.True);
+			Assert.That(adapter.SetCount, Is.EqualTo(1));
+			Assert.That(adapter.LastSetSize, Is.EqualTo(new WindowSize(1600, 900)));
+		}
+
+		[Test]
+		public void PlayerStartsFullscreenBeforeTheControllerWindowIsRestored() {
+			Assert.That(PlayerSettings.fullScreenMode, Is.EqualTo(FullScreenMode.FullScreenWindow));
+		}
+
 		private sealed class RecordingWindowAdapter : IWindowAdapter {
 			public bool IsSupported => true;
-			public bool IsFullscreen => false;
+			public bool IsFullscreen { get; }
 			public WindowSize CurrentSize { get; private set; }
 			public int SetCount { get; private set; }
 			public WindowSize LastSetSize { get; private set; }
 
-			public RecordingWindowAdapter(WindowSize size) { CurrentSize = size; }
+			public RecordingWindowAdapter(WindowSize size, bool isFullscreen = false) {
+				CurrentSize = size;
+				IsFullscreen = isFullscreen;
+			}
 			public void ResizeFromUser(WindowSize size) { CurrentSize = size; }
 			public void SetWindowedSize(WindowSize size) {
 				LastSetSize = size;

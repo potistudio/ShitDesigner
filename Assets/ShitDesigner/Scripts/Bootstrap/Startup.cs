@@ -131,7 +131,7 @@ namespace ShitDesigner.Bootstrap {
 
 		public UnitResult<Diagnostic> Activate() {
 			ConfigureFramePacing();
-			if (!_adapter.IsSupported || _adapter.IsFullscreen) return UnitResult.Success<Diagnostic>();
+			if (!_adapter.IsSupported) return UnitResult.Success<Diagnostic>();
 			_adapter.SetWindowedSize(new WindowSize(WindowConstraints.InitialWidth, WindowConstraints.InitialHeight));
 			EnforceMinimumSize();
 			return UnitResult.Success<Diagnostic>();
