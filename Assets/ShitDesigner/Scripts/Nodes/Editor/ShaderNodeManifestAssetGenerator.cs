@@ -1,4 +1,3 @@
-#if UNITY_EDITOR
 using System;
 using CSharpFunctionalExtensions;
 using System.Collections.Generic;
@@ -559,4 +558,3 @@ namespace ShitDesigner.Nodes.Editor {
 			=> UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "nodes", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception)));
 	}
 }
-#endif
