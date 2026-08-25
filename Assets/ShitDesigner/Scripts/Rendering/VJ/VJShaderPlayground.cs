@@ -96,7 +96,7 @@ namespace ShitDesigner.Rendering {
 		}
 
 		private void Update() {
-			if (!Application.isPlaying) return;
+			if (!UnityEngine.Application.isPlaying) return;
 			RenderFrame(false);
 		}
 
@@ -112,7 +112,7 @@ namespace ShitDesigner.Rendering {
 			scale = Mathf.Max(0.0001f, scale);
 			radius = Mathf.Max(0f, radius);
 			softness = Mathf.Max(0f, softness);
-			if (isActiveAndEnabled && !Application.isPlaying) RenderFrame(false);
+			if (isActiveAndEnabled && !UnityEngine.Application.isPlaying) RenderFrame(false);
 		}
 
 		[ContextMenu("Reset Playground Output")]
@@ -186,7 +186,7 @@ namespace ShitDesigner.Rendering {
 				resetOnNextFrame = false;
 			}
 			if (clockMode == ClockMode.Manual) _clock = manualTime;
-			else if (!paused && Application.isPlaying) _clock += Time.unscaledDeltaTime * timeSpeed;
+			else if (!paused && UnityEngine.Application.isPlaying) _clock += Time.unscaledDeltaTime * timeSpeed;
 			_frame++;
 
 			ApplyUniforms();
@@ -212,7 +212,7 @@ namespace ShitDesigner.Rendering {
 			var time = float.IsNaN(_clock) || float.IsInfinity(_clock) ? 0f : _clock;
 			var resolution = new Vector4(_outputTexture.width, _outputTexture.height, 1f / _outputTexture.width, 1f / _outputTexture.height);
 			_shaderMaterial.SetFloat("_SD_Time", time);
-			_shaderMaterial.SetFloat("_SD_DeltaTime", paused ? 0f : (Application.isPlaying ? Time.unscaledDeltaTime : 0f));
+			_shaderMaterial.SetFloat("_SD_DeltaTime", paused ? 0f : (UnityEngine.Application.isPlaying ? Time.unscaledDeltaTime : 0f));
 			_shaderMaterial.SetFloat("_SD_Frame", _frame);
 			_shaderMaterial.SetVector("_SD_Resolution", resolution);
 			_shaderMaterial.SetFloat("_SD_Seed", seed);
@@ -265,7 +265,7 @@ namespace ShitDesigner.Rendering {
 
 		private static void DestroyUnityObject(UnityEngine.Object value) {
 			if (value == null) return;
-			if (Application.isPlaying) Destroy(value); else DestroyImmediate(value);
+			if (UnityEngine.Application.isPlaying) Destroy(value); else DestroyImmediate(value);
 		}
 	}
 }

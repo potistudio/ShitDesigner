@@ -515,7 +515,7 @@ namespace ShitDesigner.Bootstrap {
 	/// <summary>Presentation-only bridge. A Presentation lease has no pool
 	/// release operation; the owning Runtime/Program Hold keeps the texture
 	/// alive until the next Phase-9 or session teardown.</summary>
-	public sealed class OutputSurfaceBridge : IOutputSurfaceDescriptorPort, IProgramPresenterPort, ICapabilityProbe, IDisposable {
+	public sealed class OutputSurfaceBridge : IOutputSurfaceDescriptorPort, IProgramPresenterPort, IProgramOutputControlPort, ICapabilityProbe, IDisposable {
 		private sealed class PreviewDisplaySurface {
 			public string SurfaceId;
 			public TextureLeaseHandle Lease;
@@ -553,15 +553,25 @@ namespace ShitDesigner.Bootstrap {
 		private int _activeLeaseCount;
 		private int _lastDisplayCount;
 		private int _lastRequestedDisplayIndex = int.MinValue;
+		private int _requestedDisplayOverride;
 		private string _lastDisplayDiagnostic;
 		private bool _displayHandshakeAttempted;
 		private CapabilityStatus _displayHandshakeStatus;
+		private bool _outputActive = true;
+		private string _lastOutputError = string.Empty;
 		private bool _disposed;
 
 		public ulong BindingGeneration => _bindingGeneration;
 		public int ActiveLeaseCount => _activeLeaseCount;
 		internal int PreviewDisplayBlitCount { get; private set; }
 		public Diagnostic LastDisplayDiagnostic { get; private set; }
+		public int DisplayNumber => _programPresenter == null
+			? (_session?.Document?.Settings?.ProgramDisplay ?? ProjectOutputSettings.DefaultProgramDisplay)
+			: _programPresenter.Selection.RequestedDisplay + 1;
+		public int ConnectedDisplayCount => _programPresenter?.DisplayCount ?? (Display.displays == null || Display.displays.Length == 0 ? 1 : Display.displays.Length);
+		public bool IsOutputActive => _outputActive && _programPresenter != null && _programPresenter.IsOutputActive;
+		public string LastError => _lastOutputError ?? string.Empty;
+		public event Action<bool> OutputActiveChanged;
 
 		public OutputSurfaceBridge(Shader displayTransformShader) {
 			_displayTransformShader = displayTransformShader ?? throw new ArgumentNullException(nameof(displayTransformShader));
@@ -576,6 +586,9 @@ namespace ShitDesigner.Bootstrap {
 			catch { _displayTransform = null; }
 			EnsureDisplayLease(1);
 			_displayHandshakeAttempted = false;
+			_requestedDisplayOverride = 0;
+			_outputActive = true;
+			_lastOutputError = string.Empty;
 			unchecked { _bindingGeneration++; }
 			if (_bindingGeneration == 0) _bindingGeneration = 1;
 			PreviewDisplayBlitCount = 0;
@@ -594,6 +607,7 @@ namespace ShitDesigner.Bootstrap {
 			var unityDisplayIndex = ProgramDisplayPolicy.ToUnityIndex(_session.Document.Settings.ProgramDisplay);
 			try {
 				_programPresenter = new ProgramDisplayPresenter(_program, new UnityProgramDisplayPort(), unityDisplayIndex);
+				_programPresenter.SetOutputActive(_outputActive);
 				_lastDisplayCount = _programPresenter.DisplayCount;
 				_lastRequestedDisplayIndex = _programPresenter.Selection.RequestedDisplay;
 				_displayHandshakeStatus = StatusFor(_programPresenter.Selection);
@@ -673,6 +687,67 @@ namespace ShitDesigner.Bootstrap {
 					catch { }
 				}
 			}
+		}
+
+		public bool CanActivate(int displayNumber, out string error) {
+			if (displayNumber < 1) {
+				error = "Program display number must be positive.";
+				return false;
+			}
+			if (displayNumber == 1) {
+				error = string.Empty;
+				return true;
+			}
+			if (UnityEngine.Application.isEditor) {
+				error = "Unity Editor exposes only Display 1. Run a standalone build to use an external Display.";
+				return false;
+			}
+			var count = ConnectedDisplayCount;
+			if (displayNumber > count) {
+				error = $"Display {displayNumber} is not connected. Connected displays: {count}.";
+				return false;
+			}
+			error = string.Empty;
+			return true;
+		}
+
+		public bool SelectDisplay(int displayNumber) {
+			if (IsOutputActive) {
+				_lastOutputError = "The Program display cannot be changed while output is active.";
+				return false;
+			}
+			if (!CanActivate(displayNumber, out var error)) {
+				_lastOutputError = error;
+				return false;
+			}
+			_requestedDisplayOverride = displayNumber;
+			_lastOutputError = string.Empty;
+			return true;
+		}
+
+		public bool SetOutputActive(bool active) {
+			if (_programPresenter == null) {
+				_lastOutputError = "The Program display is not ready.";
+				return false;
+			}
+			if (active) {
+				var displayNumber = _requestedDisplayOverride > 0 ? _requestedDisplayOverride : DisplayNumber;
+				if (!CanActivate(displayNumber, out var error)) {
+					_lastOutputError = error;
+					return false;
+				}
+				var selected = _programPresenter.SetRequestedDisplay(ProgramDisplayPolicy.ToUnityIndex(displayNumber));
+				if (selected.IsFailure) {
+					_lastOutputError = selected.Error?.Message ?? "The Program display could not be selected.";
+					return false;
+				}
+				_lastRequestedDisplayIndex = selected.Value.RequestedDisplay;
+			}
+			_outputActive = active;
+			_programPresenter.SetOutputActive(active);
+			_lastOutputError = string.Empty;
+			OutputActiveChanged?.Invoke(active);
+			return true;
 		}
 
 		public void SetVisible(bool visible) {
@@ -755,6 +830,7 @@ namespace ShitDesigner.Bootstrap {
 			_programPresenter = null;
 			_lastDisplayCount = 0;
 			_lastRequestedDisplayIndex = int.MinValue;
+			_requestedDisplayOverride = 0;
 			_displayHandshakeAttempted = false;
 			_displayHandshakeStatus = null;
 			PreviewDisplayBlitCount = 0;
@@ -768,7 +844,9 @@ namespace ShitDesigner.Bootstrap {
 
 		private void RefreshDisplaySelection() {
 			if (_programPresenter == null || _session?.Document == null) return;
-			var requestedIndex = ProgramDisplayPolicy.ToUnityIndex(_session.Document.Settings.ProgramDisplay);
+			var projectDisplay = _session.Document.Settings.ProgramDisplay;
+			if (_requestedDisplayOverride > 0 && projectDisplay == _requestedDisplayOverride) _requestedDisplayOverride = 0;
+			var requestedIndex = ProgramDisplayPolicy.ToUnityIndex(_requestedDisplayOverride > 0 ? _requestedDisplayOverride : projectDisplay);
 			var count = _programPresenter.DisplayCount;
 			if (requestedIndex == _lastRequestedDisplayIndex && count == _lastDisplayCount) return;
 			var refreshed = _programPresenter.SetRequestedDisplay(requestedIndex);
@@ -1689,7 +1767,8 @@ namespace ShitDesigner.Bootstrap {
 				var application = new ProjectApplication(fileSystem, registry, runtimeFactory: factory, recentProjectStore: userSettingsStorage);
 				var userSettings = new ProjectUserSettingsPort(userSettingsStorage);
 				var adapter = new ApplicationPresentationAdapter(application, application, surfaces, userSettings);
-				var coordinator = new PresentationCoordinator(adapter, adapter, outputSurfacePort: surfaces, programPresenter: surfaces, platformFiles: actualPlatformFiles);
+				var coordinator = new PresentationCoordinator(adapter, adapter, outputSurfacePort: surfaces, programPresenter: surfaces,
+					platformFiles: actualPlatformFiles, programOutputControl: surfaces);
 				var poller = input ?? inputFactory?.Invoke(application) ?? CreateDefaultInputPoller(application);
 				var frame = new PresentationFrame(adapter, coordinator, surfaces, presentationRoot);
 				var capabilities = new CapabilitySupervisor(

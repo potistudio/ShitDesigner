@@ -61,7 +61,7 @@ namespace ShitDesigner.Rendering {
 		}
 
 		public bool CanActivate(int displayNumber, out string error) {
-			if (Application.isEditor) {
+			if (UnityEngine.Application.isEditor) {
 				error = "Unity Editor exposes only Display 1. Run a standalone build to use Display 2.";
 				return false;
 			}

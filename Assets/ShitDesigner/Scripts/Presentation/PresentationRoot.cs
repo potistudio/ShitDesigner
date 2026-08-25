@@ -6,12 +6,14 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace ShitDesigner.Presentation {
-	/// <summary>Runtime UI Toolkit composition root. No panel owns a project
-	/// object; all changes flow through PresentationCoordinator.</summary>
+	/// <summary>Runtime UI Toolkit composition root. UI composition can be
+	/// disabled for scenes that provide their own panel while coordinator
+	/// wiring remains available.</summary>
 	[RequireComponent(typeof(UIDocument))]
 	public sealed class PresentationRoot : MonoBehaviour {
 		[SerializeField] private UIDocument _document;
 		[SerializeField] private StyleSheet _theme;
+		[SerializeField] private bool _buildUi = true;
 		private PresentationCoordinator _coordinator;
 		private VisualElement _root;
 		private Label _projectLabel;
@@ -59,6 +61,7 @@ namespace ShitDesigner.Presentation {
 
 		public UIDocument Document => _document;
 		public VisualElement RootVisualElement => _root;
+		public PresentationCoordinator Coordinator => _coordinator;
 		public void ConfigureDocument(UIDocument document) {
 			if (document == null) throw new ArgumentNullException(nameof(document));
 			// The serialized production root builds during Awake before
@@ -108,6 +111,7 @@ namespace ShitDesigner.Presentation {
 		}
 
 		private void BuildOnce() {
+			if (!_buildUi) return;
 			if (_document == null) return;
 			var documentRoot = _document.rootVisualElement;
 			if (documentRoot == null) return;

@@ -1114,6 +1114,26 @@ namespace ShitDesigner.Rendering.Tests {
 			}
 		}
 
+		[Test, Category("ProgramRuntimePolicy")]
+		public void ProgramDisplayPresenter_DisablingOutputStopsPresentationButKeepsProgramAvailable() {
+			using (var pool = new RenderTexturePool(64L * 1024L * 1024L))
+			using (var hold = new ProgramHoldController(pool, Owner("program-output-control"))) {
+				var port = new FakeDisplayPort(2);
+				var presenter = new ProgramDisplayPresenter(hold, port, 1);
+				var surface = NewTexture(2, 2, Color.black);
+				try {
+					presenter.SetOutputActive(false);
+					Assert.That(presenter.IsOutputActive, Is.False);
+					Assert.That(presenter.Present(surface).IsSuccess, Is.True);
+					Assert.That(port.PresentCount, Is.EqualTo(0));
+					presenter.SetOutputActive(true);
+					Assert.That(presenter.Present(surface).IsSuccess, Is.True);
+					Assert.That(port.PresentCount, Is.EqualTo(1));
+				}
+				finally { UnityEngine.Object.DestroyImmediate(surface); }
+			}
+		}
+
 		private static RuntimeSession CreateOutputServiceSession(out NodeInstanceId previewSourceId, out NodeInstanceId previewId, RenderTexturePool pool, RuntimeDynamicRange range, string sourceTypeId = "test.surface.output") {
 			var document = new ProjectDocument("Output surface service test");
 			var commands = new ProjectCommandProcessor(document);
@@ -1359,6 +1379,7 @@ namespace ShitDesigner.Rendering.Tests {
 		private sealed class FakeDisplayPort : IProgramDisplayPort {
 			public int DisplayCount { get; }
 			public int LastRequestedDisplay { get; private set; } = -1;
+			public int PresentCount { get; private set; }
 
 			public FakeDisplayPort(int displayCount) { DisplayCount = displayCount; }
 
@@ -1367,7 +1388,10 @@ namespace ShitDesigner.Rendering.Tests {
 				return Result.Success<ProgramDisplaySelection, Diagnostic>(ProgramDisplayPolicy.Resolve(requestedDisplay, DisplayCount));
 			}
 
-			public UnitResult<Diagnostic> Present(RenderTexture surface, ProgramDisplaySelection selection) => UnitResult.Success<Diagnostic>();
+			public UnitResult<Diagnostic> Present(RenderTexture surface, ProgramDisplaySelection selection) {
+				PresentCount++;
+				return UnitResult.Success<Diagnostic>();
+			}
 		}
 
 		private sealed class RuntimeSurfaceFrame : IRuntimeImageFrameSurface {

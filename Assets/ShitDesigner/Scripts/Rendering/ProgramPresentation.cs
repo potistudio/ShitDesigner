@@ -90,6 +90,12 @@ namespace ShitDesigner.Rendering {
 			}
 		}
 
+		public void SetOutputActive(bool active) {
+			if (_displayCamera == null) return;
+			_displayCamera.enabled = active;
+			if (!active && _blit != null) _blit.Source = null;
+		}
+
 		private UnitResult<Diagnostic> EnsureDisplayCamera(int targetDisplay) {
 			if (targetDisplay < 0 || targetDisplay >= DisplayCount) return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.display.target_invalid"), Severity.Error, "The selected Display is not available."));
 			if (_displayCamera != null) {
@@ -157,6 +163,7 @@ namespace ShitDesigner.Rendering {
 		private readonly ProgramHoldController _program;
 		private readonly IProgramDisplayPort _displayPort;
 		public ProgramDisplaySelection Selection { get; private set; }
+		public bool IsOutputActive { get; private set; } = true;
 		public bool MonitorOpen { get; private set; } = true;
 		public bool EvaluationContinues => true;
 
@@ -190,10 +197,17 @@ namespace ShitDesigner.Rendering {
 			return next;
 		}
 		public int DisplayCount => _displayPort?.DisplayCount ?? 1;
+		public void SetOutputActive(bool active) {
+			IsOutputActive = active;
+			if (_displayPort is UnityProgramDisplayPort unityPort) unityPort.SetOutputActive(active);
+		}
 		public void CloseMonitor() => MonitorOpen = false;
 		public void OpenMonitor() => MonitorOpen = true;
 		public Result<ImageFrame, Diagnostic> GetPresentedFrame(ulong frameNumber) => _program.GetFrame(frameNumber);
-		public UnitResult<Diagnostic> Present(RenderTexture surface) => _displayPort == null ? UnitResult.Success<Diagnostic>() : _displayPort.Present(surface, Selection);
+		public UnitResult<Diagnostic> Present(RenderTexture surface) {
+			if (!IsOutputActive) return UnitResult.Success<Diagnostic>();
+			return _displayPort == null ? UnitResult.Success<Diagnostic>() : _displayPort.Present(surface, Selection);
+		}
 		public void Dispose() { if (_displayPort is IDisposable disposable) disposable.Dispose(); }
 	}
 

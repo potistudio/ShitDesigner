@@ -50,6 +50,20 @@ namespace ShitDesigner.Presentation {
 		void SetVisible(bool visible);
 	}
 
+	/// <summary>Transient control surface for the Program's external output.
+	/// Presentation owns the interaction contract; the platform adapter owns
+	/// Unity Display activation and presentation.</summary>
+	public interface IProgramOutputControlPort {
+		int DisplayNumber { get; }
+		int ConnectedDisplayCount { get; }
+		bool IsOutputActive { get; }
+		string LastError { get; }
+		event Action<bool> OutputActiveChanged;
+		bool CanActivate(int displayNumber, out string error);
+		bool SelectDisplay(int displayNumber);
+		bool SetOutputActive(bool active);
+	}
+
 	public sealed class OutputSurfaceLease : IDisposable {
 		private readonly Action _release;
 		private bool _released;
