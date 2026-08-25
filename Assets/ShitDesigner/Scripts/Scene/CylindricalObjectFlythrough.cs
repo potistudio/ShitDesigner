@@ -88,6 +88,7 @@ namespace ShitDesigner.Scene {
 			ReleaseGeneratedContent();
 			_generatedRoot = new GameObject("Generated Object Field").transform;
 			_generatedRoot.SetParent(transform, false);
+			_generatedRoot.gameObject.layer = gameObject.layer;
 			_generatedRoot.gameObject.hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSave;
 
 			var random = new System.Random(randomSeed);
@@ -135,6 +136,8 @@ namespace ShitDesigner.Scene {
 				if (collider != null) DestroyOwnedObject(collider);
 			}
 			item.name = $"Scattered Object {index + 1:0000}";
+			foreach (var child in item.GetComponentsInChildren<Transform>(true))
+				child.gameObject.layer = gameObject.layer;
 			return item;
 		}
 
