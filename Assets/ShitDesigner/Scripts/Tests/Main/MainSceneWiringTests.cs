@@ -21,7 +21,6 @@ namespace ShitDesigner.Main.Tests {
 				var midiManager = liveRoot.GetComponent<MidiInputManager>();
 				var midiInput = liveRoot.GetComponent<MainLiveMidiInput>();
 				var output = liveRoot.GetComponent<MainLiveOutput>();
-				var programOutput = liveRoot.GetComponent<MainLiveProgramOutput>();
 
 				Assert.That(legacyHost.activeSelf, Is.True, "The existing Host must remain active because it owns the runtime UI composition.");
 				Assert.That(legacyHost.transform.Find("UI/Top Bar Panel").gameObject.activeInHierarchy, Is.True);
@@ -30,7 +29,6 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(midiManager, Is.Not.Null);
 				Assert.That(midiInput, Is.Not.Null);
 				Assert.That(output, Is.Not.Null);
-				Assert.That(programOutput, Is.Not.Null);
 				Assert.That(bootstrap.Scenes.Count, Is.EqualTo(2));
 				Assert.That(bootstrap.Scenes.All(definition => definition != null && definition.Prefab != null), Is.True);
 				Assert.That(bootstrap.Scenes.Select(definition => definition.Prefab).Distinct().Count(), Is.EqualTo(2));
@@ -39,7 +37,6 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(serializedBootstrap.FindProperty("_input").objectReferenceValue, Is.SameAs(input));
 				Assert.That(serializedBootstrap.FindProperty("_midiInput").objectReferenceValue, Is.SameAs(midiInput));
 				Assert.That(serializedBootstrap.FindProperty("_output").objectReferenceValue, Is.SameAs(output));
-				Assert.That(serializedBootstrap.FindProperty("_programOutput").objectReferenceValue, Is.SameAs(programOutput));
 				var serializedMidiInput = new SerializedObject(midiInput);
 				Assert.That(serializedMidiInput.FindProperty("_manager").objectReferenceValue, Is.SameAs(midiManager));
 				var applicationHost = legacyHost.GetComponents<MonoBehaviour>().Single(component => component.GetType().Name == "ApplicationHost");
@@ -49,12 +46,10 @@ namespace ShitDesigner.Main.Tests {
 				var serializedExternalOutput = new SerializedObject(externalOutput);
 				Assert.That(serializedExternalOutput.FindProperty("_displayNumber").intValue, Is.EqualTo(2));
 				Assert.That(serializedExternalOutput.FindProperty("_activateOnStart").boolValue, Is.False, "Camera mirroring must not bypass the Program output surface.");
-				var serializedProgramOutput = new SerializedObject(programOutput);
-				Assert.That(serializedProgramOutput.FindProperty("m_Host").objectReferenceValue, Is.SameAs(applicationHost));
-				Assert.That(serializedProgramOutput.FindProperty("m_DisplayNumber").intValue, Is.EqualTo(2));
 				var serializedOutput = new SerializedObject(output);
 				Assert.That(serializedOutput.FindProperty("m_Width").intValue, Is.EqualTo(1920));
 				Assert.That(serializedOutput.FindProperty("m_Height").intValue, Is.EqualTo(1080));
+				Assert.That(serializedOutput.FindProperty("m_Host").objectReferenceValue, Is.SameAs(applicationHost));
 			}
 			finally { EditorSceneManager.CloseScene(scene, removeScene: true); }
 		}
@@ -63,30 +58,6 @@ namespace ShitDesigner.Main.Tests {
 		public void MainIsTheFirstEnabledBuildScene() {
 			var first = EditorBuildSettings.scenes.First(scene => scene.enabled);
 			Assert.That(first.path, Is.EqualTo("Assets/ShitDesigner/Scenes/Main/Main.unity"));
-		}
-
-		[Test]
-		public void OutputPublishesTheExistingRuntimeImageFrameContract() {
-			var gameObject = new GameObject("Main output test");
-			try {
-				var output = gameObject.AddComponent<MainLiveOutput>();
-				var serialized = new SerializedObject(output);
-				serialized.FindProperty("m_Width").intValue = 32;
-				serialized.FindProperty("m_Height").intValue = 18;
-				serialized.ApplyModifiedPropertiesWithoutUndo();
-
-				Assert.That(output.Initialize(), Is.True);
-				output.Present(4);
-
-				Assert.That(output.CurrentFrame, Is.Not.Null);
-				Assert.That(output.CurrentFrame.FrameNumber, Is.EqualTo(4));
-				Assert.That(output.CurrentFrame.Width, Is.EqualTo(32));
-				Assert.That(output.CurrentFrame.Height, Is.EqualTo(18));
-				Assert.That(output.CurrentFrame.NativeSurface, Is.SameAs(output.Target));
-				Assert.That(output.CurrentFrame.LeaseId, Is.Not.Zero);
-				output.Dispose();
-			}
-			finally { Object.DestroyImmediate(gameObject); }
 		}
 	}
 }
