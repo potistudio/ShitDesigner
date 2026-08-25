@@ -225,8 +225,8 @@ Transform:
   m_GameObject: {fileID: 500452136}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.5, y: -1.48, z: 6.19}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 6.19}
+  m_LocalScale: {x: 10, y: 5.625, z: 0.1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -706,7 +706,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1594496359
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -815,6 +815,108 @@ MonoBehaviour:
   _displayName: Cylinder Flythrough
   _graphPosition: {x: 120, y: 180}
   _definition: {fileID: 11400000, guid: 2fc81fba65d573745a19202bffc417f9, type: 2}
+--- !u!1 &1800000000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1800000001}
+  - component: {fileID: 1800000002}
+  - component: {fileID: 1800000005}
+  - component: {fileID: 1800000003}
+  - component: {fileID: 1800000004}
+  m_Layer: 0
+  m_Name: Main Live Runtime
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1800000001
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1800000000}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1800000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1800000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 12875983eef141c2b4aa5b416a85060d, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.MainLiveInput
+  _adjustmentStep: 0.05
+--- !u!114 &1800000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1800000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f84f061c80d41a9a43a5643266cf2bf, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.MainLiveOutput
+  _targetRenderer: {fileID: 500452138}
+  _textureProperty: _BaseMap
+  _width: 1920
+  _height: 1080
+--- !u!114 &1800000005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1800000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ec3b45c620448419f21f808f6c823a7, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.MainLiveMidiInput
+  _channel: 1
+  _sceneControlChange: 20
+  _motionControlChange: 21
+  _scaleControlChange: 22
+  _firstSceneNote: 36
+  _secondSceneNote: 37
+  _openDefaultDevice: 1
+--- !u!114 &1800000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1800000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 917225c91fb94ed7956a46356d3b8ba6, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.MainLiveSceneBootstrap
+  _scenes:
+  - {fileID: 11400000, guid: 47f250965d7e4f42a8e166033822bd8b, type: 2}
+  - {fileID: 11400000, guid: 2fc81fba65d573745a19202bffc417f9, type: 2}
+  _input: {fileID: 1800000002}
+  _midiInput: {fileID: 1800000005}
+  _output: {fileID: 1800000003}
+  _startOnEnable: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -823,3 +925,4 @@ SceneRoots:
   - {fileID: 1184862312}
   - {fileID: 500452140}
   - {fileID: 1594496360}
+  - {fileID: 1800000001}

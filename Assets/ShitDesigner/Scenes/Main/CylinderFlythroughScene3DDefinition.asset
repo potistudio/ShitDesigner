@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: CylinderFlythroughScene3DDefinition
   m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.Scene3DDefinition
   _id: 1e13db08-1323-4777-a6c0-d54b02d520b0
-  _prefab: {fileID: 1683748501068335202, guid: f4a3a83233a2bb942bbc629859f58809, type: 3}
+  _prefab: {fileID: 7787689742687978739, guid: 52d135c910953af43a7424639474c3c2, type: 3}

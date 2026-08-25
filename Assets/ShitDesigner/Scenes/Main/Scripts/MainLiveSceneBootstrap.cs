@@ -12,6 +12,7 @@ namespace ShitDesigner.Main {
 	public sealed class MainLiveSceneBootstrap : MonoBehaviour {
 		[SerializeField] private Scene3DDefinition[] _scenes = Array.Empty<Scene3DDefinition>();
 		[SerializeField] private MainLiveInput _input;
+		[SerializeField] private MainLiveMidiInput _midiInput;
 		[SerializeField] private MainLiveOutput _output;
 		[SerializeField] private bool _startOnEnable = true;
 		private readonly MainLiveParameterBuffer _parameters = new MainLiveParameterBuffer();
@@ -37,12 +38,13 @@ namespace ShitDesigner.Main {
 			if (_running) return true;
 			var definitions = (_scenes ?? Array.Empty<Scene3DDefinition>()).Where(scene => scene != null).ToArray();
 			if (definitions.Length == 0 || definitions.Any(scene => scene.Validate().IsFailure)) return Fail("Every Main scene requires a valid Scene3DDefinition.");
-			if (_input == null || _output == null) return Fail("Main live input and output components are required.");
+			if (_input == null || _midiInput == null || _output == null) return Fail("Main keyboard/MIDI input and output components are required.");
 			_scenes = definitions;
 			if (!_output.Initialize()) return Fail("Main live output could not create its render target.");
 
 			_sceneManager = new SceneIsolationManager(renderSource: new UnityCameraRenderSource());
 			_input.Bind(_parameters);
+			_midiInput.Initialize(_input);
 			_frameNumber = 1;
 			CurrentParameters = _parameters.Commit(_frameNumber, _scenes.Length);
 			if (!SwitchScene(CurrentParameters.SceneIndex)) {
@@ -61,6 +63,7 @@ namespace ShitDesigner.Main {
 			_activeSceneIndex = -1;
 			_sceneManager?.Dispose();
 			_sceneManager = null;
+			_midiInput?.Stop();
 			_output?.Dispose();
 		}
 
@@ -69,6 +72,7 @@ namespace ShitDesigner.Main {
 			unchecked { _frameNumber++; }
 			if (_frameNumber == 0) _frameNumber = 1;
 			_input.Capture(_scenes.Length);
+			_midiInput.Capture(_scenes.Length);
 			var frame = _parameters.Commit(_frameNumber, _scenes.Length);
 			if (frame.SceneIndex != _activeSceneIndex && !SwitchScene(frame.SceneIndex)) return;
 

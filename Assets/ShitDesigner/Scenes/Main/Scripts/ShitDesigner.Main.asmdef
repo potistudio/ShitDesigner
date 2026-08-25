@@ -5,6 +5,7 @@
     "ShitDesigner.Core",
     "ShitDesigner.Runtime",
     "ShitDesigner.Scene",
+    "ShitDesigner.Input",
     "Unity.InputSystem"
   ],
   "includePlatforms": [],

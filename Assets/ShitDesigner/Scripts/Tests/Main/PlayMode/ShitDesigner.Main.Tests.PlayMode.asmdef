@@ -1,16 +1,12 @@
 {
-  "name": "ShitDesigner.Main.Tests.EditMode",
+  "name": "ShitDesigner.Main.Tests.PlayMode",
   "rootNamespace": "ShitDesigner.Main.Tests",
   "references": [
     "ShitDesigner.Main",
-    "ShitDesigner.Core",
-    "ShitDesigner.Input",
     "ShitDesigner.Runtime",
     "ShitDesigner.Scene"
   ],
-  "includePlatforms": [
-    "Editor"
-  ],
+  "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
   "overrideReferences": true,

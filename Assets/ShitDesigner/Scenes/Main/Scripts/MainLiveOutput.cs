@@ -8,9 +8,9 @@ namespace ShitDesigner.Main {
 	public sealed class MainLiveOutput : MonoBehaviour, IDisposable {
 		[SerializeField] private Renderer _targetRenderer;
 		[SerializeField] private string _textureProperty = "_BaseMap";
-		[SerializeField, Min(1)] private int _width = 1280;
-		[SerializeField, Min(1)] private int _height = 720;
-		private readonly MaterialPropertyBlock _properties = new MaterialPropertyBlock();
+		[SerializeField, Min(1)] private int _width = 1920;
+		[SerializeField, Min(1)] private int _height = 1080;
+		private MaterialPropertyBlock _properties;
 		private RenderTexture _target;
 		private ulong _leaseId;
 
@@ -21,6 +21,7 @@ namespace ShitDesigner.Main {
 
 		public bool Initialize() {
 			if (_targetRenderer == null || string.IsNullOrWhiteSpace(_textureProperty)) return false;
+			_properties ??= new MaterialPropertyBlock();
 			DisposeTarget();
 			_target = new RenderTexture(_width, _height, 24, RenderTextureFormat.ARGBHalf) {
 				name = "ShitDesigner.Main.LiveOutput",
@@ -47,9 +48,8 @@ namespace ShitDesigner.Main {
 
 		public void Dispose() {
 			CurrentFrame = null;
-			if (_targetRenderer != null) {
-				_targetRenderer.GetPropertyBlock(_properties);
-				_properties.SetTexture(_textureProperty, null);
+			if (_targetRenderer != null && _properties != null) {
+				_properties.Clear();
 				_targetRenderer.SetPropertyBlock(_properties);
 			}
 			DisposeTarget();
