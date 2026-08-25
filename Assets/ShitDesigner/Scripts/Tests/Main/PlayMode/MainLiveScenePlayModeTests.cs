@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -11,12 +12,15 @@ namespace ShitDesigner.Main.Tests {
 			SceneManager.LoadScene("Main", LoadSceneMode.Single);
 			yield return null;
 
+			var host = SceneManager.GetActiveScene().GetRootGameObjects().Single(root => root.name == "Host");
 			var bootstrap = Object.FindAnyObjectByType<MainLiveSceneBootstrap>();
 			var input = Object.FindAnyObjectByType<MainLiveInput>();
 			var output = Object.FindAnyObjectByType<MainLiveOutput>();
 			Assert.That(bootstrap, Is.Not.Null);
 			Assert.That(input, Is.Not.Null);
 			Assert.That(output, Is.Not.Null);
+			Assert.That(host.activeInHierarchy, Is.True);
+			Assert.That(host.transform.Find("UI/Top Bar Panel").gameObject.activeInHierarchy, Is.True);
 
 			for (var frame = 0; frame < 30 && output.CurrentFrame == null && string.IsNullOrEmpty(bootstrap.LastError); frame++)
 				yield return null;
