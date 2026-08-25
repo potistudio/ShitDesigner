@@ -1208,7 +1208,18 @@ namespace ShitDesigner.Persistence {
 	/// </summary>
 	public sealed class NewProjectStager {
 		public Result<NewProjectResult, Diagnostic> Create(string projectName, string targetRoot, IProjectFileSystem fileSystem, IProjectIdFactory idFactory = null) {
-			if (string.IsNullOrWhiteSpace(projectName) || string.IsNullOrWhiteSpace(targetRoot) || fileSystem == null) return Failure("persistence.new.invalid", "Project name, target root and file system are required.");
+			if (string.IsNullOrWhiteSpace(projectName)) return Failure("persistence.new.invalid", "Project name is required.");
+			var candidate = ProjectDocumentFactory.CreateNew(projectName, idFactory);
+			return candidate.IsFailure
+				? Result.Failure<NewProjectResult, Diagnostic>(candidate.Error)
+				: Create(candidate.Value, targetRoot, fileSystem);
+		}
+
+		/// <summary>Stages an already validated authored document without replaying
+		/// graph-editor commands. The same save/read-back/finalize transaction used
+		/// by an empty project remains authoritative.</summary>
+		public Result<NewProjectResult, Diagnostic> Create(ProjectDocument document, string targetRoot, IProjectFileSystem fileSystem) {
+			if (document == null || string.IsNullOrWhiteSpace(targetRoot) || fileSystem == null) return Failure("persistence.new.invalid", "Project document, target root and file system are required.");
 			var directories = fileSystem as IProjectDirectoryOperations;
 			var cleanup = fileSystem as IProjectDirectoryCleanup;
 			if (directories == null) return Failure("persistence.new.atomic_unsupported", "New Project requires an atomic directory finalization port.");
@@ -1220,11 +1231,9 @@ namespace ShitDesigner.Persistence {
 			var staging = Path.Combine(parent, "." + Path.GetFileName(targetRoot) + ".staging-" + Guid.NewGuid().ToString("N"));
 			var finalized = false;
 			try {
-				var candidate = ProjectDocumentFactory.CreateNew(projectName, idFactory);
-				if (candidate.IsFailure) return Result.Failure<NewProjectResult, Diagnostic>(candidate.Error);
 				fileSystem.EnsureDirectory(Path.Combine(staging, "Assets"));
 				fileSystem.EnsureDirectory(Path.Combine(staging, "Backups"));
-				var save = new ProjectSaver().Save(candidate.Value, staging, fileSystem);
+				var save = new ProjectSaver().Save(document, staging, fileSystem);
 				if (save.IsFailure) return Result.Failure<NewProjectResult, Diagnostic>(save.Error);
 				var readback = new ProjectLoader().Load(staging, fileSystem);
 				if (readback.IsFailure) return Failure("persistence.new.readback_failed", "New Project manifest read-back failed.");

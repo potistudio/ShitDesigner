@@ -1627,6 +1627,18 @@ namespace ShitDesigner.Bootstrap {
 		private readonly IDisposable _platformFilesLifetime;
 		private bool _disposed;
 
+		/// <summary>Starts a complete composition-authored project without exposing
+		/// the interactive graph-editor command surface to Unity components.</summary>
+		public UnitResult<Diagnostic> CreateAuthoredProject(ProjectDocument document, string projectRoot) {
+			if (_disposed) return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.project.composition_disposed"), Severity.Error, "The composition is disposed.", module: "bootstrap"));
+			if (Application.State != ApplicationProjectState.Empty)
+				return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.project.already_open"), Severity.Error, "An authored project can only be created while no project is open.", module: "bootstrap"));
+			var created = Application.NewProject(document, projectRoot, UnsavedChangesDecision.Discard);
+			return created.IsSuccess
+				? UnitResult.Success<Diagnostic>()
+				: UnitResult.Failure<Diagnostic>(created.Diagnostic ?? new Diagnostic(new DiagnosticCode("bootstrap.project.create_failed"), Severity.Error, "The authored project could not be created.", module: "bootstrap"));
+		}
+
 		/// <summary>Captures concrete ownership and active output descriptors
 		/// from the same production composition that drives the Player. This is
 		/// deliberately read-only so a test cannot manufacture a passing

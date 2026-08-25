@@ -699,6 +699,7 @@ GameObject:
   - component: {fileID: 1594496361}
   - component: {fileID: 1594496362}
   - component: {fileID: 1594496363}
+  - component: {fileID: 1594496364}
   m_Layer: 0
   m_Name: Host
   m_TagString: Untagged
@@ -796,6 +797,23 @@ MonoBehaviour:
   _host: {fileID: 1594496359}
   _createOnStart: 1
   _projectName: Cylinder Flythrough
+  _nodes:
+  - {fileID: 1594496364}
+  _programSource: {fileID: 1594496364}
+--- !u!114 &1594496364
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1594496358}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e37a9b9fc58e4ff184defe3814590763, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: ShitDesigner.Bootstrap::ShitDesigner.Bootstrap.Scene3DNode
+  _displayName: Cylinder Flythrough
+  _graphPosition: {x: 120, y: 180}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

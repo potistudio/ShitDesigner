@@ -638,11 +638,22 @@ namespace ShitDesigner.Application {
 		}
 
 		public ApplicationCommandResult NewProject(string projectName, string targetRoot, UnsavedChangesDecision decision = UnsavedChangesDecision.Cancel) {
+			return NewProjectCore(() => new NewProjectStager().Create(projectName, targetRoot, _fileSystem), targetRoot, decision);
+		}
+
+		/// <summary>Opens a complete composition-authored project without routing
+		/// its initial graph through the interactive editor command queue.</summary>
+		public ApplicationCommandResult NewProject(ProjectDocument document, string targetRoot, UnsavedChangesDecision decision = UnsavedChangesDecision.Cancel) {
+			if (document == null) return Rejected(Guid.Empty, Failure("application.project.document_missing", "An authored project document is required."));
+			return NewProjectCore(() => new NewProjectStager().Create(document, targetRoot, _fileSystem), targetRoot, decision);
+		}
+
+		private ApplicationCommandResult NewProjectCore(Func<Result<NewProjectResult, Diagnostic>> create, string targetRoot, UnsavedChangesDecision decision) {
 			if (!CanReplaceCurrent(decision, out var guard)) return guard;
 			var request = BeginRequest(Guid.Empty);
 			_state = ApplicationProjectState.Loading;
 			BeginTask("New", targetRoot, "Staging", "Pending");
-			var result = new NewProjectStager().Create(projectName, targetRoot, _fileSystem);
+			var result = create();
 			if (result.IsFailure) { SetTask("Failed", result.Error); return Complete(request, ApplicationCommandStatus.Rejected, result.Error, _document == null ? ApplicationProjectState.Empty : ApplicationProjectState.Ready); }
 			SetTask("Readback", null);
 			Install(result.Value.Document, result.Value.ProjectRoot, false, request);

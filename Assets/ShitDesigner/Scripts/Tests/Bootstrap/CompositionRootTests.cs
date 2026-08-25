@@ -41,14 +41,39 @@ namespace ShitDesigner.Bootstrap.Tests {
 				Assert.That(root, Is.Not.Null);
 				var host = root.GetComponent<ApplicationHost>();
 				var startup = root.GetComponent<StartupSceneGraphBootstrap>();
+				var sceneNode = root.GetComponent<Scene3DNode>();
 				Assert.That(host, Is.Not.Null);
 				Assert.That(startup, Is.Not.Null, "Main must own the startup graph bootstrap instead of relying on GUI commands.");
+				Assert.That(sceneNode, Is.Not.Null, "Main must author its 3D node as a Unity component.");
 
 				var serialized = new UnityEditor.SerializedObject(startup);
 				Assert.That(serialized.FindProperty("_createOnStart").boolValue, Is.True);
 				Assert.That(serialized.FindProperty("_host").objectReferenceValue, Is.SameAs(host));
+				Assert.That(serialized.FindProperty("_nodes").arraySize, Is.EqualTo(1));
+				Assert.That(serialized.FindProperty("_nodes").GetArrayElementAtIndex(0).objectReferenceValue, Is.SameAs(sceneNode));
+				Assert.That(serialized.FindProperty("_programSource").objectReferenceValue, Is.SameAs(sceneNode));
 			}
 			finally { EditorSceneManager.CloseScene(scene, removeScene: true); }
+		}
+
+		[Test]
+		public void UnityGraphComponentsBuildCompleteProjectWithoutEditorCommands() {
+			var gameObject = new GameObject("Authored graph test");
+			try {
+				var sceneNode = gameObject.AddComponent<Scene3DNode>();
+				var built = UnityGraphProjectBuilder.Build("Authored Graph", NodeDefinitionCatalog.CreateInitial(),
+					new UnityGraphNode[] { sceneNode }, sceneNode);
+
+				Assert.That(built.IsSuccess, Is.True, built.IsFailure ? built.Error.Message : string.Empty);
+				var source = built.Value.Nodes.Single(node => node.TypeId.Value == "shitdesigner.scene.3d");
+				var program = built.Value.Nodes.Single(node => node.TypeId.Value == GraphConstants.ProgramOutputTypeId);
+				var connection = built.Value.Connections.Single();
+				Assert.That(connection.SourceNodeId, Is.EqualTo(source.Id));
+				Assert.That(connection.DestinationNodeId, Is.EqualTo(program.Id));
+				Assert.That(connection.SourcePortId.Value, Is.EqualTo(GraphConstants.ImagePortId));
+				Assert.That(connection.DestinationPortId.Value, Is.EqualTo(GraphConstants.ImagePortId));
+			}
+			finally { UnityEngine.Object.DestroyImmediate(gameObject); }
 		}
 
 		[Test]
