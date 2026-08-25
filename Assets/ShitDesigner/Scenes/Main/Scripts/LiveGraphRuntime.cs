@@ -57,6 +57,7 @@ namespace ShitDesigner.Main {
 		private readonly List<LiveScene> _scenes = new List<LiveScene>();
 		private readonly Dictionary<string, LiveScene> _scenesById = new Dictionary<string, LiveScene>(StringComparer.Ordinal);
 		private readonly RenderTexture _programTexture;
+		private readonly RenderTexture _renderTexture;
 		private LiveScene _selectedScene;
 		private ulong _frameNumber;
 		private bool _disposed;
@@ -82,6 +83,17 @@ namespace ShitDesigner.Main {
 			};
 			if (!_programTexture.Create()) throw new InvalidOperationException("The Program texture could not be created.");
 			ClearProgramTexture();
+			_renderTexture = new RenderTexture(ProgramWidth, ProgramHeight, 24, RenderTextureFormat.ARGBHalf) {
+				name = "ShitDesigner.Main.ProgramRender",
+				useMipMap = false,
+				autoGenerateMips = false
+			};
+			if (!_renderTexture.Create()) {
+				_programTexture.Release();
+				if (UnityEngine.Application.isPlaying) UnityEngine.Object.Destroy(_programTexture);
+				else UnityEngine.Object.DestroyImmediate(_programTexture);
+				throw new InvalidOperationException("The Program render texture could not be created.");
+			}
 			CurrentFrame = new LiveProgramFrame(_programTexture, 0);
 
 			_sceneManager = new SceneIsolationManager(renderSource: new UnityCameraRenderSource());
@@ -125,10 +137,11 @@ namespace ShitDesigner.Main {
 			EnsureUsable();
 			var nextFrame = _frameNumber + 1;
 			if (nextFrame == 0) nextFrame = 1;
-			var result = _selectedScene.Runtime.Render(_programTexture, ProgramWidth, ProgramHeight, nextFrame);
+			var result = _selectedScene.Runtime.Render(_renderTexture, ProgramWidth, ProgramHeight, nextFrame);
 			if (result.IsFailure || result.Value == null || !result.Value.Rendered)
 				throw new InvalidOperationException(result.IsFailure ? result.Error.Message : "The selected live scene did not render.");
 
+			Graphics.Blit(_renderTexture, _programTexture);
 			_frameNumber = nextFrame;
 			CurrentFrame = new LiveProgramFrame(_programTexture, _frameNumber);
 			return CurrentFrame;
@@ -148,6 +161,11 @@ namespace ShitDesigner.Main {
 				_programTexture.Release();
 				if (UnityEngine.Application.isPlaying) UnityEngine.Object.Destroy(_programTexture);
 				else UnityEngine.Object.DestroyImmediate(_programTexture);
+			}
+			if (_renderTexture != null) {
+				_renderTexture.Release();
+				if (UnityEngine.Application.isPlaying) UnityEngine.Object.Destroy(_renderTexture);
+				else UnityEngine.Object.DestroyImmediate(_renderTexture);
 			}
 		}
 

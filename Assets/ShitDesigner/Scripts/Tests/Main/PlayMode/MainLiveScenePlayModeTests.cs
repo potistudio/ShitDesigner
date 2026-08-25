@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -25,6 +26,10 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(host.ReadModel.ProgramTexture.height, Is.EqualTo(1080));
 			Assert.That(host.ReadModel.ProgramTexture.format, Is.EqualTo(RenderTextureFormat.ARGBHalf));
 			Assert.That(host.ReadModel.ProgramFrameNumber, Is.GreaterThan(0));
+			var runtime = (LiveGraphRuntime)typeof(ApplicationLiveHost).GetField("_runtime", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(host);
+			var renderTexture = (RenderTexture)typeof(LiveGraphRuntime).GetField("_renderTexture", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(runtime);
+			Assert.That(renderTexture, Is.Not.Null);
+			Assert.That(renderTexture, Is.Not.SameAs(host.ReadModel.ProgramTexture), "Scene rendering must be staged before replacing the last successful Program frame.");
 			Assert.That(HasVisiblePixels(host.ReadModel.ProgramTexture), Is.True);
 
 			var previousScene = host.ReadModel.SelectedSceneId;
