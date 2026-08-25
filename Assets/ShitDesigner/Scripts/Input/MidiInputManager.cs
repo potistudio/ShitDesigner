@@ -296,8 +296,6 @@ namespace ShitDesigner.Input {
 			OpenConfiguredDevice();
 		}
 
-		private void Update() => Poll();
-
 		private void OnDestroy() => Shutdown();
 	}
 }
