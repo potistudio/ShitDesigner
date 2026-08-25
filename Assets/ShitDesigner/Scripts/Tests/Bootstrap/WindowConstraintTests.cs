@@ -14,13 +14,14 @@ namespace ShitDesigner.Bootstrap.Tests {
 		[Test]
 		public void PlatformAdapterIsAppliedAgainAfterUserResize() {
 			var adapter = new RecordingWindowAdapter(new WindowSize(1600, 900));
+			var lifecycle = new WindowLifecycle(adapter);
 			Assert.That(WindowConstraints.NeedsClamp(adapter.CurrentSize), Is.False);
 
 			adapter.ResizeFromUser(new WindowSize(1024, 640));
-			var corrected = WindowConstraints.Clamp(adapter.CurrentSize);
-			adapter.SetWindowedSize(corrected);
+			lifecycle.Tick();
 
 			Assert.That(adapter.CurrentSize, Is.EqualTo(new WindowSize(1280, 720)));
+			Assert.That(adapter.MaintainCount, Is.EqualTo(1));
 			Assert.That(adapter.SetCount, Is.EqualTo(1));
 			Assert.That(adapter.LastSetSize, Is.EqualTo(new WindowSize(1280, 720)));
 		}
@@ -38,10 +39,12 @@ namespace ShitDesigner.Bootstrap.Tests {
 			public bool IsFullscreen => false;
 			public WindowSize CurrentSize { get; private set; }
 			public int SetCount { get; private set; }
+			public int MaintainCount { get; private set; }
 			public WindowSize LastSetSize { get; private set; }
 
 			public RecordingWindowAdapter(WindowSize size) { CurrentSize = size; }
 			public void ResizeFromUser(WindowSize size) { CurrentSize = size; }
+			public void MaintainWindowFrame() { MaintainCount++; }
 			public void SetWindowedSize(WindowSize size) {
 				LastSetSize = size;
 				CurrentSize = size;

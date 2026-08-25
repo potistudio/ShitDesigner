@@ -137,7 +137,10 @@ namespace ShitDesigner.Bootstrap {
 			return UnitResult.Success<Diagnostic>();
 		}
 
-		public void Tick() => EnforceMinimumSize();
+		public void Tick() {
+			_adapter.MaintainWindowFrame();
+			EnforceMinimumSize();
+		}
 
 		private void EnforceMinimumSize() {
 			if (!_adapter.IsSupported || _adapter.IsFullscreen) return;
