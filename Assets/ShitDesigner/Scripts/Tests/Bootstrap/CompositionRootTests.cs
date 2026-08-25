@@ -60,24 +60,19 @@ namespace ShitDesigner.Bootstrap.Tests {
 		}
 
 		[Test]
-		public void UnityGraphComponentsBuildCompleteProjectWithPerNodeSceneDefinitions() {
+		public void UnityGraphComponentsBuildCompleteProjectWithPerNodeScenePrefabs() {
 			var gameObject = new GameObject("Authored graph test");
 			var secondGameObject = new GameObject("Second authored graph node");
 			var firstPrefab = new GameObject("First scene prefab");
 			var secondPrefab = new GameObject("Second scene prefab");
 			var firstDefinition = ScriptableObject.CreateInstance<Scene3DDefinition>();
 			var secondDefinition = ScriptableObject.CreateInstance<Scene3DDefinition>();
-			var definitionCatalog = ScriptableObject.CreateInstance<Scene3DDefinitionCatalog>();
 			try {
 				var sceneNode = gameObject.AddComponent<Scene3DNode>();
 				var secondSceneNode = secondGameObject.AddComponent<Scene3DNode>();
 				var assets = gameObject.AddComponent<BootstrapAssets>();
-				ConfigureDefinition(firstDefinition, "48df47dd-8df1-4fd9-8de8-0ebd91858bf1", firstPrefab);
-				ConfigureDefinition(secondDefinition, "b105848d-2691-4f4b-98f9-4fc6f38a391e", secondPrefab);
-				ConfigureDefinitionCatalog(definitionCatalog, firstDefinition, secondDefinition);
-				var serializedAssets = new UnityEditor.SerializedObject(assets);
-				serializedAssets.FindProperty("_scene3dDefinitionCatalog").objectReferenceValue = definitionCatalog;
-				serializedAssets.ApplyModifiedPropertiesWithoutUndo();
+				ConfigureDefinition(firstDefinition, firstPrefab);
+				ConfigureDefinition(secondDefinition, secondPrefab);
 				ConfigureSceneNode(sceneNode, firstDefinition);
 				ConfigureSceneNode(secondSceneNode, secondDefinition);
 				var built = UnityGraphProjectBuilder.Build("Authored Graph", NodeDefinitionCatalog.CreateInitial(), assets,
@@ -93,15 +88,14 @@ namespace ShitDesigner.Bootstrap.Tests {
 				Assert.That(connection.DestinationNodeId, Is.EqualTo(program.Id));
 				Assert.That(connection.SourcePortId.Value, Is.EqualTo(GraphConstants.ImagePortId));
 				Assert.That(connection.DestinationPortId.Value, Is.EqualTo(GraphConstants.ImagePortId));
-				Assert.That(Scene3DDefinition.ReadDefinitionId(source.RawState).Value, Is.EqualTo(firstDefinition.Id));
-				Assert.That(Scene3DDefinition.ReadDefinitionId(secondSource.RawState).Value, Is.EqualTo(secondDefinition.Id));
+				Assert.That(source.RawState, Is.EqualTo("{}"));
+				Assert.That(secondSource.RawState, Is.EqualTo("{}"));
 				Assert.That(assets.ResolveScene3dPrefab(RuntimeNodeCreateInfo.FromProject(source)), Is.SameAs(firstPrefab));
 				Assert.That(assets.ResolveScene3dPrefab(RuntimeNodeCreateInfo.FromProject(secondSource)), Is.SameAs(secondPrefab));
 			}
 			finally {
 				UnityEngine.Object.DestroyImmediate(firstDefinition);
 				UnityEngine.Object.DestroyImmediate(secondDefinition);
-				UnityEngine.Object.DestroyImmediate(definitionCatalog);
 				UnityEngine.Object.DestroyImmediate(firstPrefab);
 				UnityEngine.Object.DestroyImmediate(secondPrefab);
 				UnityEngine.Object.DestroyImmediate(secondGameObject);
@@ -109,9 +103,8 @@ namespace ShitDesigner.Bootstrap.Tests {
 			}
 		}
 
-		private static void ConfigureDefinition(Scene3DDefinition definition, string id, GameObject prefab) {
+		private static void ConfigureDefinition(Scene3DDefinition definition, GameObject prefab) {
 			var serialized = new UnityEditor.SerializedObject(definition);
-			serialized.FindProperty("_id").stringValue = id;
 			serialized.FindProperty("_prefab").objectReferenceValue = prefab;
 			serialized.ApplyModifiedPropertiesWithoutUndo();
 		}
@@ -119,14 +112,6 @@ namespace ShitDesigner.Bootstrap.Tests {
 		private static void ConfigureSceneNode(Scene3DNode node, Scene3DDefinition definition) {
 			var serialized = new UnityEditor.SerializedObject(node);
 			serialized.FindProperty("_definition").objectReferenceValue = definition;
-			serialized.ApplyModifiedPropertiesWithoutUndo();
-		}
-
-		private static void ConfigureDefinitionCatalog(Scene3DDefinitionCatalog catalog, params Scene3DDefinition[] definitions) {
-			var serialized = new UnityEditor.SerializedObject(catalog);
-			var property = serialized.FindProperty("_definitions");
-			property.arraySize = definitions.Length;
-			for (var index = 0; index < definitions.Length; index++) property.GetArrayElementAtIndex(index).objectReferenceValue = definitions[index];
 			serialized.ApplyModifiedPropertiesWithoutUndo();
 		}
 
