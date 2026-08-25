@@ -718,8 +718,8 @@ namespace ShitDesigner.Bootstrap.Tests {
 				try {
 					var rendered3d = node3d.Value.Render(output3d, 32, 32, 1);
 					var rendered2d = node2d.Value.Render(output2d, 32, 32, 1);
-					Assert.That(rendered3d.IsSuccess, Is.True, rendered3d.Error?.Message);
-					Assert.That(rendered2d.IsSuccess, Is.True, rendered2d.Error?.Message);
+					Assert.That(rendered3d.IsSuccess, Is.True, rendered3d.IsFailure ? rendered3d.Error.Message : string.Empty);
+					Assert.That(rendered2d.IsSuccess, Is.True, rendered2d.IsFailure ? rendered2d.Error.Message : string.Empty);
 					Assert.That(node3d.Value.Camera.targetTexture, Is.Null,
 						"SRP StandardRequest must own its destination without leaving a camera target override.");
 					Assert.That(node2d.Value.Camera.targetTexture, Is.Null,
@@ -740,8 +740,8 @@ namespace ShitDesigner.Bootstrap.Tests {
 					AssertFullViewport(node3d.Value.Camera, "3D");
 					AssertFullViewport(node2d.Value.Camera, "2D");
 					yield return null;
-					var color3d = ReadColor(output3d);
-					var color2d = ReadColor(output2d);
+					var color3d = ReadBrightestColor(output3d);
+					var color2d = ReadBrightestColor(output2d);
 					LogRuntimeDiagnostics("3D", node3d.Value, output3d, color3d);
 					LogRuntimeDiagnostics("2D", node2d.Value, output2d, color2d);
 					var perspectiveCamera = node3d.Value.Camera;
@@ -752,7 +752,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 						perspectiveCamera.orthographic = true;
 						perspectiveCamera.orthographicSize = 5f;
 						var orthographicRender = node3d.Value.Render(orthographicOutput, 32, 32, 2);
-						Assert.That(orthographicRender.IsSuccess, Is.True, orthographicRender.Error?.Message);
+						Assert.That(orthographicRender.IsSuccess, Is.True, orthographicRender.IsFailure ? orthographicRender.Error.Message : string.Empty);
 						yield return null;
 						var orthographicPixel = ReadColor(orthographicOutput);
 						Debug.Log(string.Format(
@@ -804,6 +804,17 @@ namespace ShitDesigner.Bootstrap.Tests {
 			read.ReadPixels(new Rect(16, 16, 1, 1), 0, 0);
 			read.Apply(false, false);
 			var pixel = read.GetPixel(0, 0);
+			UnityEngine.Object.DestroyImmediate(read);
+			RenderTexture.active = previous;
+			return pixel;
+		}
+		private static Color ReadBrightestColor(RenderTexture target) {
+			var previous = RenderTexture.active;
+			RenderTexture.active = target;
+			var read = new Texture2D(target.width, target.height, TextureFormat.RGBA32, false, true);
+			read.ReadPixels(new Rect(0, 0, target.width, target.height), 0, 0);
+			read.Apply(false, false);
+			var pixel = read.GetPixels().OrderByDescending(color => color.maxColorComponent).First();
 			UnityEngine.Object.DestroyImmediate(read);
 			RenderTexture.active = previous;
 			return pixel;

@@ -8,7 +8,7 @@
 
 ## 採用する構成
 
-Unity Standaloneアプリケーション内のモジュラーモノリスとする。単一プロセス、単一VJプロジェクト、単一Composition Rootを使用し、機能領域をasmdefと明示的な依存方向で分離する。
+Unity Standaloneアプリケーション内のモジュラーモノリスとする。単一プロセス、単一VJプロジェクトとし、起動フローごとに1つの明示的なHostを使用する。機能領域はasmdefと明示的な依存方向で分離する。
 
 ```mermaid
 flowchart LR
@@ -112,6 +112,7 @@ flowchart LR
 | [StateModel.md](StateModel.md) | ProjectDocument／RuntimeSession／FrameSnapshot | 確定 |
 | [FrameLifecycle.md](FrameLifecycle.md) | フレーム処理、コマンド、更新キュー | 確定 |
 | [StartupLifecycle.md](StartupLifecycle.md) | Preflight、Handshake、起動・終了順 | 確定 |
+| [LiveHost.md](LiveHost.md) | Mainシーンのライブ実行専用Host | 確定 |
 | [GraphRuntime.md](GraphRuntime.md) | グラフ編集、評価計画、ノード契約 | 確定 |
 | [ExecutionPerformance.md](ExecutionPerformance.md) | Burst、Job System、GPU、非同期処理の使い分け | 確定 |
 | [ResourceOwnership.md](ResourceOwnership.md) | Scene、Texture、動画リソースの所有権 | 確定 |

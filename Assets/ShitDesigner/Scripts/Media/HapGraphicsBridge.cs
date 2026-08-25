@@ -326,7 +326,7 @@ namespace ShitDesigner.Media {
 			// it.  Only Hap Q Alpha (the YCoCg two-plane form) uses the
 			// second buffer as an alpha plane.
 			_computeShader.SetBuffer(kernel, "AlphaBlocks", buffers.Length > 1 ? buffers[1] : buffers[0]);
-			_computeShader.SetTexture(kernel, "UnitResult<Diagnostic>", output);
+			_computeShader.SetTexture(kernel, "Result", output);
 			_computeShader.SetInt("Width", (int)frame.Width);
 			_computeShader.SetInt("Height", (int)frame.Height);
 			_computeShader.SetInt("ColorFormat", (int)frame.Planes[0].Format);

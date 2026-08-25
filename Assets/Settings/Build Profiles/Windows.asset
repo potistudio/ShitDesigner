@@ -25,6 +25,9 @@ MonoBehaviour:
   - m_enabled: 1
     m_path: Assets/ShitDesigner/Scenes/Main/Main.unity
     m_guid: a7d7504e1b25cd542bcc3eef7e81018e
+  - m_enabled: 1
+    m_path: Assets/ShitDesigner/Scenes/ShitDesignerBootstrap.unity
+    m_guid: 77777777777777777777777777777777
   m_HasScriptingDefines: 0
   m_ScriptingDefines: []
   m_PlayerSettingsYaml:
