@@ -692,6 +692,8 @@ namespace ShitDesigner.Bootstrap.Tests {
 			Assert.That(scene3d.GetComponentsInChildren<Camera>(true), Has.Length.EqualTo(1));
 			Assert.That(scene3d.GetComponent<CylindricalObjectFlythrough>(), Is.Not.Null,
 				"The existing 3D node prefab slot must reference the cylindrical flythrough prefab.");
+			Assert.That(scene3d.GetComponentsInChildren<AudioListener>(true), Is.Empty,
+				"An isolated render-only Scene camera must not create a second application AudioListener.");
 			Assert.That(scene2d.GetComponentsInChildren<Camera>(true), Has.Length.EqualTo(1));
 			Assert.That(scene2d.GetComponent<RectTransform>(), Is.Null,
 				"The isolated 2D root must remain a plain Transform so it cannot drive camera or geometry scale.");

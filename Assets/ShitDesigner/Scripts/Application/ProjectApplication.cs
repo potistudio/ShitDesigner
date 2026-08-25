@@ -1399,8 +1399,9 @@ namespace ShitDesigner.Application {
 			foreach (var item in report.GraphCommandExecutionResults) {
 				var entry = _graphRequests.TryGetValue(item.CommandRequestId ?? string.Empty, out var requestId) && _ledger.TryGetValue(requestId, out var found)
 					? found : null;
-				if (entry != null) TryCompleteQueued(entry, item.Result.IsSuccess, item.Result.Error, item.CommandRequestId);
-				frameResults.Add(new ApplicationFrameCommandResult(item.CommandRequestId, item.Result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, item.Result.Error));
+				var diagnostic = item.Result.IsFailure ? item.Result.Error : null;
+				if (entry != null) TryCompleteQueued(entry, item.Result.IsSuccess, diagnostic, item.CommandRequestId);
+				frameResults.Add(new ApplicationFrameCommandResult(item.CommandRequestId, item.Result.IsSuccess ? ApplicationCommandStatus.Applied : ApplicationCommandStatus.Rejected, diagnostic));
 			}
 			foreach (var item in report.ParameterEventResults) {
 				var entry = _parameterRequests.TryGetValue(item.SequenceNumber, out var requestId) && _ledger.TryGetValue(requestId, out var found)

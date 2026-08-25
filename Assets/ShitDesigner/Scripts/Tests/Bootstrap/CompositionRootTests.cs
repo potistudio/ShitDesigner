@@ -34,6 +34,24 @@ namespace ShitDesigner.Bootstrap.Tests {
 		}
 
 		[Test]
+		public void MainSceneCreatesItsThreeDProgramGraphWithoutGuiInput() {
+			var scene = EditorSceneManager.OpenScene("Assets/ShitDesigner/Scenes/Main/Main.unity", OpenSceneMode.Additive);
+			try {
+				var root = scene.GetRootGameObjects().SingleOrDefault(item => item.name == "Host");
+				Assert.That(root, Is.Not.Null);
+				var host = root.GetComponent<ApplicationHost>();
+				var startup = root.GetComponent<StartupSceneGraphBootstrap>();
+				Assert.That(host, Is.Not.Null);
+				Assert.That(startup, Is.Not.Null, "Main must own the startup graph bootstrap instead of relying on GUI commands.");
+
+				var serialized = new UnityEditor.SerializedObject(startup);
+				Assert.That(serialized.FindProperty("_createOnStart").boolValue, Is.True);
+				Assert.That(serialized.FindProperty("_host").objectReferenceValue, Is.SameAs(host));
+			}
+			finally { EditorSceneManager.CloseScene(scene, removeScene: true); }
+		}
+
+		[Test]
 		public void ApplicationHostStartsColdBeforeAwake() {
 			var gameObject = new GameObject("ApplicationHost test");
 			gameObject.SetActive(false);

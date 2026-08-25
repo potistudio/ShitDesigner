@@ -698,6 +698,7 @@ GameObject:
   - component: {fileID: 1594496359}
   - component: {fileID: 1594496361}
   - component: {fileID: 1594496362}
+  - component: {fileID: 1594496363}
   m_Layer: 0
   m_Name: Host
   m_TagString: Untagged
@@ -780,6 +781,21 @@ MonoBehaviour:
   _deviceId: 0
   _openOnConfigure: 1
   _bindings: []
+--- !u!114 &1594496363
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1594496358}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4c8f68a8a5e49d4a78c19588da34f15, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: ShitDesigner.Bootstrap::ShitDesigner.Bootstrap.StartupSceneGraphBootstrap
+  _host: {fileID: 1594496359}
+  _createOnStart: 1
+  _projectName: Cylinder Flythrough
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
