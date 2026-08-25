@@ -10,7 +10,7 @@ namespace ShitDesigner.Main.Tests {
 	[TestFixture]
 	public sealed class MainSceneWiringTests {
 		[Test]
-		public void MainUsesOneStandaloneLiveRuntimeWithDistinctSceneDefinitions() {
+		public void MainKeepsHostUiAlongsideTheStandaloneLiveRuntime() {
 			var scene = EditorSceneManager.OpenScene("Assets/ShitDesigner/Scenes/Main/Main.unity", OpenSceneMode.Additive);
 			try {
 				var legacyHost = scene.GetRootGameObjects().Single(root => root.name == "Host");
@@ -21,7 +21,8 @@ namespace ShitDesigner.Main.Tests {
 				var midiInput = liveRoot.GetComponent<MainLiveMidiInput>();
 				var output = liveRoot.GetComponent<MainLiveOutput>();
 
-				Assert.That(legacyHost.activeSelf, Is.False, "The former ApplicationHost loop must not run beside the Main live coordinator.");
+				Assert.That(legacyHost.activeSelf, Is.True, "The existing Host must remain active because it owns the runtime UI composition.");
+				Assert.That(legacyHost.transform.Find("UI/Top Bar Panel").gameObject.activeInHierarchy, Is.True);
 				Assert.That(bootstrap, Is.Not.Null);
 				Assert.That(input, Is.Not.Null);
 				Assert.That(midiManager, Is.Not.Null);
@@ -37,6 +38,9 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(serializedBootstrap.FindProperty("_output").objectReferenceValue, Is.SameAs(output));
 				var serializedMidiInput = new SerializedObject(midiInput);
 				Assert.That(serializedMidiInput.FindProperty("_manager").objectReferenceValue, Is.SameAs(midiManager));
+				var applicationHost = legacyHost.GetComponents<MonoBehaviour>().Single(component => component.GetType().Name == "ApplicationHost");
+				var serializedApplicationHost = new SerializedObject(applicationHost);
+				Assert.That(serializedApplicationHost.FindProperty("m_MidiInputManager").objectReferenceValue, Is.SameAs(midiManager));
 				var serializedOutput = new SerializedObject(output);
 				Assert.That(serializedOutput.FindProperty("_targetRenderer").objectReferenceValue, Is.Not.Null);
 			}
