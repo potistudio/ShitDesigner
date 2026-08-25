@@ -560,7 +560,7 @@ namespace ShitDesigner.Bootstrap {
 		private string _lastDisplayDiagnostic;
 		private bool _displayHandshakeAttempted;
 		private CapabilityStatus _displayHandshakeStatus;
-		private bool _outputActive = true;
+		private bool _outputActive;
 		private string _lastOutputError = string.Empty;
 		private bool _disposed;
 
@@ -590,7 +590,7 @@ namespace ShitDesigner.Bootstrap {
 			EnsureDisplayLease(1);
 			_displayHandshakeAttempted = false;
 			_requestedDisplayOverride = 0;
-			_outputActive = true;
+			_outputActive = false;
 			_lastOutputError = string.Empty;
 			unchecked { _bindingGeneration++; }
 			if (_bindingGeneration == 0) _bindingGeneration = 1;
