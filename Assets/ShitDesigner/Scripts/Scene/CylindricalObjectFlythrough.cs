@@ -51,7 +51,7 @@ namespace ShitDesigner.Scene {
 		public int GeneratedObjectCount => _generatedRoot == null ? 0 : _generatedRoot.childCount;
 
 		private void OnEnable() {
-			_rebuildRequested = true;
+			Rebuild();
 			ResetCameraPosition();
 		}
 
