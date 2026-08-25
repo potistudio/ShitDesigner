@@ -957,6 +957,11 @@ namespace ShitDesigner.Rendering.Tests {
 			}
 		}
 
+		[Test, Category("ProgramRuntimePolicy")]
+		public void ProgramDisplayShader_IsAvailableToRuntime() {
+			Assert.That(Resources.Load<Shader>("ProgramDisplay"), Is.Not.Null);
+		}
+
 		[Test, Category("RenderTexturePoolPolicy")]
 		public void PoolBudget_DefaultsAndUserLimitsFollowPlatformCapability() {
 			var dedicated = new RenderingPlatformCapabilities(RenderingMemoryKind.DedicatedGpu,

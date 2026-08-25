@@ -3,7 +3,6 @@ using CSharpFunctionalExtensions;
 using ShitDesigner.Core;
 using ShitDesigner.Runtime;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace ShitDesigner.Rendering {
 	public readonly struct ProgramDisplaySelection {
@@ -46,6 +45,7 @@ namespace ShitDesigner.Rendering {
 
 	/// <summary>Unity boundary for selected Display activation and surface presentation.</summary>
 	public sealed class UnityProgramDisplayPort : IProgramDisplayPort, IDisposable {
+		private const int DisplayLayer = 31;
 		private GameObject _displayCameraObject;
 		private Camera _displayCamera;
 		private ProgramDisplayBlitCamera _blit;
@@ -116,15 +116,17 @@ namespace ShitDesigner.Rendering {
 				_displayCameraObject = new GameObject("ShitDesigner.ProgramDisplay");
 				if (UnityEngine.Application.isPlaying) UnityEngine.Object.DontDestroyOnLoad(_displayCameraObject);
 				_displayCamera = _displayCameraObject.AddComponent<Camera>();
+				_displayCameraObject.transform.position = new Vector3(100000f, 100000f, 100000f);
 				_displayCamera.clearFlags = CameraClearFlags.SolidColor;
 				_displayCamera.backgroundColor = Color.black;
-				_displayCamera.cullingMask = 0;
+				_displayCamera.cullingMask = 1 << DisplayLayer;
 				_displayCamera.orthographic = true;
 				_displayCamera.orthographicSize = 1f;
 				_displayCamera.nearClipPlane = 0.01f;
 				_displayCamera.farClipPlane = 10f;
 				_displayCamera.targetDisplay = targetDisplay;
 				_blit = _displayCameraObject.AddComponent<ProgramDisplayBlitCamera>();
+				_blit.Initialize(_displayCamera, DisplayLayer);
 				_displayCamera.enabled = false;
 				return UnitResult.Success<Diagnostic>();
 			}
@@ -142,25 +144,66 @@ namespace ShitDesigner.Rendering {
 		}
 
 		private sealed class ProgramDisplayBlitCamera : MonoBehaviour {
-			public RenderTexture Source;
+			private const string ShaderName = "Hidden/ShitDesigner/ProgramDisplay";
+			private static readonly int MainTextureId = Shader.PropertyToID("_MainTex");
 			private Camera _camera;
-			private void OnEnable() {
-				_camera = GetComponent<Camera>();
-				RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
-			}
-			private void OnDisable() { RenderPipelineManager.endCameraRendering -= OnEndCameraRendering; }
-			private void OnRenderImage(RenderTexture source, RenderTexture destination) {
-				Graphics.Blit(Source != null && Source.IsCreated() ? Source : Texture2D.blackTexture, destination);
-			}
-			private void OnEndCameraRendering(ScriptableRenderContext context, Camera camera) {
-				if (camera != _camera || GraphicsSettings.currentRenderPipeline == null) return;
-				var target = Source != null && Source.IsCreated() ? (Texture)Source : Texture2D.blackTexture;
-				var command = new CommandBuffer { name = "ShitDesigner.ProgramDisplay" };
-				try {
-					command.Blit(target, BuiltinRenderTextureType.CameraTarget);
-					context.ExecuteCommandBuffer(command);
+			private GameObject _surface;
+			private Material _material;
+			private Mesh _mesh;
+
+			public RenderTexture Source {
+				set {
+					if (_material != null) _material.SetTexture(MainTextureId, value != null && value.IsCreated() ? value : Texture2D.blackTexture);
 				}
-				finally { command.Release(); }
+			}
+
+			public void Initialize(Camera camera, int layer) {
+				if (camera == null) throw new ArgumentNullException(nameof(camera));
+				var shader = Resources.Load<Shader>("ProgramDisplay") ?? Shader.Find(ShaderName);
+				if (shader == null) throw new InvalidOperationException("Program display shader is not available.");
+				_camera = camera;
+				_material = new Material(shader) { name = "ShitDesigner.ProgramDisplay" };
+				_material.SetTexture(MainTextureId, Texture2D.blackTexture);
+				_mesh = CreateFullscreenMesh();
+				_surface = new GameObject("ShitDesigner.ProgramDisplaySurface") { layer = layer };
+				_surface.transform.SetParent(transform, false);
+				_surface.transform.localPosition = new Vector3(0f, 0f, 1f);
+				var filter = _surface.AddComponent<MeshFilter>();
+				filter.sharedMesh = _mesh;
+				var renderer = _surface.AddComponent<MeshRenderer>();
+				renderer.sharedMaterial = _material;
+				renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+				renderer.receiveShadows = false;
+			}
+
+			private void LateUpdate() {
+				if (_camera == null || _surface == null) return;
+				_surface.transform.localScale = new Vector3(_camera.aspect, 1f, 1f);
+			}
+
+			private void OnDestroy() {
+				ReleaseRuntimeObject(_material);
+				ReleaseRuntimeObject(_mesh);
+			}
+
+			private static Mesh CreateFullscreenMesh() {
+				var mesh = new Mesh { name = "ShitDesigner.ProgramDisplayMesh" };
+				mesh.vertices = new[] {
+					new Vector3(-1f, -1f, 0f), new Vector3(1f, -1f, 0f),
+					new Vector3(1f, 1f, 0f), new Vector3(-1f, 1f, 0f)
+				};
+				mesh.uv = new[] {
+					new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f)
+				};
+				mesh.triangles = new[] { 0, 1, 2, 0, 2, 3 };
+				mesh.UploadMeshData(true);
+				return mesh;
+			}
+
+			private static void ReleaseRuntimeObject(UnityEngine.Object instance) {
+				if (instance == null) return;
+				if (UnityEngine.Application.isPlaying) Destroy(instance);
+				else DestroyImmediate(instance);
 			}
 		}
 	}
