@@ -570,7 +570,7 @@ namespace ShitDesigner.Application.Tests {
 			var target = Path.Combine(_root, "PreviewProject");
 			var previews = Enumerable.Range(0, 9).Select(index => new NodeRecord(NodeInstanceId.New(), new NodeTypeId(GraphConstants.PreviewTypeId), 1, "Preview " + index, true, new ProjectPosition(index, 0), ports: new[] { new PortSnapshotRecord(new PortId("image"), PortDirection.Input, PortType.ImageFrame, true) }, rawState: "{\"futureField\":123}", systemOwned: true, userAddable: false)).ToList();
 			var created = ProjectDocumentFactory.TryCreate("PreviewProject", 1, nodes: previews, connections: Enumerable.Empty<ConnectionRecord>(), logicalControls: Enumerable.Empty<LogicalControlRecord>(), expressions: Enumerable.Empty<ParameterExpressionRecord>(), presets: Enumerable.Empty<PresetRecord>(), mediaAssets: Enumerable.Empty<MediaAssetRecord>(), ui: new ProjectUiStateRecord(new[] { new DashboardPageRecord("main", "Main") }), markDirty: false);
-			Assert.That(created.IsSuccess, Is.True, created.Error == null ? string.Empty : created.Error.Message);
+			Assert.That(created.IsSuccess, Is.True, created.IsFailure ? created.Error.Message : string.Empty);
 			Assert.That(new ProjectSaver().Save(created.Value, target, new LocalProjectFileSystem()).IsSuccess, Is.True);
 			using (var application = new ProjectApplication(new LocalProjectFileSystem())) {
 				Assert.That(application.OpenProject(target).IsSuccess, Is.True);
@@ -631,7 +631,7 @@ namespace ShitDesigner.Application.Tests {
 				new NodeRecord(second, new NodeTypeId(GraphConstants.PreviewTypeId), 1, "Second", true, new ProjectPosition(1, 0), ports: new[] { new PortSnapshotRecord(new PortId("image"), PortDirection.Input, PortType.ImageFrame, true) })
 			};
 			var created = ProjectDocumentFactory.TryCreate("PreviewTabOrder", 1, nodes: nodes, connections: Enumerable.Empty<ConnectionRecord>(), logicalControls: Enumerable.Empty<LogicalControlRecord>(), expressions: Enumerable.Empty<ParameterExpressionRecord>(), presets: Enumerable.Empty<PresetRecord>(), mediaAssets: Enumerable.Empty<MediaAssetRecord>(), ui: new ProjectUiStateRecord(new[] { new DashboardPageRecord("main", "Main") }), markDirty: false);
-			Assert.That(created.IsSuccess, Is.True, created.Error?.Message);
+			Assert.That(created.IsSuccess, Is.True, created.IsFailure ? created.Error.Message : string.Empty);
 			Assert.That(new ProjectSaver().Save(created.Value, target, new LocalProjectFileSystem()).IsSuccess, Is.True);
 
 			string firstThenSecondFingerprint;
@@ -641,7 +641,7 @@ namespace ShitDesigner.Application.Tests {
 				Assert.That(application.OpenPreview(second.Value).IsSuccess, Is.True);
 				Assert.That(application.ReadModel.Output.Model.Previews.Select(x => x.Id), Is.EqualTo(new[] { first.Value, second.Value }));
 				var captured = application.CaptureCanonicalProjectFingerprint();
-				Assert.That(captured.IsSuccess, Is.True, captured.Error?.Message);
+				Assert.That(captured.IsSuccess, Is.True, captured.IsFailure ? captured.Error.Message : string.Empty);
 				firstThenSecondFingerprint = captured.Value;
 				Assert.That(application.SaveProject().IsSuccess, Is.True);
 			}
@@ -650,7 +650,7 @@ namespace ShitDesigner.Application.Tests {
 				Assert.That(reopened.OpenProject(target).IsSuccess, Is.True);
 				Assert.That(reopened.ReadModel.Output.Model.Previews.Select(x => x.Id), Is.EqualTo(new[] { first.Value, second.Value }));
 				var reopenedFingerprint = reopened.CaptureCanonicalProjectFingerprint();
-				Assert.That(reopenedFingerprint.IsSuccess, Is.True, reopenedFingerprint.Error?.Message);
+				Assert.That(reopenedFingerprint.IsSuccess, Is.True, reopenedFingerprint.IsFailure ? reopenedFingerprint.Error.Message : string.Empty);
 				Assert.That(reopenedFingerprint.Value, Is.EqualTo(firstThenSecondFingerprint));
 
 				Assert.That(reopened.ClosePreview(first.Value).IsSuccess, Is.True);
@@ -659,7 +659,7 @@ namespace ShitDesigner.Application.Tests {
 				Assert.That(reopened.OpenPreview(first.Value).IsSuccess, Is.True);
 				Assert.That(reopened.ReadModel.Output.Model.Previews.Select(x => x.Id), Is.EqualTo(new[] { second.Value, first.Value }));
 				var reversedFingerprint = reopened.CaptureCanonicalProjectFingerprint();
-				Assert.That(reversedFingerprint.IsSuccess, Is.True, reversedFingerprint.Error?.Message);
+				Assert.That(reversedFingerprint.IsSuccess, Is.True, reversedFingerprint.IsFailure ? reversedFingerprint.Error.Message : string.Empty);
 				Assert.That(reversedFingerprint.Value, Is.Not.EqualTo(firstThenSecondFingerprint));
 			}
 		}
@@ -684,7 +684,7 @@ namespace ShitDesigner.Application.Tests {
 				Assert.That(application.EditParameter(new ApplicationParameterEditRequest(first, "display.mode", ParameterValue.FromEnum("fill"))).Status, Is.EqualTo(ApplicationCommandStatus.Accepted));
 				application.Tick(2d / 60d);
 				var captured = application.CaptureCanonicalProjectFingerprint();
-				Assert.That(captured.IsSuccess, Is.True, captured.Error?.Message);
+				Assert.That(captured.IsSuccess, Is.True, captured.IsFailure ? captured.Error.Message : string.Empty);
 				expectedFingerprint = captured.Value;
 				Assert.That(application.SaveProject().IsSuccess, Is.True);
 			}
@@ -695,7 +695,7 @@ namespace ShitDesigner.Application.Tests {
 				Assert.That(reopened.ReadModel.Graph.Model.Nodes.Single(x => x.Id == second).DisplayName, Is.EqualTo("Acceptance Preview 2"));
 				Assert.That(reopened.ReadModel.Parameters.Model.Single(x => x.NodeId == first && x.ParameterId == "display.mode").BaseValue, Is.EqualTo("fill"));
 				var actual = reopened.CaptureCanonicalProjectFingerprint();
-				Assert.That(actual.IsSuccess, Is.True, actual.Error?.Message);
+				Assert.That(actual.IsSuccess, Is.True, actual.IsFailure ? actual.Error.Message : string.Empty);
 				Assert.That(actual.Value, Is.EqualTo(expectedFingerprint));
 			}
 		}
@@ -705,7 +705,7 @@ namespace ShitDesigner.Application.Tests {
 			var target = Path.Combine(_root, "PreviewLatestWins");
 			var previews = Enumerable.Range(0, 3).Select(index => new NodeRecord(NodeInstanceId.New(), new NodeTypeId(GraphConstants.PreviewTypeId), 1, "Preview " + index, true, new ProjectPosition(index, 0), ports: new[] { new PortSnapshotRecord(new PortId("image"), PortDirection.Input, PortType.ImageFrame, true) })).ToList();
 			var created = ProjectDocumentFactory.TryCreate("PreviewLatestWins", 1, nodes: previews, connections: Enumerable.Empty<ConnectionRecord>(), logicalControls: Enumerable.Empty<LogicalControlRecord>(), expressions: Enumerable.Empty<ParameterExpressionRecord>(), presets: Enumerable.Empty<PresetRecord>(), mediaAssets: Enumerable.Empty<MediaAssetRecord>(), ui: new ProjectUiStateRecord(new[] { new DashboardPageRecord("main", "Main") }), markDirty: false);
-			Assert.That(created.IsSuccess, Is.True, created.Error?.Message);
+			Assert.That(created.IsSuccess, Is.True, created.IsFailure ? created.Error.Message : string.Empty);
 			Assert.That(new ProjectSaver().Save(created.Value, target, new LocalProjectFileSystem()).IsSuccess, Is.True);
 			using (var application = new ProjectApplication(new LocalProjectFileSystem())) {
 				Assert.That(application.OpenProject(target).IsSuccess, Is.True);

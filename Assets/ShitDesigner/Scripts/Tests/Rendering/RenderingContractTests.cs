@@ -27,9 +27,9 @@ namespace ShitDesigner.Rendering.Tests {
 		public void ImageFrame_RequiresCreatedTextureAndExactFields() {
 			using (var pool = new RenderTexturePool()) {
 				var lease = pool.Acquire(Descriptor(), Owner(), 1);
-				Assert.That(lease.IsSuccess, Is.True, lease.Error?.Message);
+				Assert.That(lease.IsSuccess, Is.True, lease.IsFailure ? lease.Error.Message : string.Empty);
 				var borrowed = lease.Value.Borrow(1);
-				Assert.That(borrowed.IsSuccess, Is.True, borrowed.Error?.Message);
+				Assert.That(borrowed.IsSuccess, Is.True, borrowed.IsFailure ? borrowed.Error.Message : string.Empty);
 				Assert.That(borrowed.Value.Frame.Size, Is.EqualTo(new Vector2Int(4, 4)));
 				Assert.That(borrowed.Value.Frame.ColorFormat, Is.EqualTo(ColorFormat));
 				Assert.That(borrowed.Value.Frame.LeaseId, Is.EqualTo(lease.Value.LeaseId));
@@ -67,8 +67,8 @@ namespace ShitDesigner.Rendering.Tests {
 			using (var ldr = new DefaultImageProvider(ldrPool, Owner("defaults-ldr"), RuntimeDynamicRange.Ldr)) {
 				var hdrValue = hdr.Get(RuntimeDefaultImageKind.TransparentBlack, 4, 4, 1);
 				var ldrValue = ldr.Get(RuntimeDefaultImageKind.TransparentBlack, 4, 4, 1);
-				Assert.That(hdrValue.IsSuccess, Is.True, hdrValue.Error?.Message);
-				Assert.That(ldrValue.IsSuccess, Is.True, ldrValue.Error?.Message);
+				Assert.That(hdrValue.IsSuccess, Is.True, hdrValue.IsFailure ? hdrValue.Error.Message : string.Empty);
+				Assert.That(ldrValue.IsSuccess, Is.True, ldrValue.IsFailure ? ldrValue.Error.Message : string.Empty);
 				Assert.That(hdrValue.Value.AsImageFrame().ColorFormat, Is.EqualTo(GraphicsFormat.R16G16B16A16_SFloat.ToString()));
 				Assert.That(ldrValue.Value.AsImageFrame().ColorFormat, Is.EqualTo(GraphicsFormat.R8G8B8A8_UNorm.ToString()));
 			}
@@ -102,7 +102,7 @@ namespace ShitDesigner.Rendering.Tests {
 				Assert.That(service.RequiredOutputKeys.Any(x => x.NodeId == previewId), Is.False, "Preview's terminal input must not own an output lease.");
 				Assert.That(pool.CaptureOwnershipSnapshot().Entries.Any(x => x.Owner.OwnerId == previewId.Value), Is.False);
 				var first = service.TryGetPrepared(previewSourceId, new PortId("image"), 320, 180, firstReport.FrameNumber);
-				Assert.That(first.IsSuccess, Is.True, first.Error?.Message);
+				Assert.That(first.IsSuccess, Is.True, first.IsFailure ? first.Error.Message : string.Empty);
 				var firstLease = first.Value.LeaseId;
 				var firstTexture = first.Value.NativeSurface;
 				Assert.That(((IRuntimeOutputSurfaceFormat)first.Value).ColorFormat, Is.EqualTo(GraphicsFormat.R8G8B8A8_UNorm.ToString()));
@@ -115,14 +115,14 @@ namespace ShitDesigner.Rendering.Tests {
 				var hidden = coordinator.Tick(1d / 60d);
 				Assert.That(hidden.Succeeded, Is.True, string.Join("; ", hidden.Diagnostics.Select(x => x.Message)));
 				var hiddenSurface = service.TryGetPrepared(previewSourceId, new PortId("image"), 320, 180, hidden.FrameNumber);
-				Assert.That(hiddenSurface.IsSuccess, Is.True, hiddenSurface.Error?.Message);
+				Assert.That(hiddenSurface.IsSuccess, Is.True, hiddenSurface.IsFailure ? hiddenSurface.Error.Message : string.Empty);
 				Assert.That(hiddenSurface.Value.LeaseId, Is.EqualTo(firstLease));
 				Assert.That(hiddenSurface.Value.NativeSurface, Is.SameAs(firstTexture));
 
 				Assert.That(session.SetOutputDemands(new[] { new OutputDemand(OutputTargetKind.Preview, previewId, new PortId("image"), 320, 180) }).IsSuccess, Is.True);
 				var reopened = coordinator.Tick(2d / 60d);
 				var reopenedSurface = service.TryGetPrepared(previewSourceId, new PortId("image"), 320, 180, reopened.FrameNumber);
-				Assert.That(reopenedSurface.IsSuccess, Is.True, reopenedSurface.Error?.Message);
+				Assert.That(reopenedSurface.IsSuccess, Is.True, reopenedSurface.IsFailure ? reopenedSurface.Error.Message : string.Empty);
 				Assert.That(reopenedSurface.Value.LeaseId, Is.EqualTo(firstLease));
 				Assert.That(reopenedSurface.Value.NativeSurface, Is.SameAs(firstTexture));
 				Assert.That(pool.CaptureOwnershipSnapshot().Entries.Single(x => x.LeaseId.Value == firstLease).Owner, Is.EqualTo(firstOwner));
@@ -182,7 +182,7 @@ namespace ShitDesigner.Rendering.Tests {
 					var report = coordinator.Tick(0d);
 					Assert.That(report.Succeeded, Is.True, string.Join("; ", report.Diagnostics.Select(x => x.Message)));
 					var surface = service.TryGetPrepared(sourceId, new PortId("image"), 16, 8, report.FrameNumber);
-					Assert.That(surface.IsSuccess, Is.True, surface.Error?.Message);
+					Assert.That(surface.IsSuccess, Is.True, surface.IsFailure ? surface.Error.Message : string.Empty);
 					var expected = range == RuntimeDynamicRange.Hdr ? GraphicsFormat.R16G16B16A16_SFloat : GraphicsFormat.R8G8B8A8_UNorm;
 					Assert.That(service.InternalFormat, Is.EqualTo(expected));
 					Assert.That(((IRuntimeOutputSurfaceFormat)surface.Value).ColorFormat, Is.EqualTo(expected.ToString()));
@@ -210,7 +210,7 @@ namespace ShitDesigner.Rendering.Tests {
 						var report = coordinator.Tick(0d);
 						Assert.That(report.Succeeded, Is.True, string.Join("; ", report.Diagnostics.Select(x => x.Message)));
 						var prepared = service.TryGetPrepared(sourceId, new PortId("image"), 32, 18, report.FrameNumber);
-						Assert.That(prepared.IsSuccess, Is.True, prepared.Error?.Message);
+						Assert.That(prepared.IsSuccess, Is.True, prepared.IsFailure ? prepared.Error.Message : string.Empty);
 						var texture = prepared.Value.NativeSurface as RenderTexture;
 						Assert.That(texture, Is.Not.Null);
 						Assert.That(texture.descriptor.depthStencilFormat, Is.EqualTo(GraphicsFormat.D32_SFloat), sceneTypeId + " must provide URP StandardRequest with a depth-attached destination.");
@@ -244,28 +244,28 @@ namespace ShitDesigner.Rendering.Tests {
 				Assert.That(session.SetOutputDemands(new[] { new OutputDemand(OutputTargetKind.Preview, previewId, new PortId("image"), 320, 180) }).IsSuccess, Is.True);
 				var initial = coordinator.Tick(0d);
 				var active = service.TryGetPrepared(sourceId, new PortId("image"), 320, 180, initial.FrameNumber);
-				Assert.That(active.IsSuccess, Is.True, active.Error?.Message);
+				Assert.That(active.IsSuccess, Is.True, active.IsFailure ? active.Error.Message : string.Empty);
 				var leaseId = active.Value.LeaseId;
 				var texture = active.Value.NativeSurface;
 
 				Assert.That(session.ApplyGraphCommand(new SetNodeEnabledEditCommand(sourceId, false)).IsSuccess, Is.True);
 				var disabled = coordinator.Tick(1d / 60d);
 				var disabledSurface = service.TryGetPrepared(sourceId, new PortId("image"), 320, 180, disabled.FrameNumber);
-				Assert.That(disabledSurface.IsSuccess, Is.True, disabledSurface.Error?.Message);
+				Assert.That(disabledSurface.IsSuccess, Is.True, disabledSurface.IsFailure ? disabledSurface.Error.Message : string.Empty);
 				Assert.That(disabledSurface.Value.LeaseId, Is.EqualTo(leaseId));
 				Assert.That(disabledSurface.Value.NativeSurface, Is.SameAs(texture));
 
 				Assert.That(session.ApplyGraphCommand(new SetNodeEnabledEditCommand(sourceId, true)).IsSuccess, Is.True);
 				var reenabled = coordinator.Tick(2d / 60d);
 				var reenabledSurface = service.TryGetPrepared(sourceId, new PortId("image"), 320, 180, reenabled.FrameNumber);
-				Assert.That(reenabledSurface.IsSuccess, Is.True, reenabledSurface.Error?.Message);
+				Assert.That(reenabledSurface.IsSuccess, Is.True, reenabledSurface.IsFailure ? reenabledSurface.Error.Message : string.Empty);
 				Assert.That(reenabledSurface.Value.LeaseId, Is.EqualTo(leaseId));
 
 				var connection = session.Document.Connections.Single(x => x.SourceNodeId == sourceId && x.DestinationNodeId == previewId);
 				Assert.That(session.ApplyGraphCommand(new DisconnectEditCommand(connection.Id)).IsSuccess, Is.True);
 				var unreachable = coordinator.Tick(3d / 60d);
 				var unreachableSurface = service.TryGetPrepared(sourceId, new PortId("image"), 320, 180, unreachable.FrameNumber);
-				Assert.That(unreachableSurface.IsSuccess, Is.True, unreachableSurface.Error?.Message);
+				Assert.That(unreachableSurface.IsSuccess, Is.True, unreachableSurface.IsFailure ? unreachableSurface.Error.Message : string.Empty);
 				Assert.That(unreachableSurface.Value.LeaseId, Is.EqualTo(leaseId));
 				Assert.That(unreachableSurface.Value.NativeSurface, Is.SameAs(texture));
 				yield return null;
@@ -284,7 +284,7 @@ namespace ShitDesigner.Rendering.Tests {
 				Assert.That(session.SetOutputDemands(new[] { new OutputDemand(OutputTargetKind.Preview, previewId, new PortId("image"), 320, 180) }).IsSuccess, Is.True);
 				var initial = coordinator.Tick(0d);
 				var active = service.TryGetPrepared(sourceId, new PortId("image"), 320, 180, initial.FrameNumber);
-				Assert.That(active.IsSuccess, Is.True, active.Error?.Message);
+				Assert.That(active.IsSuccess, Is.True, active.IsFailure ? active.Error.Message : string.Empty);
 				var oldLease = active.Value.LeaseId;
 				var oldTexture = active.Value.NativeSurface;
 
@@ -295,14 +295,14 @@ namespace ShitDesigner.Rendering.Tests {
 				var failed = coordinator.Tick(1d / 60d);
 				Assert.That(failed.Succeeded, Is.False);
 				var held = service.TryGetPrepared(sourceId, new PortId("image"), 320, 180, failed.FrameNumber);
-				Assert.That(held.IsSuccess, Is.True, held.Error?.Message);
+				Assert.That(held.IsSuccess, Is.True, held.IsFailure ? held.Error.Message : string.Empty);
 				Assert.That(held.Value.LeaseId, Is.EqualTo(oldLease));
 				Assert.That(held.Value.NativeSurface, Is.SameAs(oldTexture));
 
 				Assert.That(pool.SetBudget(64L * 1024L * 1024L).IsSuccess, Is.True);
 				var recovered = coordinator.Tick(2d / 60d);
 				var promoted = service.TryGetPrepared(sourceId, new PortId("image"), 640, 360, recovered.FrameNumber);
-				Assert.That(promoted.IsSuccess, Is.True, promoted.Error?.Message);
+				Assert.That(promoted.IsSuccess, Is.True, promoted.IsFailure ? promoted.Error.Message : string.Empty);
 				Assert.That(promoted.Value.LeaseId, Is.Not.EqualTo(oldLease));
 				yield return null;
 			}
@@ -320,7 +320,7 @@ namespace ShitDesigner.Rendering.Tests {
 				Assert.That(session.SetOutputDemands(new[] { new OutputDemand(OutputTargetKind.Preview, previewId, new PortId("image"), 320, 180) }).IsSuccess, Is.True);
 				var initial = coordinator.Tick(0d);
 				var old = service.TryGetPrepared(sourceId, new PortId("image"), 320, 180, initial.FrameNumber);
-				Assert.That(old.IsSuccess, Is.True, old.Error?.Message);
+				Assert.That(old.IsSuccess, Is.True, old.IsFailure ? old.Error.Message : string.Empty);
 				var oldLease = old.Value.LeaseId;
 				var oldTexture = old.Value.NativeSurface;
 				var connection = session.Document.Connections.Single(x => x.SourceNodeId == sourceId && x.DestinationNodeId == previewId);
@@ -336,7 +336,7 @@ namespace ShitDesigner.Rendering.Tests {
 				Assert.That(session.ApplyGraphCommand(new ConnectEditCommand(new ConnectionRecord(connection.Id, sourceId, new PortId("image"), previewId, new PortId("image")))).IsSuccess, Is.True);
 				Assert.That(service.Prepare(initial.Snapshot).IsSuccess, Is.True);
 				var replacementCandidate = service.TryGetPrepared(sourceId, new PortId("image"), 320, 180, initial.FrameNumber);
-				Assert.That(replacementCandidate.IsSuccess, Is.True, replacementCandidate.Error?.Message);
+				Assert.That(replacementCandidate.IsSuccess, Is.True, replacementCandidate.IsFailure ? replacementCandidate.Error.Message : string.Empty);
 				Assert.That(replacementCandidate.Value.LeaseId, Is.Not.EqualTo(oldLease));
 				Assert.That(pool.CaptureOwnershipSnapshot().Entries.Any(x => x.LeaseId.Value == oldLease), Is.True, "Old generation must survive until Phase 9.");
 				Assert.That(replacementCandidate.Value.NativeSurface, Is.Not.SameAs(oldTexture));
@@ -355,7 +355,7 @@ namespace ShitDesigner.Rendering.Tests {
 				var firstTexture = first.Value.Texture;
 				Assert.That(first.Value.Release().IsSuccess, Is.True);
 				var second = pool.Acquire(Descriptor(8, 4), Owner("b"), 2);
-				Assert.That(second.IsSuccess, Is.True, second.Error?.Message);
+				Assert.That(second.IsSuccess, Is.True, second.IsFailure ? second.Error.Message : string.Empty);
 				Assert.That(second.Value.Texture, Is.Not.EqualTo(firstTexture));
 				Assert.That(second.Value.Release().IsSuccess, Is.True);
 			}
@@ -368,7 +368,7 @@ namespace ShitDesigner.Rendering.Tests {
 				var leased = pool.Acquire(Descriptor(), Owner("leased"), 2);
 				Assert.That(oldFree.Value.Release().IsSuccess, Is.True);
 				var replacement = pool.Acquire(new TextureDescriptor(2, 2, ColorFormat), Owner("new"), 3);
-				Assert.That(replacement.IsSuccess, Is.True, replacement.Error?.Message);
+				Assert.That(replacement.IsSuccess, Is.True, replacement.IsFailure ? replacement.Error.Message : string.Empty);
 				Assert.That(leased.Value.IsReleased, Is.False);
 				Assert.That(pool.CaptureOwnershipSnapshot().Entries.Any(entry => entry.Owner.OwnerId == "leased" && entry.State == TextureLeaseState.Leased), Is.True);
 				Assert.That(replacement.Value.Release().IsSuccess, Is.True);
@@ -433,7 +433,7 @@ namespace ShitDesigner.Rendering.Tests {
 				Assert.That(output.CommitCandidate(initialFrame, 1).IsSuccess, Is.True);
 				var active = output.ActiveLease;
 				var candidate = output.BeginCandidate(Descriptor(8, 4), 2);
-				Assert.That(candidate.IsSuccess, Is.True, candidate.Error?.Message);
+				Assert.That(candidate.IsSuccess, Is.True, candidate.IsFailure ? candidate.Error.Message : string.Empty);
 				Assert.That(output.FailCandidate(3).IsSuccess, Is.True);
 				Assert.That(output.ActiveLease, Is.SameAs(active));
 				Assert.That(output.HasCandidate, Is.False);
@@ -697,7 +697,7 @@ namespace ShitDesigner.Rendering.Tests {
 				Assert.That(hold.SubmitUnavailable(1).IsSuccess, Is.True);
 				yield return null;
 				var frame = hold.GetFrame(1);
-				Assert.That(frame.IsSuccess, Is.True, frame.Error?.Message);
+				Assert.That(frame.IsSuccess, Is.True, frame.IsFailure ? frame.Error.Message : string.Empty);
 				var pixel = ReadPixel(frame.Value.Texture, 0, 0);
 				Assert.That(pixel.r, Is.EqualTo(0).Within(1));
 				Assert.That(pixel.g, Is.EqualTo(0).Within(1));
@@ -716,7 +716,7 @@ namespace ShitDesigner.Rendering.Tests {
 					ProgramHoldController.ProgramSize.y, new Color(0.25f, 0.5f, 0.75f, 1f));
 				try {
 					var sourceLease = pool.Acquire(programDescriptor, Owner("source"), 1);
-					Assert.That(sourceLease.IsSuccess, Is.True, sourceLease.Error?.Message);
+					Assert.That(sourceLease.IsSuccess, Is.True, sourceLease.IsFailure ? sourceLease.Error.Message : string.Empty);
 					Graphics.Blit(source, sourceLease.Value.Texture);
 					var available = sourceLease.Value.Borrow(1).Value.Frame;
 					Assert.That(hold.SubmitAvailable(available, 1).IsSuccess, Is.True);
@@ -945,7 +945,7 @@ namespace ShitDesigner.Rendering.Tests {
 				"The production display contract requires an active Scriptable Render Pipeline.");
 			using (var port = new UnityProgramDisplayPort()) {
 				var activated = port.Activate(ProgramDisplayPolicy.DefaultDisplay + 7);
-				Assert.That(activated.IsSuccess, Is.True, activated.Error?.Message);
+				Assert.That(activated.IsSuccess, Is.True, activated.IsFailure ? activated.Error.Message : string.Empty);
 				Assert.That(activated.Value.UsesProgramMonitor, Is.True);
 				var surface = NewTexture(4, 4, Color.magenta);
 				try {
