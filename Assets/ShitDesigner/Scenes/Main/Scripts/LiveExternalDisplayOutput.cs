@@ -89,14 +89,14 @@ namespace ShitDesigner.Main {
 			IsOutputActive = false;
 			_initialized = false;
 			_presentedFrameNumber = 0;
-			if (_camera != null) DestroyObject(_camera.gameObject);
+			if (_camera != null) DestroyUnityObject(_camera.gameObject);
 			_camera = null;
 			_presenter = null;
 			_displayTransform?.Dispose();
 			_displayTransform = null;
 			if (_displayTexture != null) {
 				_displayTexture.Release();
-				DestroyObject(_displayTexture);
+				DestroyUnityObject(_displayTexture);
 				_displayTexture = null;
 			}
 		}
@@ -109,7 +109,7 @@ namespace ShitDesigner.Main {
 			return false;
 		}
 
-		private static void DestroyObject(UnityEngine.Object value) {
+		private static void DestroyUnityObject(UnityEngine.Object value) {
 			if (value == null) return;
 			if (UnityEngine.Application.isPlaying) Destroy(value); else DestroyImmediate(value);
 		}
