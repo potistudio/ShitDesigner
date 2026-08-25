@@ -43,6 +43,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 			Assert.That(lifecycle.Activate().IsSuccess, Is.True);
 			Assert.That(adapter.SetCount, Is.EqualTo(1));
 			Assert.That(adapter.LastSetSize, Is.EqualTo(new WindowSize(1600, 900)));
+			Assert.That(adapter.IsFullscreen, Is.False);
 		}
 
 		[Test]
@@ -52,7 +53,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 
 		private sealed class RecordingWindowAdapter : IWindowAdapter {
 			public bool IsSupported => true;
-			public bool IsFullscreen { get; }
+			public bool IsFullscreen { get; private set; }
 			public WindowSize CurrentSize { get; private set; }
 			public int SetCount { get; private set; }
 			public WindowSize LastSetSize { get; private set; }
@@ -65,6 +66,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 			public void SetWindowedSize(WindowSize size) {
 				LastSetSize = size;
 				CurrentSize = size;
+				IsFullscreen = false;
 				SetCount++;
 			}
 		}

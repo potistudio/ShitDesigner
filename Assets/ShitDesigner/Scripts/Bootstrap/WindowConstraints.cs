@@ -54,7 +54,7 @@ namespace ShitDesigner.Bootstrap {
 		public WindowSize CurrentSize => new WindowSize(Screen.width, Screen.height);
 
 		public void SetWindowedSize(WindowSize size) {
-			if (!IsSupported || IsFullscreen) return;
+			if (!IsSupported) return;
 			var clamped = WindowConstraints.Clamp(size);
 			Screen.SetResolution(clamped.Width, clamped.Height, FullScreenMode.Windowed);
 		}
