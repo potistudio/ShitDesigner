@@ -4,6 +4,7 @@ using System.Linq;
 using ShitDesigner.Core;
 using ShitDesigner.Scene;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace ShitDesigner.Main {
 	public readonly struct LiveProgramFrame {
@@ -76,14 +77,18 @@ namespace ShitDesigner.Main {
 			if (configured.Select(definition => definition.Id).Distinct(StringComparer.Ordinal).Count() != configured.Length)
 				throw new InvalidOperationException("Live scene IDs must be unique.");
 
-			_programTexture = new RenderTexture(ProgramWidth, ProgramHeight, 24, RenderTextureFormat.ARGBHalf) {
+			_programTexture = new RenderTexture(ProgramWidth, ProgramHeight, 0, RenderTextureFormat.ARGBHalf) {
 				name = "ShitDesigner.Main.ProgramOutput",
 				useMipMap = false,
 				autoGenerateMips = false
 			};
 			if (!_programTexture.Create()) throw new InvalidOperationException("The Program texture could not be created.");
 			ClearProgramTexture();
-			_renderTexture = new RenderTexture(ProgramWidth, ProgramHeight, 24, RenderTextureFormat.ARGBHalf) {
+			// Null graphics cannot allocate the HDR staging target used only by renderless validation.
+			var renderFormat = SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null
+				? RenderTextureFormat.ARGB32
+				: RenderTextureFormat.ARGBHalf;
+			_renderTexture = new RenderTexture(ProgramWidth, ProgramHeight, 24, renderFormat) {
 				name = "ShitDesigner.Main.ProgramRender",
 				useMipMap = false,
 				autoGenerateMips = false
