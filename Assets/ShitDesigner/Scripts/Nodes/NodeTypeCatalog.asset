@@ -168,7 +168,7 @@ MonoBehaviour:
     prefabKey: builtin.scene.3d
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 100000, guid: 55555555555555555555555555555555, type: 3}
+    scenePrefab: {fileID: 7787689742687978739, guid: 52d135c910953af43a7424639474c3c2, type: 3}
     outputPass: 0
     shaderFamily: 13
     shaderVariantId: 

@@ -690,6 +690,8 @@ namespace ShitDesigner.Bootstrap.Tests {
 			Assert.That(scene3d, Is.Not.Null);
 			Assert.That(scene2d, Is.Not.Null);
 			Assert.That(scene3d.GetComponentsInChildren<Camera>(true), Has.Length.EqualTo(1));
+			Assert.That(scene3d.GetComponent<CylindricalObjectFlythrough>(), Is.Not.Null,
+				"The existing 3D node prefab slot must reference the cylindrical flythrough prefab.");
 			Assert.That(scene2d.GetComponentsInChildren<Camera>(true), Has.Length.EqualTo(1));
 			Assert.That(scene2d.GetComponent<RectTransform>(), Is.Null,
 				"The isolated 2D root must remain a plain Transform so it cannot drive camera or geometry scale.");
@@ -699,15 +701,16 @@ namespace ShitDesigner.Bootstrap.Tests {
 			Assert.That(scene2dCanvas.transform.parent, Is.SameAs(scene2d.transform));
 			Assert.That(scene2dCanvas.renderMode, Is.EqualTo(RenderMode.ScreenSpaceCamera));
 			Assert.That(scene2dCanvas.worldCamera, Is.SameAs(scene2d.GetComponentInChildren<Camera>(true)));
-			Assert.That(scene3d.GetComponentsInChildren<MeshFilter>(true), Is.Not.Empty);
 			Assert.That(scene2d.GetComponentsInChildren<MeshFilter>(true), Is.Not.Empty);
-			Assert.That(scene3d.GetComponentsInChildren<MeshRenderer>(true).Any(x => x.sharedMaterial != null && x.sharedMaterial.shader != null), Is.True);
 			Assert.That(scene2d.GetComponentsInChildren<MeshRenderer>(true).Any(x => x.sharedMaterial != null && x.sharedMaterial.shader != null), Is.True);
 
 			using (var manager = new SceneIsolationManager(renderSource: new UnityCameraRenderSource())) {
 				var node3d = manager.Create(new SceneCreateRequest(Node("3d"), SceneNodeKind.ThreeD, "ProductionScene3D", prefab: scene3d));
 				var node2d = manager.Create(new SceneCreateRequest(Node("2d"), SceneNodeKind.TwoD, "ProductionScene2D", prefab: scene2d));
 				Assert.That(node3d.IsSuccess && node2d.IsSuccess, Is.True);
+				Assert.That(node3d.Value.Root.GetComponent<CylindricalObjectFlythrough>(), Is.Not.Null);
+				Assert.That(node3d.Value.Root.GetComponentsInChildren<MeshRenderer>(true), Is.Not.Empty,
+					"The flythrough must generate its scattered geometry after the isolated prefab is instantiated.");
 				var output3d = NewTarget();
 				var output2d = NewTarget();
 				try {
