@@ -1108,13 +1108,18 @@ namespace ShitDesigner.Rendering.Tests {
 		}
 
 		[Test, Category("ProgramRuntimePolicy")]
-		public void ProgramDisplayPort_ActivatesRequestedDisplayAndClosingMonitorKeepsEvaluation() {
+		public void ProgramDisplayPort_ActivatesRequestedDisplayOnlyWhenOutputStartsAndClosingMonitorKeepsEvaluation() {
 			using (var pool = new RenderTexturePool(64L * 1024L * 1024L))
 			using (var hold = new ProgramHoldController(pool, Owner("program"))) {
-				var port = new FakeDisplayPort(2);
+				var port = new FakeDisplayPort(3);
 				var presenter = new ProgramDisplayPresenter(hold, port, 1);
-				Assert.That(port.LastRequestedDisplay, Is.EqualTo(1));
-				Assert.That(presenter.Selection.ResolvedDisplay, Is.EqualTo(1));
+				Assert.That(port.LastRequestedDisplay, Is.EqualTo(-1));
+				Assert.That(presenter.IsOutputActive, Is.False);
+				Assert.That(presenter.SetRequestedDisplay(2).IsSuccess, Is.True);
+				Assert.That(port.LastRequestedDisplay, Is.EqualTo(-1));
+				Assert.That(presenter.SetOutputActive(true).IsSuccess, Is.True);
+				Assert.That(port.LastRequestedDisplay, Is.EqualTo(2));
+				Assert.That(presenter.Selection.ResolvedDisplay, Is.EqualTo(2));
 				presenter.CloseMonitor();
 				Assert.That(presenter.MonitorOpen, Is.False);
 				Assert.That(presenter.EvaluationContinues, Is.True);
@@ -1129,12 +1134,14 @@ namespace ShitDesigner.Rendering.Tests {
 				var presenter = new ProgramDisplayPresenter(hold, port, 1);
 				var surface = NewTexture(2, 2, Color.black);
 				try {
+					Assert.That(port.ActivateCount, Is.EqualTo(0));
 					presenter.SetOutputActive(false);
 					Assert.That(presenter.IsOutputActive, Is.False);
 					Assert.That(port.IsOutputActive, Is.False);
 					Assert.That(presenter.Present(surface).IsSuccess, Is.True);
 					Assert.That(port.PresentCount, Is.EqualTo(0));
-					presenter.SetOutputActive(true);
+					Assert.That(presenter.SetOutputActive(true).IsSuccess, Is.True);
+					Assert.That(port.ActivateCount, Is.EqualTo(1));
 					Assert.That(port.IsOutputActive, Is.True);
 					Assert.That(presenter.Present(surface).IsSuccess, Is.True);
 					Assert.That(port.PresentCount, Is.EqualTo(1));
@@ -1388,13 +1395,15 @@ namespace ShitDesigner.Rendering.Tests {
 		private sealed class FakeDisplayPort : IProgramDisplayPort {
 			public int DisplayCount { get; }
 			public int LastRequestedDisplay { get; private set; } = -1;
+			public int ActivateCount { get; private set; }
 			public int PresentCount { get; private set; }
-			public bool IsOutputActive { get; private set; } = true;
+			public bool IsOutputActive { get; private set; }
 
 			public FakeDisplayPort(int displayCount) { DisplayCount = displayCount; }
 
 			public Result<ProgramDisplaySelection, Diagnostic> Activate(int requestedDisplay) {
 				LastRequestedDisplay = requestedDisplay;
+				ActivateCount++;
 				return Result.Success<ProgramDisplaySelection, Diagnostic>(ProgramDisplayPolicy.Resolve(requestedDisplay, DisplayCount));
 			}
 

@@ -760,8 +760,12 @@ namespace ShitDesigner.Bootstrap {
 				}
 				_lastRequestedDisplayIndex = selected.Value.RequestedDisplay;
 			}
+			var outputState = _programPresenter.SetOutputActive(active);
+			if (outputState.IsFailure) {
+				_lastOutputError = outputState.Error?.Message ?? "The Program display output state could not be changed.";
+				return false;
+			}
 			_outputActive = active;
-			_programPresenter.SetOutputActive(active);
 			_lastOutputError = string.Empty;
 			OutputActiveChanged?.Invoke(active);
 			return true;
