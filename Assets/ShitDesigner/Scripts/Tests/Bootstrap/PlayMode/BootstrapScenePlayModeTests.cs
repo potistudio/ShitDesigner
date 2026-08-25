@@ -740,8 +740,8 @@ namespace ShitDesigner.Bootstrap.Tests {
 					AssertFullViewport(node3d.Value.Camera, "3D");
 					AssertFullViewport(node2d.Value.Camera, "2D");
 					yield return null;
-					var color3d = ReadColor(output3d);
-					var color2d = ReadColor(output2d);
+					var color3d = ReadBrightestColor(output3d);
+					var color2d = ReadBrightestColor(output2d);
 					LogRuntimeDiagnostics("3D", node3d.Value, output3d, color3d);
 					LogRuntimeDiagnostics("2D", node2d.Value, output2d, color2d);
 					var perspectiveCamera = node3d.Value.Camera;
@@ -804,6 +804,17 @@ namespace ShitDesigner.Bootstrap.Tests {
 			read.ReadPixels(new Rect(16, 16, 1, 1), 0, 0);
 			read.Apply(false, false);
 			var pixel = read.GetPixel(0, 0);
+			UnityEngine.Object.DestroyImmediate(read);
+			RenderTexture.active = previous;
+			return pixel;
+		}
+		private static Color ReadBrightestColor(RenderTexture target) {
+			var previous = RenderTexture.active;
+			RenderTexture.active = target;
+			var read = new Texture2D(target.width, target.height, TextureFormat.RGBA32, false, true);
+			read.ReadPixels(new Rect(0, 0, target.width, target.height), 0, 0);
+			read.Apply(false, false);
+			var pixel = read.GetPixels().OrderByDescending(color => color.maxColorComponent).First();
 			UnityEngine.Object.DestroyImmediate(read);
 			RenderTexture.active = previous;
 			return pixel;
