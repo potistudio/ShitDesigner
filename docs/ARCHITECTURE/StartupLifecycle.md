@@ -2,7 +2,7 @@
 
 ## 状態
 
-確定。Unity Playerの起動、外部機器接続、通常稼働および終了順を定める。
+確定。既存の `ApplicationHost` におけるUnity Playerの起動、外部機器接続、通常稼働および終了順を定める。Mainシーンには適用せず、Mainのライブ実行起動構成は [LiveHost.md](LiveHost.md) を正本とする。
 
 ## 起動順
 
