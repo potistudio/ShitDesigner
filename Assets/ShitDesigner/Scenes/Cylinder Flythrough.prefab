@@ -138,6 +138,7 @@ GameObject:
   m_Component:
   - component: {fileID: 942998968145708805}
   - component: {fileID: 4680049667518520785}
+  - component: {fileID: 6129218759055021737}
   m_Layer: 0
   m_Name: Cylinder Flythrough
   m_TagString: Untagged
@@ -192,3 +193,15 @@ MonoBehaviour:
   cameraSpeed: 1.5
   cameraStartZ: 0
   loopCamera: 1
+--- !u!114 &6129218759055021737
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7787689742687978739}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 398c17eaef8e41318d623bd76888d12a, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.LiveSceneRoot
