@@ -74,7 +74,7 @@ namespace ShitDesigner.Bootstrap.Editor {
 			var behaviourPanelProperty = behaviourSerialized.FindProperty("_panelSettings");
 			if (behaviourPanelProperty == null) throw new InvalidOperationException("Bootstrap panel settings property is missing.");
 			behaviourPanelProperty.objectReferenceValue = panel;
-			var behaviourMidiProperty = behaviourSerialized.FindProperty("_midiInputManager");
+			var behaviourMidiProperty = behaviourSerialized.FindProperty("m_MidiInputManager");
 			if (behaviourMidiProperty == null) throw new InvalidOperationException("Bootstrap MIDI Input Manager property is missing.");
 			behaviourMidiProperty.objectReferenceValue = midiInputManager;
 			behaviourSerialized.ApplyModifiedPropertiesWithoutUndo();

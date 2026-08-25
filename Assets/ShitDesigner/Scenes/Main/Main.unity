@@ -231,6 +231,96 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1146336327
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1146336328}
+  - component: {fileID: 1146336329}
+  m_Layer: 0
+  m_Name: AssetFlash
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1146336328
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1146336327}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1594496360}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1146336329
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1146336327}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90bdf7958b6d47edb6930338fcfc4ec2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ShitDesigner.Media::ShitDesigner.Media.AssetFlashComponent
+  m_DurationSeconds: 0.25
+  m_UseUnscaledTime: 1
+  m_TargetRenderer: {fileID: 500452138}
+  m_TextureProperty: _BaseMap
+  m_DisableRendererWhenIdle: 1
+  m_Slots:
+  - m_Kind: 1
+    m_Image: {fileID: 2800000, guid: 7811e043fc896e74592668a1a45cd6bc, type: 3}
+    m_Video: {fileID: 0}
+    m_KeyboardKey: 41
+    m_KeyboardKeyConfigured: 1
+  - m_Kind: 0
+    m_Image: {fileID: 0}
+    m_Video: {fileID: 0}
+    m_KeyboardKey: 42
+    m_KeyboardKeyConfigured: 1
+  - m_Kind: 0
+    m_Image: {fileID: 0}
+    m_Video: {fileID: 0}
+    m_KeyboardKey: 43
+    m_KeyboardKeyConfigured: 1
+  - m_Kind: 0
+    m_Image: {fileID: 0}
+    m_Video: {fileID: 0}
+    m_KeyboardKey: 44
+    m_KeyboardKeyConfigured: 1
+  - m_Kind: 0
+    m_Image: {fileID: 0}
+    m_Video: {fileID: 0}
+    m_KeyboardKey: 45
+    m_KeyboardKeyConfigured: 1
+  - m_Kind: 0
+    m_Image: {fileID: 0}
+    m_Video: {fileID: 0}
+    m_KeyboardKey: 46
+    m_KeyboardKeyConfigured: 1
+  - m_Kind: 0
+    m_Image: {fileID: 0}
+    m_Video: {fileID: 0}
+    m_KeyboardKey: 47
+    m_KeyboardKeyConfigured: 1
+  - m_Kind: 0
+    m_Image: {fileID: 0}
+    m_Video: {fileID: 0}
+    m_KeyboardKey: 48
+    m_KeyboardKeyConfigured: 1
 --- !u!1 &1184862308
 GameObject:
   m_ObjectHideFlags: 0
@@ -627,10 +717,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: ShitDesigner.Bootstrap::ShitDesigner.Bootstrap.ApplicationHost
   _presentationRoot: {fileID: 1555642062}
-  _assets: {fileID: 1594496361}
+  m_Assets: {fileID: 1594496361}
   _panelSettings: {fileID: 11400000, guid: acdb4ed592be84c4b8cf01d5947806f1, type: 2}
-  _midiInputManager: {fileID: 1594496362}
-  _createOnAwake: 1
+  m_MidiInputManager: {fileID: 1594496362}
+  m_CreateOnAwake: 1
 --- !u!4 &1594496360
 Transform:
   m_ObjectHideFlags: 0
@@ -645,6 +735,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1555642061}
+  - {fileID: 1146336328}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1594496361
