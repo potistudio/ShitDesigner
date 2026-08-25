@@ -39,6 +39,9 @@ namespace ShitDesigner.Bootstrap.Tests {
 			Assert.That(presentation.RootVisualElement.Q("dock-tree"), Is.Not.Null);
 			Assert.That(presentation.RootVisualElement.Q("node-graph-panel"), Is.Not.Null);
 			Assert.That(presentation.RootVisualElement.Q("inspector-panel"), Is.Not.Null);
+			Assert.That(presentation.Coordinator, Is.Not.Null);
+			Assert.That(presentation.Coordinator.ProgramOutputControl, Is.SameAs(behaviour.Composition.OutputSurfaces),
+				"The Main Top Bar callback requires the composition-owned Program output control port.");
 		}
 
 		[UnityTest, Category("GPU"), Category("PreviewPresentation"), Category("ProductionLoop")]

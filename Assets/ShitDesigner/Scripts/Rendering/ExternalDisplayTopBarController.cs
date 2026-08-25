@@ -157,7 +157,7 @@ namespace ShitDesigner.Rendering {
 			_displaySelector.choices = labels;
 			_displaySelector.SetValueWithoutNotify(labels[selectedIndex]);
 			_displaySelector.SetEnabled(
-				_pendingActive && !Application.isEditor && _externalDisplayOutput.ConnectedDisplayCount > 1);
+				_pendingActive && !UnityEngine.Application.isEditor && _externalDisplayOutput.ConnectedDisplayCount > 1);
 		}
 
 		private void OnDisplaySelectionChanged(ChangeEvent<string> changeEvent) {

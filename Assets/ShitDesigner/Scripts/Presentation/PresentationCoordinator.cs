@@ -17,6 +17,7 @@ namespace ShitDesigner.Presentation {
 		private readonly PresentationSessionState _session;
 		public IOutputSurfacePort OutputSurfacePort { get; }
 		public IProgramPresenterPort ProgramPresenter { get; }
+		public IProgramOutputControlPort ProgramOutputControl { get; }
 		public IPlatformFileInteractionAdapter PlatformFiles { get; }
 		public IDisplayIdentifyPort DisplayIdentifyPort { get; }
 		private PresentationEnvelope<PresentationReadModel> _latest;
@@ -32,12 +33,13 @@ namespace ShitDesigner.Presentation {
 		public event Action<PresentationReadModel> PanelsApplied;
 		public event Action<PresentationReadModel> NotificationsApplied;
 
-		public PresentationCoordinator(IPresentationReadPort read, IPresentationCommandPort commands, PresentationSessionState session = null, IOutputSurfacePort outputSurfacePort = null, IProgramPresenterPort programPresenter = null, IPlatformFileInteractionAdapter platformFiles = null, IDisplayIdentifyPort displayIdentifyPort = null) {
+		public PresentationCoordinator(IPresentationReadPort read, IPresentationCommandPort commands, PresentationSessionState session = null, IOutputSurfacePort outputSurfacePort = null, IProgramPresenterPort programPresenter = null, IPlatformFileInteractionAdapter platformFiles = null, IDisplayIdentifyPort displayIdentifyPort = null, IProgramOutputControlPort programOutputControl = null) {
 			_read = read ?? throw new ArgumentNullException(nameof(read));
 			_commands = commands ?? throw new ArgumentNullException(nameof(commands));
 			_session = session ?? new PresentationSessionState();
 			OutputSurfacePort = outputSurfacePort;
 			ProgramPresenter = programPresenter;
+			ProgramOutputControl = programOutputControl;
 			PlatformFiles = platformFiles;
 			DisplayIdentifyPort = displayIdentifyPort;
 		}
