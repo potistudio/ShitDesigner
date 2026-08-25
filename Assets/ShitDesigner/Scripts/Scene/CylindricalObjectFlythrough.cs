@@ -5,7 +5,7 @@ namespace ShitDesigner.Scene {
 	/// <summary>Builds an inspector-configurable cylindrical object field and moves a camera through its center.</summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
-	public sealed class CylindricalObjectFlythrough : MonoBehaviour {
+	public sealed class CylindricalObjectFlythrough : MonoBehaviour, ISceneGraphClockReceiver {
 		public enum PrimitiveSelection {
 			Cube,
 			Sphere,
@@ -46,6 +46,7 @@ namespace ShitDesigner.Scene {
 		private Transform _generatedRoot;
 		private Material[] _generatedMaterials = Array.Empty<Material>();
 		private bool _rebuildRequested = true;
+		private bool _graphClockDriven;
 
 		public int GeneratedObjectCount => _generatedRoot == null ? 0 : _generatedRoot.childCount;
 
@@ -56,7 +57,14 @@ namespace ShitDesigner.Scene {
 
 		private void Update() {
 			if (_rebuildRequested) Rebuild();
-			if (Application.isPlaying) MoveCamera(Time.deltaTime);
+			if (Application.isPlaying && !_graphClockDriven) MoveCamera(Time.deltaTime);
+		}
+
+		public void SetGraphClockDriven(bool graphClockDriven) => _graphClockDriven = graphClockDriven;
+
+		public void AdvanceGraphClock(double deltaSeconds) {
+			if (!_graphClockDriven || deltaSeconds <= 0d) return;
+			MoveCamera((float)Math.Min(deltaSeconds, float.MaxValue));
 		}
 
 		private void OnDisable() => ReleaseGeneratedContent();

@@ -22,6 +22,12 @@ namespace ShitDesigner.Scene {
 		Disposed
 	}
 
+	/// <summary>Receives the graph clock for deterministic animation immediately before an isolated Scene is rendered.</summary>
+	public interface ISceneGraphClockReceiver {
+		void SetGraphClockDriven(bool graphClockDriven);
+		void AdvanceGraphClock(double deltaSeconds);
+	}
+
 	/// <summary>One of the reserved user layers 8..31. Releasing the lease is
 	/// deliberately separate from destroying a node; the Scene manager returns
 	/// it only after unload has completed.</summary>
@@ -180,6 +186,7 @@ namespace ShitDesigner.Scene {
 
 	public sealed class SceneNodeRuntime : IDisposable {
 		private readonly SceneIsolationManager _owner;
+		private ISceneGraphClockReceiver[] _graphClockReceivers = Array.Empty<ISceneGraphClockReceiver>();
 		private bool _destroyRequested;
 		private double _physicsAccumulator;
 
@@ -211,6 +218,29 @@ namespace ShitDesigner.Scene {
 		}
 
 		public UnitResult<Diagnostic> SimulatePhysics(float stepSeconds) => _owner.SimulatePhysics(this, stepSeconds);
+
+		public void BindGraphClock() {
+			_graphClockReceivers = Root == null
+				? Array.Empty<ISceneGraphClockReceiver>()
+				: Root.GetComponentsInChildren<MonoBehaviour>(true).OfType<ISceneGraphClockReceiver>().ToArray();
+			foreach (var receiver in _graphClockReceivers) receiver.SetGraphClockDriven(true);
+		}
+
+		public UnitResult<Diagnostic> AdvanceGraphClock(double deltaSeconds) {
+			if (double.IsNaN(deltaSeconds) || double.IsInfinity(deltaSeconds) || deltaSeconds < 0d)
+				return AnimationFailure("scene.animation.delta", "Scene animation delta must be finite and non-negative.");
+			if (State != SceneLifecycleState.Ready)
+				return AnimationFailure("scene.animation.state", "Scene node is not ready for animation.");
+			try {
+				foreach (var receiver in _graphClockReceivers) receiver.AdvanceGraphClock(deltaSeconds);
+				return UnitResult.Success<Diagnostic>();
+			}
+			catch (Exception exception) {
+				return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("scene.animation.failed"), Severity.Error,
+					"A Scene prefab animation failed while advancing the graph clock.", nodeId: NodeId, generationId: GenerationId,
+					module: "scene", exception: DiagnosticExceptionInfo.FromException(exception)));
+			}
+		}
 
 		/// <summary>Advances local physics in the same fixed-step cadence as
 		/// GraphClock. At most four steps are consumed per evaluation frame;
@@ -247,6 +277,8 @@ namespace ShitDesigner.Scene {
 		}
 
 		private static Result<T, Diagnostic> Failure<T>(string code, string message) => Result.Failure<T, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, nodeId: default(NodeInstanceId), module: "scene"));
+		private UnitResult<Diagnostic> AnimationFailure(string code, string message) => UnitResult.Failure<Diagnostic>(
+			new Diagnostic(new DiagnosticCode(code), Severity.Error, message, nodeId: NodeId, generationId: GenerationId, module: "scene"));
 	}
 
 	/// <summary>Owns Additive Scene, root, camera and layer for every Scene
