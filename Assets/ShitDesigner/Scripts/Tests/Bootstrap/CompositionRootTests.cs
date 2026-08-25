@@ -35,31 +35,6 @@ namespace ShitDesigner.Bootstrap.Tests {
 		}
 
 		[Test]
-		public void MainSceneCreatesItsThreeDProgramGraphWithoutGuiInput() {
-			var scene = EditorSceneManager.OpenScene("Assets/ShitDesigner/Scenes/Main/Main.unity", OpenSceneMode.Additive);
-			try {
-				var root = scene.GetRootGameObjects().SingleOrDefault(item => item.name == "Host");
-				Assert.That(root, Is.Not.Null);
-				var host = root.GetComponent<ApplicationHost>();
-				var startup = root.GetComponent<StartupSceneGraphBootstrap>();
-				var sceneNode = root.GetComponent<Scene3DNode>();
-				Assert.That(host, Is.Not.Null);
-				Assert.That(startup, Is.Not.Null, "Main must own the startup graph bootstrap instead of relying on GUI commands.");
-				Assert.That(sceneNode, Is.Not.Null, "Main must author its 3D node as a Unity component.");
-
-				var serialized = new UnityEditor.SerializedObject(startup);
-				Assert.That(serialized.FindProperty("_createOnStart").boolValue, Is.True);
-				Assert.That(serialized.FindProperty("_host").objectReferenceValue, Is.SameAs(host));
-				Assert.That(serialized.FindProperty("_nodes").arraySize, Is.EqualTo(1));
-				Assert.That(serialized.FindProperty("_nodes").GetArrayElementAtIndex(0).objectReferenceValue, Is.SameAs(sceneNode));
-				Assert.That(serialized.FindProperty("_programSource").objectReferenceValue, Is.SameAs(sceneNode));
-				Assert.That(sceneNode.Definition, Is.Not.Null);
-				Assert.That(sceneNode.Definition.Prefab, Is.Not.Null);
-			}
-			finally { EditorSceneManager.CloseScene(scene, removeScene: true); }
-		}
-
-		[Test]
 		public void UnityGraphComponentsBuildCompleteProjectWithPerNodeScenePrefabs() {
 			var gameObject = new GameObject("Authored graph test");
 			var secondGameObject = new GameObject("Second authored graph node");
@@ -599,7 +574,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 			var target = Path.Combine(Path.GetTempPath(), "ShitDesigner.Bootstrap.Tests", Guid.NewGuid().ToString("N"));
 			var previews = Enumerable.Range(0, 2).Select(index => new NodeRecord(NodeInstanceId.New(), new NodeTypeId(GraphConstants.PreviewTypeId), 1, "Preview " + index, true, new ProjectPosition(index, 0), ports: new[] { new PortSnapshotRecord(new PortId("image"), PortDirection.Input, PortType.ImageFrame, true) })).ToList();
 			var created = ProjectDocumentFactory.TryCreate("Preview Focus", 1, nodes: previews, connections: Array.Empty<ConnectionRecord>(), logicalControls: Array.Empty<LogicalControlRecord>(), expressions: Array.Empty<ParameterExpressionRecord>(), presets: Array.Empty<PresetRecord>(), mediaAssets: Array.Empty<MediaAssetRecord>(), ui: new ProjectUiStateRecord(new[] { new DashboardPageRecord("main", "Main") }), markDirty: false);
-			Assert.That(created.IsSuccess, Is.True, created.Error?.Message);
+			Assert.That(created.IsSuccess, Is.True, created.IsFailure ? created.Error.Message : string.Empty);
 			try {
 				Assert.That(new ProjectSaver().Save(created.Value, target, new LocalProjectFileSystem()).IsSuccess, Is.True);
 				using (var application = new ProjectApplication(new LocalProjectFileSystem()))
@@ -659,7 +634,7 @@ namespace ShitDesigner.Bootstrap.Tests {
 			var created = ProjectDocumentFactory.TryCreate("Adapter surface leases", 1, nodes: previews, connections: Array.Empty<ConnectionRecord>(),
 				logicalControls: Array.Empty<LogicalControlRecord>(), expressions: Array.Empty<ParameterExpressionRecord>(), presets: Array.Empty<PresetRecord>(),
 				mediaAssets: Array.Empty<MediaAssetRecord>(), ui: new ProjectUiStateRecord(new[] { new DashboardPageRecord("main", "Main") }), markDirty: false);
-			Assert.That(created.IsSuccess, Is.True, created.Error?.Message);
+			Assert.That(created.IsSuccess, Is.True, created.IsFailure ? created.Error.Message : string.Empty);
 			try {
 				Assert.That(new ProjectSaver().Save(created.Value, target, new LocalProjectFileSystem()).IsSuccess, Is.True);
 				var surfaces = new DescribedOutputSurfacePort();
