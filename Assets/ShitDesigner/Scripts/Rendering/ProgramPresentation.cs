@@ -1,4 +1,10 @@
 using System;
+#if UNITY_STANDALONE_WIN
+using System.Collections;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using AOT;
+#endif
 using CSharpFunctionalExtensions;
 using ShitDesigner.Core;
 using ShitDesigner.Runtime;
@@ -50,6 +56,7 @@ namespace ShitDesigner.Rendering {
 		private GameObject _displayCameraObject;
 		private Camera _displayCamera;
 		private ProgramDisplayBlitCamera _blit;
+		private WindowsDisplayWindowController _displayWindowController;
 		private bool _disposed;
 		public int DisplayCount => Display.displays == null || Display.displays.Length == 0 ? 1 : Display.displays.Length;
 
@@ -59,13 +66,18 @@ namespace ShitDesigner.Rendering {
 				SetDisplayCameraActive(false);
 				return Result.Success<ProgramDisplaySelection, Diagnostic>(selection);
 			}
-			try { Display.displays[selection.ResolvedDisplay].Activate(); }
+			var mainWindowState = WindowsMainWindowState.Capture();
+			try {
+				var display = Display.displays[selection.ResolvedDisplay];
+				if (!display.active) display.Activate();
+			}
 			catch (Exception exception) {
 				return Result.Failure<ProgramDisplaySelection, Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.display.activate_failed"), Severity.Error,
 					"The selected Unity Display could not be activated.", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 			var camera = EnsureDisplayCamera(selection.ResolvedDisplay);
 			if (camera.IsFailure) return Result.Failure<ProgramDisplaySelection, Diagnostic>(camera.Error);
+			_displayWindowController?.ApplyAfterActivation(mainWindowState);
 			return Result.Success<ProgramDisplaySelection, Diagnostic>(selection);
 		}
 
@@ -99,10 +111,12 @@ namespace ShitDesigner.Rendering {
 
 		public void SetOutputActive(bool active) {
 			if (active) {
+				_displayWindowController?.SetOutputVisible(true);
 				SetDisplayCameraActive(true);
 				return;
 			}
 			ShowStandbyFrame();
+			_displayWindowController?.SetOutputVisible(false);
 		}
 
 		private void ShowStandbyFrame() {
@@ -138,6 +152,7 @@ namespace ShitDesigner.Rendering {
 				_displayCamera.targetDisplay = targetDisplay;
 				_blit = _displayCameraObject.AddComponent<ProgramDisplayBlitCamera>();
 				_blit.Initialize(_displayCamera, DisplayLayer);
+				_displayWindowController = _displayCameraObject.AddComponent<WindowsDisplayWindowController>();
 				_displayCamera.enabled = false;
 				return UnitResult.Success<Diagnostic>();
 			}
@@ -151,7 +166,263 @@ namespace ShitDesigner.Rendering {
 			if (_disposed) return;
 			_disposed = true;
 			if (_displayCameraObject != null) UnityEngine.Object.DestroyImmediate(_displayCameraObject);
-			_displayCameraObject = null; _displayCamera = null; _blit = null;
+			_displayCameraObject = null; _displayCamera = null; _blit = null; _displayWindowController = null;
+		}
+
+		private sealed class WindowsDisplayWindowController : MonoBehaviour {
+#if UNITY_STANDALONE_WIN
+			private const uint NoSize = 0x0001;
+			private const uint NoMove = 0x0002;
+			private const uint NoActivate = 0x0010;
+			private static readonly IntPtr Topmost = new IntPtr(-1);
+			private static readonly EnumWindowsCallback ApplyCallback = ApplyTopmost;
+			private static readonly HashSet<IntPtr> OutputWindows = new HashSet<IntPtr>();
+
+			private IntPtr _mainWindow;
+			private int _remainingAttempts;
+			private Coroutine _restoreMainWindowRoutine;
+
+			internal static IntPtr CaptureMainWindow() {
+				var window = GetActiveWindow();
+				if (BelongsToCurrentProcess(window)) return window;
+				window = GetForegroundWindow();
+				return BelongsToCurrentProcess(window) ? window : IntPtr.Zero;
+			}
+
+			public void ApplyAfterActivation(WindowsMainWindowState mainWindowState) {
+				_mainWindow = mainWindowState.Window;
+				_remainingAttempts = 30;
+				if (_restoreMainWindowRoutine != null) StopCoroutine(_restoreMainWindowRoutine);
+				_restoreMainWindowRoutine = StartCoroutine(RestoreMainWindow(mainWindowState));
+			}
+
+			public void SetOutputVisible(bool visible) {
+				if (_mainWindow == IntPtr.Zero) return;
+				EnumerateOutputWindows();
+				foreach (var window in OutputWindows) {
+					if (!IsWindow(window)) continue;
+					ShowWindow(window, visible ? ShowNoActivate : Hide);
+				}
+				if (visible) _remainingAttempts = 30;
+			}
+
+			private IEnumerator RestoreMainWindow(WindowsMainWindowState state) {
+				for (var frame = 0; frame < 3; frame++) {
+					yield return new WaitForEndOfFrame();
+					state.Restore();
+				}
+				_restoreMainWindowRoutine = null;
+			}
+
+			private void LateUpdate() {
+				if (_remainingAttempts <= 0 || _mainWindow == IntPtr.Zero) return;
+				_remainingAttempts--;
+				EnumerateOutputWindows();
+			}
+
+			private void EnumerateOutputWindows() {
+				var handle = GCHandle.Alloc(this);
+				try {
+					EnumWindows(ApplyCallback, GCHandle.ToIntPtr(handle));
+				}
+				finally {
+					handle.Free();
+				}
+			}
+
+			[MonoPInvokeCallback(typeof(EnumWindowsCallback))]
+			private static bool ApplyTopmost(IntPtr window, IntPtr parameter) {
+				var handle = GCHandle.FromIntPtr(parameter);
+				return handle.Target is WindowsDisplayWindowController controller && controller.Apply(window);
+			}
+
+			private bool Apply(IntPtr window) {
+				if (window == IntPtr.Zero || window == _mainWindow || !IsWindowVisible(window)) return true;
+				if (!BelongsToCurrentProcess(window)) return true;
+				OutputWindows.Add(window);
+				SetWindowPos(window, Topmost, 0, 0, 0, 0, NoSize | NoMove | NoActivate);
+				return true;
+			}
+
+			private static bool BelongsToCurrentProcess(IntPtr window) {
+				if (window == IntPtr.Zero) return false;
+				GetWindowThreadProcessId(window, out var processId);
+				return processId == GetCurrentProcessId();
+			}
+
+			private delegate bool EnumWindowsCallback(IntPtr window, IntPtr parameter);
+
+			[DllImport("user32.dll")]
+			[return: MarshalAs(UnmanagedType.Bool)]
+			private static extern bool EnumWindows(EnumWindowsCallback callback, IntPtr parameter);
+
+			[DllImport("user32.dll")]
+			private static extern IntPtr GetActiveWindow();
+
+			[DllImport("user32.dll")]
+			private static extern IntPtr GetForegroundWindow();
+
+			[DllImport("user32.dll")]
+			[return: MarshalAs(UnmanagedType.Bool)]
+			private static extern bool IsWindowVisible(IntPtr window);
+
+			[DllImport("user32.dll")]
+			[return: MarshalAs(UnmanagedType.Bool)]
+			private static extern bool IsWindow(IntPtr window);
+
+			private const int Hide = 0;
+			private const int ShowNoActivate = 4;
+
+			[DllImport("user32.dll")]
+			[return: MarshalAs(UnmanagedType.Bool)]
+			private static extern bool ShowWindow(IntPtr window, int command);
+
+			[DllImport("user32.dll")]
+			private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
+
+			[DllImport("kernel32.dll")]
+			private static extern uint GetCurrentProcessId();
+
+			[DllImport("user32.dll")]
+			[return: MarshalAs(UnmanagedType.Bool)]
+			private static extern bool SetWindowPos(
+				IntPtr window,
+				IntPtr insertAfter,
+				int x,
+				int y,
+				int width,
+				int height,
+				uint flags);
+#else
+			internal static IntPtr CaptureMainWindow() => IntPtr.Zero;
+			public void ApplyAfterActivation(WindowsMainWindowState mainWindowState) { }
+			public void SetOutputVisible(bool visible) { }
+#endif
+		}
+
+		private readonly struct WindowsMainWindowState {
+#if UNITY_STANDALONE_WIN
+			private const int StyleIndex = -16;
+			private const int ExtendedStyleIndex = -20;
+			private const uint NoZOrder = 0x0004;
+			private const uint NoActivate = 0x0010;
+			private const uint FrameChanged = 0x0020;
+			private const uint NoOwnerZOrder = 0x0200;
+
+			private readonly IntPtr _style;
+			private readonly IntPtr _extendedStyle;
+			private readonly NativeRect _rect;
+			private readonly WindowPlacement _placement;
+
+			public IntPtr Window { get; }
+
+			private WindowsMainWindowState(
+				IntPtr window,
+				IntPtr style,
+				IntPtr extendedStyle,
+				NativeRect rect,
+				WindowPlacement placement) {
+				Window = window;
+				_style = style;
+				_extendedStyle = extendedStyle;
+				_rect = rect;
+				_placement = placement;
+			}
+
+			public static WindowsMainWindowState Capture() {
+				var window = WindowsDisplayWindowController.CaptureMainWindow();
+				if (window == IntPtr.Zero) return default;
+
+				if (!GetWindowRect(window, out var rect)) return default;
+				var placement = new WindowPlacement { Length = Marshal.SizeOf<WindowPlacement>() };
+				if (!GetWindowPlacement(window, ref placement)) return default;
+				return new WindowsMainWindowState(
+					window,
+					GetWindowLongPtr(window, StyleIndex),
+					GetWindowLongPtr(window, ExtendedStyleIndex),
+					rect,
+					placement);
+			}
+
+			public void Restore() {
+				if (Window == IntPtr.Zero || !IsWindow(Window)) return;
+
+				SetWindowLongPtr(Window, StyleIndex, _style);
+				SetWindowLongPtr(Window, ExtendedStyleIndex, _extendedStyle);
+				var placement = _placement;
+				placement.Length = Marshal.SizeOf<WindowPlacement>();
+				SetWindowPlacement(Window, ref placement);
+				SetWindowPos(
+					Window,
+					IntPtr.Zero,
+					_rect.Left,
+					_rect.Top,
+					Math.Max(1, _rect.Right - _rect.Left),
+					Math.Max(1, _rect.Bottom - _rect.Top),
+					NoZOrder | NoActivate | FrameChanged | NoOwnerZOrder);
+			}
+
+			[StructLayout(LayoutKind.Sequential)]
+			private struct NativeRect {
+				public int Left;
+				public int Top;
+				public int Right;
+				public int Bottom;
+			}
+
+			[StructLayout(LayoutKind.Sequential)]
+			private struct NativePoint {
+				public int X;
+				public int Y;
+			}
+
+			[StructLayout(LayoutKind.Sequential)]
+			private struct WindowPlacement {
+				public int Length;
+				public int Flags;
+				public int ShowCommand;
+				public NativePoint MinimumPosition;
+				public NativePoint MaximumPosition;
+				public NativeRect NormalPosition;
+			}
+
+			[DllImport("user32.dll")]
+			[return: MarshalAs(UnmanagedType.Bool)]
+			private static extern bool IsWindow(IntPtr window);
+
+			[DllImport("user32.dll")]
+			[return: MarshalAs(UnmanagedType.Bool)]
+			private static extern bool GetWindowRect(IntPtr window, out NativeRect rect);
+
+			[DllImport("user32.dll")]
+			[return: MarshalAs(UnmanagedType.Bool)]
+			private static extern bool GetWindowPlacement(IntPtr window, ref WindowPlacement placement);
+
+			[DllImport("user32.dll")]
+			[return: MarshalAs(UnmanagedType.Bool)]
+			private static extern bool SetWindowPlacement(IntPtr window, ref WindowPlacement placement);
+
+			[DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
+			private static extern IntPtr GetWindowLongPtr(IntPtr window, int index);
+
+			[DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
+			private static extern IntPtr SetWindowLongPtr(IntPtr window, int index, IntPtr value);
+
+			[DllImport("user32.dll")]
+			[return: MarshalAs(UnmanagedType.Bool)]
+			private static extern bool SetWindowPos(
+				IntPtr window,
+				IntPtr insertAfter,
+				int x,
+				int y,
+				int width,
+				int height,
+				uint flags);
+#else
+			public IntPtr Window => IntPtr.Zero;
+			public static WindowsMainWindowState Capture() => default;
+			public void Restore() { }
+#endif
 		}
 
 		private sealed class ProgramDisplayBlitCamera : MonoBehaviour {
@@ -227,7 +498,7 @@ namespace ShitDesigner.Rendering {
 		private readonly ProgramHoldController _program;
 		private readonly IProgramDisplayPort _displayPort;
 		public ProgramDisplaySelection Selection { get; private set; }
-		public bool IsOutputActive { get; private set; } = true;
+		public bool IsOutputActive { get; private set; }
 		public bool MonitorOpen { get; private set; } = true;
 		public bool EvaluationContinues => true;
 
@@ -239,14 +510,12 @@ namespace ShitDesigner.Rendering {
 		public ProgramDisplayPresenter(ProgramHoldController program, IProgramDisplayPort displayPort, int requestedDisplay = ProgramDisplayPolicy.DefaultDisplay) {
 			_program = program ?? throw new ArgumentNullException(nameof(program));
 			_displayPort = displayPort ?? throw new ArgumentNullException(nameof(displayPort));
-			var selected = _displayPort.Activate(requestedDisplay);
-			if (selected.IsFailure) throw new InvalidOperationException(selected.Error.Message);
-			Selection = selected.Value;
+			Selection = ProgramDisplayPolicy.Resolve(requestedDisplay, _displayPort.DisplayCount);
 		}
 
 		public void RefreshDisplayCount(int displayCount) {
 			var next = ProgramDisplayPolicy.Resolve(Selection.RequestedDisplay, displayCount);
-			if (_displayPort != null) {
+			if (_displayPort != null && IsOutputActive) {
 				var activated = _displayPort.Activate(Selection.RequestedDisplay);
 				if (activated.IsSuccess) next = activated.Value;
 			}
@@ -254,16 +523,22 @@ namespace ShitDesigner.Rendering {
 		}
 		public Result<ProgramDisplaySelection, Diagnostic> SetRequestedDisplay(int requestedDisplay) {
 			if (requestedDisplay < 0) return Result.Failure<ProgramDisplaySelection, Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.display.request_invalid"), Severity.Error, "The requested Display must not be negative."));
-			var next = _displayPort == null
-				? Result.Success<ProgramDisplaySelection, Diagnostic>(ProgramDisplayPolicy.Resolve(requestedDisplay))
+			var next = _displayPort == null || !IsOutputActive
+				? Result.Success<ProgramDisplaySelection, Diagnostic>(ProgramDisplayPolicy.Resolve(requestedDisplay, _displayPort?.DisplayCount ?? 1))
 				: _displayPort.Activate(requestedDisplay);
 			if (next.IsSuccess) Selection = next.Value;
 			return next;
 		}
 		public int DisplayCount => _displayPort?.DisplayCount ?? 1;
-		public void SetOutputActive(bool active) {
+		public Result<ProgramDisplaySelection, Diagnostic> SetOutputActive(bool active) {
+			if (active && !IsOutputActive && _displayPort != null) {
+				var activated = _displayPort.Activate(Selection.RequestedDisplay);
+				if (activated.IsFailure) return activated;
+				Selection = activated.Value;
+			}
 			IsOutputActive = active;
 			_displayPort?.SetOutputActive(active);
+			return Result.Success<ProgramDisplaySelection, Diagnostic>(Selection);
 		}
 		public void CloseMonitor() => MonitorOpen = false;
 		public void OpenMonitor() => MonitorOpen = true;
