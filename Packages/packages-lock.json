@@ -1,12 +1,5 @@
 {
   "dependencies": {
-    "org.nuget.csharpfunctionalextensions": {
-      "version": "3.7.0",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {},
-      "url": "https://unitynuget-registry.openupm.com"
-    },
     "com.unity.burst": {
       "version": "1.8.30",
       "depth": 2,
@@ -141,6 +134,19 @@
         "com.unity.modules.physics2d": "1.0.0",
         "com.unity.modules.physics": "1.0.0"
       }
+    },
+    "jp.lilxyzw.liltoon": {
+      "version": "file:jp.lilxyzw.liltoon",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
+    "org.nuget.csharpfunctionalextensions": {
+      "version": "3.7.0",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://unitynuget-registry.openupm.com"
     },
     "com.unity.modules.animation": {
       "version": "1.0.0",
