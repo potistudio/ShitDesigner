@@ -2,6 +2,7 @@
   "name": "ShitDesigner.Main",
   "rootNamespace": "ShitDesigner.Main",
   "references": [
+    "ShitDesigner.Bootstrap",
     "ShitDesigner.Core",
     "ShitDesigner.Runtime",
     "ShitDesigner.Scene",

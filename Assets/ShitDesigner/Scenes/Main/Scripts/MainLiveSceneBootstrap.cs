@@ -14,6 +14,7 @@ namespace ShitDesigner.Main {
 		[SerializeField] private MainLiveInput _input;
 		[SerializeField] private MainLiveMidiInput _midiInput;
 		[SerializeField] private MainLiveOutput _output;
+		[SerializeField] private MainLiveProgramOutput _programOutput;
 		[SerializeField] private bool _startOnEnable = true;
 		private readonly MainLiveParameterBuffer _parameters = new MainLiveParameterBuffer();
 		private SceneIsolationManager _sceneManager;
@@ -38,13 +39,18 @@ namespace ShitDesigner.Main {
 			if (_running) return true;
 			var definitions = (_scenes ?? Array.Empty<Scene3DDefinition>()).Where(scene => scene != null).ToArray();
 			if (definitions.Length == 0 || definitions.Any(scene => scene.Validate().IsFailure)) return Fail("Every Main scene requires a valid Scene3DDefinition.");
-			if (_input == null || _midiInput == null || _output == null) return Fail("Main keyboard/MIDI input and output components are required.");
+			if (_input == null || _midiInput == null || _output == null || _programOutput == null) return Fail("Main input, render target, and Program output components are required.");
 			_scenes = definitions;
 			_input.Bind(_parameters);
 			if (!_midiInput.Initialize(_input, _scenes.Length)) return Fail(_midiInput.LastError);
 			if (!_output.Initialize()) {
 				_midiInput.Stop();
 				return Fail("Main live output could not create its render target.");
+			}
+			if (!_programOutput.Initialize()) {
+				var error = _programOutput.LastError;
+				StopLive();
+				return Fail(error);
 			}
 
 			_sceneManager = new SceneIsolationManager(renderSource: new UnityCameraRenderSource());
@@ -67,6 +73,7 @@ namespace ShitDesigner.Main {
 			_sceneManager?.Dispose();
 			_sceneManager = null;
 			_midiInput?.Stop();
+			_programOutput?.Stop();
 			_output?.Dispose();
 		}
 
@@ -91,6 +98,7 @@ namespace ShitDesigner.Main {
 				return;
 			}
 			_output.Present(frame.FrameNumber);
+			if (!_programOutput.Present(_output.CurrentFrame)) Fail(_programOutput.LastError);
 		}
 
 		private bool SwitchScene(int sceneIndex) {

@@ -540,6 +540,7 @@ namespace ShitDesigner.Bootstrap {
 		private RenderTexturePool _pool;
 		private readonly Shader _displayTransformShader;
 		private ProgramDisplaySurface _displaySurface;
+		private IRuntimeImageFrameSurface _programSourceOverride;
 		private DisplayTransformPass _displayTransform;
 		private readonly Dictionary<string, PreviewDisplaySurface> _previewDisplaySurfaces = new Dictionary<string, PreviewDisplaySurface>(StringComparer.Ordinal);
 		private readonly List<PreviewDisplaySurface> _retiredPreviewDisplaySurfaces = new List<PreviewDisplaySurface>();
@@ -556,6 +557,7 @@ namespace ShitDesigner.Bootstrap {
 		private int _activeLeaseCount;
 		private int _lastDisplayCount;
 		private int _lastRequestedDisplayIndex = int.MinValue;
+		private ulong _lastProgramOverrideConsumedFrameNumber;
 		private int _requestedDisplayOverride;
 		private string _lastDisplayDiagnostic;
 		private bool _displayHandshakeAttempted;
@@ -574,6 +576,9 @@ namespace ShitDesigner.Bootstrap {
 		public int ConnectedDisplayCount => _programPresenter?.DisplayCount ?? (Display.displays == null || Display.displays.Length == 0 ? 1 : Display.displays.Length);
 		public bool IsOutputActive => _outputActive && _programPresenter != null && _programPresenter.IsOutputActive;
 		public string LastError => _lastOutputError ?? string.Empty;
+		public bool HasProgramSourceOverride => _programSourceOverride != null;
+		public ulong ProgramSourceOverrideFrameNumber => _programSourceOverride?.FrameNumber ?? 0;
+		public ulong LastProgramOverrideConsumedFrameNumber => _lastProgramOverrideConsumedFrameNumber;
 		public event Action<bool> OutputActiveChanged;
 
 		public OutputSurfaceBridge(Shader displayTransformShader) {
@@ -642,12 +647,21 @@ namespace ShitDesigner.Bootstrap {
 			if (_disposed || _session == null || _program == null) return;
 			if (!_displayHandshakeAttempted) Handshake();
 			_lastFrame = Math.Max(1UL, frameNumber);
-			var result = _session.LastProgramResult;
-			if (result.IsAvailable && result.HasValue && result.Value.IsImageFrame) {
-				var source = result.Value.AsImageFrame();
-				if (_program.SubmitAvailable(source, _lastFrame).IsFailure) _program.SubmitUnavailable(_lastFrame);
+			if (IsUsableProgramSourceOverride(_programSourceOverride)) {
+				if (_program.SubmitAvailable(_programSourceOverride, _lastFrame).IsSuccess)
+					_lastProgramOverrideConsumedFrameNumber = _programSourceOverride.FrameNumber;
+				else _program.SubmitUnavailable(_lastFrame);
 			}
-			else _program.SubmitUnavailable(_lastFrame);
+			else {
+				_programSourceOverride = null;
+				_lastProgramOverrideConsumedFrameNumber = 0;
+				var result = _session.LastProgramResult;
+				if (result.IsAvailable && result.HasValue && result.Value.IsImageFrame) {
+					var source = result.Value.AsImageFrame();
+					if (_program.SubmitAvailable(source, _lastFrame).IsFailure) _program.SubmitUnavailable(_lastFrame);
+				}
+				else _program.SubmitUnavailable(_lastFrame);
+			}
 			RefreshDisplaySelection();
 			var presented = _program.GetFrame(_lastFrame);
 			if (presented.IsSuccess && presented.Value.Texture != null && EnsureDisplayLease(_lastFrame).IsSuccess) {
@@ -753,6 +767,28 @@ namespace ShitDesigner.Bootstrap {
 			return true;
 		}
 
+		public UnitResult<Diagnostic> SetProgramSourceOverride(IRuntimeImageFrameSurface source) {
+			if (_disposed) return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.program_override.disposed"), Severity.Error, "The Program output bridge is disposed.", module: "bootstrap"));
+			if (!IsUsableProgramSourceOverride(source)) return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("bootstrap.program_override.invalid"), Severity.Error, "A created 1920x1080 HDR RenderTexture frame is required for the Program output override.", module: "bootstrap"));
+			_programSourceOverride = source;
+			return UnitResult.Success<Diagnostic>();
+		}
+
+		public void ClearProgramSourceOverride(IRuntimeImageFrameSurface source = null) {
+			if (source != null && !ReferenceEquals(source, _programSourceOverride)) return;
+			_programSourceOverride = null;
+			_lastProgramOverrideConsumedFrameNumber = 0;
+		}
+
+		private static bool IsUsableProgramSourceOverride(IRuntimeImageFrameSurface source) {
+			return source != null
+				&& source.Width == ProgramHoldController.ProgramSize.x
+				&& source.Height == ProgramHoldController.ProgramSize.y
+				&& string.Equals(source.ColorFormat, ProgramHoldController.DefaultColorFormat.ToString(), StringComparison.Ordinal)
+				&& source.NativeSurface is RenderTexture texture
+				&& texture.IsCreated();
+		}
+
 		public void SetVisible(bool visible) {
 			if (visible) _programPresenter?.OpenMonitor();
 			else _programPresenter?.CloseMonitor();
@@ -818,6 +854,8 @@ namespace ShitDesigner.Bootstrap {
 		}
 
 		internal void Clear() {
+			_programSourceOverride = null;
+			_lastProgramOverrideConsumedFrameNumber = 0;
 			_programPresenter?.Dispose();
 			_displayTransform?.Dispose();
 			_displayTransform = null;

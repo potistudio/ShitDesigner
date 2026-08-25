@@ -3,71 +3,62 @@ using ShitDesigner.Runtime;
 using UnityEngine;
 
 namespace ShitDesigner.Main {
-	/// <summary>Owns the persistent Main render target and presents it on an explicitly assigned renderer.</summary>
+	/// <summary>Owns the persistent Main render target and publishes its latest completed frame.</summary>
 	[DisallowMultipleComponent]
 	public sealed class MainLiveOutput : MonoBehaviour, IDisposable {
-		[SerializeField] private Renderer _targetRenderer;
-		[SerializeField] private string _textureProperty = "_BaseMap";
-		[SerializeField, Min(1)] private int _width = 1920;
-		[SerializeField, Min(1)] private int _height = 1080;
-		private MaterialPropertyBlock _properties;
-		private RenderTexture _target;
+		[SerializeField, Min(1)] private int m_Width = 1920;
+		[SerializeField, Min(1)] private int m_Height = 1080;
+
+		private RenderTexture m_RenderTarget;
 		private ulong _leaseId;
 
-		public RenderTexture Target => _target;
+		public RenderTexture Target => m_RenderTarget;
 		public IRuntimeImageFrameSurface CurrentFrame { get; private set; }
-		public int Width => _width;
-		public int Height => _height;
+		public int Width => m_Width;
+		public int Height => m_Height;
+
+		private bool m_Initialized = false;
 
 		public bool Initialize() {
-			if (_targetRenderer == null || string.IsNullOrWhiteSpace(_textureProperty)) return false;
-			_properties ??= new MaterialPropertyBlock();
 			DisposeTarget();
-			_target = new RenderTexture(_width, _height, 24, RenderTextureFormat.ARGBHalf) {
+			m_Initialized = false;
+			m_RenderTarget = new RenderTexture(m_Width, m_Height, 24, RenderTextureFormat.ARGBHalf) {
 				name = "ShitDesigner.Main.LiveOutput",
 				useMipMap = false,
 				autoGenerateMips = false
 			};
-			if (!_target.Create()) {
+			if (!m_RenderTarget.Create()) {
 				DisposeTarget();
 				return false;
 			}
 			unchecked { _leaseId++; }
 			if (_leaseId == 0) _leaseId = 1;
-			_targetRenderer.enabled = true;
-			PresentTexture();
+
+			m_Initialized = true;
 			return true;
 		}
 
 		public void Present(ulong frameNumber) {
-			if (_target == null || !_target.IsCreated() || frameNumber == 0) return;
-			CurrentFrame = new MainLiveImageFrame(_target, _leaseId, frameNumber);
-			_targetRenderer.enabled = true;
-			PresentTexture();
+			if (!m_Initialized || m_RenderTarget == null || !m_RenderTarget.IsCreated() || frameNumber == 0)
+				return;
+
+			CurrentFrame = new MainLiveImageFrame(m_RenderTarget, _leaseId, frameNumber);
 		}
 
 		public void Dispose() {
 			CurrentFrame = null;
-			if (_targetRenderer != null && _properties != null) {
-				_properties.Clear();
-				_targetRenderer.SetPropertyBlock(_properties);
-			}
 			DisposeTarget();
+			m_Initialized = false;
 		}
 
 		private void OnDestroy() => Dispose();
 
-		private void PresentTexture() {
-			_targetRenderer.GetPropertyBlock(_properties);
-			_properties.SetTexture(_textureProperty, _target);
-			_targetRenderer.SetPropertyBlock(_properties);
-		}
-
 		private void DisposeTarget() {
-			if (_target == null) return;
-			_target.Release();
-			if (Application.isPlaying) Destroy(_target); else DestroyImmediate(_target);
-			_target = null;
+			if (m_RenderTarget == null) return;
+
+			m_RenderTarget.Release();
+			if (Application.isPlaying) Destroy(m_RenderTarget); else DestroyImmediate(m_RenderTarget);
+			m_RenderTarget = null;
 		}
 
 		private sealed class MainLiveImageFrame : IRuntimeImageFrameSurface {

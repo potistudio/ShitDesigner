@@ -505,7 +505,7 @@ MonoBehaviour:
   _displayNumber: 2
   _outputCamera: {fileID: 1184862311}
   _createTestCameraWhenMissing: 1
-  _activateOnStart: 1
+  _activateOnStart: 0
   _preserveMainWindowMode: 1
   _testBackground: {r: 0.04, g: 0.12, b: 0.2, a: 1}
   _standbyBackground: {r: 0, g: 0, b: 0, a: 1}
@@ -827,6 +827,7 @@ GameObject:
   - component: {fileID: 1594496362}
   - component: {fileID: 1800000005}
   - component: {fileID: 1800000003}
+  - component: {fileID: 1800000006}
   - component: {fileID: 1800000004}
   m_Layer: 0
   m_Name: Main Live Runtime
@@ -875,10 +876,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1f84f061c80d41a9a43a5643266cf2bf, type: 3}
   m_Name:
   m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.MainLiveOutput
-  _targetRenderer: {fileID: 500452138}
-  _textureProperty: _BaseMap
-  _width: 1920
-  _height: 1080
+  m_Width: 1920
+  m_Height: 1080
 --- !u!114 &1800000005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -898,6 +897,20 @@ MonoBehaviour:
   _firstSceneNote: 36
   _secondSceneNote: 37
   _manager: {fileID: 1594496362}
+--- !u!114 &1800000006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1800000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d7c5f8f369a4ab0b0cae7102a62f043, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.MainLiveProgramOutput
+  m_Host: {fileID: 1594496359}
+  m_DisplayNumber: 2
 --- !u!114 &1800000004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -916,6 +929,7 @@ MonoBehaviour:
   _input: {fileID: 1800000002}
   _midiInput: {fileID: 1800000005}
   _output: {fileID: 1800000003}
+  _programOutput: {fileID: 1800000006}
   _startOnEnable: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
