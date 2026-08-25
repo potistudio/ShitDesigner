@@ -36,7 +36,7 @@ namespace ShitDesigner.Bootstrap {
 			}
 
 			var projectName = string.IsNullOrWhiteSpace(_projectName) ? "Cylinder Flythrough" : _projectName.Trim();
-			var authored = UnityGraphProjectBuilder.Build(projectName, catalog.Value, _nodes, _programSource);
+			var authored = UnityGraphProjectBuilder.Build(projectName, catalog.Value, _host.Assets, _nodes, _programSource);
 			if (authored.IsFailure) {
 				Fail(authored.Error?.Message ?? "The startup graph could not be built from its Unity components.");
 				yield break;

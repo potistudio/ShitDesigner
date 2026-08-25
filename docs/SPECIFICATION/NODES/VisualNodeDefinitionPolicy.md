@@ -14,7 +14,9 @@
 
 ## 3D／2D
 
-- `NodeTypeCatalog` は3D／2Dノードのポートとパラメーターだけを定義する。Mainで使うPrefab参照は `BootstrapAssets` が所有し、型定義とは独立して差し替えられる。
+- `NodeTypeCatalog` は3D／2Dノードのポートとパラメーターを定義する。3Dノードインスタンスは安定UUIDを持つ `Scene3DDefinition` を選択し、Definitionが生成Prefabを所有する。
+- VJプロジェクトには `Scene3DDefinition` のUUIDだけを保存する。Prefab参照は `Scene3DDefinitionCatalog` で解決し、GameObject階層は保存しない。
+- Definition未指定で作られた従来の3Dノードは、移行互換として `BootstrapAssets` の既定Prefabを使用する。
 - Scene生成後に必要なCameraが1つ存在することは `SceneIsolationManager` が検証する。
 - 追加出力を定義した場合、要求された出力だけを1回の評価で生成する。
 

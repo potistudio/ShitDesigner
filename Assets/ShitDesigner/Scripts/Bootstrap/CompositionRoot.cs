@@ -90,6 +90,7 @@ namespace ShitDesigner.Bootstrap {
 	public sealed class ExplicitVisualBindingProvider : IVisualBindingProvider, IVisualBindingOwnershipProvider, IVisualBindingPerformanceHealthProvider, IVisualBindingPolicy, IVisualBindingPoolAware, IProjectContextAware, IDisposable {
 		private readonly Func<SceneIsolationManager> _sceneManagerFactory;
 		private readonly GameObject _scene3dPrefab;
+		private readonly Func<RuntimeNodeCreateInfo, GameObject> _scene3dPrefabResolver;
 		private readonly GameObject _scene2dPrefab;
 		private readonly ShaderMaterialRegistry _shaders;
 		private readonly IVideoBackendFactory _videoBackends;
@@ -118,9 +119,11 @@ namespace ShitDesigner.Bootstrap {
 			RenderTexturePool pool,
 			Func<SceneNodeRuntime, FrameSnapshot, Action> sceneParameterApplier = null,
 			Action<ProjectDocument, string> projectContextSetter = null,
-			IEnumerable<IDisposable> applicationResources = null) {
+			IEnumerable<IDisposable> applicationResources = null,
+			Func<RuntimeNodeCreateInfo, GameObject> scene3dPrefabResolver = null) {
 			_sceneManagerFactory = sceneManagerFactory;
 			_scene3dPrefab = scene3dPrefab;
+			_scene3dPrefabResolver = scene3dPrefabResolver;
 			_scene2dPrefab = scene2dPrefab;
 			_shaders = shaders;
 			_videoBackends = videoBackends;
@@ -174,7 +177,7 @@ namespace ShitDesigner.Bootstrap {
 			var owned = new List<IDisposable> { scenes };
 			try {
 				Func<RuntimeNodeCreateInfo, GameObject> prefab = node => node == null ? null
-					: node.TypeId.Value == "shitdesigner.scene.3d" ? _scene3dPrefab
+					: node.TypeId.Value == "shitdesigner.scene.3d" ? (_scene3dPrefabResolver == null ? _scene3dPrefab : _scene3dPrefabResolver(node))
 					: node.TypeId.Value == "shitdesigner.scene.2d" ? _scene2dPrefab : null;
 				bindings.Add(new SceneVisualNodeBinding(new NodeTypeId("shitdesigner.scene.3d"), SceneNodeKind.ThreeD, scenes, prefab));
 				bindings.Add(new SceneVisualNodeBinding(new NodeTypeId("shitdesigner.scene.2d"), SceneNodeKind.TwoD, scenes, prefab));

@@ -8,6 +8,7 @@
     "ShitDesigner.Runtime",
     "ShitDesigner.Nodes",
     "ShitDesigner.Rendering",
+    "ShitDesigner.Scene",
     "ShitDesigner.Presentation",
     "ShitDesigner.Project",
     "ShitDesigner.Graph",
