@@ -3,7 +3,8 @@
   "rootNamespace": "ShitDesigner.Media",
   "references": [
     "ShitDesigner.Core",
-    "ShitDesigner.Runtime"
+    "ShitDesigner.Runtime",
+    "Unity.InputSystem"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

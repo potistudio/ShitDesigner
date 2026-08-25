@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.Video;
 
 namespace ShitDesigner.Media {
@@ -11,10 +12,19 @@ namespace ShitDesigner.Media {
 		[SerializeField] private AssetFlashComponentMediaKind m_Kind;
 		[SerializeField] private Texture2D m_Image;
 		[SerializeField] private VideoClip m_Video;
+		[SerializeField, Tooltip("Key that triggers this slot. Set None to disable keyboard triggering.")] private Key m_KeyboardKey;
+		[SerializeField, HideInInspector] private bool m_KeyboardKeyConfigured;
 
 		public AssetFlashComponentMediaKind Kind => m_Kind;
 		public Texture2D Image => m_Image;
 		public VideoClip Video => m_Video;
+		public Key KeyboardKey => m_KeyboardKey;
+
+		internal void EnsureKeyboardKey(Key defaultKey) {
+			if (m_KeyboardKeyConfigured) return;
+			m_KeyboardKey = defaultKey;
+			m_KeyboardKeyConfigured = true;
+		}
 
 		public void SetImage(Texture2D image) {
 			m_Kind = image == null ? AssetFlashComponentMediaKind.None : AssetFlashComponentMediaKind.Image;
@@ -31,11 +41,22 @@ namespace ShitDesigner.Media {
 
 	/// <summary>
 	/// Standalone Unity component facade for an eight-slot image/video flash.
-	/// Call Trigger(1..8), or wire FireSlot1..FireSlot8 directly to UnityEvents.
+	/// Press the configured keyboard key, call Trigger(1..8), or wire
+	/// FireSlot1..FireSlot8 directly to UnityEvents.
 	/// </summary>
 	[DisallowMultipleComponent]
 	public sealed class AssetFlashComponent : MonoBehaviour {
 		private const int SlotCount = 8;
+		private static readonly Key[] DefaultKeyboardKeys = {
+			Key.Digit1,
+			Key.Digit2,
+			Key.Digit3,
+			Key.Digit4,
+			Key.Digit5,
+			Key.Digit6,
+			Key.Digit7,
+			Key.Digit8
+		};
 
 		[SerializeField, Min(.01f)] private float m_DurationSeconds = .25f;
 		[SerializeField] private bool m_UseUnscaledTime = true;
@@ -70,10 +91,20 @@ namespace ShitDesigner.Media {
 		}
 
 		private void Update() {
+			PollKeyboard();
 			if (m_ActiveSlot < 0) return;
 			if (Now >= m_VisibleUntil) { Clear(); return; }
 			var slot = m_Slots[m_ActiveSlot];
 			if (slot.Kind == AssetFlashComponentMediaKind.Video) ApplyOutput(m_Players[m_ActiveSlot]?.texture);
+		}
+
+		private void PollKeyboard() {
+			var keyboard = Keyboard.current;
+			if (keyboard == null) return;
+			for (var index = 0; index < m_Slots.Length; index++) {
+				var key = m_Slots[index].KeyboardKey;
+				if (key != Key.None && keyboard[key].wasPressedThisFrame) TryTrigger(index + 1);
+			}
 		}
 
 		private void OnDisable() { Clear(); }
@@ -155,6 +186,7 @@ namespace ShitDesigner.Media {
 			}
 			for (var index = 0; index < m_Slots.Length; index++)
 				if (m_Slots[index] == null) m_Slots[index] = new AssetFlashComponentSlot();
+			for (var index = 0; index < m_Slots.Length; index++) m_Slots[index].EnsureKeyboardKey(DefaultKeyboardKeys[index]);
 		}
 
 		private void InitializePlayers() {
@@ -219,8 +251,8 @@ namespace ShitDesigner.Media {
 			m_OutputTexture = texture;
 			if (m_TargetRenderer != null) {
 				if (m_PropertyBlock == null) m_PropertyBlock = new MaterialPropertyBlock();
-				m_TargetRenderer.GetPropertyBlock(m_PropertyBlock);
-				m_PropertyBlock.SetTexture(m_TextureProperty, texture);
+				m_PropertyBlock.Clear();
+				if (texture != null) m_PropertyBlock.SetTexture(m_TextureProperty, texture);
 				m_TargetRenderer.SetPropertyBlock(m_PropertyBlock);
 				if (m_DisableRendererWhenIdle) m_TargetRenderer.enabled = texture != null;
 			}
