@@ -146840,248 +146840,6 @@ MonoBehaviour:
     shaderInputs: []
     shaderParameters: []
     shaderPasses: []
-  - typeId: shitdesigner.input.asset_flash_signals
-    schemaVersion: 1
-    displayName: Asset Flash Signals
-    category: Input
-    systemOwned: 0
-    userAddable: 1
-    portIds:
-    - signal_1
-    - signal_2
-    - signal_3
-    - signal_4
-    - signal_5
-    - signal_6
-    - signal_7
-    - signal_8
-    parameterIds:
-    - signal_1
-    - signal_2
-    - signal_3
-    - signal_4
-    - signal_5
-    - signal_6
-    - signal_7
-    - signal_8
-    ports:
-    - id: signal_1
-      displayName: Signal 1
-      direction: 1
-      type: 3
-      required: 0
-      hasDefaultImage: 0
-      defaultImage: 0
-    - id: signal_2
-      displayName: Signal 2
-      direction: 1
-      type: 3
-      required: 0
-      hasDefaultImage: 0
-      defaultImage: 0
-    - id: signal_3
-      displayName: Signal 3
-      direction: 1
-      type: 3
-      required: 0
-      hasDefaultImage: 0
-      defaultImage: 0
-    - id: signal_4
-      displayName: Signal 4
-      direction: 1
-      type: 3
-      required: 0
-      hasDefaultImage: 0
-      defaultImage: 0
-    - id: signal_5
-      displayName: Signal 5
-      direction: 1
-      type: 3
-      required: 0
-      hasDefaultImage: 0
-      defaultImage: 0
-    - id: signal_6
-      displayName: Signal 6
-      direction: 1
-      type: 3
-      required: 0
-      hasDefaultImage: 0
-      defaultImage: 0
-    - id: signal_7
-      displayName: Signal 7
-      direction: 1
-      type: 3
-      required: 0
-      hasDefaultImage: 0
-      defaultImage: 0
-    - id: signal_8
-      displayName: Signal 8
-      direction: 1
-      type: 3
-      required: 0
-      hasDefaultImage: 0
-      defaultImage: 0
-    parameters:
-    - id: signal_1
-      displayName: Signal 1
-      type: 2
-      defaultValue: bool:false
-      hasMinimum: 0
-      minimumValue: 
-      hasMaximum: 0
-      maximumValue: 
-      runtimeStateful: 0
-      enumOptions: []
-      group: Signals
-      displayOrder: 1
-      description: Map a keyboard or MIDI control here, then connect this output
-        to an Asset Flash trigger.
-      unit: 
-      step: 0
-      isReadOnly: 0
-      isHidden: 0
-    - id: signal_2
-      displayName: Signal 2
-      type: 2
-      defaultValue: bool:false
-      hasMinimum: 0
-      minimumValue: 
-      hasMaximum: 0
-      maximumValue: 
-      runtimeStateful: 0
-      enumOptions: []
-      group: Signals
-      displayOrder: 2
-      description: Map a keyboard or MIDI control here, then connect this output
-        to an Asset Flash trigger.
-      unit: 
-      step: 0
-      isReadOnly: 0
-      isHidden: 0
-    - id: signal_3
-      displayName: Signal 3
-      type: 2
-      defaultValue: bool:false
-      hasMinimum: 0
-      minimumValue: 
-      hasMaximum: 0
-      maximumValue: 
-      runtimeStateful: 0
-      enumOptions: []
-      group: Signals
-      displayOrder: 3
-      description: Map a keyboard or MIDI control here, then connect this output
-        to an Asset Flash trigger.
-      unit: 
-      step: 0
-      isReadOnly: 0
-      isHidden: 0
-    - id: signal_4
-      displayName: Signal 4
-      type: 2
-      defaultValue: bool:false
-      hasMinimum: 0
-      minimumValue: 
-      hasMaximum: 0
-      maximumValue: 
-      runtimeStateful: 0
-      enumOptions: []
-      group: Signals
-      displayOrder: 4
-      description: Map a keyboard or MIDI control here, then connect this output
-        to an Asset Flash trigger.
-      unit: 
-      step: 0
-      isReadOnly: 0
-      isHidden: 0
-    - id: signal_5
-      displayName: Signal 5
-      type: 2
-      defaultValue: bool:false
-      hasMinimum: 0
-      minimumValue: 
-      hasMaximum: 0
-      maximumValue: 
-      runtimeStateful: 0
-      enumOptions: []
-      group: Signals
-      displayOrder: 5
-      description: Map a keyboard or MIDI control here, then connect this output
-        to an Asset Flash trigger.
-      unit: 
-      step: 0
-      isReadOnly: 0
-      isHidden: 0
-    - id: signal_6
-      displayName: Signal 6
-      type: 2
-      defaultValue: bool:false
-      hasMinimum: 0
-      minimumValue: 
-      hasMaximum: 0
-      maximumValue: 
-      runtimeStateful: 0
-      enumOptions: []
-      group: Signals
-      displayOrder: 6
-      description: Map a keyboard or MIDI control here, then connect this output
-        to an Asset Flash trigger.
-      unit: 
-      step: 0
-      isReadOnly: 0
-      isHidden: 0
-    - id: signal_7
-      displayName: Signal 7
-      type: 2
-      defaultValue: bool:false
-      hasMinimum: 0
-      minimumValue: 
-      hasMaximum: 0
-      maximumValue: 
-      runtimeStateful: 0
-      enumOptions: []
-      group: Signals
-      displayOrder: 7
-      description: Map a keyboard or MIDI control here, then connect this output
-        to an Asset Flash trigger.
-      unit: 
-      step: 0
-      isReadOnly: 0
-      isHidden: 0
-    - id: signal_8
-      displayName: Signal 8
-      type: 2
-      defaultValue: bool:false
-      hasMinimum: 0
-      minimumValue: 
-      hasMaximum: 0
-      maximumValue: 
-      runtimeStateful: 0
-      enumOptions: []
-      group: Signals
-      displayOrder: 8
-      description: Map a keyboard or MIDI control here, then connect this output
-        to an Asset Flash trigger.
-      unit: 
-      step: 0
-      isReadOnly: 0
-      isHidden: 0
-    shaderKey: 
-    prefabKey: 
-    shader: {fileID: 0}
-    templateMaterial: {fileID: 0}
-    scenePrefab: {fileID: 0}
-    outputPass: 0
-    shaderFamily: 13
-    shaderVariantId: 
-    shaderSourceVariant: 0
-    shaderRequiredFeatures: 0
-    shaderStateful: 0
-    shaderHistorySlots: 0
-    shaderAliases: []
-    shaderInputs: []
-    shaderParameters: []
-    shaderPasses: []
   - typeId: shitdesigner.media.asset_flash
     schemaVersion: 1
     displayName: Asset Flash
@@ -147362,7 +147120,7 @@ MonoBehaviour:
       hasDefaultImage: 0
       defaultImage: 0
     - id: result
-      displayName: UnitResult<Diagnostic>
+      displayName: Result
       direction: 1
       type: 2
       required: 0
@@ -147425,7 +147183,7 @@ MonoBehaviour:
       hasDefaultImage: 0
       defaultImage: 0
     - id: result
-      displayName: UnitResult<Diagnostic>
+      displayName: Result
       direction: 1
       type: 1
       required: 0
@@ -147468,7 +147226,7 @@ MonoBehaviour:
       hasDefaultImage: 0
       defaultImage: 0
     - id: result
-      displayName: UnitResult<Diagnostic>
+      displayName: Result
       direction: 1
       type: 3
       required: 0
@@ -147529,7 +147287,7 @@ MonoBehaviour:
       hasDefaultImage: 0
       defaultImage: 0
     - id: result
-      displayName: UnitResult<Diagnostic>
+      displayName: Result
       direction: 1
       type: 1
       required: 0
@@ -147613,7 +147371,7 @@ MonoBehaviour:
       hasDefaultImage: 0
       defaultImage: 0
     - id: result
-      displayName: UnitResult<Diagnostic>
+      displayName: Result
       direction: 1
       type: 4
       required: 0
@@ -147671,7 +147429,7 @@ MonoBehaviour:
       hasDefaultImage: 0
       defaultImage: 0
     - id: result
-      displayName: UnitResult<Diagnostic>
+      displayName: Result
       direction: 1
       type: 5
       required: 0
@@ -147737,7 +147495,7 @@ MonoBehaviour:
       hasDefaultImage: 0
       defaultImage: 0
     - id: result
-      displayName: UnitResult<Diagnostic>
+      displayName: Result
       direction: 1
       type: 6
       required: 0
@@ -147954,7 +147712,7 @@ MonoBehaviour:
       hasDefaultImage: 0
       defaultImage: 0
     - id: result
-      displayName: UnitResult<Diagnostic>
+      displayName: Result
       direction: 1
       type: 1
       required: 0
@@ -148017,7 +147775,7 @@ MonoBehaviour:
       hasDefaultImage: 0
       defaultImage: 0
     - id: result
-      displayName: UnitResult<Diagnostic>
+      displayName: Result
       direction: 1
       type: 1
       required: 0
@@ -148060,7 +147818,7 @@ MonoBehaviour:
       hasDefaultImage: 0
       defaultImage: 0
     - id: result
-      displayName: UnitResult<Diagnostic>
+      displayName: Result
       direction: 1
       type: 7
       required: 0

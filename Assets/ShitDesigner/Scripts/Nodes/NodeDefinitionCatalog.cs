@@ -450,7 +450,6 @@ namespace ShitDesigner.Nodes {
 
 		private bool TryConvert(NodeExecutionContext context, NodePortDefinition output, out PortValue value) {
 			value = default(PortValue); var type = TypeId.Value;
-			if (type == "shitdesigner.input.asset_flash_signals") { value = PortValue.FromBool(ParameterBool(context, output.Id.Value, false)); return true; }
 			if (type == "shitdesigner.convert.float_to_int" && TryFloat(context, "value", out var f)) { var rounding = ParameterString(context, "rounding", "round"); var rounded = rounding == "floor" ? Math.Floor(f) : rounding == "ceil" ? Math.Ceiling(f) : rounding == "truncate" ? Math.Truncate(f) : Math.Round(f, MidpointRounding.AwayFromZero); value = PortValue.FromInt((int)rounded); return true; }
 			if (type == "shitdesigner.convert.int_to_float" && TryInt(context, "value", out var i)) { value = PortValue.FromFloat(i); return true; }
 			if (type == "shitdesigner.convert.float_to_bool" && TryFloat(context, "value", out f)) { var threshold = ParameterFloat(context, "threshold", .5f); var comparison = ParameterString(context, "comparison", "greater_equal"); value = PortValue.FromBool(comparison == "less" ? f < threshold : f >= threshold); return true; }
@@ -487,15 +486,6 @@ namespace ShitDesigner.Nodes {
 			if (parameter == null) return fallback;
 			try { return parameter.Value.AsFloat(); } catch (InvalidOperationException) { return fallback; }
 		}
-		private bool ParameterBool(NodeExecutionContext context, string id, bool fallback) {
-			var key = new ParameterKey(NodeId, new ParameterId(id));
-			if (context?.Snapshot?.EffectiveValues != null && context.Snapshot.EffectiveValues.TryGetValue(key, out var effective)) {
-				try { return effective.AsBool(); } catch (InvalidOperationException) { }
-			}
-			var parameter = _record.Parameters.FirstOrDefault(x => x.Id.Value == id);
-			if (parameter == null) return fallback;
-			try { return parameter.Value.AsBool(); } catch (InvalidOperationException) { return fallback; }
-		}
 		private Diagnostic Diagnostic(string code, string message, NodeExecutionContext context) => new Diagnostic(new DiagnosticCode(code), Severity.Warning, message, nodeId: NodeId, nodeTypeId: TypeId, generationId: GenerationId, frameNumber: unchecked((long)context.Snapshot.FrameNumber), graphClockTime: context.Snapshot.GraphClockTime, module: "nodes");
 		private UnitResult<Diagnostic> Failure(string code, string message, NodeInstanceId nodeId) => UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, nodeId: nodeId, nodeTypeId: TypeId, generationId: GenerationId, module: "nodes"));
 	}
@@ -529,7 +519,6 @@ namespace ShitDesigner.Nodes {
 			};
 			definitions.AddRange(shaderManifest.Entries.Select(x => x.ToNodeDefinition()));
 			definitions.Add(new NodeDefinition(new NodeTypeId("shitdesigner.video.player"), 1, "VideoPlayer", "Video", new[] { ImageOut }, VideoParameters()));
-			definitions.Add(AssetFlashSignalBank());
 			definitions.Add(AssetFlash());
 			definitions.AddRange(new[] { FloatToInt(), IntToFloat(), FloatToBool(), BoolToFloat(), Compose("2"), Compose("3"), Compose("4"), Split("2"), Split("3"), Split("4"), VectorComponent(), ColorToLuminance(), FloatToColor() });
 			return new ReadOnlyCollection<NodeDefinition>(definitions);
@@ -539,19 +528,6 @@ namespace ShitDesigner.Nodes {
 		public static SceneNodeBinding SceneBinding(NodeTypeId id) { if (id.Value == "shitdesigner.scene.3d") return new SceneNodeBinding("builtin.scene.3d"); if (id.Value == "shitdesigner.scene.2d") return new SceneNodeBinding("builtin.scene.2d", true, true); return null; }
 		private static NodeParameterDefinition PreviewMode() => new NodeParameterDefinition(new ParameterId("display.mode"), "Display Mode", ParameterType.Enum, ParameterValue.FromEnum("fit"), enumOptions: new[] { "fit", "fill", "stretch" });
 		private static IEnumerable<NodeParameterDefinition> VideoParameters() => new[] { new NodeParameterDefinition(new ParameterId("transport.media_asset"), "Media Asset", ParameterType.MediaAssetReference, ParameterValue.Default(ParameterType.MediaAssetReference)), new NodeParameterDefinition(new ParameterId("transport.playing"), "Playing", ParameterType.Bool, ParameterValue.FromBool(false)), new NodeParameterDefinition(new ParameterId("transport.playhead_seconds"), "Playhead", ParameterType.Float, ParameterValue.FromFloat(0), ParameterValue.FromFloat(0), ParameterValue.FromFloat(float.MaxValue), true), new NodeParameterDefinition(new ParameterId("transport.speed"), "Speed", ParameterType.Float, ParameterValue.FromFloat(1), ParameterValue.FromFloat(0), ParameterValue.FromFloat(4)), new NodeParameterDefinition(new ParameterId("transport.loop"), "Loop", ParameterType.Bool, ParameterValue.FromBool(true)) };
-		private static NodeDefinition AssetFlashSignalBank() {
-			var ports = Enumerable.Range(1, 8)
-				.Select(slot => new NodePortDefinition(new PortId("signal_" + slot), "Signal " + slot,
-					NodePortDirection.Output, NodePortType.Bool, false))
-				.ToList();
-			var parameters = Enumerable.Range(1, 8)
-				.Select(slot => new NodeParameterDefinition(new ParameterId("signal_" + slot), "Signal " + slot,
-					ParameterType.Bool, ParameterValue.FromBool(false), group: "Signals", displayOrder: slot,
-					description: "Map a keyboard or MIDI control here, then connect this output to an Asset Flash trigger."))
-				.ToList();
-			return new NodeDefinition(new NodeTypeId("shitdesigner.input.asset_flash_signals"), 1,
-				"Asset Flash Signals", "Input", ports, parameters);
-		}
 		private static NodeDefinition AssetFlash() {
 			var ports = Enumerable.Range(1, 8)
 				.Select(slot => new NodePortDefinition(new PortId("trigger_" + slot), "Trigger " + slot, NodePortDirection.Input, NodePortType.Bool, false))

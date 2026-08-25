@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using ShitDesigner.Media;
+using UnityEngine;
 
 namespace ShitDesigner.Tests.Media {
 	public sealed class AssetFlashTests {
@@ -31,6 +32,29 @@ namespace ShitDesigner.Tests.Media {
 
 			Assert.That(state.Sample(triggers, 1d, .25d), Is.EqualTo(7));
 			Assert.That(state.LastFiredSlot, Is.EqualTo(7));
+		}
+
+		[Test]
+		public void Component_CanBeConfiguredAndTriggeredWithoutGraphRuntime() {
+			var host = new GameObject("AssetFlashComponentTest");
+			var image = new Texture2D(2, 2);
+			try {
+				var component = host.AddComponent<AssetFlashComponent>();
+				component.SetImage(3, image);
+
+				component.Trigger(3);
+
+				Assert.That(component.ActiveSlot, Is.EqualTo(3));
+				Assert.That(component.OutputTexture, Is.SameAs(image));
+				component.Clear();
+				Assert.That(component.ActiveSlot, Is.Zero);
+				Assert.That(component.OutputTexture, Is.Null);
+				Assert.That(component.TryTrigger(0), Is.False);
+			}
+			finally {
+				Object.DestroyImmediate(image);
+				Object.DestroyImmediate(host);
+			}
 		}
 	}
 }
