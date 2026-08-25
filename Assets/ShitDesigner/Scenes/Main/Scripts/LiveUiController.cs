@@ -20,7 +20,17 @@ namespace ShitDesigner.Main {
 		private Button _outputButton;
 		private Button _identifyButton;
 		private DropdownField _displaySelector;
+		private Button _confirmationCancelButton;
+		private Button _confirmationConfirmButton;
+		private DropdownField _confirmationDisplaySelector;
+		private Label _confirmationTitle;
+		private Label _confirmationMessage;
+		private VisualElement _confirmationOverlay;
+		private readonly System.Collections.Generic.List<int> _confirmationDisplayNumbers = new System.Collections.Generic.List<int>();
 		private string _renderedSceneId = string.Empty;
+		private bool _pendingOutputActive;
+		private int _pendingDisplayNumber;
+		private bool _showingOutputError;
 		private bool _initialized;
 		private bool _updating;
 
@@ -39,18 +49,31 @@ namespace ShitDesigner.Main {
 			_outputButton = Required<Button>(root, "output-toggle");
 			_identifyButton = Required<Button>(root, "identify-display");
 			_displaySelector = Required<DropdownField>(root, "display-selector");
+			_confirmationCancelButton = Required<Button>(root, "output-confirm-cancel");
+			_confirmationConfirmButton = Required<Button>(root, "output-confirm-accept");
+			_confirmationDisplaySelector = Required<DropdownField>(root, "output-confirm-display-selector");
+			_confirmationTitle = Required<Label>(root, "output-confirm-title");
+			_confirmationMessage = Required<Label>(root, "output-confirm-message");
+			_confirmationOverlay = Required<VisualElement>(root, "output-confirm-overlay");
 			_sceneSelector.RegisterValueChangedCallback(OnSceneSelected);
 			_displaySelector.RegisterValueChangedCallback(OnDisplaySelected);
-			_outputButton.clicked += ToggleOutput;
+			_confirmationDisplaySelector.RegisterValueChangedCallback(OnConfirmationDisplaySelected);
+			_outputButton.clicked += RequestOutputToggle;
 			_identifyButton.clicked += _output.IdentifyDisplay;
+			_confirmationCancelButton.clicked += HideOutputConfirmation;
+			_confirmationConfirmButton.clicked += ConfirmOutputToggle;
+			HideOutputConfirmation();
 			_initialized = true;
 		}
 
 		public void Shutdown() {
 			if (_sceneSelector != null) _sceneSelector.UnregisterValueChangedCallback(OnSceneSelected);
 			if (_displaySelector != null) _displaySelector.UnregisterValueChangedCallback(OnDisplaySelected);
-			if (_outputButton != null) _outputButton.clicked -= ToggleOutput;
+			if (_confirmationDisplaySelector != null) _confirmationDisplaySelector.UnregisterValueChangedCallback(OnConfirmationDisplaySelected);
+			if (_outputButton != null) _outputButton.clicked -= RequestOutputToggle;
 			if (_identifyButton != null && _output != null) _identifyButton.clicked -= _output.IdentifyDisplay;
+			if (_confirmationCancelButton != null) _confirmationCancelButton.clicked -= HideOutputConfirmation;
+			if (_confirmationConfirmButton != null) _confirmationConfirmButton.clicked -= ConfirmOutputToggle;
 			_initialized = false;
 			_host = null;
 			_output = null;
@@ -112,7 +135,80 @@ namespace ShitDesigner.Main {
 			if (int.TryParse(change.newValue.Replace("Display ", string.Empty), out var number)) _output.SelectDisplay(number);
 		}
 
-		private void ToggleOutput() => _output?.SetOutputActive(!_output.IsOutputActive);
+		private void RequestOutputToggle() {
+			if (_output == null) return;
+			_showingOutputError = false;
+			_confirmationCancelButton.RemoveFromClassList("is-hidden");
+			_pendingOutputActive = !_output.IsOutputActive;
+			PrepareConfirmationDisplaySelector();
+			if (_pendingOutputActive && !_output.IsAvailable) {
+				ShowOutputError(UnityEngine.Application.isEditor
+					? "External Display output requires a standalone Player."
+					: $"Display {_pendingDisplayNumber} is not connected.");
+				return;
+			}
+
+			_confirmationTitle.text = _pendingOutputActive ? "START LIVE OUTPUT?" : "STOP LIVE OUTPUT?";
+			_confirmationMessage.text = _pendingOutputActive
+				? $"Send Program output to Display {_pendingDisplayNumber}."
+				: $"Stop Program output on Display {_output.DisplayNumber}.";
+			_confirmationConfirmButton.text = _pendingOutputActive ? "START" : "STOP";
+			_confirmationConfirmButton.EnableInClassList("is-stop", !_pendingOutputActive);
+			_confirmationOverlay.RemoveFromClassList("is-hidden");
+		}
+
+		private void PrepareConfirmationDisplaySelector() {
+			_confirmationDisplayNumbers.Clear();
+			var labels = new System.Collections.Generic.List<string>();
+			for (var displayNumber = 2; displayNumber <= _output.ConnectedDisplayCount; displayNumber++) {
+				_confirmationDisplayNumbers.Add(displayNumber);
+				labels.Add("Display " + displayNumber);
+			}
+			if (_confirmationDisplayNumbers.Count == 0) {
+				_confirmationDisplayNumbers.Add(_output.DisplayNumber);
+				labels.Add("Display " + _output.DisplayNumber);
+			}
+
+			var selectedIndex = _confirmationDisplayNumbers.IndexOf(_output.DisplayNumber);
+			if (selectedIndex < 0) selectedIndex = 0;
+			_pendingDisplayNumber = _confirmationDisplayNumbers[selectedIndex];
+			_confirmationDisplaySelector.choices = labels;
+			_confirmationDisplaySelector.SetValueWithoutNotify(labels[selectedIndex]);
+			_confirmationDisplaySelector.SetEnabled(_pendingOutputActive && !UnityEngine.Application.isEditor && _output.ConnectedDisplayCount > 1);
+		}
+
+		private void OnConfirmationDisplaySelected(ChangeEvent<string> change) {
+			var selectedIndex = _confirmationDisplaySelector.choices.IndexOf(change.newValue);
+			if (selectedIndex < 0 || selectedIndex >= _confirmationDisplayNumbers.Count) return;
+			_pendingDisplayNumber = _confirmationDisplayNumbers[selectedIndex];
+			if (_pendingOutputActive) _confirmationMessage.text = $"Send Program output to Display {_pendingDisplayNumber}.";
+		}
+
+		private void ConfirmOutputToggle() {
+			if (_output == null) return;
+			if (_showingOutputError) {
+				HideOutputConfirmation();
+				return;
+			}
+			if (_pendingOutputActive && !_output.SelectDisplay(_pendingDisplayNumber)) {
+				ShowOutputError(_output.LastError);
+				return;
+			}
+			if (_output.SetOutputActive(_pendingOutputActive)) HideOutputConfirmation();
+			else ShowOutputError(_output.LastError);
+		}
+
+		private void ShowOutputError(string message) {
+			_showingOutputError = true;
+			_confirmationCancelButton.AddToClassList("is-hidden");
+			_confirmationTitle.text = "OUTPUT UNAVAILABLE";
+			_confirmationMessage.text = message;
+			_confirmationConfirmButton.text = "CLOSE";
+			_confirmationConfirmButton.RemoveFromClassList("is-stop");
+			_confirmationOverlay.RemoveFromClassList("is-hidden");
+		}
+
+		private void HideOutputConfirmation() => _confirmationOverlay?.AddToClassList("is-hidden");
 
 		private void ShowEnqueueRejection(LiveParameterEnqueueResult result) {
 			if (!result.Accepted && _diagnosticLabel != null) _diagnosticLabel.text = result.RejectionReason;
