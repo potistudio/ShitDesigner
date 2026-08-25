@@ -52,7 +52,7 @@ flowchart TD
 
 - `RenderTexturePool` はApplication Lifetimeで1つだけ存在する。
 - Projectを同時に1つだけ開くため、RuntimeSessionは最大1つをCurrentとして持つ。
-- Catalog内のShaderおよびテンプレートMaterial、`BootstrapAssets` 内の3D／2D PrefabはUnity Assetであり、参照側は破棄しない。
+- Catalog内のShaderおよびテンプレートMaterial、`Scene3DDefinition` のPrefab、`BootstrapAssets` 内の既定3D／2D PrefabはUnity Assetであり、参照側は破棄しない。
 - Runtime Nodeが複製したMaterial、生成したPrefab InstanceおよびBackendはRuntime Node Generationが所有する。
 
 ## RenderTexture Pool
@@ -223,7 +223,7 @@ Retiring中のLayerは使用中として数える。削除直後にLayerが空�
 
 ## MaterialとCatalog Asset
 
-- CatalogのShaderとテンプレートMaterial、および `BootstrapAssets` の3D／2D PrefabはAsset参照であり、RuntimeSessionは破棄しない。
+- CatalogのShaderとテンプレートMaterial、`Scene3DDefinition` のPrefab、および `BootstrapAssets` の既定3D／2D PrefabはAsset参照であり、RuntimeSessionは破棄しない。
 - Node Factoryが複製したMaterialはRuntime Node Generationが所有する。
 - 共有テンプレートMaterialを実行中に変更しない。
 - Node削除時はMaterialを使用する描画が完了したPhase 9以降に破棄する。

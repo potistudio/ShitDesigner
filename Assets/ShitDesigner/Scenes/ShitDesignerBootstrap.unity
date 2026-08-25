@@ -169,6 +169,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _scene3dPrefab: {fileID: 7787689742687978739, guid: 52d135c910953af43a7424639474c3c2, type: 3}
   _scene2dPrefab: {fileID: 110000, guid: 66666666666666666666666666666666, type: 3}
+  _scene3dDefinitionCatalog: {fileID: 11400000, guid: d71264b0010b45cbaca46472d4731651, type: 2}
   _videoHostPrefab: {fileID: 100000, guid: 77777777777777777777777777777770, type: 3}
   _shaderGenerator: {fileID: 4800000, guid: 11111111111111111111111111111111, type: 3}
   _shaderEffect: {fileID: 4800000, guid: 22222222222222222222222222222222, type: 3}

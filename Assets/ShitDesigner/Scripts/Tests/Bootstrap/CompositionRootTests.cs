@@ -14,6 +14,7 @@ using ShitDesigner.Presentation;
 using ShitDesigner.Project;
 using ShitDesigner.Rendering;
 using ShitDesigner.Runtime;
+using ShitDesigner.Scene;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
@@ -52,28 +53,81 @@ namespace ShitDesigner.Bootstrap.Tests {
 				Assert.That(serialized.FindProperty("_nodes").arraySize, Is.EqualTo(1));
 				Assert.That(serialized.FindProperty("_nodes").GetArrayElementAtIndex(0).objectReferenceValue, Is.SameAs(sceneNode));
 				Assert.That(serialized.FindProperty("_programSource").objectReferenceValue, Is.SameAs(sceneNode));
+				Assert.That(sceneNode.Definition, Is.Not.Null);
+				Assert.That(sceneNode.Definition.Prefab, Is.Not.Null);
 			}
 			finally { EditorSceneManager.CloseScene(scene, removeScene: true); }
 		}
 
 		[Test]
-		public void UnityGraphComponentsBuildCompleteProjectWithoutEditorCommands() {
+		public void UnityGraphComponentsBuildCompleteProjectWithPerNodeSceneDefinitions() {
 			var gameObject = new GameObject("Authored graph test");
+			var secondGameObject = new GameObject("Second authored graph node");
+			var firstPrefab = new GameObject("First scene prefab");
+			var secondPrefab = new GameObject("Second scene prefab");
+			var firstDefinition = ScriptableObject.CreateInstance<Scene3DDefinition>();
+			var secondDefinition = ScriptableObject.CreateInstance<Scene3DDefinition>();
+			var definitionCatalog = ScriptableObject.CreateInstance<Scene3DDefinitionCatalog>();
 			try {
 				var sceneNode = gameObject.AddComponent<Scene3DNode>();
-				var built = UnityGraphProjectBuilder.Build("Authored Graph", NodeDefinitionCatalog.CreateInitial(),
-					new UnityGraphNode[] { sceneNode }, sceneNode);
+				var secondSceneNode = secondGameObject.AddComponent<Scene3DNode>();
+				var assets = gameObject.AddComponent<BootstrapAssets>();
+				ConfigureDefinition(firstDefinition, "48df47dd-8df1-4fd9-8de8-0ebd91858bf1", firstPrefab);
+				ConfigureDefinition(secondDefinition, "b105848d-2691-4f4b-98f9-4fc6f38a391e", secondPrefab);
+				ConfigureDefinitionCatalog(definitionCatalog, firstDefinition, secondDefinition);
+				var serializedAssets = new UnityEditor.SerializedObject(assets);
+				serializedAssets.FindProperty("_scene3dDefinitionCatalog").objectReferenceValue = definitionCatalog;
+				serializedAssets.ApplyModifiedPropertiesWithoutUndo();
+				ConfigureSceneNode(sceneNode, firstDefinition);
+				ConfigureSceneNode(secondSceneNode, secondDefinition);
+				var built = UnityGraphProjectBuilder.Build("Authored Graph", NodeDefinitionCatalog.CreateInitial(), assets,
+					new UnityGraphNode[] { sceneNode, secondSceneNode }, sceneNode);
 
 				Assert.That(built.IsSuccess, Is.True, built.IsFailure ? built.Error.Message : string.Empty);
-				var source = built.Value.Nodes.Single(node => node.TypeId.Value == "shitdesigner.scene.3d");
+				var sources = built.Value.Nodes.Where(node => node.TypeId.Value == "shitdesigner.scene.3d").ToList();
+				var source = sources.Single(node => node.Id.Value == sceneNode.NodeId);
+				var secondSource = sources.Single(node => node.Id.Value == secondSceneNode.NodeId);
 				var program = built.Value.Nodes.Single(node => node.TypeId.Value == GraphConstants.ProgramOutputTypeId);
 				var connection = built.Value.Connections.Single();
 				Assert.That(connection.SourceNodeId, Is.EqualTo(source.Id));
 				Assert.That(connection.DestinationNodeId, Is.EqualTo(program.Id));
 				Assert.That(connection.SourcePortId.Value, Is.EqualTo(GraphConstants.ImagePortId));
 				Assert.That(connection.DestinationPortId.Value, Is.EqualTo(GraphConstants.ImagePortId));
+				Assert.That(Scene3DDefinition.ReadDefinitionId(source.RawState).Value, Is.EqualTo(firstDefinition.Id));
+				Assert.That(Scene3DDefinition.ReadDefinitionId(secondSource.RawState).Value, Is.EqualTo(secondDefinition.Id));
+				Assert.That(assets.ResolveScene3dPrefab(RuntimeNodeCreateInfo.FromProject(source)), Is.SameAs(firstPrefab));
+				Assert.That(assets.ResolveScene3dPrefab(RuntimeNodeCreateInfo.FromProject(secondSource)), Is.SameAs(secondPrefab));
 			}
-			finally { UnityEngine.Object.DestroyImmediate(gameObject); }
+			finally {
+				UnityEngine.Object.DestroyImmediate(firstDefinition);
+				UnityEngine.Object.DestroyImmediate(secondDefinition);
+				UnityEngine.Object.DestroyImmediate(definitionCatalog);
+				UnityEngine.Object.DestroyImmediate(firstPrefab);
+				UnityEngine.Object.DestroyImmediate(secondPrefab);
+				UnityEngine.Object.DestroyImmediate(secondGameObject);
+				UnityEngine.Object.DestroyImmediate(gameObject);
+			}
+		}
+
+		private static void ConfigureDefinition(Scene3DDefinition definition, string id, GameObject prefab) {
+			var serialized = new UnityEditor.SerializedObject(definition);
+			serialized.FindProperty("_id").stringValue = id;
+			serialized.FindProperty("_prefab").objectReferenceValue = prefab;
+			serialized.ApplyModifiedPropertiesWithoutUndo();
+		}
+
+		private static void ConfigureSceneNode(Scene3DNode node, Scene3DDefinition definition) {
+			var serialized = new UnityEditor.SerializedObject(node);
+			serialized.FindProperty("_definition").objectReferenceValue = definition;
+			serialized.ApplyModifiedPropertiesWithoutUndo();
+		}
+
+		private static void ConfigureDefinitionCatalog(Scene3DDefinitionCatalog catalog, params Scene3DDefinition[] definitions) {
+			var serialized = new UnityEditor.SerializedObject(catalog);
+			var property = serialized.FindProperty("_definitions");
+			property.arraySize = definitions.Length;
+			for (var index = 0; index < definitions.Length; index++) property.GetArrayElementAtIndex(index).objectReferenceValue = definitions[index];
+			serialized.ApplyModifiedPropertiesWithoutUndo();
 		}
 
 		[Test]

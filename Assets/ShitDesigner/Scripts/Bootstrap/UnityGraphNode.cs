@@ -17,8 +17,9 @@ namespace ShitDesigner.Bootstrap {
 		public string NodeId { get; private set; } = string.Empty;
 		public abstract string TypeId { get; }
 
-		internal Result<NodeRecord, Diagnostic> Build(NodeDefinitionCatalog catalog) {
+		internal Result<NodeRecord, Diagnostic> Build(NodeDefinitionCatalog catalog, BootstrapAssets assets) {
 			if (catalog == null) return Failure("bootstrap.graph.catalog_missing", "A node catalog is required.");
+			if (assets == null) return Failure("bootstrap.graph.assets_missing", "Bootstrap assets are required.");
 			var typeId = new NodeTypeId(TypeId);
 			var entry = catalog.Entries.FirstOrDefault(candidate => candidate.TypeId == typeId);
 			if (entry == null) return Failure("bootstrap.graph.type_missing", "The authored node type is not registered: " + TypeId);
@@ -31,17 +32,21 @@ namespace ShitDesigner.Bootstrap {
 				parameter, parameter.DefaultValue));
 			var ports = definition.Ports.Select(port => port.ToSnapshot());
 			var displayName = string.IsNullOrWhiteSpace(_displayName) ? definition.DisplayName : _displayName.Trim();
+			var rawState = BuildRawState(assets);
+			if (rawState.IsFailure) return Result.Failure<NodeRecord, Diagnostic>(rawState.Error);
 			return Result.Success<NodeRecord, Diagnostic>(new NodeRecord(new NodeInstanceId(NodeId), definition.TypeId,
 				definition.SchemaVersion, displayName, true, new ProjectPosition(_graphPosition.x, _graphPosition.y),
-				parameters, ports, "{}", definition.SystemOwned, definition.UserAddable));
+				parameters, ports, rawState.Value, definition.SystemOwned, definition.UserAddable));
 		}
+
+		protected virtual Result<string, Diagnostic> BuildRawState(BootstrapAssets assets) => Result.Success<string, Diagnostic>("{}");
 
 		private static Result<NodeRecord, Diagnostic> Failure(string code, string message) =>
 			Result.Failure<NodeRecord, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "bootstrap"));
 	}
 
 	internal static class UnityGraphProjectBuilder {
-		internal static Result<ProjectDocument, Diagnostic> Build(string projectName, NodeDefinitionCatalog catalog,
+		internal static Result<ProjectDocument, Diagnostic> Build(string projectName, NodeDefinitionCatalog catalog, BootstrapAssets assets,
 			IEnumerable<UnityGraphNode> nodes, UnityGraphNode programSource) {
 			if (string.IsNullOrWhiteSpace(projectName)) return Failure("bootstrap.graph.project_name", "The authored project name is required.");
 			var components = (nodes ?? Enumerable.Empty<UnityGraphNode>()).Where(node => node != null).Distinct().ToList();
@@ -50,7 +55,7 @@ namespace ShitDesigner.Bootstrap {
 
 			var records = new List<NodeRecord>(components.Count);
 			foreach (var component in components) {
-				var built = component.Build(catalog);
+				var built = component.Build(catalog, assets);
 				if (built.IsFailure) return Result.Failure<ProjectDocument, Diagnostic>(built.Error);
 				records.Add(built.Value);
 			}

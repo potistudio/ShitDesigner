@@ -9,6 +9,8 @@ using ShitDesigner.Nodes;
 using ShitDesigner.Persistence;
 using ShitDesigner.Project;
 using ShitDesigner.Rendering;
+using ShitDesigner.Runtime;
+using ShitDesigner.Scene;
 using UnityEngine;
 
 namespace ShitDesigner.Bootstrap {
@@ -19,6 +21,7 @@ namespace ShitDesigner.Bootstrap {
 		[Header("Isolated Scene prefabs")]
 		[SerializeField] private GameObject _scene3dPrefab;
 		[SerializeField] private GameObject _scene2dPrefab;
+		[SerializeField] private Scene3DDefinitionCatalog _scene3dDefinitionCatalog;
 		[SerializeField] private GameObject _videoHostPrefab;
 
 		[Header("Builtin shader roles")]
@@ -39,15 +42,28 @@ namespace ShitDesigner.Bootstrap {
 		// reflection.  The composition root still consumes the serialized fields.
 		public GameObject Scene3dPrefab => _scene3dPrefab;
 		public GameObject Scene2dPrefab => _scene2dPrefab;
+		public Scene3DDefinitionCatalog Scene3DDefinitionCatalog => _scene3dDefinitionCatalog;
 		public NodeTypeCatalog NodeTypeCatalog => _nodeTypeCatalog;
 		public ShaderNodeManifestAsset ShaderManifest => _shaderManifest != null ? _shaderManifest : _nodeTypeCatalog?.ShaderManifest;
 		public Shader DisplayTransformShader => _displayTransformShader;
+
+		internal UnitResult<Diagnostic> ValidateInstalled(Scene3DDefinition definition) {
+			if (definition == null) return PreflightFailure("bootstrap.scene3d.definition_missing", "A Scene3DDefinition is required.");
+			var valid = definition.Validate();
+			if (valid.IsFailure) return valid;
+			if (_scene3dDefinitionCatalog == null || !_scene3dDefinitionCatalog.TryGet(definition.Id, out var installed) || installed != definition)
+				return PreflightFailure("bootstrap.scene3d.definition_not_installed", "The Scene3DDefinition must be installed in BootstrapAssets' catalog.");
+			return UnitResult.Success<Diagnostic>();
+		}
 
 		/// <summary>Validates immutable startup inputs without opening devices,
 		/// creating runtime objects, or taking ownership of GPU resources.</summary>
 		public UnitResult<Diagnostic> Preflight() {
 			if (_nodeTypeCatalog == null) return PreflightFailure("bootstrap.preflight.catalog_missing", "The generated NodeTypeCatalog asset is required.");
 			if (_scene3dPrefab == null || _scene2dPrefab == null) return PreflightFailure("bootstrap.preflight.scene_missing", "Explicit 3D and 2D Scene prefabs are required.");
+			if (_scene3dDefinitionCatalog == null) return PreflightFailure("bootstrap.preflight.scene3d_catalog_missing", "A Scene3DDefinitionCatalog is required.");
+			var scene3dDefinitions = _scene3dDefinitionCatalog.Validate();
+			if (scene3dDefinitions.IsFailure) return scene3dDefinitions;
 			if (_shaderGenerator == null || _shaderEffect == null || _shaderBlend2 == null) return PreflightFailure("bootstrap.preflight.shader_missing", "All three builtin shader role assets are required.");
 			if (_displayTransformShader == null) return PreflightFailure("bootstrap.preflight.display_transform_missing", "The explicit DisplayTransform shader is required.");
 			if (_videoConversionMaterial == null) return PreflightFailure("bootstrap.preflight.video_material_missing", "The explicit VideoToLinearPremultiplied material is required.");
@@ -130,8 +146,16 @@ namespace ShitDesigner.Bootstrap {
 					context.Document = document;
 					context.ProjectRoot = root ?? string.Empty;
 				},
-				applicationResources: new IDisposable[] { hapBridge, conversion });
+				applicationResources: new IDisposable[] { hapBridge, conversion },
+				scene3dPrefabResolver: ResolveScene3dPrefab);
 			return Result.Success<IVisualBindingProvider, Diagnostic>(provider);
+		}
+
+		internal GameObject ResolveScene3dPrefab(RuntimeNodeCreateInfo node) {
+			var definitionId = Scene3DDefinition.ReadDefinitionId(node?.RawState);
+			if (definitionId.IsFailure) throw new InvalidDataException(definitionId.Error.Message);
+			if (string.IsNullOrEmpty(definitionId.Value)) return _scene3dPrefab;
+			return _scene3dDefinitionCatalog != null && _scene3dDefinitionCatalog.TryGet(definitionId.Value, out var definition) ? definition.Prefab : null;
 		}
 
 		private static Result<IVisualBindingProvider, Diagnostic> Failure(string code, string message)
