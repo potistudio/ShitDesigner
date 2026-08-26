@@ -52,15 +52,15 @@ namespace ShitDesigner.Main {
 	internal sealed class LiveGraph : IDisposable {
 		private readonly SceneIsolationManager _sceneManager;
 		private readonly RenderTexturePool _renderPool;
-		public IReadOnlyList<PatchDefinition> SceneDefinitions { get; }
+		public IReadOnlyList<PatchDefinition> PatchDefinitions { get; }
 		public IReadOnlyList<LiveProgramOutput> ProgramOutputs { get; }
 
-		public LiveGraph(SceneIsolationManager sceneManager, RenderTexturePool renderPool, IEnumerable<PatchDefinition> sceneDefinitions, IEnumerable<LiveProgramOutput> programOutputs) {
+		public LiveGraph(SceneIsolationManager sceneManager, RenderTexturePool renderPool, IEnumerable<PatchDefinition> patchDefinitions, IEnumerable<LiveProgramOutput> programOutputs) {
 			_sceneManager = sceneManager ?? throw new ArgumentNullException(nameof(sceneManager));
 			_renderPool = renderPool ?? throw new ArgumentNullException(nameof(renderPool));
-			SceneDefinitions = (sceneDefinitions ?? throw new ArgumentNullException(nameof(sceneDefinitions))).ToArray();
+			PatchDefinitions = (patchDefinitions ?? throw new ArgumentNullException(nameof(patchDefinitions))).ToArray();
 			ProgramOutputs = (programOutputs ?? throw new ArgumentNullException(nameof(programOutputs))).ToArray();
-			if (SceneDefinitions.Count == 0 || ProgramOutputs.Count == 0) throw new ArgumentException("A live graph requires scenes and Program outputs.");
+			if (PatchDefinitions.Count == 0 || ProgramOutputs.Count == 0) throw new ArgumentException("A live graph requires patches and Program outputs.");
 		}
 
 		public void Dispose() {
@@ -275,15 +275,17 @@ namespace ShitDesigner.Main {
 		private readonly LiveGraph _graph;
 		private readonly IReadOnlyList<LiveProgramOutput> _programOutputs;
 		private readonly Dictionary<string, LiveProgramOutput> _programOutputsByNodeId;
-		private readonly Dictionary<string, LiveShitDesignerScene> _scenesById;
-		private LiveShitDesignerScene _selectedScene;
+		private readonly Dictionary<string, LivePatch> _patchesById;
+		private LivePatch _loadedPatch;
+		private LivePatch _preloadedPatch;
 		private ulong _frameNumber;
 		private double _graphTime;
 		private double _lastDeltaSeconds;
 		private bool _disposed;
 
-		public string SelectedSceneId => _selectedScene?.Definition.Id ?? string.Empty;
-		public IReadOnlyList<PatchDefinition> Scenes => _graph.SceneDefinitions;
+		public string LoadedPatchId => _loadedPatch?.Definition.Id ?? string.Empty;
+		public string PreloadedPatchId => _preloadedPatch?.Definition.Id ?? string.Empty;
+		public IReadOnlyList<PatchDefinition> Patches => _graph.PatchDefinitions;
 		public LiveProgramFrame CurrentFrame { get; private set; }
 		public LiveProgramFrames CurrentFrames { get; private set; }
 
@@ -291,30 +293,36 @@ namespace ShitDesigner.Main {
 			_graph = graph ?? throw new ArgumentNullException(nameof(graph));
 			_programOutputs = graph.ProgramOutputs;
 			_programOutputsByNodeId = _programOutputs.ToDictionary(output => output.Definition.Id, StringComparer.Ordinal);
-			_scenesById = graph.SceneDefinitions.ToDictionary(definition => definition.Id, definition => new LiveShitDesignerScene(definition, _programOutputsByNodeId), StringComparer.Ordinal);
-			_selectedScene = _scenesById[graph.SceneDefinitions[0].Id];
-			CurrentFrames = new LiveProgramFrames(_selectedScene.Outputs.Select(output => new LiveProgramFrame(output.ProgramTexture, 0)));
+			_patchesById = graph.PatchDefinitions.ToDictionary(definition => definition.Id, definition => new LivePatch(definition, _programOutputsByNodeId), StringComparer.Ordinal);
+			_loadedPatch = _patchesById[graph.PatchDefinitions[0].Id];
+			_preloadedPatch = _loadedPatch;
+			CurrentFrames = new LiveProgramFrames(_loadedPatch.Outputs.Select(output => new LiveProgramFrame(output.ProgramTexture, 0)));
 			CurrentFrame = CurrentFrames.Primary;
 		}
 
 		public LiveParameterApplicationResult Apply(LiveParameterRequest request) {
-			if (!_scenesById.TryGetValue(request.SceneId, out var scene)) return Reject(request, "The requested ShitDesigner scene does not exist.");
-			if (request.Kind == LiveParameterRequestKind.SelectScene) {
-				_selectedScene = scene;
+			if (!_patchesById.TryGetValue(request.PatchId, out var patch)) return Reject(request, "The requested patch does not exist.");
+			if (request.Kind == LiveParameterRequestKind.PreloadPatch) {
+				_preloadedPatch = patch;
+				return Accept(request);
+			}
+			if (request.Kind == LiveParameterRequestKind.LoadPatch) {
+				if (_preloadedPatch != patch) return Reject(request, "The requested patch has not been preloaded.");
+				_loadedPatch = patch;
 				return Accept(request);
 			}
 			if (request.Kind == LiveParameterRequestKind.TriggerFlash) {
-				scene.TriggerFlash(_graphTime);
+				patch.TriggerFlash(_graphTime);
 				return Accept(request);
 			}
-			return scene.TrySetParameter(request.ParameterId, request.Value, out var reason) ? Accept(request) : Reject(request, reason);
+			return patch.TrySetParameter(request.ParameterId, request.Value, out var reason) ? Accept(request) : Reject(request, reason);
 		}
 
 		public void Evaluate(double deltaSeconds) {
 			EnsureUsable();
 			_lastDeltaSeconds = Math.Max(0d, deltaSeconds);
 			_graphTime += _lastDeltaSeconds;
-			foreach (var scene in _selectedScene.Outputs) {
+			foreach (var scene in _loadedPatch.Outputs) {
 				var result = scene.Runtime.AdvanceGraphClock(_lastDeltaSeconds * scene.Root.TimeScale);
 				if (result.IsFailure) throw new InvalidOperationException(result.Error.Message);
 			}
@@ -322,7 +330,7 @@ namespace ShitDesigner.Main {
 
 		public void SceneUpdate(double deltaSeconds) {
 			EnsureUsable();
-			foreach (var scene in _selectedScene.Outputs) {
+			foreach (var scene in _loadedPatch.Outputs) {
 				var result = scene.Runtime.AdvancePhysics(deltaSeconds * scene.Root.TimeScale);
 				if (result.IsFailure) throw new InvalidOperationException(result.Error.Message);
 			}
@@ -332,14 +340,14 @@ namespace ShitDesigner.Main {
 			EnsureUsable();
 			var nextFrame = _frameNumber + 1;
 			if (nextFrame == 0) nextFrame = 1;
-			foreach (var scene in _selectedScene.Outputs) scene.Render(_graphTime, _lastDeltaSeconds, nextFrame);
+			foreach (var scene in _loadedPatch.Outputs) scene.Render(_graphTime, _lastDeltaSeconds, nextFrame);
 			_frameNumber = nextFrame;
-			CurrentFrames = new LiveProgramFrames(_selectedScene.Outputs.Select(output => new LiveProgramFrame(output.ProgramTexture, _frameNumber)));
+			CurrentFrames = new LiveProgramFrames(_loadedPatch.Outputs.Select(output => new LiveProgramFrame(output.ProgramTexture, _frameNumber)));
 			CurrentFrame = CurrentFrames.Primary;
 			return CurrentFrames;
 		}
 
-		public LiveParameterDefinition[] GetSelectedParameterDefinitions() => _selectedScene?.GetParameterDefinitions() ?? Array.Empty<LiveParameterDefinition>();
+		public LiveParameterDefinition[] GetLoadedPatchParameterDefinitions() => _loadedPatch?.GetParameterDefinitions() ?? Array.Empty<LiveParameterDefinition>();
 
 		public void Dispose() {
 			if (_disposed) return;
@@ -349,19 +357,19 @@ namespace ShitDesigner.Main {
 
 		private void EnsureUsable() {
 			if (_disposed) throw new ObjectDisposedException(nameof(LiveGraphRuntime));
-			if (_selectedScene == null) throw new InvalidOperationException("A ShitDesigner scene is not selected.");
+			if (_loadedPatch == null) throw new InvalidOperationException("A patch is not loaded.");
 		}
 
 		private static LiveParameterApplicationResult Accept(LiveParameterRequest request) => new LiveParameterApplicationResult(request.SequenceNumber, true, string.Empty);
 		private static LiveParameterApplicationResult Reject(LiveParameterRequest request, string reason) => new LiveParameterApplicationResult(request.SequenceNumber, false, reason);
 	}
 
-	internal sealed class LiveShitDesignerScene {
+	internal sealed class LivePatch {
 		private readonly Dictionary<string, LivePublishedParameter> _parameters;
 		public PatchDefinition Definition { get; }
 		public IReadOnlyList<LiveProgramOutput> Outputs { get; }
 
-		public LiveShitDesignerScene(PatchDefinition definition, IReadOnlyDictionary<string, LiveProgramOutput> outputsByNodeId) {
+		public LivePatch(PatchDefinition definition, IReadOnlyDictionary<string, LiveProgramOutput> outputsByNodeId) {
 			Definition = definition ?? throw new ArgumentNullException(nameof(definition));
 			if (outputsByNodeId == null) throw new ArgumentNullException(nameof(outputsByNodeId));
 			Outputs = definition.Nodes.Select(node => outputsByNodeId[node.Id]).ToArray();
@@ -377,7 +385,7 @@ namespace ShitDesigner.Main {
 
 		public bool TrySetParameter(string id, float value, out string rejectionReason) {
 			if (!_parameters.TryGetValue(id, out var parameter)) {
-				rejectionReason = "The parameter is not published by this ShitDesigner scene.";
+				rejectionReason = "The parameter is not published by this patch.";
 				return false;
 			}
 			return parameter.Root.TrySetParameter(parameter.Source.Id, value, out rejectionReason);

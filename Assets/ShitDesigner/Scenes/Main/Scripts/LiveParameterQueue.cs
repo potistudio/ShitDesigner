@@ -3,7 +3,8 @@ using System.Collections.Generic;
 
 namespace ShitDesigner.Main {
 	public enum LiveParameterRequestKind {
-		SelectScene,
+		PreloadPatch,
+		LoadPatch,
 		SetParameter,
 		TriggerFlash
 	}
@@ -11,14 +12,14 @@ namespace ShitDesigner.Main {
 	public readonly struct LiveParameterRequest {
 		public ulong SequenceNumber { get; }
 		public LiveParameterRequestKind Kind { get; }
-		public string SceneId { get; }
+		public string PatchId { get; }
 		public string ParameterId { get; }
 		public float Value { get; }
 
-		internal LiveParameterRequest(ulong sequenceNumber, LiveParameterRequestKind kind, string sceneId, string parameterId, float value) {
+		internal LiveParameterRequest(ulong sequenceNumber, LiveParameterRequestKind kind, string patchId, string parameterId, float value) {
 			SequenceNumber = sequenceNumber;
 			Kind = kind;
-			SceneId = sceneId;
+			PatchId = patchId;
 			ParameterId = parameterId;
 			Value = value;
 		}
@@ -51,14 +52,17 @@ namespace ShitDesigner.Main {
 
 		public int Count => _requests.Count;
 
-		public LiveParameterEnqueueResult EnqueueSelectScene(string sceneId)
-			=> Enqueue(LiveParameterRequestKind.SelectScene, sceneId, string.Empty, 0f);
+		public LiveParameterEnqueueResult EnqueuePreloadPatch(string patchId)
+			=> Enqueue(LiveParameterRequestKind.PreloadPatch, patchId, string.Empty, 0f);
 
-		public LiveParameterEnqueueResult EnqueueSetParameter(string sceneId, string parameterId, float value)
-			=> Enqueue(LiveParameterRequestKind.SetParameter, sceneId, parameterId, value);
+		public LiveParameterEnqueueResult EnqueueLoadPatch(string patchId)
+			=> Enqueue(LiveParameterRequestKind.LoadPatch, patchId, string.Empty, 0f);
 
-		public LiveParameterEnqueueResult EnqueueTriggerFlash(string sceneId)
-			=> Enqueue(LiveParameterRequestKind.TriggerFlash, sceneId, string.Empty, 0f);
+		public LiveParameterEnqueueResult EnqueueSetParameter(string patchId, string parameterId, float value)
+			=> Enqueue(LiveParameterRequestKind.SetParameter, patchId, parameterId, value);
+
+		public LiveParameterEnqueueResult EnqueueTriggerFlash(string patchId)
+			=> Enqueue(LiveParameterRequestKind.TriggerFlash, patchId, string.Empty, 0f);
 
 		public int Drain(ICollection<LiveParameterRequest> destination) {
 			if (destination == null) throw new ArgumentNullException(nameof(destination));
@@ -68,14 +72,14 @@ namespace ShitDesigner.Main {
 			return count;
 		}
 
-		private LiveParameterEnqueueResult Enqueue(LiveParameterRequestKind kind, string sceneId, string parameterId, float value) {
+		private LiveParameterEnqueueResult Enqueue(LiveParameterRequestKind kind, string patchId, string parameterId, float value) {
 			if (_requests.Count >= Capacity) return LiveParameterEnqueueResult.Reject("The live parameter queue is full.");
-			if (string.IsNullOrWhiteSpace(sceneId)) return LiveParameterEnqueueResult.Reject("A scene ID is required.");
+			if (string.IsNullOrWhiteSpace(patchId)) return LiveParameterEnqueueResult.Reject("A patch ID is required.");
 			if (kind == LiveParameterRequestKind.SetParameter && string.IsNullOrWhiteSpace(parameterId))
 				return LiveParameterEnqueueResult.Reject("A parameter ID is required.");
 
 			var sequenceNumber = NextSequenceNumber();
-			_requests.Enqueue(new LiveParameterRequest(sequenceNumber, kind, sceneId, parameterId, value));
+			_requests.Enqueue(new LiveParameterRequest(sequenceNumber, kind, patchId, parameterId, value));
 			return LiveParameterEnqueueResult.Accept(sequenceNumber);
 		}
 

@@ -10,7 +10,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace ShitDesigner.Main {
-	/// <summary>Holds the authored ShitDesigner scenes and their Unity scene nodes.</summary>
+	/// <summary>Holds the authored patches and their Unity scene nodes.</summary>
 	[DisallowMultipleComponent]
 	public sealed class LiveGraphBootstrap : MonoBehaviour {
 		private static readonly LiveProgramGraphDefinition ProgramGraph = new LiveProgramGraphDefinition(
@@ -25,16 +25,16 @@ namespace ShitDesigner.Main {
 				new LiveProgramGraphConnection("invert", "contrast", "input")
 			});
 
-		[SerializeField] private PatchDefinition[] _scenes = Array.Empty<PatchDefinition>();
+		[SerializeField] private PatchDefinition[] _patches = Array.Empty<PatchDefinition>();
 		[SerializeField] private ShaderNodeManifestAsset _shaderManifest;
 
-		public PatchDefinition[] Scenes => _scenes ?? Array.Empty<PatchDefinition>();
-		public int ProgramOutputCount => Scenes.Sum(scene => scene == null ? 0 : scene.Nodes.Count());
+		public PatchDefinition[] Patches => _patches ?? Array.Empty<PatchDefinition>();
+		public int ProgramOutputCount => Patches.Sum(patch => patch == null ? 0 : patch.Nodes.Count());
 
 		public LiveGraphRuntime CreateRuntime() => new LiveGraphRuntime(BuildGraph());
 
 		private LiveGraph BuildGraph() {
-			var definitions = Scenes;
+			var definitions = Patches;
 			ValidateDefinitions(definitions);
 			var shaderDefinitions = BuildProgramShaderDefinitions();
 			var flashShader = Resources.Load<Shader>("LiveProgramFlash");
@@ -148,14 +148,14 @@ namespace ShitDesigner.Main {
 		}
 
 		private static void ValidateDefinitions(IReadOnlyList<PatchDefinition> definitions) {
-			if (definitions.Count == 0) throw new InvalidOperationException("At least one ShitDesigner scene is required.");
+			if (definitions.Count == 0) throw new InvalidOperationException("At least one patch is required.");
 			if (definitions.Any(definition => definition == null || definition.Validate().IsFailure))
-				throw new InvalidOperationException("Every ShitDesigner scene requires a valid definition.");
+				throw new InvalidOperationException("Every patch requires a valid definition.");
 			if (definitions.Select(definition => definition.Id).Distinct(StringComparer.Ordinal).Count() != definitions.Count)
-				throw new InvalidOperationException("ShitDesigner scene IDs must be unique.");
+				throw new InvalidOperationException("Patch IDs must be unique.");
 			var nodeIds = definitions.SelectMany(definition => definition.Nodes).Select(node => node.Id).ToArray();
 			if (nodeIds.Distinct(StringComparer.Ordinal).Count() != nodeIds.Length)
-				throw new InvalidOperationException("Unity scene nodes cannot be shared by ShitDesigner scenes.");
+				throw new InvalidOperationException("Unity scene nodes cannot be shared by patches.");
 		}
 
 		private static RenderTexture CreateTexture(string name, int depth, RenderTextureFormat format) {

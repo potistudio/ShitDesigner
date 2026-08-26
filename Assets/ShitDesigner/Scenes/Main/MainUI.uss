@@ -44,33 +44,48 @@
     -unity-font-style: bold;
 }
 
-.scene-selector {
-    height: 32px;
-    min-height: 32px;
-}
-
-.scene-selector .unity-base-field__label {
-    min-width: 64px;
+.patch-title {
+    margin-bottom: 6px;
     color: rgb(157, 167, 180);
     font-size: 10px;
     -unity-font-style: bold;
 }
 
-.scene-selector .unity-base-popup-field__input {
+.patch-controls {
+    flex-direction: row;
+    flex-wrap: nowrap;
     height: 32px;
-    min-height: 32px;
-    padding-left: 8px;
-    padding-right: 8px;
+}
+
+.patch-button,
+.load-patch-button {
+    flex-grow: 1;
+    height: 32px;
     color: rgb(232, 236, 242);
     background-color: rgb(13, 15, 18);
     border-width: 1px;
     border-color: rgb(48, 55, 65);
-    border-radius: 0;
+    font-size: 10px;
 }
 
-.scene-selector .unity-base-popup-field__text {
-    color: rgb(232, 236, 242);
-    font-size: 11px;
+.patch-button + .patch-button {
+    margin-left: 6px;
+}
+
+.patch-button.is-preloaded {
+    border-color: rgb(88, 166, 255);
+}
+
+.patch-button.is-loaded {
+    color: rgb(255, 255, 255);
+    background-color: rgb(47, 111, 179);
+}
+
+.load-patch-button {
+    margin-top: 8px;
+    color: rgb(255, 255, 255);
+    background-color: rgb(47, 111, 179);
+    border-color: rgb(88, 166, 255);
 }
 
 .parameter-controls {

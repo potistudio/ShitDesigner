@@ -233,7 +233,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e70675f945db47619b0d81845399094c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.LiveGraphBootstrap
-  _scenes:
+  _patches:
   - {fileID: 11400000, guid: 3a59a0f015a446c4bdf4eec5dbd9e340, type: 2}
   - {fileID: 11400000, guid: 5ae0f18f4c334a4a98a7b7d9d4adcb75, type: 2}
   - {fileID: 11400000, guid: bb4f5b8c1d2e4f6091a2b3c4d5e6f70a, type: 2}

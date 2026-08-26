@@ -21,7 +21,7 @@ namespace ShitDesigner.Main.Tests {
 
 			Assert.That(host.State, Is.EqualTo(ApplicationLiveHostState.Running), host.LastDiagnostic);
 			Assert.That(host.ReadModel, Is.Not.Null);
-			Assert.That(host.ReadModel.Scenes.Count, Is.EqualTo(2));
+			Assert.That(host.ReadModel.Patches.Count, Is.EqualTo(3));
 			Assert.That(host.ReadModel.ProgramTexture, Is.Not.Null);
 			Assert.That(host.ReadModel.ProgramTexture.width, Is.EqualTo(1920));
 			Assert.That(host.ReadModel.ProgramTexture.height, Is.EqualTo(1080));
@@ -32,16 +32,23 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(runtime.CurrentFrames[0].Texture, Is.SameAs(host.ReadModel.ProgramTexture));
 			Assert.That(HasVisiblePixels(host.ReadModel.ProgramTexture), Is.True);
 
-			var previousScene = host.ReadModel.SelectedSceneId;
-			var nextScene = host.ReadModel.Scenes.Single(scene => scene.Id != previousScene);
-			var enqueue = host.ParameterQueue.EnqueueSelectScene(nextScene.Id);
-			Assert.That(enqueue.Accepted, Is.True);
-			for (var frame = 0; frame < 60 && host.ReadModel.SelectedSceneId != nextScene.Id; frame++) yield return null;
+			var loadedPatchId = host.ReadModel.LoadedPatchId;
+			var nextPatch = host.ReadModel.Patches.First(patch => patch.Id != loadedPatchId);
+			var preload = host.ParameterQueue.EnqueuePreloadPatch(nextPatch.Id);
+			Assert.That(preload.Accepted, Is.True);
+			for (var frame = 0; frame < 60 && host.ReadModel.PreloadedPatchId != nextPatch.Id; frame++) yield return null;
 
-			Assert.That(host.ReadModel.SelectedSceneId, Is.EqualTo(nextScene.Id));
-			Assert.That(host.ReadModel.RequestResults.Any(result => result.SequenceNumber == enqueue.SequenceNumber && result.Applied), Is.True);
+			Assert.That(host.ReadModel.LoadedPatchId, Is.EqualTo(loadedPatchId));
+			Assert.That(host.ReadModel.PreloadedPatchId, Is.EqualTo(nextPatch.Id));
+			Assert.That(host.ReadModel.RequestResults.Any(result => result.SequenceNumber == preload.SequenceNumber && result.Applied), Is.True);
+			var load = host.ParameterQueue.EnqueueLoadPatch(nextPatch.Id);
+			Assert.That(load.Accepted, Is.True);
+			for (var frame = 0; frame < 60 && host.ReadModel.LoadedPatchId != nextPatch.Id; frame++) yield return null;
+
+			Assert.That(host.ReadModel.LoadedPatchId, Is.EqualTo(nextPatch.Id));
+			Assert.That(host.ReadModel.RequestResults.Any(result => result.SequenceNumber == load.SequenceNumber && result.Applied), Is.True);
 			Assert.That(host.ReadModel.ProgramFrameNumber, Is.GreaterThan(1));
-			var parameter = host.ParameterQueue.EnqueueSetParameter(nextScene.Id, "scale", 1f);
+			var parameter = host.ParameterQueue.EnqueueSetParameter(nextPatch.Id, "scale", 1f);
 			for (var frame = 0; frame < 60 && !host.ReadModel.RequestResults.Any(result => result.SequenceNumber == parameter.SequenceNumber); frame++) yield return null;
 			Assert.That(host.ReadModel.RequestResults.Any(result => result.SequenceNumber == parameter.SequenceNumber && result.Applied), Is.True);
 			Assert.That(host.ReadModel.Parameters.Single(item => item.Id == "scale").Value, Is.EqualTo(1f));
@@ -49,6 +56,8 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(ui.Q<VisualElement>("parameter-channel-scale"), Is.Not.Null);
 			Assert.That(ui.Q<Slider>("parameter-scale").direction, Is.EqualTo(SliderDirection.Vertical));
 			Assert.That(ui.Q<Label>("parameter-value-scale").text, Is.EqualTo("1.00"));
+			Assert.That(ui.Q<VisualElement>("patch-controls").childCount, Is.EqualTo(3));
+			Assert.That(ui.Q<Button>("load-preloaded-patch"), Is.Not.Null);
 
 			var midi = (Component)typeof(ApplicationLiveHost).GetField("_midiInputManager", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(host);
 			host.Shutdown();
