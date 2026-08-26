@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace ShitDesigner.Scene {
 	[Serializable]
-	public sealed class ShitDesignerSceneNodeGroup {
+	public sealed class PatchNodeGroup {
 		[SerializeField] private string _id;
 		[SerializeField] private string _displayName;
 		[SerializeField] private Scene3DDefinition[] _nodes = Array.Empty<Scene3DDefinition>();
@@ -18,7 +18,7 @@ namespace ShitDesigner.Scene {
 	}
 
 	[Serializable]
-	public sealed class ShitDesignerSceneParameter {
+	public sealed class PatchParameter {
 		[SerializeField] private string _id;
 		[SerializeField] private string _displayName;
 		[SerializeField] private string _nodeId;
@@ -32,16 +32,16 @@ namespace ShitDesigner.Scene {
 
 	/// <summary>Logical live scene composed from Unity scene nodes and published controls.</summary>
 	[CreateAssetMenu(fileName = "ShitDesignerSceneDefinition", menuName = "ShitDesigner/Scene Definition")]
-	public sealed class ShitDesignerSceneDefinition : ScriptableObject {
+	public sealed class PatchDefinition : ScriptableObject {
 		[SerializeField] private string _id;
 		[SerializeField] private string _displayName;
-		[SerializeField] private ShitDesignerSceneNodeGroup[] _nodeGroups = Array.Empty<ShitDesignerSceneNodeGroup>();
-		[SerializeField] private ShitDesignerSceneParameter[] _parameters = Array.Empty<ShitDesignerSceneParameter>();
+		[SerializeField] private PatchNodeGroup[] _nodeGroups = Array.Empty<PatchNodeGroup>();
+		[SerializeField] private PatchParameter[] _parameters = Array.Empty<PatchParameter>();
 
 		public string Id => _id ?? string.Empty;
 		public string DisplayName => _displayName ?? string.Empty;
-		public IReadOnlyList<ShitDesignerSceneNodeGroup> NodeGroups => _nodeGroups ?? Array.Empty<ShitDesignerSceneNodeGroup>();
-		public IReadOnlyList<ShitDesignerSceneParameter> Parameters => _parameters ?? Array.Empty<ShitDesignerSceneParameter>();
+		public IReadOnlyList<PatchNodeGroup> NodeGroups => _nodeGroups ?? Array.Empty<PatchNodeGroup>();
+		public IReadOnlyList<PatchParameter> Parameters => _parameters ?? Array.Empty<PatchParameter>();
 		public IEnumerable<Scene3DDefinition> Nodes => NodeGroups.Where(group => group != null).SelectMany(group => group.Nodes);
 
 		public UnitResult<Diagnostic> Validate() {

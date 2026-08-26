@@ -4,7 +4,8 @@ using System.Collections.Generic;
 namespace ShitDesigner.Main {
 	public enum LiveParameterRequestKind {
 		SelectScene,
-		SetParameter
+		SetParameter,
+		TriggerFlash
 	}
 
 	public readonly struct LiveParameterRequest {
@@ -55,6 +56,9 @@ namespace ShitDesigner.Main {
 
 		public LiveParameterEnqueueResult EnqueueSetParameter(string sceneId, string parameterId, float value)
 			=> Enqueue(LiveParameterRequestKind.SetParameter, sceneId, parameterId, value);
+
+		public LiveParameterEnqueueResult EnqueueTriggerFlash(string sceneId)
+			=> Enqueue(LiveParameterRequestKind.TriggerFlash, sceneId, string.Empty, 0f);
 
 		public int Drain(ICollection<LiveParameterRequest> destination) {
 			if (destination == null) throw new ArgumentNullException(nameof(destination));

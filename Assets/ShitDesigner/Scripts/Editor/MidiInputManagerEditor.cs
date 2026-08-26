@@ -45,7 +45,7 @@ namespace ShitDesigner.Editor {
 			DrawInputActivity(manager);
 
 			EditorGUILayout.Space();
-			EditorGUILayout.LabelField("Live Control Bindings", EditorStyles.boldLabel);
+			EditorGUILayout.LabelField("MIDI Bindings", EditorStyles.boldLabel);
 			EditorGUILayout.PropertyField(_bindings, true);
 
 			var bindingsChanged = serializedObject.ApplyModifiedProperties();
@@ -161,6 +161,11 @@ namespace ShitDesigner.Editor {
 		private void DrawLiveControlSelector(MidiInputManager manager, int index) {
 			var controls = manager.AvailableLiveControls;
 			var binding = _bindings.GetArrayElementAtIndex(index);
+			var output = binding.FindPropertyRelative("_output");
+			if ((MidiLiveControlBindingOutput)output.enumValueIndex == MidiLiveControlBindingOutput.Trigger) {
+				EditorGUILayout.HelpBox("This binding emits one trigger on each rising input edge.", MessageType.Info);
+				return;
+			}
 			var id = binding.FindPropertyRelative("_liveControlId");
 			if (controls.Count == 0) {
 				EditorGUILayout.HelpBox("Open a project containing at least one Live Control.", MessageType.Info);

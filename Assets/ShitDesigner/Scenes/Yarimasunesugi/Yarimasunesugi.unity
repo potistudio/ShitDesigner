@@ -119,6 +119,16 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!4 &937560202 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2162511862759387423, guid: f4a3a83233a2bb942bbc629859f58809, type: 3}
+  m_PrefabInstance: {fileID: 6005643871233771843}
+  m_PrefabAsset: {fileID: 0}
+--- !u!20 &937560204 stripped
+Camera:
+  m_CorrespondingSourceObject: {fileID: 6824610146809411508, guid: f4a3a83233a2bb942bbc629859f58809, type: 3}
+  m_PrefabInstance: {fileID: 6005643871233771843}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &6005643871233771843
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -131,6 +141,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Yarimasunesugi
       objectReference: {fileID: 0}
+    - target: {fileID: 3951476941513502866, guid: f4a3a83233a2bb942bbc629859f58809, type: 3}
+      propertyPath: _camera
+      value: 
+      objectReference: {fileID: 937560204}
+    - target: {fileID: 3951476941513502866, guid: f4a3a83233a2bb942bbc629859f58809, type: 3}
+      propertyPath: _target
+      value: 
+      objectReference: {fileID: 937560202}
     - target: {fileID: 5775205818294305345, guid: f4a3a83233a2bb942bbc629859f58809, type: 3}
       propertyPath: m_LocalPosition.x
       value: -1
