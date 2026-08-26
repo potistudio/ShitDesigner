@@ -63,12 +63,12 @@ namespace ShitDesigner.Presentation {
 			var row = new VisualElement { name = "dock-row" };
 			row.style.flexDirection = FlexDirection.Row;
 			row.style.flexGrow = 1;
-			var library = CreatePanel("node-library", "Node Library");
+			var library = CreatePanel("node-library");
 			library.style.width = 240;
 			library.style.minWidth = 240;
 			AddLibraryItems(library, coordinator);
 			row.Add(library);
-			var graph = CreatePanel("node-graph-panel", "Node Graph");
+			var graph = CreatePanel("node-graph-panel");
 			graph.style.flexGrow = 1;
 			var graphToolbar = new VisualElement { name = "graph-toolbar" };
 			graphToolbar.AddToClassList("sd-graph-toolbar");
@@ -80,18 +80,18 @@ namespace ShitDesigner.Presentation {
 			canvas.AddToClassList("sd-graph-canvas");
 			graph.Add(canvas);
 			row.Add(graph);
-			var inspector = CreatePanel("inspector-panel", "Inspector");
+			var inspector = CreatePanel("inspector-panel");
 			inspector.style.width = 280;
 			inspector.style.minWidth = 240;
 			AddInspector(inspector, coordinator);
 			row.Add(inspector);
 			host.Add(row);
 			AddDockControls(host, coordinator);
-			var bottom = CreatePanel("dashboard-panel", "Live Dashboard");
+			var bottom = CreatePanel("dashboard-panel");
 			bottom.style.height = 160;
 			AddDashboard(bottom, coordinator);
 			host.Add(bottom);
-			var outputs = CreatePanel("outputs-row", "Outputs");
+			var outputs = CreatePanel("outputs-row");
 			outputs.style.height = 160;
 			AddOutputs(outputs, coordinator);
 			host.Add(outputs);
@@ -907,12 +907,9 @@ namespace ShitDesigner.Presentation {
 			panel.EnableInClassList("is-closed", false);
 		}
 
-		private static VisualElement CreatePanel(string name, string title) {
+		private static VisualElement CreatePanel(string name) {
 			var panel = new VisualElement { name = name };
 			panel.AddToClassList("sd-panel");
-			var header = new Label(title) { name = name + "-header" };
-			header.AddToClassList("sd-panel-header");
-			panel.Add(header);
 			return panel;
 		}
 
@@ -1457,7 +1454,7 @@ namespace ShitDesigner.Presentation {
 		}
 
 		private static void AddPresets(VisualElement parent, PresentationCoordinator coordinator) {
-			var panel = CreatePanel("presets-panel", "Presets");
+			var panel = CreatePanel("presets-panel");
 			panel.style.flexGrow = 1;
 			var toolbar = new VisualElement { name = "presets-toolbar" };
 			var categories = new PopupField<string>("Category", new List<string> { "All", "Uncategorized" }, 0) { name = "preset-category-filter" };
@@ -1518,7 +1515,7 @@ namespace ShitDesigner.Presentation {
 		}
 
 		private static void AddMedia(VisualElement parent, PresentationCoordinator coordinator) {
-			var panel = CreatePanel("media-panel", "Media Library");
+			var panel = CreatePanel("media-panel");
 			panel.style.flexGrow = 1;
 			var toolbar = new VisualElement { name = "media-toolbar" };
 			toolbar.Add(new Button(() => BeginMediaImport(panel, coordinator)) { text = "Import", name = "media-import-button" });
@@ -1572,7 +1569,7 @@ namespace ShitDesigner.Presentation {
 		}
 
 		private static void AddControls(VisualElement parent, PresentationCoordinator coordinator) {
-			var panel = CreatePanel("controls-panel", "Controls");
+			var panel = CreatePanel("controls-panel");
 			panel.style.flexGrow = 1;
 			var details = new VisualElement { name = "controls-details" };
 			details.Add(new Label("Select a Value or PresetTrigger control") { name = "controls-detail-empty" });
@@ -1672,7 +1669,7 @@ namespace ShitDesigner.Presentation {
 		}
 
 		private static void AddDiagnostics(VisualElement parent, PresentationCoordinator coordinator) {
-			var panel = CreatePanel("diagnostics-panel", "Diagnostics");
+			var panel = CreatePanel("diagnostics-panel");
 			panel.style.flexGrow = 1;
 			panel.AddToClassList("sd-diagnostics-panel");
 			var tabs = new VisualElement { name = "diagnostics-tabs" };
