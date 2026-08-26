@@ -96,7 +96,7 @@
 ### 2026-08-26: キーボード入力はMIDI未接続時のライブ操作手段として残す
 
 - `LiveKeyboardInput` はMonoBehaviourや独自ループを持たない軽量なC#クラスとする。
-- `ApplicationLiveHost` のライブ実行Tickが `LiveKeyboardInput.Poll()` を呼び、シーン選択または公開パラメーター変更要求を `LiveParameterQueue` へ投入する。
+- `ApplicationLiveHost` のライブ実行Tickが `LiveKeyboardInput.Poll()` を呼び、パッチ切替または公開パラメーター変更要求を `LiveParameterQueue` へ投入する。左右矢印は事前ロード対象を移動する。
 - Keyboard、MIDIおよびUIの操作要求は同じ `LiveParameterQueue` に入る。
 - グラフ編集、ファイル操作およびウィンドウ操作など、エディターに関するショートカットは提供しない。
 

@@ -85,7 +85,7 @@ namespace ShitDesigner.Main {
 			unchecked { _tickFrameNumber++; }
 			if (_tickFrameNumber == 0) _tickFrameNumber = 1;
 
-			_keyboard.Poll(_runtime.LoadedPatchId, _patchIds);
+			_keyboard.Poll(_runtime.LoadedPatchId, _runtime.PreloadedPatchId, _patchIds);
 			_midi.SetSelectedPatch(_runtime.LoadedPatchId);
 			_midiInputManager.Poll();
 			ApplyRequests();
