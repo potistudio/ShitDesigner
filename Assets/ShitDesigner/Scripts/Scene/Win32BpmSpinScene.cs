@@ -12,7 +12,7 @@ namespace ShitDesigner.Scene {
 		[Min(0.1f)][SerializeField] private float _iconSize = .78f;
 
 		private readonly List<IconState> _icons = new List<IconState>();
-		private readonly MaterialPropertyBlock _propertyBlock = new MaterialPropertyBlock();
+		private MaterialPropertyBlock _propertyBlock;
 		private Transform _generatedRoot;
 		private Material _material;
 		private double _elapsedSeconds;
@@ -34,6 +34,10 @@ namespace ShitDesigner.Scene {
 				Aspect = aspect;
 				Phase = phase;
 			}
+		}
+
+		private void Awake() {
+			_propertyBlock = new MaterialPropertyBlock();
 		}
 
 		private void OnEnable() {
@@ -72,6 +76,7 @@ namespace ShitDesigner.Scene {
 		public void Rebuild() {
 			ReleaseGeneratedContent();
 			if (_images == null || _images.Length == 0) return;
+			_propertyBlock ??= new MaterialPropertyBlock();
 
 			_generatedRoot = new GameObject("Generated Win32 Icon Scatter").transform;
 			_generatedRoot.SetParent(transform, false);
