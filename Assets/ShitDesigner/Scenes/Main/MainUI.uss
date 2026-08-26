@@ -38,9 +38,63 @@
     -unity-font-style: bold;
 }
 
+.scene-selector {
+    height: 32px;
+    min-height: 32px;
+}
+
+.scene-selector .unity-base-field__label {
+    min-width: 64px;
+    color: rgb(157, 167, 180);
+    font-size: 10px;
+    -unity-font-style: bold;
+}
+
+.scene-selector .unity-base-popup-field__input {
+    height: 32px;
+    min-height: 32px;
+    padding-left: 8px;
+    padding-right: 8px;
+    color: rgb(232, 236, 242);
+    background-color: rgb(13, 15, 18);
+    border-width: 1px;
+    border-color: rgb(48, 55, 65);
+    border-radius: 0;
+}
+
+.scene-selector .unity-base-popup-field__text {
+    color: rgb(232, 236, 242);
+    font-size: 11px;
+}
+
 .parameter-controls {
     margin-top: 8px;
     margin-bottom: 8px;
+}
+
+.parameter-slider {
+    min-height: 32px;
+    margin-top: 8px;
+}
+
+.parameter-slider .unity-base-field__label {
+    min-width: 96px;
+    color: rgb(157, 167, 180);
+    font-size: 10px;
+}
+
+.parameter-slider .unity-base-slider__tracker {
+    height: 4px;
+    background-color: rgb(48, 55, 65);
+}
+
+.parameter-slider .unity-base-slider__dragger {
+    width: 16px;
+    height: 16px;
+    background-color: rgb(88, 166, 255);
+    border-width: 1px;
+    border-color: rgb(180, 215, 255);
+    border-radius: 0;
 }
 
 .output-actions {
@@ -48,7 +102,7 @@
     margin-top: 8px;
 }
 
-.output-actions > Button {
+.output-action {
     flex-grow: 1;
     height: 32px;
     color: rgb(232, 236, 242);
@@ -57,7 +111,7 @@
     border-color: rgb(48, 55, 65);
 }
 
-.output-actions > Button + Button {
+.output-action-secondary {
     margin-left: 8px;
 }
 
