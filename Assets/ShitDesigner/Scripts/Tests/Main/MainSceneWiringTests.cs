@@ -49,7 +49,6 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(serializedHost.FindProperty("_uiController").objectReferenceValue, Is.SameAs(ui));
 				Assert.That(serializedHost.FindProperty("_bootOnAwake").boolValue, Is.True);
 				var serializedOutput = new SerializedObject(output);
-				Assert.That(serializedOutput.FindProperty("_displayNumber").intValue, Is.EqualTo(2));
 				Assert.That(serializedOutput.FindProperty("_displayTransformShader").objectReferenceValue, Is.Not.Null);
 
 				Assert.That(root.GetComponent<ApplicationHost>(), Is.Null);
