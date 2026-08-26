@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -100,7 +101,12 @@ namespace ShitDesigner.Main {
 		private void RebuildParameters(LiveUiReadModel model) {
 			_parameterControls.Clear();
 			foreach (var parameter in model.Parameters) {
-				var slider = new Slider(parameter.DisplayName, parameter.Minimum, parameter.Maximum) {
+				var channel = new VisualElement { name = "parameter-channel-" + parameter.Id };
+				channel.AddToClassList("parameter-fader-channel");
+				var valueLabel = new Label(FormatParameterValue(parameter.Value)) { name = "parameter-value-" + parameter.Id };
+				valueLabel.AddToClassList("parameter-fader-value");
+				var slider = new Slider(parameter.Minimum, parameter.Maximum) {
+					direction = SliderDirection.Vertical,
 					name = "parameter-" + parameter.Id,
 					value = parameter.Value,
 					userData = parameter.Id
@@ -110,14 +116,22 @@ namespace ShitDesigner.Main {
 					if (!_updating && _host?.ReadModel != null)
 						ShowEnqueueRejection(_host.ParameterQueue.EnqueueSetParameter(_host.ReadModel.SelectedSceneId, (string)slider.userData, change.newValue));
 				});
-				_parameterControls.Add(slider);
+				var label = new Label(parameter.DisplayName);
+				label.AddToClassList("parameter-fader-label");
+				channel.Add(valueLabel);
+				channel.Add(slider);
+				channel.Add(label);
+				_parameterControls.Add(channel);
 			}
 			_renderedSceneId = model.SelectedSceneId;
 		}
 
 		private void RefreshParameterValues(LiveUiReadModel model) {
-			foreach (var parameter in model.Parameters)
+			foreach (var parameter in model.Parameters) {
 				_parameterControls.Q<Slider>("parameter-" + parameter.Id)?.SetValueWithoutNotify(parameter.Value);
+				var valueLabel = _parameterControls.Q<Label>("parameter-value-" + parameter.Id);
+				if (valueLabel != null) valueLabel.text = FormatParameterValue(parameter.Value);
+			}
 		}
 
 		private void OnSceneSelected(ChangeEvent<string> change) {
@@ -186,6 +200,8 @@ namespace ShitDesigner.Main {
 			if (!string.IsNullOrEmpty(rejection.RejectionReason)) return rejection.RejectionReason;
 			return model.DisplayError;
 		}
+
+		private static string FormatParameterValue(float value) => value.ToString("0.00", CultureInfo.InvariantCulture);
 
 		private static T Required<T>(VisualElement root, string name) where T : VisualElement {
 			var element = root.Q<T>(name);
