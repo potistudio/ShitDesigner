@@ -21,7 +21,7 @@ namespace ShitDesigner.Main {
 		public RenderTexture ProgramTexture { get; }
 		public ulong ProgramFrameNumber { get; }
 		public int ConnectedDisplayCount { get; }
-		public int SelectedDisplayNumber { get; }
+		public IReadOnlyList<int> ExternalDisplayNumbers { get; }
 		public bool IsDisplayOutputActive { get; }
 		public string DisplayError { get; }
 		public LiveCapabilitySnapshot Capabilities { get; }
@@ -38,7 +38,7 @@ namespace ShitDesigner.Main {
 			ProgramTexture = programFrame.Texture;
 			ProgramFrameNumber = programFrame.FrameNumber;
 			ConnectedDisplayCount = output?.ConnectedDisplayCount ?? 0;
-			SelectedDisplayNumber = output?.DisplayNumber ?? 0;
+			ExternalDisplayNumbers = output?.ConnectedExternalDisplayNumbers ?? Array.Empty<int>();
 			IsDisplayOutputActive = output != null && output.IsOutputActive;
 			DisplayError = output?.LastError ?? string.Empty;
 			Capabilities = capabilities;

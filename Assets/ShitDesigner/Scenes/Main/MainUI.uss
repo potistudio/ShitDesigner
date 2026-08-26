@@ -121,6 +121,7 @@
     align-items: center;
     color: rgb(166, 195, 201);
     font-size: 11px;
+    white-space: normal;
 }
 
 .display-selector .unity-base-field__label {

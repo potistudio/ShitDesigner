@@ -1,7 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 #if UNITY_STANDALONE_WIN
 using System.Collections;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using AOT;
 #endif
@@ -9,28 +10,23 @@ using ShitDesigner.Rendering;
 using UnityEngine;
 
 namespace ShitDesigner.Main {
-	/// <summary>Owns external Display selection, activation, display transform, and Program frame presentation.</summary>
+	/// <summary>Owns external Display activation, display transform, and Program frame presentation.</summary>
 	[DisallowMultipleComponent]
 	public sealed class LiveExternalDisplayOutput : MonoBehaviour {
-		[SerializeField, Min(2)] private int _displayNumber = 2;
 		[SerializeField] private Shader _displayTransformShader;
 
 		private DisplayTransformPass _displayTransform;
 		private RenderTexture _displayTexture;
-		private Camera _camera;
-		private LiveProgramDisplayCamera _presenter;
-		private WindowsDisplayWindowController _displayWindowController;
+		private readonly Dictionary<int, DisplayOutput> _outputs = new Dictionary<int, DisplayOutput>();
 		private ulong _presentedFrameNumber;
 		private bool _initialized;
 
-		public int DisplayNumber => _displayNumber;
 		public int ConnectedDisplayCount => Display.displays?.Length ?? 0;
+		public IReadOnlyList<int> ConnectedExternalDisplayNumbers => Enumerable.Range(2, Math.Max(0, ConnectedDisplayCount - 1)).ToArray();
 		public bool IsOutputActive { get; private set; }
-		public bool IsAvailable => !UnityEngine.Application.isEditor && ConnectedDisplayCount >= _displayNumber;
+		public bool IsAvailable => !UnityEngine.Application.isEditor && ConnectedDisplayCount > 1;
 		public ulong PresentedFrameNumber => _presentedFrameNumber;
-		public string DisplayIdentity => IsAvailable
-			? $"Display {_displayNumber} ({Display.displays[_displayNumber - 1].systemWidth}x{Display.displays[_displayNumber - 1].systemHeight})"
-			: $"Display {_displayNumber} (Unavailable)";
+		public string DisplayIdentity => DescribeDisplays();
 		public string LastError { get; private set; } = string.Empty;
 
 		public void Initialize() {
@@ -45,44 +41,23 @@ namespace ShitDesigner.Main {
 			if (!_displayTexture.Create()) throw new InvalidOperationException("The external Display texture could not be created.");
 			ClearDisplayTexture();
 
-			var cameraObject = new GameObject("Live External Display Camera");
-			cameraObject.transform.SetParent(transform, false);
-			_camera = cameraObject.AddComponent<Camera>();
-			_camera.clearFlags = CameraClearFlags.SolidColor;
-			_camera.backgroundColor = Color.black;
-			_camera.cullingMask = 0;
-			_camera.enabled = false;
-			_presenter = cameraObject.AddComponent<LiveProgramDisplayCamera>();
-			_presenter.Source = _displayTexture;
-			_displayWindowController = cameraObject.AddComponent<WindowsDisplayWindowController>();
 			_initialized = true;
-		}
-
-		public bool SelectDisplay(int displayNumber) {
-			if (IsOutputActive || displayNumber < 2) return Fail("Stop external output before selecting another Display.");
-			_displayNumber = displayNumber;
-			LastError = string.Empty;
-			return true;
 		}
 
 		public bool SetOutputActive(bool active) {
 			if (!_initialized) return Fail("External Display output is not initialized.");
 			if (!active) {
 				IsOutputActive = false;
-				if (_camera != null) _camera.enabled = false;
-				_displayWindowController?.SetOutputVisible(false);
+				foreach (var output in _outputs.Values) output.SetVisible(false);
 				LastError = string.Empty;
 				return true;
 			}
 			if (!IsAvailable) return Fail(UnityEngine.Application.isEditor
 				? "External Display output requires a standalone Player."
-				: $"Display {_displayNumber} is not connected.");
+				: "No external Display is connected.");
 
-			var display = Display.displays[_displayNumber - 1];
-			if (!display.active) ActivateDisplay(display);
-			else _displayWindowController?.SetOutputVisible(true);
-			_camera.targetDisplay = _displayNumber - 1;
-			_camera.enabled = true;
+			if (OutputsDoNotMatchConnectedDisplays()) RebuildOutputs();
+			foreach (var output in _outputs.Values) output.SetVisible(true);
 			IsOutputActive = true;
 			LastError = string.Empty;
 			return true;
@@ -92,6 +67,10 @@ namespace ShitDesigner.Main {
 
 		public void Present(LiveProgramFrame frame) {
 			if (!_initialized || frame.Texture == null || frame.FrameNumber == 0 || frame.FrameNumber == _presentedFrameNumber) return;
+			if (IsOutputActive && OutputsDoNotMatchConnectedDisplays()) {
+				RebuildOutputs();
+				foreach (var output in _outputs.Values) output.SetVisible(true);
+			}
 			_displayTransform.Blit(frame.Texture, _displayTexture, DisplayTransformMode.HdrAces);
 			_presentedFrameNumber = frame.FrameNumber;
 		}
@@ -100,10 +79,7 @@ namespace ShitDesigner.Main {
 			IsOutputActive = false;
 			_initialized = false;
 			_presentedFrameNumber = 0;
-			if (_camera != null) DestroyUnityObject(_camera.gameObject);
-			_camera = null;
-			_presenter = null;
-			_displayWindowController = null;
+			DestroyOutputs();
 			_displayTransform?.Dispose();
 			_displayTransform = null;
 			if (_displayTexture != null) {
@@ -121,14 +97,58 @@ namespace ShitDesigner.Main {
 			return false;
 		}
 
-		private void ActivateDisplay(Display display) {
+		private void ActivateDisplay(Display display, WindowsDisplayWindowController windowController) {
 #if UNITY_STANDALONE_WIN
 			var mainWindowState = WindowsMainWindowState.Capture();
 #endif
 			display.Activate();
 #if UNITY_STANDALONE_WIN
-			_displayWindowController?.ApplyAfterActivation(mainWindowState);
+			windowController.ApplyAfterActivation(mainWindowState);
 #endif
+		}
+
+		private void RebuildOutputs() {
+			DestroyOutputs();
+			for (var displayNumber = 2; displayNumber <= ConnectedDisplayCount; displayNumber++) {
+				var display = Display.displays[displayNumber - 1];
+				var output = CreateOutput(displayNumber);
+				if (!display.active) ActivateDisplay(display, output.WindowController);
+				output.Camera.targetDisplay = displayNumber - 1;
+				_outputs.Add(displayNumber, output);
+			}
+		}
+
+		private DisplayOutput CreateOutput(int displayNumber) {
+			var cameraObject = new GameObject($"Live External Display Camera {displayNumber}");
+			cameraObject.transform.SetParent(transform, false);
+			var camera = cameraObject.AddComponent<Camera>();
+			camera.clearFlags = CameraClearFlags.SolidColor;
+			camera.backgroundColor = Color.black;
+			camera.cullingMask = 0;
+			camera.enabled = false;
+			var presenter = cameraObject.AddComponent<LiveProgramDisplayCamera>();
+			presenter.Source = _displayTexture;
+			return new DisplayOutput(camera, cameraObject.AddComponent<WindowsDisplayWindowController>());
+		}
+
+		private bool OutputsDoNotMatchConnectedDisplays() {
+			if (_outputs.Count != ConnectedDisplayCount - 1) return true;
+			for (var displayNumber = 2; displayNumber <= ConnectedDisplayCount; displayNumber++)
+				if (!_outputs.ContainsKey(displayNumber)) return true;
+			return false;
+		}
+
+		private void DestroyOutputs() {
+			foreach (var output in _outputs.Values) DestroyUnityObject(output.Camera.gameObject);
+			_outputs.Clear();
+		}
+
+		private string DescribeDisplays() {
+			if (!IsAvailable) return "No external Display is available.";
+			return string.Join(", ", ConnectedExternalDisplayNumbers.Select(displayNumber => {
+				var display = Display.displays[displayNumber - 1];
+				return $"Display {displayNumber} ({display.systemWidth}x{display.systemHeight})";
+			}));
 		}
 
 		private void ClearDisplayTexture() {
@@ -141,6 +161,21 @@ namespace ShitDesigner.Main {
 		private static void DestroyUnityObject(UnityEngine.Object value) {
 			if (value == null) return;
 			if (UnityEngine.Application.isPlaying) Destroy(value); else DestroyImmediate(value);
+		}
+
+		private readonly struct DisplayOutput {
+			public Camera Camera { get; }
+			public WindowsDisplayWindowController WindowController { get; }
+
+			public DisplayOutput(Camera camera, WindowsDisplayWindowController windowController) {
+				Camera = camera;
+				WindowController = windowController;
+			}
+
+			public void SetVisible(bool visible) {
+				Camera.enabled = visible;
+				WindowController.SetOutputVisible(visible);
+			}
 		}
 	}
 

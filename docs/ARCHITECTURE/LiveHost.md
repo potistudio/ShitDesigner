@@ -58,7 +58,7 @@
 - 外部Displayの検出、選択、活性化およびProgramフレームの提示は、外部Display専用スクリプトが所有する。
 - `ApplicationLiveHost` は外部Displayの実リソースを所有せず、専用スクリプトの開始と終了をライフサイクルに組み込む。
 - 外部Display専用スクリプトはノードグラフ、3Dシーンおよび操作UIを参照しない。
-- 外部Display専用スクリプトは、Display番号の選択、出力の開始または停止およびDisplay識別を提供する制御ポートを公開する。
+- 外部Display専用スクリプトは、接続済み外部Displayすべてへの出力の開始または停止およびDisplay識別を提供する制御ポートを公開する。
 
 ### 2026-08-26: 専用UIはライブ用ノードグラフを編集しない
 
@@ -179,7 +179,7 @@
 - `LiveParameterQueue` へUIが投入できる要求は `SelectScene(SceneId)` と `SetParameter(SceneId, ParameterId, Value)` だけとする。
 - UIは要求投入時にSequence番号を受け取り、次のライブ実行Tickが公開する `Applied` または `Rejected` の結果を読む。
 - `LiveUiController` はライブ実行Tickの後にRead Modelを更新し、RuntimeまたはTextureの所有権を持たない。
-- UIはProgram Monitorを表示する。Display番号の選択、出力の開始または停止およびDisplay識別は `LiveParameterQueue` を経由せず、外部Display専用スクリプトの制御ポートへ直接要求する。
+- UIはProgram Monitorを表示する。外部Display出力の開始または停止およびDisplay識別は `LiveParameterQueue` を経由せず、外部Display専用スクリプトの制御ポートへ直接要求する。
 
 ### 2026-08-26: Mainシーンは既存の起動・ライブ実行コンポーネントをLive Host構成へ置き換える
 

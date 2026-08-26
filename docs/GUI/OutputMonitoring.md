@@ -17,10 +17,9 @@
 
 ## Program Display
 
-- Display選択はトップバーのドロップダウンから行う。
-- 追加Displayがある場合は `Display 2` を初期選択し、ユーザー設定ではなくVJプロジェクトへ保存する。
-- Display切り替えは確認なしで実行し、成功／失敗をトースト表示する。
-- 選択Displayが失われた場合はProgram Monitorへフォールバックし、トップバーとDiagnosticsへ警告する。
+- Program出力は接続済みのすべての外部Unity Displayへ同時に表示する。接続数に応じて `Display 2`、`Display 3`、…を対象とする。
+- 接続済みDisplayはトップバーで一覧表示する。個別の出力先選択は行わない。
+- 外部Displayが失われた場合は残りの接続済みDisplayへ出力を継続し、外部Displayがない場合はProgram Monitorへフォールバックする。
 - `Identify Displays` は各操作Displayへ番号を3秒表示するが、Program映像には重ねない。
 
 ## Preview Viewer Host

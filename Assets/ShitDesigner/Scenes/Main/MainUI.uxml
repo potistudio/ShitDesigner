@@ -7,7 +7,7 @@
                 <ui:Label text="LIVE CONTROL" class="panel-title"/>
                 <ui:DropdownField name="scene-selector" label="SCENE"/>
                 <ui:VisualElement name="parameter-controls" class="parameter-controls"/>
-                <ui:DropdownField name="display-selector" label="OUTPUT"/>
+                <ui:Label name="display-selector" class="display-selector" text="OUTPUT: No external Display"/>
                 <ui:VisualElement class="output-actions">
                     <ui:Button name="output-toggle" text="START OUTPUT"/>
                     <ui:Button name="identify-display" text="IDENTIFY"/>
@@ -20,8 +20,8 @@
             <ui:VisualElement class="confirmation-dialog">
                 <ui:Label name="output-confirm-title" text="START LIVE OUTPUT?" class="confirmation-title"/>
                 <ui:VisualElement class="confirmation-rule"/>
-                <ui:Label name="output-confirm-message" text="Send Program output to Display 2." class="confirmation-message"/>
-                <ui:DropdownField name="output-confirm-display-selector" label="OUTPUT DISPLAY" class="display-selector"/>
+                <ui:Label name="output-confirm-message" text="Send Program output to connected external Displays." class="confirmation-message"/>
+                <ui:Label name="output-confirm-display-selector" class="display-selector" text="OUTPUT DISPLAYS: No external Display"/>
                 <ui:VisualElement class="confirmation-actions">
                     <ui:Button name="output-confirm-cancel" text="CANCEL" class="confirmation-button confirmation-cancel"/>
                     <ui:Button name="output-confirm-accept" text="START" class="confirmation-button confirmation-accept"/>

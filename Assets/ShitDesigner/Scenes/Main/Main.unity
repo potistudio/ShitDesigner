@@ -208,7 +208,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ae42654e12242268a8a5fbe0d680acb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.LiveExternalDisplayOutput
-  _displayNumber: 2
   _displayTransformShader: {fileID: 4800000, guid: 913fc501737385645bde49afe4534757, type: 3}
 --- !u!114 &444072069
 MonoBehaviour:
