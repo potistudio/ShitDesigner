@@ -381,6 +381,9 @@ namespace ShitDesigner.Main {
 			Source = source;
 		}
 
-		public LiveParameterDefinition ToDefinition() => new LiveParameterDefinition(_definition.Id, _definition.DisplayName, Source.Minimum, Source.Maximum, Source.Value);
+		public LiveParameterDefinition ToDefinition() {
+			var current = Root.GetParameterDefinitions().Single(parameter => parameter.Id == Source.Id);
+			return new LiveParameterDefinition(_definition.Id, _definition.DisplayName, Source.Minimum, Source.Maximum, current.Value);
+		}
 	}
 }

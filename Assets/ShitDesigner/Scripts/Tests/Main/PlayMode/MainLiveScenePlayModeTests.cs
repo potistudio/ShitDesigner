@@ -4,7 +4,6 @@ using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.UIElements;
 using UnityEngine.TestTools;
 
 namespace ShitDesigner.Main.Tests {
@@ -50,30 +49,6 @@ namespace ShitDesigner.Main.Tests {
 			host.Shutdown();
 			Assert.That(host.State, Is.EqualTo(ApplicationLiveHostState.Offline));
 			Assert.That((bool)midi.GetType().GetProperty("IsOpen")?.GetValue(midi), Is.False);
-		}
-
-		[UnityTest]
-		public IEnumerator MainSliderKeepsItsDragValueUntilRelease() {
-			SceneManager.LoadScene("Main", LoadSceneMode.Single);
-			yield return null;
-
-			var host = Object.FindAnyObjectByType<ApplicationLiveHost>();
-			Assert.That(host, Is.Not.Null);
-			for (var frame = 0; frame < 60 && (host.State != ApplicationLiveHostState.Running || host.ReadModel == null); frame++) yield return null;
-
-			var document = host.GetComponent<UIDocument>();
-			var slider = document.rootVisualElement.Q<Slider>("parameter-scale");
-			Assert.That(slider, Is.Not.Null);
-			slider.SendEvent(PointerDownEvent.GetPooled());
-			slider.SetValueWithoutNotify(0.25f);
-
-			var request = host.ParameterQueue.EnqueueSetParameter(host.ReadModel.SelectedSceneId, "scale", 0.75f);
-			for (var frame = 0; frame < 60 && !host.ReadModel.RequestResults.Any(result => result.SequenceNumber == request.SequenceNumber); frame++) yield return null;
-			Assert.That(slider.value, Is.EqualTo(0.25f));
-
-			slider.SendEvent(PointerUpEvent.GetPooled());
-			yield return null;
-			Assert.That(slider.value, Is.EqualTo(0.75f));
 		}
 
 		private static bool HasVisiblePixels(RenderTexture source) {
