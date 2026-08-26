@@ -27,11 +27,9 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(host.ReadModel.ProgramTexture.format, Is.EqualTo(RenderTextureFormat.ARGBHalf));
 			Assert.That(host.ReadModel.ProgramFrameNumber, Is.GreaterThan(0));
 			var runtime = (LiveGraphRuntime)typeof(ApplicationLiveHost).GetField("_runtime", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(host);
-			Assert.That(runtime.CurrentFrames.Count, Is.EqualTo(2));
-			Assert.That(runtime.CurrentFrames[0].Texture, Is.Not.SameAs(runtime.CurrentFrames[1].Texture));
+			Assert.That(runtime.CurrentFrames.Count, Is.EqualTo(1));
 			Assert.That(runtime.CurrentFrames[0].Texture, Is.SameAs(host.ReadModel.ProgramTexture));
 			Assert.That(HasVisiblePixels(host.ReadModel.ProgramTexture), Is.True);
-			Assert.That(HasVisiblePixels(runtime.CurrentFrames[1].Texture), Is.True);
 
 			var previousScene = host.ReadModel.SelectedSceneId;
 			var nextScene = host.ReadModel.Scenes.Single(scene => scene.Id != previousScene);
@@ -42,6 +40,10 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(host.ReadModel.SelectedSceneId, Is.EqualTo(nextScene.Id));
 			Assert.That(host.ReadModel.RequestResults.Any(result => result.SequenceNumber == enqueue.SequenceNumber && result.Applied), Is.True);
 			Assert.That(host.ReadModel.ProgramFrameNumber, Is.GreaterThan(1));
+			var parameter = host.ParameterQueue.EnqueueSetParameter(nextScene.Id, "scale", 1f);
+			for (var frame = 0; frame < 60 && !host.ReadModel.RequestResults.Any(result => result.SequenceNumber == parameter.SequenceNumber); frame++) yield return null;
+			Assert.That(host.ReadModel.RequestResults.Any(result => result.SequenceNumber == parameter.SequenceNumber && result.Applied), Is.True);
+			Assert.That(host.ReadModel.Parameters.Single(item => item.Id == "scale").Value, Is.EqualTo(1f));
 
 			var midi = (Component)typeof(ApplicationLiveHost).GetField("_midiInputManager", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(host);
 			host.Shutdown();

@@ -52,13 +52,15 @@ namespace ShitDesigner.Main {
 	internal sealed class LiveGraph : IDisposable {
 		private readonly SceneIsolationManager _sceneManager;
 		private readonly RenderTexturePool _renderPool;
+		public IReadOnlyList<ShitDesignerSceneDefinition> SceneDefinitions { get; }
 		public IReadOnlyList<LiveProgramOutput> ProgramOutputs { get; }
 
-		public LiveGraph(SceneIsolationManager sceneManager, RenderTexturePool renderPool, IEnumerable<LiveProgramOutput> programOutputs) {
+		public LiveGraph(SceneIsolationManager sceneManager, RenderTexturePool renderPool, IEnumerable<ShitDesignerSceneDefinition> sceneDefinitions, IEnumerable<LiveProgramOutput> programOutputs) {
 			_sceneManager = sceneManager ?? throw new ArgumentNullException(nameof(sceneManager));
 			_renderPool = renderPool ?? throw new ArgumentNullException(nameof(renderPool));
+			SceneDefinitions = (sceneDefinitions ?? throw new ArgumentNullException(nameof(sceneDefinitions))).ToArray();
 			ProgramOutputs = (programOutputs ?? throw new ArgumentNullException(nameof(programOutputs))).ToArray();
-			if (ProgramOutputs.Count == 0) throw new ArgumentException("A live graph requires at least one Program output.", nameof(programOutputs));
+			if (SceneDefinitions.Count == 0 || ProgramOutputs.Count == 0) throw new ArgumentException("A live graph requires scenes and Program outputs.");
 		}
 
 		public void Dispose() {
@@ -177,7 +179,7 @@ namespace ShitDesigner.Main {
 		private static void ReleaseTexture(RenderTexture texture) {
 			if (texture == null) return;
 			texture.Release();
-			if (Application.isPlaying) UnityEngine.Object.Destroy(texture);
+			if (UnityEngine.Application.isPlaying) UnityEngine.Object.Destroy(texture);
 			else UnityEngine.Object.DestroyImmediate(texture);
 		}
 	}
@@ -219,7 +221,7 @@ namespace ShitDesigner.Main {
 		private static void ReleaseTexture(RenderTexture texture) {
 			if (texture == null) return;
 			texture.Release();
-			if (Application.isPlaying) UnityEngine.Object.Destroy(texture);
+			if (UnityEngine.Application.isPlaying) UnityEngine.Object.Destroy(texture);
 			else UnityEngine.Object.DestroyImmediate(texture);
 		}
 	}
@@ -262,41 +264,43 @@ namespace ShitDesigner.Main {
 
 		private readonly LiveGraph _graph;
 		private readonly IReadOnlyList<LiveProgramOutput> _programOutputs;
-		private readonly Dictionary<string, LiveProgramOutput> _programOutputsBySceneId;
-		private LiveProgramOutput _selectedProgramOutput;
+		private readonly Dictionary<string, LiveProgramOutput> _programOutputsByNodeId;
+		private readonly Dictionary<string, LiveShitDesignerScene> _scenesById;
+		private LiveShitDesignerScene _selectedScene;
 		private ulong _frameNumber;
 		private double _graphTime;
 		private double _lastDeltaSeconds;
 		private bool _disposed;
 
-		public string SelectedSceneId => _selectedProgramOutput?.Definition.Id ?? string.Empty;
-		public IReadOnlyList<Scene3DDefinition> Scenes => _programOutputs.Select(output => output.Definition).ToArray();
+		public string SelectedSceneId => _selectedScene?.Definition.Id ?? string.Empty;
+		public IReadOnlyList<ShitDesignerSceneDefinition> Scenes => _graph.SceneDefinitions;
 		public LiveProgramFrame CurrentFrame { get; private set; }
 		public LiveProgramFrames CurrentFrames { get; private set; }
 
 		internal LiveGraphRuntime(LiveGraph graph) {
 			_graph = graph ?? throw new ArgumentNullException(nameof(graph));
 			_programOutputs = graph.ProgramOutputs;
-			_programOutputsBySceneId = _programOutputs.ToDictionary(output => output.Definition.Id, StringComparer.Ordinal);
-			_selectedProgramOutput = _programOutputs[0];
-			CurrentFrames = new LiveProgramFrames(_programOutputs.Select(output => new LiveProgramFrame(output.ProgramTexture, 0)));
+			_programOutputsByNodeId = _programOutputs.ToDictionary(output => output.Definition.Id, StringComparer.Ordinal);
+			_scenesById = graph.SceneDefinitions.ToDictionary(definition => definition.Id, definition => new LiveShitDesignerScene(definition, _programOutputsByNodeId), StringComparer.Ordinal);
+			_selectedScene = _scenesById[graph.SceneDefinitions[0].Id];
+			CurrentFrames = new LiveProgramFrames(_selectedScene.Outputs.Select(output => new LiveProgramFrame(output.ProgramTexture, 0)));
 			CurrentFrame = CurrentFrames.Primary;
 		}
 
 		public LiveParameterApplicationResult Apply(LiveParameterRequest request) {
-			if (!_programOutputsBySceneId.TryGetValue(request.SceneId, out var scene)) return Reject(request, "The requested live scene does not exist.");
+			if (!_scenesById.TryGetValue(request.SceneId, out var scene)) return Reject(request, "The requested ShitDesigner scene does not exist.");
 			if (request.Kind == LiveParameterRequestKind.SelectScene) {
-				_selectedProgramOutput = scene;
+				_selectedScene = scene;
 				return Accept(request);
 			}
-			return scene.Root.TrySetParameter(request.ParameterId, request.Value, out var reason) ? Accept(request) : Reject(request, reason);
+			return scene.TrySetParameter(request.ParameterId, request.Value, out var reason) ? Accept(request) : Reject(request, reason);
 		}
 
 		public void Evaluate(double deltaSeconds) {
 			EnsureUsable();
 			_lastDeltaSeconds = Math.Max(0d, deltaSeconds);
 			_graphTime += _lastDeltaSeconds;
-			foreach (var scene in _programOutputs) {
+			foreach (var scene in _selectedScene.Outputs) {
 				var result = scene.Runtime.AdvanceGraphClock(_lastDeltaSeconds * Mathf.Lerp(0f, 2f, scene.Root.Motion));
 				if (result.IsFailure) throw new InvalidOperationException(result.Error.Message);
 			}
@@ -304,7 +308,7 @@ namespace ShitDesigner.Main {
 
 		public void SceneUpdate(double deltaSeconds) {
 			EnsureUsable();
-			foreach (var scene in _programOutputs) {
+			foreach (var scene in _selectedScene.Outputs) {
 				var result = scene.Runtime.AdvancePhysics(deltaSeconds * Mathf.Lerp(0f, 2f, scene.Root.Motion));
 				if (result.IsFailure) throw new InvalidOperationException(result.Error.Message);
 			}
@@ -314,14 +318,14 @@ namespace ShitDesigner.Main {
 			EnsureUsable();
 			var nextFrame = _frameNumber + 1;
 			if (nextFrame == 0) nextFrame = 1;
-			foreach (var scene in _programOutputs) scene.Render(_graphTime, _lastDeltaSeconds, nextFrame);
+			foreach (var scene in _selectedScene.Outputs) scene.Render(_graphTime, _lastDeltaSeconds, nextFrame);
 			_frameNumber = nextFrame;
-			CurrentFrames = new LiveProgramFrames(_programOutputs.Select(output => new LiveProgramFrame(output.ProgramTexture, _frameNumber)));
+			CurrentFrames = new LiveProgramFrames(_selectedScene.Outputs.Select(output => new LiveProgramFrame(output.ProgramTexture, _frameNumber)));
 			CurrentFrame = CurrentFrames.Primary;
 			return CurrentFrames;
 		}
 
-		public LiveParameterDefinition[] GetSelectedParameterDefinitions() => _selectedProgramOutput?.Root.GetParameterDefinitions() ?? Array.Empty<LiveParameterDefinition>();
+		public LiveParameterDefinition[] GetSelectedParameterDefinitions() => _selectedScene?.GetParameterDefinitions() ?? Array.Empty<LiveParameterDefinition>();
 
 		public void Dispose() {
 			if (_disposed) return;
@@ -331,10 +335,52 @@ namespace ShitDesigner.Main {
 
 		private void EnsureUsable() {
 			if (_disposed) throw new ObjectDisposedException(nameof(LiveGraphRuntime));
-			if (_selectedProgramOutput == null) throw new InvalidOperationException("A live ProgramOutput is not selected.");
+			if (_selectedScene == null) throw new InvalidOperationException("A ShitDesigner scene is not selected.");
 		}
 
 		private static LiveParameterApplicationResult Accept(LiveParameterRequest request) => new LiveParameterApplicationResult(request.SequenceNumber, true, string.Empty);
 		private static LiveParameterApplicationResult Reject(LiveParameterRequest request, string reason) => new LiveParameterApplicationResult(request.SequenceNumber, false, reason);
+	}
+
+	internal sealed class LiveShitDesignerScene {
+		private readonly Dictionary<string, LivePublishedParameter> _parameters;
+		public ShitDesignerSceneDefinition Definition { get; }
+		public IReadOnlyList<LiveProgramOutput> Outputs { get; }
+
+		public LiveShitDesignerScene(ShitDesignerSceneDefinition definition, IReadOnlyDictionary<string, LiveProgramOutput> outputsByNodeId) {
+			Definition = definition ?? throw new ArgumentNullException(nameof(definition));
+			if (outputsByNodeId == null) throw new ArgumentNullException(nameof(outputsByNodeId));
+			Outputs = definition.Nodes.Select(node => outputsByNodeId[node.Id]).ToArray();
+			_parameters = definition.Parameters.ToDictionary(parameter => parameter.Id, parameter => {
+				var output = outputsByNodeId[parameter.NodeId];
+				var source = output.Root.GetParameterDefinitions().FirstOrDefault(candidate => candidate.Id == parameter.ParameterId);
+				if (string.IsNullOrWhiteSpace(source.Id)) throw new InvalidOperationException("A published scene parameter is not provided by its Unity scene node: " + parameter.Id + ".");
+				return new LivePublishedParameter(parameter, output.Root, source);
+			}, StringComparer.Ordinal);
+		}
+
+		public LiveParameterDefinition[] GetParameterDefinitions() => _parameters.Values.Select(parameter => parameter.ToDefinition()).ToArray();
+
+		public bool TrySetParameter(string id, float value, out string rejectionReason) {
+			if (!_parameters.TryGetValue(id, out var parameter)) {
+				rejectionReason = "The parameter is not published by this ShitDesigner scene.";
+				return false;
+			}
+			return parameter.Root.TrySetParameter(parameter.Source.Id, value, out rejectionReason);
+		}
+	}
+
+	internal sealed class LivePublishedParameter {
+		private readonly ShitDesignerSceneParameter _definition;
+		public LiveSceneRoot Root { get; }
+		public LiveParameterDefinition Source { get; }
+
+		public LivePublishedParameter(ShitDesignerSceneParameter definition, LiveSceneRoot root, LiveParameterDefinition source) {
+			_definition = definition ?? throw new ArgumentNullException(nameof(definition));
+			Root = root ?? throw new ArgumentNullException(nameof(root));
+			Source = source;
+		}
+
+		public LiveParameterDefinition ToDefinition() => new LiveParameterDefinition(_definition.Id, _definition.DisplayName, Source.Minimum, Source.Maximum, Source.Value);
 	}
 }

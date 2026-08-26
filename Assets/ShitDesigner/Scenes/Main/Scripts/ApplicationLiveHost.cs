@@ -55,7 +55,7 @@ namespace ShitDesigner.Main {
 				_runtime = _graphBootstrap.CreateRuntime();
 				_shutdown.Add(() => { _runtime?.Dispose(); _runtime = null; });
 				_sceneIds = _runtime.Scenes.Select(scene => scene.Id).ToArray();
-				_scenes = _runtime.Scenes.Select(scene => new LiveSceneReadModel(scene.Id, scene.name)).ToArray();
+				_scenes = _runtime.Scenes.Select(scene => new LiveSceneReadModel(scene.Id, scene.DisplayName)).ToArray();
 				_keyboard = new LiveKeyboardInput(_parameterQueue);
 				_midiInputManager.InitializeForHostPolling();
 				_shutdown.Add(_midiInputManager.Shutdown);
