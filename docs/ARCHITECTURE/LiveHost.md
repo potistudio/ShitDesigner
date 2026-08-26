@@ -69,7 +69,7 @@
 ### 2026-08-26: 固定ライブグラフの `ProgramOutput` をProgram映像の正本にする
 
 - 固定ライブグラフの `ProgramOutput` がProgram映像の唯一の正本となるTextureを生成する。
-- 外部Display専用スクリプトは、そのProgram Textureだけを受け取り提示する。
+- `LiveGraphBootstrap` はProgramOutputごとに独立したRenderTextureを構成する。外部Display専用スクリプトはDisplay 2から順に対応するProgram Textureだけを受け取り提示する。
 - `MainLiveOutput` が `OutputSurfaceBridge` へsource overrideを渡す方式は、新構成へ持ち込まない。
 
 ### 2026-08-26: Mainのライブ実行Tickは `ApplicationLiveHost` に一本化する
@@ -112,7 +112,7 @@
 ### 2026-08-26: Program Frameは `ApplicationLiveHost` を経由して提示先へ渡す
 
 - `LiveGraphRuntime.Render()` はTexture参照、FrameNumber、解像度および形式だけを持つ読み取り専用の `LiveProgramFrame` を返す。
-- `ApplicationLiveHost` は各ライブ実行Tickで `LiveProgramFrame` を外部Display専用スクリプトの `Present` へ渡し、同じFrameの参照を `LiveUiReadModel` へ公開する。
+- `ApplicationLiveHost` は各ライブ実行TickでProgramOutput群のFrameを外部Display専用スクリプトの `Present` へ渡し、先頭ProgramOutputの参照を `LiveUiReadModel` へ公開する。
 - 外部Display専用スクリプトは同じFrameNumberを再提示しない。
 - 外部DisplayとUIは `LiveGraphRuntime` の内部状態を取得または監視せず、受け取ったFrameを表示するだけとする。
 

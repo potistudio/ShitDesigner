@@ -16,7 +16,6 @@ namespace ShitDesigner.Main {
 		[SerializeField] private Shader _displayTransformShader;
 
 		private DisplayTransformPass _displayTransform;
-		private RenderTexture _displayTexture;
 		private readonly Dictionary<int, DisplayOutput> _outputs = new Dictionary<int, DisplayOutput>();
 		private ulong _presentedFrameNumber;
 		private bool _initialized;
@@ -33,14 +32,6 @@ namespace ShitDesigner.Main {
 			Shutdown();
 			if (_displayTransformShader == null) throw new InvalidOperationException("A DisplayTransform shader is required.");
 			_displayTransform = new DisplayTransformPass(_displayTransformShader);
-			_displayTexture = new RenderTexture(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight, 0, RenderTextureFormat.ARGB32) {
-				name = "ShitDesigner.Main.ExternalDisplay",
-				useMipMap = false,
-				autoGenerateMips = false
-			};
-			if (!_displayTexture.Create()) throw new InvalidOperationException("The external Display texture could not be created.");
-			ClearDisplayTexture();
-
 			_initialized = true;
 		}
 
@@ -65,14 +56,22 @@ namespace ShitDesigner.Main {
 
 		public void IdentifyDisplay() => Debug.Log(DisplayIdentity, this);
 
-		public void Present(LiveProgramFrame frame) {
-			if (!_initialized || frame.Texture == null || frame.FrameNumber == 0 || frame.FrameNumber == _presentedFrameNumber) return;
+		public void Present(LiveProgramFrames frames) {
+			if (!_initialized || frames.Count == 0 || frames.Primary.FrameNumber == 0) return;
+			var outputsRebuilt = false;
 			if (IsOutputActive && OutputsDoNotMatchConnectedDisplays()) {
 				RebuildOutputs();
 				foreach (var output in _outputs.Values) output.SetVisible(true);
+				outputsRebuilt = true;
 			}
-			_displayTransform.Blit(frame.Texture, _displayTexture, DisplayTransformMode.HdrAces);
-			_presentedFrameNumber = frame.FrameNumber;
+			if (frames.Primary.FrameNumber == _presentedFrameNumber && !outputsRebuilt) return;
+			foreach (var output in _outputs) {
+				var frameIndex = output.Key - 2;
+				if (frameIndex < frames.Count && frames[frameIndex].Texture != null)
+					_displayTransform.Blit(frames[frameIndex].Texture, output.Value.Texture, DisplayTransformMode.HdrAces);
+				else output.Value.Clear();
+			}
+			_presentedFrameNumber = frames.Primary.FrameNumber;
 		}
 
 		public void Shutdown() {
@@ -82,11 +81,6 @@ namespace ShitDesigner.Main {
 			DestroyOutputs();
 			_displayTransform?.Dispose();
 			_displayTransform = null;
-			if (_displayTexture != null) {
-				_displayTexture.Release();
-				DestroyUnityObject(_displayTexture);
-				_displayTexture = null;
-			}
 		}
 
 		private void OnDestroy() => Shutdown();
@@ -126,9 +120,19 @@ namespace ShitDesigner.Main {
 			camera.backgroundColor = Color.black;
 			camera.cullingMask = 0;
 			camera.enabled = false;
+			var displayTexture = new RenderTexture(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight, 0, RenderTextureFormat.ARGB32) {
+				name = "ShitDesigner.Main.ExternalDisplay." + displayNumber,
+				useMipMap = false,
+				autoGenerateMips = false
+			};
+			if (!displayTexture.Create()) {
+				DestroyUnityObject(cameraObject);
+				throw new InvalidOperationException("An external Display texture could not be created.");
+			}
+			ClearTexture(displayTexture);
 			var presenter = cameraObject.AddComponent<LiveProgramDisplayCamera>();
-			presenter.Source = _displayTexture;
-			return new DisplayOutput(camera, cameraObject.AddComponent<WindowsDisplayWindowController>());
+			presenter.Source = displayTexture;
+			return new DisplayOutput(camera, cameraObject.AddComponent<WindowsDisplayWindowController>(), displayTexture);
 		}
 
 		private bool OutputsDoNotMatchConnectedDisplays() {
@@ -139,7 +143,7 @@ namespace ShitDesigner.Main {
 		}
 
 		private void DestroyOutputs() {
-			foreach (var output in _outputs.Values) DestroyUnityObject(output.Camera.gameObject);
+			foreach (var output in _outputs.Values) output.Dispose();
 			_outputs.Clear();
 		}
 
@@ -151,9 +155,9 @@ namespace ShitDesigner.Main {
 			}));
 		}
 
-		private void ClearDisplayTexture() {
+		private static void ClearTexture(RenderTexture texture) {
 			var previous = RenderTexture.active;
-			RenderTexture.active = _displayTexture;
+			RenderTexture.active = texture;
 			GL.Clear(true, true, Color.black);
 			RenderTexture.active = previous;
 		}
@@ -166,15 +170,25 @@ namespace ShitDesigner.Main {
 		private readonly struct DisplayOutput {
 			public Camera Camera { get; }
 			public WindowsDisplayWindowController WindowController { get; }
+			public RenderTexture Texture { get; }
 
-			public DisplayOutput(Camera camera, WindowsDisplayWindowController windowController) {
+			public DisplayOutput(Camera camera, WindowsDisplayWindowController windowController, RenderTexture texture) {
 				Camera = camera;
 				WindowController = windowController;
+				Texture = texture;
 			}
 
 			public void SetVisible(bool visible) {
 				Camera.enabled = visible;
 				WindowController.SetOutputVisible(visible);
+			}
+
+			public void Clear() => ClearTexture(Texture);
+
+			public void Dispose() {
+				Texture.Release();
+				DestroyUnityObject(Texture);
+				DestroyUnityObject(Camera.gameObject);
 			}
 		}
 	}

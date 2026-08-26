@@ -17,9 +17,9 @@
 
 ## Program Display
 
-- Program出力は接続済みのすべての外部Unity Displayへ同時に表示する。接続数に応じて `Display 2`、`Display 3`、…を対象とする。
-- 接続済みDisplayはトップバーで一覧表示する。個別の出力先選択は行わない。
-- 外部Displayが失われた場合は残りの接続済みDisplayへ出力を継続し、外部Displayがない場合はProgram Monitorへフォールバックする。
+- `LiveGraphBootstrap` はProgramOutputごとに独立したRenderTextureを構成する。`Display 2` は先頭ProgramOutput、`Display 3` は2番目のProgramOutputを表示する。
+- 接続済みDisplayはトップバーで一覧表示する。Display数がProgramOutput数を超える場合、対応する出力のないDisplayは不透明黒を表示する。
+- 外部Displayが失われた場合は残りの接続済みDisplayへ対応するProgramOutputの出力を継続し、外部Displayがない場合はProgram Monitorへフォールバックする。
 - `Identify Displays` は各操作Displayへ番号を3秒表示するが、Program映像には重ねない。
 
 ## Preview Viewer Host
