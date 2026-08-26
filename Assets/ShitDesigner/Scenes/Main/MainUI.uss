@@ -57,6 +57,12 @@
     height: 32px;
 }
 
+.patch-controls .unity-scroll-view__content-container {
+    flex-direction: row;
+    padding-left: 50%;
+    padding-right: 50%;
+}
+
 .patch-button {
     flex-grow: 1;
     height: 32px;
