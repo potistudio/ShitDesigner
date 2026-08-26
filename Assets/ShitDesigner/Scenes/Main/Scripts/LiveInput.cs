@@ -34,7 +34,6 @@ namespace ShitDesigner.Main {
 		}
 
 		private void SelectPatch(string patchId) {
-			_queue.EnqueuePreloadPatch(patchId);
 			_queue.EnqueueLoadPatch(patchId);
 		}
 
@@ -98,7 +97,6 @@ namespace ShitDesigner.Main {
 		}
 
 		private void SelectPatch(string patchId) {
-			_queue.EnqueuePreloadPatch(patchId);
 			_queue.EnqueueLoadPatch(patchId);
 		}
 	}

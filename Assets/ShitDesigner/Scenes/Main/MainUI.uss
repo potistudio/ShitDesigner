@@ -57,8 +57,7 @@
     height: 32px;
 }
 
-.patch-button,
-.load-patch-button {
+.patch-button {
     flex-grow: 1;
     height: 32px;
     color: rgb(232, 236, 242);
@@ -81,12 +80,6 @@
     background-color: rgb(47, 111, 179);
 }
 
-.load-patch-button {
-    margin-top: 8px;
-    color: rgb(255, 255, 255);
-    background-color: rgb(47, 111, 179);
-    border-color: rgb(88, 166, 255);
-}
 
 .parameter-controls {
     flex-grow: 1;

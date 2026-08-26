@@ -11,9 +11,8 @@
             </ui:VisualElement>
             <ui:VisualElement class="control-panel">
                 <ui:Label text="LIVE CONTROL" class="panel-title"/>
-                <ui:Label text="PATCH" class="patch-title"/>
+                <ui:Label text="PRELOAD PATCH" class="patch-title"/>
                 <ui:VisualElement name="patch-controls" class="patch-controls"/>
-                <ui:Button name="load-preloaded-patch" text="LOAD PATCH" class="load-patch-button"/>
                 <ui:Label name="display-selector" class="display-selector" text="OUTPUT: No external Display"/>
                 <ui:VisualElement class="output-actions">
                     <ui:Button name="output-toggle" text="START OUTPUT" class="output-action"/>

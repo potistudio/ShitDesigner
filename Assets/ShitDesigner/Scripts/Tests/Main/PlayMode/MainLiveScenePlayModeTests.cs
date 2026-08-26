@@ -57,7 +57,7 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(ui.Q<Slider>("parameter-scale").direction, Is.EqualTo(SliderDirection.Vertical));
 			Assert.That(ui.Q<Label>("parameter-value-scale").text, Is.EqualTo("1.00"));
 			Assert.That(ui.Q<VisualElement>("patch-controls").childCount, Is.EqualTo(3));
-			Assert.That(ui.Q<Button>("load-preloaded-patch"), Is.Not.Null);
+			Assert.That(ui.Q<Button>("patch-" + nextPatch.Id).ClassListContains("is-loaded"), Is.True);
 
 			var midi = (Component)typeof(ApplicationLiveHost).GetField("_midiInputManager", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(host);
 			host.Shutdown();

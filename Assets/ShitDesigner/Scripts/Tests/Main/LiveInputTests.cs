@@ -9,7 +9,7 @@ namespace ShitDesigner.Main.Tests {
 	[TestFixture]
 	public sealed class LiveInputTests {
 		[Test]
-		public void MidiMappingQueuesPatchAndParameterRequestsInEventOrder() {
+		public void MidiMappingQueuesPreloadedPatchLoadAndParameterRequestsInEventOrder() {
 			var owner = new GameObject("MIDI");
 			try {
 				var manager = owner.AddComponent<MidiInputManager>();
@@ -25,13 +25,11 @@ namespace ShitDesigner.Main.Tests {
 
 				var requests = new List<LiveParameterRequest>();
 				queue.Drain(requests);
-				Assert.That(requests.Count, Is.EqualTo(3));
-				Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.PreloadPatch));
+				Assert.That(requests.Count, Is.EqualTo(2));
+				Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.LoadPatch));
 				Assert.That(requests[0].PatchId, Is.EqualTo("patch-b"));
-				Assert.That(requests[1].Kind, Is.EqualTo(LiveParameterRequestKind.LoadPatch));
-				Assert.That(requests[1].PatchId, Is.EqualTo("patch-b"));
-				Assert.That(requests[2].PatchId, Is.EqualTo("patch-a"));
-				Assert.That(requests[2].ParameterId, Is.EqualTo(LiveGraphClockRateParameter.ParameterId));
+				Assert.That(requests[1].PatchId, Is.EqualTo("patch-a"));
+				Assert.That(requests[1].ParameterId, Is.EqualTo(LiveGraphClockRateParameter.ParameterId));
 			}
 			finally { Object.DestroyImmediate(owner); }
 		}
