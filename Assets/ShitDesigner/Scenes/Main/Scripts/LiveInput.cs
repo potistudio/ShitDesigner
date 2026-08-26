@@ -34,12 +34,12 @@ namespace ShitDesigner.Main {
 
 		private void SetMotion(string sceneId, float value) {
 			_motion = Mathf.Clamp01(value);
-			_queue.EnqueueSetParameter(sceneId, LiveSceneRoot.MotionParameterId, _motion);
+			_queue.EnqueueSetParameter(sceneId, LiveGraphClockRateParameter.ParameterId, _motion);
 		}
 
 		private void SetScale(string sceneId, float value) {
 			_scale = Mathf.Clamp01(value);
-			_queue.EnqueueSetParameter(sceneId, LiveSceneRoot.ScaleParameterId, _scale);
+			_queue.EnqueueSetParameter(sceneId, LiveUniformScaleParameter.ParameterId, _scale);
 		}
 	}
 
@@ -78,8 +78,8 @@ namespace ShitDesigner.Main {
 				var index = Mathf.RoundToInt(normalized * (_sceneIds.Count - 1));
 				_queue.EnqueueSelectScene(_sceneIds[index]);
 			}
-			else if (control.Number == 21) _queue.EnqueueSetParameter(_selectedSceneId, LiveSceneRoot.MotionParameterId, normalized);
-			else if (control.Number == 22) _queue.EnqueueSetParameter(_selectedSceneId, LiveSceneRoot.ScaleParameterId, normalized);
+			else if (control.Number == 21) _queue.EnqueueSetParameter(_selectedSceneId, LiveGraphClockRateParameter.ParameterId, normalized);
+			else if (control.Number == 22) _queue.EnqueueSetParameter(_selectedSceneId, LiveUniformScaleParameter.ParameterId, normalized);
 		}
 	}
 }

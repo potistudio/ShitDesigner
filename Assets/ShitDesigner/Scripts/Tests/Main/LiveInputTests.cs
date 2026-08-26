@@ -28,7 +28,7 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(requests.Count, Is.EqualTo(2));
 				Assert.That(requests[0].SceneId, Is.EqualTo("scene-b"));
 				Assert.That(requests[1].SceneId, Is.EqualTo("scene-a"));
-				Assert.That(requests[1].ParameterId, Is.EqualTo(LiveSceneRoot.MotionParameterId));
+				Assert.That(requests[1].ParameterId, Is.EqualTo(LiveGraphClockRateParameter.ParameterId));
 			}
 			finally { Object.DestroyImmediate(owner); }
 		}

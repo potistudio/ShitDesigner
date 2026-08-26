@@ -301,7 +301,7 @@ namespace ShitDesigner.Main {
 			_lastDeltaSeconds = Math.Max(0d, deltaSeconds);
 			_graphTime += _lastDeltaSeconds;
 			foreach (var scene in _selectedScene.Outputs) {
-				var result = scene.Runtime.AdvanceGraphClock(_lastDeltaSeconds * Mathf.Lerp(0f, 2f, scene.Root.Motion));
+				var result = scene.Runtime.AdvanceGraphClock(_lastDeltaSeconds * scene.Root.TimeScale);
 				if (result.IsFailure) throw new InvalidOperationException(result.Error.Message);
 			}
 		}
@@ -309,7 +309,7 @@ namespace ShitDesigner.Main {
 		public void SceneUpdate(double deltaSeconds) {
 			EnsureUsable();
 			foreach (var scene in _selectedScene.Outputs) {
-				var result = scene.Runtime.AdvancePhysics(deltaSeconds * Mathf.Lerp(0f, 2f, scene.Root.Motion));
+				var result = scene.Runtime.AdvancePhysics(deltaSeconds * scene.Root.TimeScale);
 				if (result.IsFailure) throw new InvalidOperationException(result.Error.Message);
 			}
 		}

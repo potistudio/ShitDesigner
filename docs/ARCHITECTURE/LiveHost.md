@@ -159,7 +159,7 @@
 ### 2026-08-26: 各3Dシーンのルートが公開パラメーターAPIを提供する
 
 - すべての対象3Dシーンのルートには、公開パラメーター一覧の取得と変更適用を提供する `LiveSceneRoot` を配置する。
-- `LiveSceneRoot` は、シーン固有の公開パラメーターとその反映方法を所有する。
+- `LiveSceneRoot` は同じGameObject上の `ILiveSceneParameter` を集約して公開し、各パラメーターコンポーネントがシーン固有の反映方法と対象参照を所有する。
 - UIは選択中シーンの公開パラメーター一覧から操作部品を描画する。
 - MIDI、KeyboardおよびUIの変更要求はSceneIdとParameterIdを指定して `LiveParameterQueue` へ投入する。
 - `LiveGraphRuntime` はTransformやCameraを直接変更せず、選択中シーンの `LiveSceneRoot` APIを通じて変更を適用する。
