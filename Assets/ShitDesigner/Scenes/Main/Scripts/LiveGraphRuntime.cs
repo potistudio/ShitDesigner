@@ -52,10 +52,10 @@ namespace ShitDesigner.Main {
 	internal sealed class LiveGraph : IDisposable {
 		private readonly SceneIsolationManager _sceneManager;
 		private readonly RenderTexturePool _renderPool;
-		public IReadOnlyList<ShitDesignerSceneDefinition> SceneDefinitions { get; }
+		public IReadOnlyList<PatchDefinition> SceneDefinitions { get; }
 		public IReadOnlyList<LiveProgramOutput> ProgramOutputs { get; }
 
-		public LiveGraph(SceneIsolationManager sceneManager, RenderTexturePool renderPool, IEnumerable<ShitDesignerSceneDefinition> sceneDefinitions, IEnumerable<LiveProgramOutput> programOutputs) {
+		public LiveGraph(SceneIsolationManager sceneManager, RenderTexturePool renderPool, IEnumerable<PatchDefinition> sceneDefinitions, IEnumerable<LiveProgramOutput> programOutputs) {
 			_sceneManager = sceneManager ?? throw new ArgumentNullException(nameof(sceneManager));
 			_renderPool = renderPool ?? throw new ArgumentNullException(nameof(renderPool));
 			SceneDefinitions = (sceneDefinitions ?? throw new ArgumentNullException(nameof(sceneDefinitions))).ToArray();
@@ -150,27 +150,37 @@ namespace ShitDesigner.Main {
 		public LiveSceneRoot Root { get; }
 		public RenderTexture ProgramTexture { get; }
 		public RenderTexture RenderTexture { get; }
+		private readonly RenderTexture _shaderGraphTexture;
 		private readonly LiveProgramShaderGraph _programGraph;
+		private readonly LiveProgramFlash _flash;
 
 		public LiveProgramOutput(Scene3DDefinition definition, SceneNodeRuntime runtime, LiveSceneRoot root,
-			RenderTexture programTexture, RenderTexture renderTexture, LiveProgramShaderGraph programGraph) {
+			RenderTexture programTexture, RenderTexture renderTexture, RenderTexture shaderGraphTexture,
+			LiveProgramShaderGraph programGraph, LiveProgramFlash flash) {
 			Definition = definition ?? throw new ArgumentNullException(nameof(definition));
 			Runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
 			Root = root ?? throw new ArgumentNullException(nameof(root));
 			ProgramTexture = programTexture ?? throw new ArgumentNullException(nameof(programTexture));
 			RenderTexture = renderTexture ?? throw new ArgumentNullException(nameof(renderTexture));
+			_shaderGraphTexture = shaderGraphTexture ?? throw new ArgumentNullException(nameof(shaderGraphTexture));
 			_programGraph = programGraph ?? throw new ArgumentNullException(nameof(programGraph));
+			_flash = flash ?? throw new ArgumentNullException(nameof(flash));
 		}
 
 		public void Render(double graphTime, double deltaSeconds, ulong frameNumber) {
 			var result = Runtime.Render(RenderTexture, LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight, frameNumber);
 			if (result.IsFailure || result.Value == null || !result.Value.Rendered)
 				throw new InvalidOperationException(result.IsFailure ? result.Error.Message : "A live ProgramOutput did not render.");
-			_programGraph.Render(RenderTexture, ProgramTexture, graphTime, frameNumber);
+			_programGraph.Render(RenderTexture, _shaderGraphTexture, graphTime, frameNumber);
+			_flash.Render(_shaderGraphTexture, ProgramTexture, graphTime);
 		}
 
+		public void TriggerFlash(double graphTime) => _flash.Trigger(graphTime);
+
 		public void Dispose() {
+			_flash.Dispose();
 			_programGraph.Dispose();
+			ReleaseTexture(_shaderGraphTexture);
 			Runtime.Dispose();
 			ReleaseTexture(ProgramTexture);
 			ReleaseTexture(RenderTexture);
@@ -273,7 +283,7 @@ namespace ShitDesigner.Main {
 		private bool _disposed;
 
 		public string SelectedSceneId => _selectedScene?.Definition.Id ?? string.Empty;
-		public IReadOnlyList<ShitDesignerSceneDefinition> Scenes => _graph.SceneDefinitions;
+		public IReadOnlyList<PatchDefinition> Scenes => _graph.SceneDefinitions;
 		public LiveProgramFrame CurrentFrame { get; private set; }
 		public LiveProgramFrames CurrentFrames { get; private set; }
 
@@ -291,6 +301,10 @@ namespace ShitDesigner.Main {
 			if (!_scenesById.TryGetValue(request.SceneId, out var scene)) return Reject(request, "The requested ShitDesigner scene does not exist.");
 			if (request.Kind == LiveParameterRequestKind.SelectScene) {
 				_selectedScene = scene;
+				return Accept(request);
+			}
+			if (request.Kind == LiveParameterRequestKind.TriggerFlash) {
+				scene.TriggerFlash(_graphTime);
 				return Accept(request);
 			}
 			return scene.TrySetParameter(request.ParameterId, request.Value, out var reason) ? Accept(request) : Reject(request, reason);
@@ -344,10 +358,10 @@ namespace ShitDesigner.Main {
 
 	internal sealed class LiveShitDesignerScene {
 		private readonly Dictionary<string, LivePublishedParameter> _parameters;
-		public ShitDesignerSceneDefinition Definition { get; }
+		public PatchDefinition Definition { get; }
 		public IReadOnlyList<LiveProgramOutput> Outputs { get; }
 
-		public LiveShitDesignerScene(ShitDesignerSceneDefinition definition, IReadOnlyDictionary<string, LiveProgramOutput> outputsByNodeId) {
+		public LiveShitDesignerScene(PatchDefinition definition, IReadOnlyDictionary<string, LiveProgramOutput> outputsByNodeId) {
 			Definition = definition ?? throw new ArgumentNullException(nameof(definition));
 			if (outputsByNodeId == null) throw new ArgumentNullException(nameof(outputsByNodeId));
 			Outputs = definition.Nodes.Select(node => outputsByNodeId[node.Id]).ToArray();
@@ -368,14 +382,18 @@ namespace ShitDesigner.Main {
 			}
 			return parameter.Root.TrySetParameter(parameter.Source.Id, value, out rejectionReason);
 		}
+
+		public void TriggerFlash(double graphTime) {
+			foreach (var output in Outputs) output.TriggerFlash(graphTime);
+		}
 	}
 
 	internal sealed class LivePublishedParameter {
-		private readonly ShitDesignerSceneParameter _definition;
+		private readonly PatchParameter _definition;
 		public LiveSceneRoot Root { get; }
 		public LiveParameterDefinition Source { get; }
 
-		public LivePublishedParameter(ShitDesignerSceneParameter definition, LiveSceneRoot root, LiveParameterDefinition source) {
+		public LivePublishedParameter(PatchParameter definition, LiveSceneRoot root, LiveParameterDefinition source) {
 			_definition = definition ?? throw new ArgumentNullException(nameof(definition));
 			Root = root ?? throw new ArgumentNullException(nameof(root));
 			Source = source;

@@ -25,10 +25,10 @@ namespace ShitDesigner.Main {
 				new LiveProgramGraphConnection("invert", "contrast", "input")
 			});
 
-		[SerializeField] private ShitDesignerSceneDefinition[] _scenes = Array.Empty<ShitDesignerSceneDefinition>();
+		[SerializeField] private PatchDefinition[] _scenes = Array.Empty<PatchDefinition>();
 		[SerializeField] private ShaderNodeManifestAsset _shaderManifest;
 
-		public ShitDesignerSceneDefinition[] Scenes => _scenes ?? Array.Empty<ShitDesignerSceneDefinition>();
+		public PatchDefinition[] Scenes => _scenes ?? Array.Empty<PatchDefinition>();
 		public int ProgramOutputCount => Scenes.Sum(scene => scene == null ? 0 : scene.Nodes.Count());
 
 		public LiveGraphRuntime CreateRuntime() => new LiveGraphRuntime(BuildGraph());
@@ -37,13 +37,15 @@ namespace ShitDesigner.Main {
 			var definitions = Scenes;
 			ValidateDefinitions(definitions);
 			var shaderDefinitions = BuildProgramShaderDefinitions();
+			var flashShader = Resources.Load<Shader>("LiveProgramFlash");
+			if (flashShader == null) throw new InvalidOperationException("The live Program flash shader is missing from Resources.");
 			var sceneManager = new SceneIsolationManager(renderSource: new UnityCameraRenderSource());
 			var renderPool = new RenderTexturePool();
 			var outputs = new List<LiveProgramOutput>(definitions.Sum(definition => definition.Nodes.Count()));
 			try {
 				var index = 0;
 				foreach (var node in definitions.SelectMany(definition => definition.Nodes))
-					outputs.Add(BuildOutput(sceneManager, renderPool, node, index++, shaderDefinitions));
+					outputs.Add(BuildOutput(sceneManager, renderPool, node, index++, shaderDefinitions, flashShader));
 				return new LiveGraph(sceneManager, renderPool, definitions, outputs);
 			}
 			catch {
@@ -70,7 +72,7 @@ namespace ShitDesigner.Main {
 		}
 
 		private static LiveProgramOutput BuildOutput(SceneIsolationManager sceneManager, RenderTexturePool renderPool,
-			Scene3DDefinition definition, int index, IReadOnlyDictionary<NodeTypeId, LiveProgramShaderDefinition> shaderDefinitions) {
+			Scene3DDefinition definition, int index, IReadOnlyDictionary<NodeTypeId, LiveProgramShaderDefinition> shaderDefinitions, Shader flashShader) {
 			var created = sceneManager.Create(new SceneCreateRequest(NodeInstanceId.New(), SceneNodeKind.ThreeD,
 				"ShitDesigner.Main.LiveScene." + index, 1, definition.Prefab));
 			if (created.IsFailure) throw new InvalidOperationException(created.Error.Message);
@@ -83,16 +85,22 @@ namespace ShitDesigner.Main {
 			created.Value.BindGraphClock();
 			var programTexture = CreateTexture("ShitDesigner.Main.ProgramOutput." + index, 0, RenderTextureFormat.ARGBHalf);
 			RenderTexture renderTexture = null;
+			RenderTexture shaderGraphTexture = null;
 			LiveProgramShaderGraph shaderGraph = null;
+			LiveProgramFlash flash = null;
 			try {
 				ClearTexture(programTexture);
 				var renderFormat = SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null ? RenderTextureFormat.ARGB32 : RenderTextureFormat.ARGBHalf;
 				renderTexture = CreateTexture("ShitDesigner.Main.ProgramRender." + index, 24, renderFormat);
+				shaderGraphTexture = CreateTexture("ShitDesigner.Main.ProgramGraphOutput." + index, 0, RenderTextureFormat.ARGBHalf);
 				shaderGraph = BuildProgramShaderGraph(renderPool, shaderDefinitions, definition.Id);
-				return new LiveProgramOutput(definition, created.Value, root, programTexture, renderTexture, shaderGraph);
+				flash = new LiveProgramFlash(flashShader);
+				return new LiveProgramOutput(definition, created.Value, root, programTexture, renderTexture, shaderGraphTexture, shaderGraph, flash);
 			}
 			catch {
+				flash?.Dispose();
 				shaderGraph?.Dispose();
+				ReleaseTexture(shaderGraphTexture);
 				ReleaseTexture(programTexture);
 				ReleaseTexture(renderTexture);
 				created.Value.Dispose();
@@ -139,7 +147,7 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		private static void ValidateDefinitions(IReadOnlyList<ShitDesignerSceneDefinition> definitions) {
+		private static void ValidateDefinitions(IReadOnlyList<PatchDefinition> definitions) {
 			if (definitions.Count == 0) throw new InvalidOperationException("At least one ShitDesigner scene is required.");
 			if (definitions.Any(definition => definition == null || definition.Validate().IsFailure))
 				throw new InvalidOperationException("Every ShitDesigner scene requires a valid definition.");

@@ -30,6 +30,7 @@ namespace ShitDesigner.Main {
 			if (keyboard.rightArrowKey.wasPressedThisFrame) SetScale(selectedSceneId, _scale + _adjustmentStep);
 			if (keyboard.downArrowKey.wasPressedThisFrame) SetMotion(selectedSceneId, _motion - _adjustmentStep);
 			if (keyboard.upArrowKey.wasPressedThisFrame) SetMotion(selectedSceneId, _motion + _adjustmentStep);
+			if (keyboard.spaceKey.wasPressedThisFrame) _queue.EnqueueTriggerFlash(selectedSceneId);
 		}
 
 		private void SetMotion(string sceneId, float value) {
@@ -57,15 +58,20 @@ namespace ShitDesigner.Main {
 			_sceneIds = sceneIds ?? throw new ArgumentNullException(nameof(sceneIds));
 			_channel = Mathf.Clamp(channel, 1, 16);
 			_manager.InputReceived += OnInputReceived;
+			_manager.TriggerReceived += OnTriggerReceived;
 		}
 
 		public void SetSelectedScene(string sceneId) => _selectedSceneId = sceneId ?? string.Empty;
 
-		public void Dispose() => _manager.InputReceived -= OnInputReceived;
+		public void Dispose() {
+			_manager.InputReceived -= OnInputReceived;
+			_manager.TriggerReceived -= OnTriggerReceived;
+		}
 
 		private void OnInputReceived(MidiInputEvent inputEvent) {
 			var control = inputEvent.Control;
 			if (control.Channel != _channel) return;
+			if (_manager.IsTriggerBinding(control)) return;
 			if (control.Kind == MidiControlKind.Note && inputEvent.RawValue > 0) {
 				var sceneIndex = control.Number - 36;
 				if (sceneIndex >= 0 && sceneIndex < _sceneIds.Count) _queue.EnqueueSelectScene(_sceneIds[sceneIndex]);
@@ -80,6 +86,10 @@ namespace ShitDesigner.Main {
 			}
 			else if (control.Number == 21) _queue.EnqueueSetParameter(_selectedSceneId, LiveGraphClockRateParameter.ParameterId, normalized);
 			else if (control.Number == 22) _queue.EnqueueSetParameter(_selectedSceneId, LiveUniformScaleParameter.ParameterId, normalized);
+		}
+
+		private void OnTriggerReceived(MidiLiveControlBinding binding) {
+			if (!string.IsNullOrWhiteSpace(_selectedSceneId)) _queue.EnqueueTriggerFlash(_selectedSceneId);
 		}
 	}
 }
