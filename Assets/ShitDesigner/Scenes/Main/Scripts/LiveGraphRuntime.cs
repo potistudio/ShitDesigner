@@ -52,19 +52,21 @@ namespace ShitDesigner.Main {
 	internal sealed class LiveGraph : IDisposable {
 		private readonly SceneIsolationManager _sceneManager;
 		private readonly RenderTexturePool _renderPool;
+		private readonly Func<Scene3DDefinition, LiveProgramOutput> _createOutput;
 		public IReadOnlyList<PatchDefinition> PatchDefinitions { get; }
-		public IReadOnlyList<LiveProgramOutput> ProgramOutputs { get; }
 
-		public LiveGraph(SceneIsolationManager sceneManager, RenderTexturePool renderPool, IEnumerable<PatchDefinition> patchDefinitions, IEnumerable<LiveProgramOutput> programOutputs) {
+		public LiveGraph(SceneIsolationManager sceneManager, RenderTexturePool renderPool, IEnumerable<PatchDefinition> patchDefinitions,
+			Func<Scene3DDefinition, LiveProgramOutput> createOutput) {
 			_sceneManager = sceneManager ?? throw new ArgumentNullException(nameof(sceneManager));
 			_renderPool = renderPool ?? throw new ArgumentNullException(nameof(renderPool));
+			_createOutput = createOutput ?? throw new ArgumentNullException(nameof(createOutput));
 			PatchDefinitions = (patchDefinitions ?? throw new ArgumentNullException(nameof(patchDefinitions))).ToArray();
-			ProgramOutputs = (programOutputs ?? throw new ArgumentNullException(nameof(programOutputs))).ToArray();
-			if (PatchDefinitions.Count == 0 || ProgramOutputs.Count == 0) throw new ArgumentException("A live graph requires patches and Program outputs.");
+			if (PatchDefinitions.Count == 0) throw new ArgumentException("A live graph requires patches.");
 		}
 
+		public LiveProgramOutput CreateOutput(Scene3DDefinition definition) => _createOutput(definition);
+
 		public void Dispose() {
-			for (var index = ProgramOutputs.Count - 1; index >= 0; index--) ProgramOutputs[index].Dispose();
 			_sceneManager.Dispose();
 			_renderPool.Dispose();
 		}
@@ -273,9 +275,8 @@ namespace ShitDesigner.Main {
 		public const int ProgramHeight = 1080;
 
 		private readonly LiveGraph _graph;
-		private readonly IReadOnlyList<LiveProgramOutput> _programOutputs;
-		private readonly Dictionary<string, LiveProgramOutput> _programOutputsByNodeId;
-		private readonly Dictionary<string, LivePatch> _patchesById;
+		private readonly Dictionary<string, PatchDefinition> _patchDefinitionsById;
+		private readonly List<LivePatch> _createdPatches = new List<LivePatch>();
 		private LivePatch _loadedPatch;
 		private LivePatch _preloadedPatch;
 		private ulong _frameNumber;
@@ -291,26 +292,31 @@ namespace ShitDesigner.Main {
 
 		internal LiveGraphRuntime(LiveGraph graph) {
 			_graph = graph ?? throw new ArgumentNullException(nameof(graph));
-			_programOutputs = graph.ProgramOutputs;
-			_programOutputsByNodeId = _programOutputs.ToDictionary(output => output.Definition.Id, StringComparer.Ordinal);
-			_patchesById = graph.PatchDefinitions.ToDictionary(definition => definition.Id, definition => new LivePatch(definition, _programOutputsByNodeId), StringComparer.Ordinal);
-			_loadedPatch = _patchesById[graph.PatchDefinitions[0].Id];
+			_patchDefinitionsById = graph.PatchDefinitions.ToDictionary(definition => definition.Id, StringComparer.Ordinal);
+			_loadedPatch = CreatePatch(graph.PatchDefinitions[0]);
 			_preloadedPatch = _loadedPatch;
 			CurrentFrames = new LiveProgramFrames(_loadedPatch.Outputs.Select(output => new LiveProgramFrame(output.ProgramTexture, 0)));
 			CurrentFrame = CurrentFrames.Primary;
 		}
 
 		public LiveParameterApplicationResult Apply(LiveParameterRequest request) {
-			if (!_patchesById.TryGetValue(request.PatchId, out var patch)) return Reject(request, "The requested patch does not exist.");
+			if (!_patchDefinitionsById.TryGetValue(request.PatchId, out var definition)) return Reject(request, "The requested patch does not exist.");
 			if (request.Kind == LiveParameterRequestKind.PreloadPatch) {
-				_preloadedPatch = patch;
+				if (_preloadedPatch?.Definition == definition) return Accept(request);
+				var nextPreloadedPatch = CreatePatch(definition);
+				if (_preloadedPatch != _loadedPatch) DisposePatch(_preloadedPatch);
+				_preloadedPatch = nextPreloadedPatch;
 				return Accept(request);
 			}
 			if (request.Kind == LiveParameterRequestKind.LoadPatch) {
-				if (_preloadedPatch != patch) return Reject(request, "The requested patch has not been preloaded.");
-				_loadedPatch = patch;
+				if (_preloadedPatch?.Definition != definition) return Reject(request, "The requested patch has not been preloaded.");
+				var previousLoadedPatch = _loadedPatch;
+				_loadedPatch = _preloadedPatch;
+				if (previousLoadedPatch != _loadedPatch) DisposePatch(previousLoadedPatch);
 				return Accept(request);
 			}
+			var patch = _preloadedPatch?.Definition == definition ? _preloadedPatch : _loadedPatch?.Definition == definition ? _loadedPatch : null;
+			if (patch == null) return Reject(request, "The requested patch is not loaded.");
 			if (request.Kind == LiveParameterRequestKind.TriggerFlash) {
 				patch.TriggerFlash(_graphTime);
 				return Accept(request);
@@ -352,7 +358,20 @@ namespace ShitDesigner.Main {
 		public void Dispose() {
 			if (_disposed) return;
 			_disposed = true;
+			for (var index = _createdPatches.Count - 1; index >= 0; index--) _createdPatches[index].Dispose();
+			_createdPatches.Clear();
 			_graph.Dispose();
+		}
+
+		private LivePatch CreatePatch(PatchDefinition definition) {
+			var patch = new LivePatch(definition, _graph.CreateOutput);
+			_createdPatches.Add(patch);
+			return patch;
+		}
+
+		private void DisposePatch(LivePatch patch) {
+			if (patch == null || !_createdPatches.Remove(patch)) return;
+			patch.Dispose();
 		}
 
 		private void EnsureUsable() {
@@ -364,21 +383,29 @@ namespace ShitDesigner.Main {
 		private static LiveParameterApplicationResult Reject(LiveParameterRequest request, string reason) => new LiveParameterApplicationResult(request.SequenceNumber, false, reason);
 	}
 
-	internal sealed class LivePatch {
+	internal sealed class LivePatch : IDisposable {
 		private readonly Dictionary<string, LivePublishedParameter> _parameters;
 		public PatchDefinition Definition { get; }
 		public IReadOnlyList<LiveProgramOutput> Outputs { get; }
 
-		public LivePatch(PatchDefinition definition, IReadOnlyDictionary<string, LiveProgramOutput> outputsByNodeId) {
+		public LivePatch(PatchDefinition definition, Func<Scene3DDefinition, LiveProgramOutput> createOutput) {
 			Definition = definition ?? throw new ArgumentNullException(nameof(definition));
-			if (outputsByNodeId == null) throw new ArgumentNullException(nameof(outputsByNodeId));
-			Outputs = definition.Nodes.Select(node => outputsByNodeId[node.Id]).ToArray();
-			_parameters = definition.Parameters.ToDictionary(parameter => parameter.Id, parameter => {
+			if (createOutput == null) throw new ArgumentNullException(nameof(createOutput));
+			var outputsByNodeId = new Dictionary<string, LiveProgramOutput>(StringComparer.Ordinal);
+			try {
+				foreach (var node in definition.Nodes) outputsByNodeId.Add(node.Id, createOutput(node));
+				Outputs = outputsByNodeId.Values.ToArray();
+				_parameters = definition.Parameters.ToDictionary(parameter => parameter.Id, parameter => {
 				var output = outputsByNodeId[parameter.NodeId];
 				var source = output.Root.GetParameterDefinitions().FirstOrDefault(candidate => candidate.Id == parameter.ParameterId);
 				if (string.IsNullOrWhiteSpace(source.Id)) throw new InvalidOperationException("A published scene parameter is not provided by its Unity scene node: " + parameter.Id + ".");
 				return new LivePublishedParameter(parameter, output.Root, source);
-			}, StringComparer.Ordinal);
+				}, StringComparer.Ordinal);
+			}
+			catch {
+				for (var index = outputsByNodeId.Count - 1; index >= 0; index--) outputsByNodeId.Values.ElementAt(index).Dispose();
+				throw;
+			}
 		}
 
 		public LiveParameterDefinition[] GetParameterDefinitions() => _parameters.Values.Select(parameter => parameter.ToDefinition()).ToArray();
@@ -393,6 +420,10 @@ namespace ShitDesigner.Main {
 
 		public void TriggerFlash(double graphTime) {
 			foreach (var output in Outputs) output.TriggerFlash(graphTime);
+		}
+
+		public void Dispose() {
+			for (var index = Outputs.Count - 1; index >= 0; index--) Outputs[index].Dispose();
 		}
 	}
 

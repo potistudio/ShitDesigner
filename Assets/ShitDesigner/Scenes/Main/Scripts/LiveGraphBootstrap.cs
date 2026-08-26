@@ -31,7 +31,14 @@ namespace ShitDesigner.Main {
 		public PatchDefinition[] Patches => _patches ?? Array.Empty<PatchDefinition>();
 		public int ProgramOutputCount => Patches.Sum(patch => patch == null ? 0 : patch.Nodes.Count());
 
-		public LiveGraphRuntime CreateRuntime() => new LiveGraphRuntime(BuildGraph());
+		public LiveGraphRuntime CreateRuntime() {
+			var graph = BuildGraph();
+			try { return new LiveGraphRuntime(graph); }
+			catch {
+				graph.Dispose();
+				throw;
+			}
+		}
 
 		private LiveGraph BuildGraph() {
 			var definitions = Patches;
@@ -41,15 +48,13 @@ namespace ShitDesigner.Main {
 			if (flashShader == null) throw new InvalidOperationException("The live Program flash shader is missing from Resources.");
 			var sceneManager = new SceneIsolationManager(renderSource: new UnityCameraRenderSource());
 			var renderPool = new RenderTexturePool();
-			var outputs = new List<LiveProgramOutput>(definitions.Sum(definition => definition.Nodes.Count()));
+			var nodeIndices = definitions.SelectMany(definition => definition.Nodes).Select((node, index) => new { node.Id, Index = index })
+				.ToDictionary(node => node.Id, node => node.Index, StringComparer.Ordinal);
 			try {
-				var index = 0;
-				foreach (var node in definitions.SelectMany(definition => definition.Nodes))
-					outputs.Add(BuildOutput(sceneManager, renderPool, node, index++, shaderDefinitions, flashShader));
-				return new LiveGraph(sceneManager, renderPool, definitions, outputs);
+				return new LiveGraph(sceneManager, renderPool, definitions, node =>
+					BuildOutput(sceneManager, renderPool, node, nodeIndices[node.Id], shaderDefinitions, flashShader));
 			}
 			catch {
-				for (var index = outputs.Count - 1; index >= 0; index--) outputs[index].Dispose();
 				sceneManager.Dispose();
 				renderPool.Dispose();
 				throw;

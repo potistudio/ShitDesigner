@@ -15,7 +15,6 @@ namespace ShitDesigner.Main {
 		private LiveExternalDisplayOutput _output;
 		private VisualElement _programMonitor;
 		private VisualElement _patchControls;
-		private Button _loadPatchButton;
 		private VisualElement _parameterControls;
 		private Label _capabilityLabel;
 		private Label _diagnosticLabel;
@@ -43,7 +42,6 @@ namespace ShitDesigner.Main {
 
 			_programMonitor = Required<VisualElement>(root, "program-monitor");
 			_patchControls = Required<VisualElement>(root, "patch-controls");
-			_loadPatchButton = Required<Button>(root, "load-preloaded-patch");
 			_parameterControls = Required<VisualElement>(root, "parameter-controls");
 			_capabilityLabel = Required<Label>(root, "capability-status");
 			_diagnosticLabel = Required<Label>(root, "diagnostic-status");
@@ -56,7 +54,6 @@ namespace ShitDesigner.Main {
 			_confirmationTitle = Required<Label>(root, "output-confirm-title");
 			_confirmationMessage = Required<Label>(root, "output-confirm-message");
 			_confirmationOverlay = Required<VisualElement>(root, "output-confirm-overlay");
-			_loadPatchButton.clicked += LoadPreloadedPatch;
 			_outputButton.clicked += RequestOutputToggle;
 			_identifyButton.clicked += _output.IdentifyDisplay;
 			_confirmationCancelButton.clicked += HideOutputConfirmation;
@@ -66,7 +63,6 @@ namespace ShitDesigner.Main {
 		}
 
 		public void Shutdown() {
-			if (_loadPatchButton != null) _loadPatchButton.clicked -= LoadPreloadedPatch;
 			if (_outputButton != null) _outputButton.clicked -= RequestOutputToggle;
 			if (_identifyButton != null && _output != null) _identifyButton.clicked -= _output.IdentifyDisplay;
 			if (_confirmationCancelButton != null) _confirmationCancelButton.clicked -= HideOutputConfirmation;
@@ -142,9 +138,6 @@ namespace ShitDesigner.Main {
 				button.EnableInClassList("is-loaded", patch.Id == model.LoadedPatchId);
 				button.EnableInClassList("is-preloaded", patch.Id == model.PreloadedPatchId);
 			}
-			var preloaded = model.Patches.FirstOrDefault(patch => patch.Id == model.PreloadedPatchId);
-			_loadPatchButton.text = string.IsNullOrEmpty(preloaded.Id) ? "LOAD PATCH" : "LOAD " + preloaded.Name;
-			_loadPatchButton.SetEnabled(!string.IsNullOrEmpty(preloaded.Id) && preloaded.Id != model.LoadedPatchId);
 		}
 
 		private void RebuildPatchControls(LiveUiReadModel model) {
@@ -160,10 +153,6 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		private void LoadPreloadedPatch() {
-			var preloadedPatchId = _host?.ReadModel?.PreloadedPatchId;
-			if (!string.IsNullOrWhiteSpace(preloadedPatchId)) ShowEnqueueRejection(_host.ParameterQueue.EnqueueLoadPatch(preloadedPatchId));
-		}
 
 		private void RequestOutputToggle() {
 			if (_output == null) return;
