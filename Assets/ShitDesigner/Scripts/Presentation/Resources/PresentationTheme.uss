@@ -29,15 +29,15 @@
 .sd-dialog { background-color: var(--sd-panel-alt); border-width: 1px; border-color: var(--sd-border); padding-left: 20px; padding-right: 20px; padding-top: 16px; padding-bottom: 16px; align-self: center; }
 .sd-top-bar { height: 40px; flex-direction: row; align-items: center; flex-shrink: 0; padding-left: 8px; padding-right: 8px; background-color: var(--sd-panel-background); border-bottom-width: 1px; border-bottom-color: var(--sd-border); }
 .sd-project-name { min-width: 120px; max-width: 160px; flex-shrink: 1; -unity-font-style: bold; }
-.sd-project-actions { flex-direction: row; align-items: center; flex-shrink: 0; margin-left: 4px; }
+.sd-project-actions { flex-direction: row; align-items: center; flex-shrink: 0; margin-left: 8px; }
 .sd-root Button { min-height: 28px; color: var(--sd-primary-text); background-color: var(--sd-elevated-surface); border-width: 1px; border-color: var(--sd-border); border-radius: 0; }
 .sd-root Button:hover { border-color: var(--sd-accent); background-color: rgb(36, 43, 52); }
 .sd-root Button:focus { border-color: var(--sd-accent); border-width: 2px; }
 .sd-root .unity-base-text-field__input, .sd-root .unity-base-popup-field__input, .sd-root .unity-base-field__input, .sd-root .unity-toggle__input { border-radius: 0; }
-.sd-top-bar Button { margin-left: 2px; padding-left: 6px; padding-right: 6px; font-size: 11px; }
-.sd-top-layout-selector, .sd-top-program-display-selector { width: 90px; min-width: 80px; min-height: 28px; }
+.sd-top-bar Button { margin-left: 4px; padding-left: 8px; padding-right: 8px; font-size: 11px; }
+.sd-top-layout-selector, .sd-top-program-display-selector { width: 96px; min-width: 80px; min-height: 28px; }
 .sd-project-menu-actions { flex-direction: column; }
-.sd-project-menu-actions > * { margin-top: 2px; }
+.sd-project-menu-actions > * { margin-top: 4px; }
 .sd-banner { display: none; color: var(--sd-danger); padding-left: 12px; }
 .sd-banner.is-visible { display: flex; }
 .sd-dock-workspace { flex-grow: 1; flex-shrink: 1; flex-basis: 0; min-height: 0; }
@@ -45,7 +45,7 @@
 .sd-dock-row { flex-direction: row; flex-grow: 1; flex-shrink: 1; flex-basis: 0; min-height: 0; }
 .sd-graph-toolbar { flex-direction: row; flex-shrink: 0; }
 .sd-dock-controls { flex-direction: row; flex-wrap: wrap; flex-shrink: 0; }
-.sd-shell-actions { flex-direction: row; align-items: center; flex-shrink: 0; margin-left: 4px; }
+.sd-shell-actions { flex-direction: row; align-items: center; flex-shrink: 0; margin-left: 8px; }
 .sd-panel { background-color: var(--sd-panel); border-width: 1px; border-color: var(--sd-border); padding: 8px; min-width: 240px; min-height: 160px; }
 .sd-panel-header { color: var(--sd-primary-text); -unity-font-style: bold; margin-bottom: 8px; }
 .sd-graph-canvas { background-color: #111318; flex-grow: 1; min-height: 180px; }
@@ -64,14 +64,14 @@
 .sd-graph-connection-count.is-at-capacity { color: var(--sd-danger); -unity-font-style: bold; }
 .sd-fanout-bundle { color: var(--sd-accent); font-size: 10px; }
 .sd-node-search-popup { position: absolute; left: 80px; top: 48px; width: 360px; max-height: 420px; background-color: var(--sd-panel-alt); border-width: 1px; border-color: var(--sd-border); border-radius: 0; padding: 8px; z-index: 100; }
-.sd-node-search-popup Button { margin-top: 2px; }
-.sd-command-palette { position: absolute; left: 30%; top: 12%; width: 420px; max-height: 480px; background-color: var(--sd-panel-alt); border-width: 1px; border-color: var(--sd-border); border-radius: 0; padding: 8px; z-index: 200; }
-.sd-command-palette Button { margin-top: 3px; }
+.sd-node-search-popup Button { margin-top: 4px; }
+.sd-command-palette { position: absolute; left: 30%; top: 12%; width: 416px; max-height: 480px; background-color: var(--sd-panel-alt); border-width: 1px; border-color: var(--sd-border); border-radius: 0; padding: 8px; z-index: 200; }
+.sd-command-palette Button { margin-top: 4px; }
 .sd-connection-dashed { border-bottom-width: 1px; border-bottom-color: var(--sd-accent); border-bottom-style: dashed; }
 .sd-focus-target:focus, .sd-focus-target.is-focused { border-left-width: 2px; border-left-color: var(--sd-accent); }
-.sd-preview-tab { padding: 3px; flex-grow: 1; min-width: 120px; min-height: 80px; flex-direction: column; background-color: #090a0c; }
+.sd-preview-tab { padding: 4px; flex-grow: 1; min-width: 120px; min-height: 80px; flex-direction: column; background-color: #090a0c; }
 .sd-preview-tab-toolbar { flex-direction: row; flex-wrap: wrap; }
-.sd-preview-tab-toolbar Button { margin-right: 2px; }
+.sd-preview-tab-toolbar Button { margin-right: 4px; }
 .sd-preview-quality-popover { background-color: var(--sd-panel-alt); border-width: 1px; border-color: var(--sd-border); padding: 4px; }
 .sd-preview-tab > .is-bound, .sd-preview-tab > .is-unavailable { min-width: 64px; min-height: 36px; flex-grow: 1; }
 .sd-preview-tab.is-fit > .is-bound { -unity-background-scale-mode: scale-to-fit; }
@@ -81,13 +81,13 @@
 .sd-preview-tab.is-checker, .sd-preview-tab.is-checker > .is-unavailable { background-color: #565b65; }
 .sd-preview-tab > .is-unavailable { color: var(--sd-muted); background-color: #000000; }
 .reduce-motion, .reduce-motion * { transition-duration: 0ms; transition-delay: 0ms; }
-.sd-output-surface { background-color: #090a0c; margin: 2px; flex-grow: 1; }
+.sd-output-surface { background-color: #090a0c; margin: 4px; flex-grow: 1; }
 .sd-display-identify-overlay { position: absolute; left: 0; right: 0; top: 40px; min-height: 32px; flex-direction: row; justify-content: center; background-color: rgba(32, 36, 44, .92); color: var(--sd-text); z-index: 10; }
 .sd-status-bar { height: 24px; flex-direction: row; align-items: center; flex-shrink: 0; background-color: var(--sd-panel-alt); color: var(--sd-muted); padding-left: 8px; border-top-width: 1px; border-top-color: var(--sd-border); }
 .sd-layer { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
 .sd-layer, .sd-banner { picking-mode: ignore; }
 .sd-dashboard-widget { background-color: var(--sd-elevated-surface); color: var(--sd-text); border-width: 1px; border-color: var(--sd-border); padding: 4px; }
-.sd-media-item, .sd-preset-item, .sd-library-item { margin-top: 2px; }
+.sd-media-item, .sd-preset-item, .sd-library-item { margin-top: 4px; }
 .is-closed, .is-hidden { display: none; }
 .sd-elevated { background-color: var(--sd-elevated-surface); border-color: var(--sd-border); border-width: 1px; }
 .sd-secondary { color: var(--sd-secondary-text); }
