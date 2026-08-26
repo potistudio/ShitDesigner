@@ -233,9 +233,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e70675f945db47619b0d81845399094c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.LiveGraphBootstrap
-  _programOutputs:
-  - {fileID: 11400000, guid: 47f250965d7e4f42a8e166033822bd8b, type: 2}
-  - {fileID: 11400000, guid: 2fc81fba65d573745a19202bffc417f9, type: 2}
+  _scenes:
+  - {fileID: 11400000, guid: 3a59a0f015a446c4bdf4eec5dbd9e340, type: 2}
+  - {fileID: 11400000, guid: 5ae0f18f4c334a4a98a7b7d9d4adcb75, type: 2}
   _shaderManifest: {fileID: 11400000, guid: efc5dd0248d5c714783f13454b2c4b04, type: 2}
 --- !u!114 &444072071
 MonoBehaviour:

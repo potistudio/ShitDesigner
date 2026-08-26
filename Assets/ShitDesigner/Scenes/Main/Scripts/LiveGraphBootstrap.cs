@@ -10,7 +10,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace ShitDesigner.Main {
-	/// <summary>Holds the graph sources for independently rendered Main ProgramOutputs.</summary>
+	/// <summary>Holds the authored ShitDesigner scenes and their Unity scene nodes.</summary>
 	[DisallowMultipleComponent]
 	public sealed class LiveGraphBootstrap : MonoBehaviour {
 		private static readonly LiveProgramGraphDefinition ProgramGraph = new LiveProgramGraphDefinition(
@@ -25,26 +25,26 @@ namespace ShitDesigner.Main {
 				new LiveProgramGraphConnection("invert", "contrast", "input")
 			});
 
-		[SerializeField] private Scene3DDefinition[] _programOutputs = Array.Empty<Scene3DDefinition>();
+		[SerializeField] private ShitDesignerSceneDefinition[] _scenes = Array.Empty<ShitDesignerSceneDefinition>();
 		[SerializeField] private ShaderNodeManifestAsset _shaderManifest;
 
-		public Scene3DDefinition[] ProgramOutputs => _programOutputs ?? Array.Empty<Scene3DDefinition>();
-		public Scene3DDefinition[] Scenes => ProgramOutputs;
-		public int ProgramOutputCount => ProgramOutputs.Length;
+		public ShitDesignerSceneDefinition[] Scenes => _scenes ?? Array.Empty<ShitDesignerSceneDefinition>();
+		public int ProgramOutputCount => Scenes.Sum(scene => scene == null ? 0 : scene.Nodes.Count());
 
 		public LiveGraphRuntime CreateRuntime() => new LiveGraphRuntime(BuildGraph());
 
 		private LiveGraph BuildGraph() {
-			var definitions = ProgramOutputs;
+			var definitions = Scenes;
 			ValidateDefinitions(definitions);
 			var shaderDefinitions = BuildProgramShaderDefinitions();
 			var sceneManager = new SceneIsolationManager(renderSource: new UnityCameraRenderSource());
 			var renderPool = new RenderTexturePool();
-			var outputs = new List<LiveProgramOutput>(definitions.Length);
+			var outputs = new List<LiveProgramOutput>(definitions.Sum(definition => definition.Nodes.Count()));
 			try {
-				for (var index = 0; index < definitions.Length; index++)
-					outputs.Add(BuildOutput(sceneManager, renderPool, definitions[index], index, shaderDefinitions));
-				return new LiveGraph(sceneManager, renderPool, outputs);
+				var index = 0;
+				foreach (var node in definitions.SelectMany(definition => definition.Nodes))
+					outputs.Add(BuildOutput(sceneManager, renderPool, node, index++, shaderDefinitions));
+				return new LiveGraph(sceneManager, renderPool, definitions, outputs);
 			}
 			catch {
 				for (var index = outputs.Count - 1; index >= 0; index--) outputs[index].Dispose();
@@ -139,14 +139,15 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		private static void ValidateDefinitions(IReadOnlyList<Scene3DDefinition> definitions) {
-			if (definitions.Count == 0) throw new InvalidOperationException("At least one live scene is required.");
+		private static void ValidateDefinitions(IReadOnlyList<ShitDesignerSceneDefinition> definitions) {
+			if (definitions.Count == 0) throw new InvalidOperationException("At least one ShitDesigner scene is required.");
 			if (definitions.Any(definition => definition == null || definition.Validate().IsFailure))
-				throw new InvalidOperationException("Every live scene requires a valid Scene3DDefinition.");
-			if (definitions.Any(definition => string.IsNullOrWhiteSpace(definition.Id)))
-				throw new InvalidOperationException("Every live scene requires an ID.");
+				throw new InvalidOperationException("Every ShitDesigner scene requires a valid definition.");
 			if (definitions.Select(definition => definition.Id).Distinct(StringComparer.Ordinal).Count() != definitions.Count)
-				throw new InvalidOperationException("Live scene IDs must be unique.");
+				throw new InvalidOperationException("ShitDesigner scene IDs must be unique.");
+			var nodeIds = definitions.SelectMany(definition => definition.Nodes).Select(node => node.Id).ToArray();
+			if (nodeIds.Distinct(StringComparer.Ordinal).Count() != nodeIds.Length)
+				throw new InvalidOperationException("Unity scene nodes cannot be shared by ShitDesigner scenes.");
 		}
 
 		private static RenderTexture CreateTexture(string name, int depth, RenderTextureFormat format) {
@@ -176,7 +177,7 @@ namespace ShitDesigner.Main {
 		private static void ReleaseTexture(RenderTexture texture) {
 			if (texture == null) return;
 			texture.Release();
-			if (Application.isPlaying) Destroy(texture);
+			if (UnityEngine.Application.isPlaying) Destroy(texture);
 			else DestroyImmediate(texture);
 		}
 	}

@@ -150,10 +150,11 @@
 
 ### 2026-08-26: シーン数はInspectorで設定し、Boot時にすべて生成する
 
-- `LiveGraphBootstrap` は任意数の `Scene3DDefinition` をシリアライズして保持する。
-- Bootは設定されたすべての3DシーンRuntimeを生成して保持する。
-- シーン切替は選択中Runtimeの参照を変更するだけとし、Runtimeの生成または破棄は行わない。
-- 選択中のRuntimeだけを更新および描画する。すべてのRuntimeはShutdownで破棄する。
+- `LiveGraphBootstrap` は任意数の `ShitDesignerSceneDefinition` をシリアライズして保持する。
+- `ShitDesignerSceneDefinition` はUnityの `Scene3DDefinition` をノードグループとして参照し、ライブUIへ公開するパラメーターを明示的に束ねる。これはUnityのSceneとは別の論理的なShitDesignerシーンである。
+- Bootは設定されたすべてのUnityシーンノードRuntimeを生成して保持する。
+- シーン切替は選択中のShitDesignerシーンを変更するだけとし、Runtimeの生成または破棄は行わない。
+- 選択中のShitDesignerシーンに含まれるノードだけを更新および描画する。すべてのRuntimeはShutdownで破棄する。
 
 ### 2026-08-26: 各3Dシーンのルートが公開パラメーターAPIを提供する
 
@@ -180,6 +181,12 @@
 - UIは要求投入時にSequence番号を受け取り、次のライブ実行Tickが公開する `Applied` または `Rejected` の結果を読む。
 - `LiveUiController` はライブ実行Tickの後にRead Modelを更新し、RuntimeまたはTextureの所有権を持たない。
 - UIはProgram Monitorを表示する。外部Display出力の開始または停止およびDisplay識別は `LiveParameterQueue` を経由せず、外部Display専用スクリプトの制御ポートへ直接要求する。
+
+### 2026-08-26: 公開パラメーターはShitDesignerシーン境界で解決する
+
+- `ShitDesignerSceneDefinition` の公開パラメーターは、Scene3DDefinitionのIDとその `LiveSceneRoot` が提供するパラメーターIDへ対応付ける。
+- `SetParameter` はShitDesignerシーンの公開IDだけを受け付け、対応するUnityシーンノードの `LiveSceneRoot` へ委譲する。
+- Unityシーンノードが提供していないパラメーターはBootを失敗させる。UIおよび入力側は下位ノードの内部パラメーターを直接指定しない。
 
 ### 2026-08-26: Mainシーンは既存の起動・ライブ実行コンポーネントをLive Host構成へ置き換える
 

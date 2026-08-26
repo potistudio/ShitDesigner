@@ -37,9 +37,9 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(document.visualTreeAsset, Is.Not.Null);
 				Assert.That(document.panelSettings, Is.Not.Null);
 				Assert.That(graph.Scenes.Length, Is.EqualTo(2));
-				Assert.That(graph.Scenes.All(definition => definition != null && !string.IsNullOrWhiteSpace(definition.Id) && definition.Prefab != null), Is.True);
+				Assert.That(graph.Scenes.All(definition => definition != null && !string.IsNullOrWhiteSpace(definition.Id) && definition.NodeGroups.Count > 0), Is.True);
 				Assert.That(graph.Scenes.Select(definition => definition.Id).Distinct().Count(), Is.EqualTo(2));
-				Assert.That(graph.Scenes.All(definition => definition.Prefab.GetComponent<LiveSceneRoot>() != null), Is.True);
+				Assert.That(graph.Scenes.SelectMany(definition => definition.Nodes).All(node => node.Prefab.GetComponent<LiveSceneRoot>() != null), Is.True);
 				var serializedGraph = new SerializedObject(graph);
 				Assert.That(serializedGraph.FindProperty("_shaderManifest").objectReferenceValue, Is.Not.Null);
 
