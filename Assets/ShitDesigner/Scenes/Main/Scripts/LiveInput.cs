@@ -11,23 +11,22 @@ namespace ShitDesigner.Main {
 		private readonly LiveParameterQueue _queue;
 		private readonly float _adjustmentStep;
 		private float _motion = 0.5f;
-		private float _scale = 0.5f;
 
 		public LiveKeyboardInput(LiveParameterQueue queue, float adjustmentStep = 0.05f) {
 			_queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			_adjustmentStep = Mathf.Clamp(adjustmentStep, 0.001f, 1f);
 		}
 
-		public void Poll(string loadedPatchId, IReadOnlyList<string> patchIds) {
+		public void Poll(string loadedPatchId, string preloadedPatchId, IReadOnlyList<string> patchIds) {
 			var keyboard = Keyboard.current;
 			if (keyboard == null || string.IsNullOrWhiteSpace(loadedPatchId)) return;
 
 			if (patchIds != null) {
 				if (patchIds.Count > 0 && keyboard.digit1Key.wasPressedThisFrame) SelectPatch(patchIds[0]);
 				if (patchIds.Count > 1 && keyboard.digit2Key.wasPressedThisFrame) SelectPatch(patchIds[1]);
+				if (keyboard.leftArrowKey.wasPressedThisFrame) MovePreloadedPatch(loadedPatchId, preloadedPatchId, patchIds, -1);
+				if (keyboard.rightArrowKey.wasPressedThisFrame) MovePreloadedPatch(loadedPatchId, preloadedPatchId, patchIds, 1);
 			}
-			if (keyboard.leftArrowKey.wasPressedThisFrame) SetScale(loadedPatchId, _scale - _adjustmentStep);
-			if (keyboard.rightArrowKey.wasPressedThisFrame) SetScale(loadedPatchId, _scale + _adjustmentStep);
 			if (keyboard.downArrowKey.wasPressedThisFrame) SetMotion(loadedPatchId, _motion - _adjustmentStep);
 			if (keyboard.upArrowKey.wasPressedThisFrame) SetMotion(loadedPatchId, _motion + _adjustmentStep);
 			if (keyboard.spaceKey.wasPressedThisFrame) _queue.EnqueueTriggerFlash(loadedPatchId);
@@ -37,15 +36,21 @@ namespace ShitDesigner.Main {
 			_queue.EnqueueLoadPatch(patchId);
 		}
 
+		private void MovePreloadedPatch(string loadedPatchId, string preloadedPatchId, IReadOnlyList<string> patchIds, int direction) {
+			if (patchIds.Count == 0) return;
+			var selectedPatchId = string.IsNullOrWhiteSpace(preloadedPatchId) ? loadedPatchId : preloadedPatchId;
+			var index = 0;
+			for (; index < patchIds.Count; index++) if (patchIds[index] == selectedPatchId) break;
+			if (index == patchIds.Count) index = 0;
+			var nextIndex = Mathf.Clamp(index + direction, 0, patchIds.Count - 1);
+			if (nextIndex != index) _queue.EnqueuePreloadPatch(patchIds[nextIndex]);
+		}
+
 		private void SetMotion(string sceneId, float value) {
 			_motion = Mathf.Clamp01(value);
 			_queue.EnqueueSetParameter(sceneId, LiveGraphClockRateParameter.ParameterId, _motion);
 		}
 
-		private void SetScale(string sceneId, float value) {
-			_scale = Mathf.Clamp01(value);
-			_queue.EnqueueSetParameter(sceneId, LiveUniformScaleParameter.ParameterId, _scale);
-		}
 	}
 
 	/// <summary>Maps MIDI events to live requests without owning the MIDI device lifecycle.</summary>
