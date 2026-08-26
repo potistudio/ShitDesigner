@@ -4,14 +4,14 @@
     right: 0;
     top: 0;
     bottom: 0;
-    color: rgb(190, 211, 218);
-    background-color: rgb(5, 8, 10);
+    color: rgb(232, 236, 242);
+    background-color: rgb(13, 15, 18);
 }
 
 .workspace {
     flex-grow: 1;
     flex-direction: row;
-    padding: 12px;
+    padding: 8px;
 }
 
 .program-monitor {
@@ -19,21 +19,21 @@
     background-color: black;
     -unity-background-scale-mode: scale-to-fit;
     border-width: 1px;
-    border-color: rgb(48, 79, 85);
+    border-color: rgb(48, 55, 65);
 }
 
 .control-panel {
     width: 320px;
-    margin-left: 12px;
-    padding: 14px;
-    background-color: rgb(8, 12, 14);
+    margin-left: 8px;
+    padding: 12px;
+    background-color: rgb(21, 24, 29);
     border-width: 1px;
-    border-color: rgb(67, 112, 121);
+    border-color: rgb(48, 55, 65);
 }
 
 .panel-title {
-    margin-bottom: 12px;
-    color: rgb(224, 244, 247);
+    margin-bottom: 8px;
+    color: rgb(232, 236, 242);
     font-size: 15px;
     -unity-font-style: bold;
 }
@@ -52,9 +52,15 @@
     flex-grow: 1;
     height: 30px;
     margin-right: 4px;
-    color: rgb(175, 226, 234);
-    background-color: rgba(25, 93, 104, 0.22);
-    border-color: rgb(79, 154, 166);
+    color: rgb(232, 236, 242);
+    background-color: rgb(29, 34, 41);
+    border-width: 1px;
+    border-color: rgb(48, 55, 65);
+}
+
+.output-actions > Button:hover {
+    background-color: rgb(36, 43, 52);
+    border-color: rgb(88, 166, 255);
 }
 
 .status-label,
@@ -76,7 +82,7 @@
     bottom: 0;
     align-items: center;
     justify-content: center;
-    background-color: rgba(2, 4, 5, 0.82);
+    background-color: rgba(13, 15, 18, 0.92);
 }
 
 .confirmation-overlay.is-hidden,
@@ -87,13 +93,13 @@
 .confirmation-dialog {
     width: 380px;
     padding: 12px 16px 14px 16px;
-    background-color: rgba(8, 12, 14, 0.98);
+    background-color: rgb(29, 34, 41);
     border-width: 1px;
-    border-color: rgb(67, 112, 121);
+    border-color: rgb(48, 55, 65);
 }
 
 .confirmation-title {
-    color: rgb(224, 244, 247);
+    color: rgb(232, 236, 242);
     font-size: 15px;
     letter-spacing: 1.2px;
     -unity-font-style: bold;
@@ -102,13 +108,13 @@
 .confirmation-rule {
     height: 1px;
     margin-top: 7px;
-    background-color: rgb(48, 79, 85);
+    background-color: rgb(48, 55, 65);
 }
 
 .confirmation-message {
     margin-top: 7px;
     max-width: 348px;
-    color: rgb(116, 148, 154);
+    color: rgb(157, 167, 180);
     font-size: 10px;
     letter-spacing: 0.2px;
     white-space: normal;
@@ -119,14 +125,14 @@
     min-height: 30px;
     margin-top: 10px;
     align-items: center;
-    color: rgb(166, 195, 201);
+    color: rgb(157, 167, 180);
     font-size: 11px;
     white-space: normal;
 }
 
 .display-selector .unity-base-field__label {
     min-width: 104px;
-    color: rgb(85, 127, 135);
+    color: rgb(157, 167, 180);
     font-size: 9px;
     letter-spacing: 0.8px;
     -unity-font-style: bold;
@@ -138,15 +144,16 @@
     padding-left: 10px;
     padding-right: 8px;
     align-items: center;
-    color: rgb(190, 218, 224);
-    background-color: rgb(5, 9, 10);
+    color: rgb(232, 236, 242);
+    background-color: rgb(13, 15, 18);
     border-width: 1px;
-    border-color: rgb(53, 91, 98);
+    border-color: rgb(48, 55, 65);
+    border-radius: 0;
 }
 
 .display-selector .unity-base-popup-field__text {
     height: 22px;
-    color: rgb(220, 239, 242);
+    color: rgb(232, 236, 242);
     font-size: 11px;
     -unity-text-align: middle-left;
     overflow: hidden;
@@ -164,29 +171,29 @@
     height: 28px;
     min-width: 78px;
     margin-left: 8px;
-    color: rgb(134, 169, 176);
-    background-color: transparent;
+    color: rgb(232, 236, 242);
+    background-color: rgb(21, 24, 29);
     border-width: 1px;
-    border-color: rgb(52, 84, 91);
+    border-color: rgb(48, 55, 65);
     font-size: 9px;
     letter-spacing: 0.5px;
     -unity-font-style: bold;
 }
 
 .confirmation-button:hover {
-    color: rgb(215, 239, 243);
-    background-color: rgba(48, 104, 114, 0.2);
-    border-color: rgb(93, 158, 169);
+    color: rgb(232, 236, 242);
+    background-color: rgb(36, 43, 52);
+    border-color: rgb(88, 166, 255);
 }
 
 .confirmation-accept {
-    color: rgb(175, 226, 234);
-    background-color: rgba(25, 93, 104, 0.22);
-    border-color: rgb(79, 154, 166);
+    color: rgb(255, 255, 255);
+    background-color: rgb(47, 111, 179);
+    border-color: rgb(88, 166, 255);
 }
 
 .confirmation-accept.is-stop {
-    color: rgb(255, 113, 130);
-    background-color: rgba(135, 24, 42, 0.22);
-    border-color: rgb(198, 55, 75);
+    color: rgb(255, 255, 255);
+    background-color: rgb(164, 53, 64);
+    border-color: rgb(237, 95, 104);
 }
