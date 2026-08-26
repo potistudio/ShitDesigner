@@ -3,18 +3,18 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace ShitDesigner.Scene {
-	/// <summary>Animates selected Win32 icons around a BPM-locked circular layout.</summary>
+	/// <summary>Animates a scattered Win32 icon field from the scene graph clock.</summary>
 	[DisallowMultipleComponent]
 	public sealed class Win32BpmSpinScene : MonoBehaviour, ISceneGraphClockReceiver {
 		[SerializeField] private Texture2D[] _images = Array.Empty<Texture2D>();
 		[Min(1f)][SerializeField] private float _bpm = 138f;
-		[Min(0.1f)][SerializeField] private float _ringRadius = 3.8f;
-		[Min(0.1f)][SerializeField] private float _iconSize = 1.45f;
-		[Min(0f)][SerializeField] private float _spinsPerBeat = 1.75f;
+		[SerializeField] private Vector2 _spread = new Vector2(10f, 5.5f);
+		[Min(0.1f)][SerializeField] private float _iconSize = .78f;
 
 		private readonly List<IconState> _icons = new List<IconState>();
-		private readonly List<Material> _materials = new List<Material>();
+		private readonly MaterialPropertyBlock _propertyBlock = new MaterialPropertyBlock();
 		private Transform _generatedRoot;
+		private Material _material;
 		private double _elapsedSeconds;
 		private bool _graphClockDriven;
 
@@ -23,14 +23,16 @@ namespace ShitDesigner.Scene {
 			public Vector3 Position { get; }
 			public float BaseScale { get; }
 			public float BaseAngle { get; }
-			public float Direction { get; }
+			public float Aspect { get; }
+			public float Phase { get; }
 
-			public IconState(Transform transform, Vector3 position, float baseScale, float baseAngle, float direction) {
+			public IconState(Transform transform, Vector3 position, float baseScale, float baseAngle, float aspect, float phase) {
 				Transform = transform;
 				Position = position;
 				BaseScale = baseScale;
 				BaseAngle = baseAngle;
-				Direction = direction;
+				Aspect = aspect;
+				Phase = phase;
 			}
 		}
 
@@ -52,9 +54,9 @@ namespace ShitDesigner.Scene {
 
 		private void OnValidate() {
 			_bpm = Mathf.Max(1f, _bpm);
-			_ringRadius = Mathf.Max(.1f, _ringRadius);
+			_spread.x = Mathf.Max(.1f, _spread.x);
+			_spread.y = Mathf.Max(.1f, _spread.y);
 			_iconSize = Mathf.Max(.1f, _iconSize);
-			_spinsPerBeat = Mathf.Max(0f, _spinsPerBeat);
 		}
 
 		public void SetGraphClockDriven(bool graphClockDriven) {
@@ -66,12 +68,12 @@ namespace ShitDesigner.Scene {
 			Advance((float)Math.Min(deltaSeconds, float.MaxValue));
 		}
 
-		[ContextMenu("Rebuild Icon Ring")]
+		[ContextMenu("Rebuild Icon Scatter")]
 		public void Rebuild() {
 			ReleaseGeneratedContent();
 			if (_images == null || _images.Length == 0) return;
 
-			_generatedRoot = new GameObject("Generated Win32 Icon Ring").transform;
+			_generatedRoot = new GameObject("Generated Win32 Icon Scatter").transform;
 			_generatedRoot.SetParent(transform, false);
 			_generatedRoot.gameObject.layer = gameObject.layer;
 			_generatedRoot.gameObject.hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSave;
@@ -80,6 +82,8 @@ namespace ShitDesigner.Scene {
 			for (var index = 0; index < _images.Length; index++)
 				if (_images[index] != null) count++;
 			if (count == 0) return;
+			_material = CreateMaterial();
+			var random = new System.Random(214748);
 
 			var itemIndex = 0;
 			for (var index = 0; index < _images.Length; index++) {
@@ -93,12 +97,12 @@ namespace ShitDesigner.Scene {
 				var collider = icon.GetComponent<Collider>();
 				if (collider != null) DestroyOwnedObject(collider);
 				var renderer = icon.GetComponent<MeshRenderer>();
-				renderer.sharedMaterial = CreateMaterial(image, itemIndex);
-				var angle = itemIndex * Mathf.PI * 2f / count;
-				var radius = _ringRadius + (itemIndex % 3 - 1) * .35f;
-				var position = new Vector3(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius, itemIndex * -.01f);
-				var scale = _iconSize * Mathf.Lerp(.8f, 1.2f, (itemIndex % 4) / 3f);
-				_icons.Add(new IconState(icon.transform, position, scale, itemIndex * 29f, itemIndex % 2 == 0 ? 1f : -1f));
+				renderer.sharedMaterial = _material;
+				SetTexture(renderer, image);
+				var position = new Vector3(NextFloat(random, -_spread.x, _spread.x), NextFloat(random, -_spread.y, _spread.y), NextFloat(random, -.5f, .5f));
+				var scale = _iconSize * NextFloat(random, .5f, 1.5f);
+				var aspect = image.height == 0 ? 1f : (float)image.width / image.height;
+				_icons.Add(new IconState(icon.transform, position, scale, NextFloat(random, 0f, 360f), aspect, NextFloat(random, 0f, Mathf.PI * 2f)));
 				itemIndex++;
 			}
 			ApplyAnimation();
@@ -113,45 +117,58 @@ namespace ShitDesigner.Scene {
 			if (_icons.Count == 0) return;
 			var beats = (float)(_elapsedSeconds * _bpm / 60d);
 			var beatPhase = Mathf.Repeat(beats, 1f);
-			var pulse = Mathf.Pow(1f - beatPhase, 5f);
-			_generatedRoot.localRotation = Quaternion.Euler(0f, 0f, beats * 18f + pulse * 12f);
+			var pulse = Mathf.Pow(1f - beatPhase, 4f);
+			_generatedRoot.localRotation = Quaternion.Euler(0f, 0f,
+				Mathf.Sin(beats * Mathf.PI * .5f) * 12f + Mathf.Sin(beats * Mathf.PI * 2f) * 4f);
 			for (var index = 0; index < _icons.Count; index++) {
 				var icon = _icons[index];
-				var orbit = Mathf.Sin(beats * Mathf.PI * 2f + index * .9f) * .14f;
-				icon.Transform.localPosition = icon.Position + icon.Position.normalized * orbit;
+				var wave = Mathf.Sin(beats * Mathf.PI * 2f + icon.Phase);
+				icon.Transform.localPosition = icon.Position + new Vector3(wave * .18f, Mathf.Cos(beats * Mathf.PI * 2f + icon.Phase) * .12f, 0f);
 				icon.Transform.localRotation = Quaternion.Euler(0f, 0f,
-					icon.BaseAngle + icon.Direction * beats * 360f * _spinsPerBeat + pulse * icon.Direction * 90f);
-				icon.Transform.localScale = Vector3.one * icon.BaseScale * (1f + pulse * .42f);
+					icon.BaseAngle + wave * (35f + pulse * 25f) + Mathf.Sin(beats * Mathf.PI + icon.Phase) * 20f);
+				var scale = icon.BaseScale * (1f + pulse * .28f);
+				icon.Transform.localScale = new Vector3(scale * icon.Aspect, scale, 1f);
 			}
 		}
 
-		private Material CreateMaterial(Texture2D image, int index) {
+		private Material CreateMaterial() {
 			var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default");
 			if (shader == null) throw new InvalidOperationException("An unlit shader is required for the Win32 icon scene.");
 			var material = new Material(shader) {
-				name = "Win32 BPM Icon " + (index + 1).ToString("00"),
+				name = "Win32 BPM Icons",
 				hideFlags = HideFlags.HideAndDontSave,
 				renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent
 			};
-			if (material.HasProperty("_BaseMap")) material.SetTexture("_BaseMap", image);
-			if (material.HasProperty("_MainTex")) material.SetTexture("_MainTex", image);
 			if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", Color.white);
 			if (material.HasProperty("_Color")) material.SetColor("_Color", Color.white);
-			if (material.HasProperty("_Surface")) material.SetFloat("_Surface", 1f);
+			if (material.HasProperty("_Surface")) {
+				material.SetFloat("_Surface", 1f);
+				material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+			}
 			if (material.HasProperty("_SrcBlend")) material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
 			if (material.HasProperty("_DstBlend")) material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+			if (material.HasProperty("_ZWrite")) material.SetFloat("_ZWrite", 0f);
 			material.SetOverrideTag("RenderType", "Transparent");
-			_materials.Add(material);
 			return material;
+		}
+
+		private void SetTexture(Renderer renderer, Texture2D image) {
+			_propertyBlock.Clear();
+			_propertyBlock.SetTexture("_BaseMap", image);
+			_propertyBlock.SetTexture("_MainTex", image);
+			renderer.SetPropertyBlock(_propertyBlock);
 		}
 
 		private void ReleaseGeneratedContent() {
 			if (_generatedRoot != null) DestroyOwnedObject(_generatedRoot.gameObject);
 			_generatedRoot = null;
 			_icons.Clear();
-			for (var index = 0; index < _materials.Count; index++)
-				if (_materials[index] != null) DestroyOwnedObject(_materials[index]);
-			_materials.Clear();
+			if (_material != null) DestroyOwnedObject(_material);
+			_material = null;
+		}
+
+		private static float NextFloat(System.Random random, float minimum, float maximum) {
+			return Mathf.Lerp(minimum, maximum, (float)random.NextDouble());
 		}
 
 		private static void DestroyOwnedObject(UnityEngine.Object value) {
