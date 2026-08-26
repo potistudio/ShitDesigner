@@ -67,9 +67,6 @@
     font-size: 10px;
 }
 
-.patch-button + .patch-button {
-    margin-left: 6px;
-}
 
 .patch-button.is-preloaded {
     border-color: rgb(88, 166, 255);
