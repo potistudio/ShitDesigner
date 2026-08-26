@@ -173,7 +173,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.LiveUiController
   _document: {fileID: 444072067}
-  _styleSheet: {fileID: 7433441132597879392, guid: 7e3b7d42d5904ebf83a22f50f92ce618, type: 3}
 --- !u!114 &444072067
 MonoBehaviour:
   m_ObjectHideFlags: 0
