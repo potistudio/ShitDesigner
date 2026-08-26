@@ -10,6 +10,7 @@ namespace ShitDesigner.Main {
 	[DefaultExecutionOrder(1100)]
 	public sealed class LiveUiController : MonoBehaviour {
 		[SerializeField] private UIDocument _document;
+		[SerializeField] private StyleSheet _styleSheet;
 
 		private ApplicationLiveHost _host;
 		private LiveExternalDisplayOutput _output;
@@ -40,6 +41,8 @@ namespace ShitDesigner.Main {
 			if (_document == null) throw new InvalidOperationException("A dedicated live UIDocument is required.");
 			var root = _document.rootVisualElement;
 			if (root == null) throw new InvalidOperationException("The live UIDocument has no visual tree.");
+			if (_styleSheet == null) throw new InvalidOperationException("The live UIDocument requires its Main UI style sheet.");
+			if (!root.styleSheets.Contains(_styleSheet)) root.styleSheets.Add(_styleSheet);
 
 			_programMonitor = Required<VisualElement>(root, "program-monitor");
 			_patchControls = Required<VisualElement>(root, "patch-controls");
