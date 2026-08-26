@@ -93,8 +93,8 @@ namespace ShitDesigner.Main {
 				var deltaSeconds = Math.Max(0d, Time.unscaledDeltaTime);
 				_runtime.Evaluate(deltaSeconds);
 				_runtime.SceneUpdate(deltaSeconds);
-				var frame = _runtime.Render();
-				_externalDisplay.Present(frame);
+				var frames = _runtime.Render();
+				_externalDisplay.Present(frames);
 				LastDiagnostic = string.Empty;
 				PublishReadModel(string.Empty);
 			}
@@ -122,7 +122,7 @@ namespace ShitDesigner.Main {
 
 		private void PublishReadModel(string diagnostic) {
 			ReadModel = new LiveUiReadModel(_tickFrameNumber, _scenes, _runtime?.SelectedSceneId,
-				_runtime?.GetSelectedParameterDefinitions(), _runtime?.CurrentFrame ?? default(LiveProgramFrame), _externalDisplay,
+				_runtime?.GetSelectedParameterDefinitions(), _runtime?.CurrentFrames ?? default(LiveProgramFrames), _externalDisplay,
 				_capabilityMonitor != null ? _capabilityMonitor.Snapshot : default(LiveCapabilitySnapshot), diagnostic,
 				_requestResults.ToArray());
 		}

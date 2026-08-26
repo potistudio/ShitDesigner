@@ -23,6 +23,18 @@ namespace ShitDesigner.Main {
 		}
 	}
 
+	public readonly struct LiveProgramFrames {
+		private readonly LiveProgramFrame[] _frames;
+
+		internal LiveProgramFrames(IEnumerable<LiveProgramFrame> frames) {
+			_frames = (frames ?? Array.Empty<LiveProgramFrame>()).ToArray();
+		}
+
+		public int Count => _frames?.Length ?? 0;
+		public LiveProgramFrame this[int index] => _frames[index];
+		public LiveProgramFrame Primary => Count > 0 ? _frames[0] : default(LiveProgramFrame);
+	}
+
 	public readonly struct LiveParameterApplicationResult {
 		public ulong SequenceNumber { get; }
 		public bool Applied { get; }
@@ -35,37 +47,45 @@ namespace ShitDesigner.Main {
 		}
 	}
 
-	/// <summary>Owns the fixed live graph, all configured scene runtimes, and the Program texture.</summary>
+	/// <summary>Owns configured live graph outputs and their independent Program textures.</summary>
 	public sealed class LiveGraphRuntime : IDisposable {
 		public const int ProgramWidth = 1920;
 		public const int ProgramHeight = 1080;
 
-		private sealed class LiveScene : IDisposable {
+		private sealed class LiveProgramOutput : IDisposable {
 			public Scene3DDefinition Definition { get; }
 			public SceneNodeRuntime Runtime { get; }
 			public LiveSceneRoot Root { get; }
+			public RenderTexture ProgramTexture { get; }
+			public RenderTexture RenderTexture { get; }
 
-			public LiveScene(Scene3DDefinition definition, SceneNodeRuntime runtime, LiveSceneRoot root) {
+			public LiveProgramOutput(Scene3DDefinition definition, SceneNodeRuntime runtime, LiveSceneRoot root,
+				RenderTexture programTexture, RenderTexture renderTexture) {
 				Definition = definition;
 				Runtime = runtime;
 				Root = root;
+				ProgramTexture = programTexture;
+				RenderTexture = renderTexture;
 			}
 
-			public void Dispose() => Runtime.Dispose();
+			public void Dispose() {
+				Runtime.Dispose();
+				ReleaseTexture(ProgramTexture);
+				ReleaseTexture(RenderTexture);
+			}
 		}
 
 		private readonly SceneIsolationManager _sceneManager;
-		private readonly List<LiveScene> _scenes = new List<LiveScene>();
-		private readonly Dictionary<string, LiveScene> _scenesById = new Dictionary<string, LiveScene>(StringComparer.Ordinal);
-		private readonly RenderTexture _programTexture;
-		private readonly RenderTexture _renderTexture;
-		private LiveScene _selectedScene;
+		private readonly List<LiveProgramOutput> _programOutputs = new List<LiveProgramOutput>();
+		private readonly Dictionary<string, LiveProgramOutput> _programOutputsBySceneId = new Dictionary<string, LiveProgramOutput>(StringComparer.Ordinal);
+		private LiveProgramOutput _selectedProgramOutput;
 		private ulong _frameNumber;
 		private bool _disposed;
 
-		public string SelectedSceneId => _selectedScene?.Definition.Id ?? string.Empty;
-		public IReadOnlyList<Scene3DDefinition> Scenes => _scenes.Select(scene => scene.Definition).ToArray();
+		public string SelectedSceneId => _selectedProgramOutput?.Definition.Id ?? string.Empty;
+		public IReadOnlyList<Scene3DDefinition> Scenes => _programOutputs.Select(output => output.Definition).ToArray();
 		public LiveProgramFrame CurrentFrame { get; private set; }
+		public LiveProgramFrames CurrentFrames { get; private set; }
 
 		public LiveGraphRuntime(IEnumerable<Scene3DDefinition> definitions) {
 			var configured = (definitions ?? Array.Empty<Scene3DDefinition>()).ToArray();
@@ -77,34 +97,12 @@ namespace ShitDesigner.Main {
 			if (configured.Select(definition => definition.Id).Distinct(StringComparer.Ordinal).Count() != configured.Length)
 				throw new InvalidOperationException("Live scene IDs must be unique.");
 
-			_programTexture = new RenderTexture(ProgramWidth, ProgramHeight, 0, RenderTextureFormat.ARGBHalf) {
-				name = "ShitDesigner.Main.ProgramOutput",
-				useMipMap = false,
-				autoGenerateMips = false
-			};
-			if (!_programTexture.Create()) throw new InvalidOperationException("The Program texture could not be created.");
-			ClearProgramTexture();
-			// Null graphics cannot allocate the HDR staging target used only by renderless validation.
-			var renderFormat = SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null
-				? RenderTextureFormat.ARGB32
-				: RenderTextureFormat.ARGBHalf;
-			_renderTexture = new RenderTexture(ProgramWidth, ProgramHeight, 24, renderFormat) {
-				name = "ShitDesigner.Main.ProgramRender",
-				useMipMap = false,
-				autoGenerateMips = false
-			};
-			if (!_renderTexture.Create()) {
-				_programTexture.Release();
-				if (UnityEngine.Application.isPlaying) UnityEngine.Object.Destroy(_programTexture);
-				else UnityEngine.Object.DestroyImmediate(_programTexture);
-				throw new InvalidOperationException("The Program render texture could not be created.");
-			}
-			CurrentFrame = new LiveProgramFrame(_programTexture, 0);
-
 			_sceneManager = new SceneIsolationManager(renderSource: new UnityCameraRenderSource());
 			try {
 				for (var index = 0; index < configured.Length; index++) CreateScene(configured[index], index);
-				_selectedScene = _scenes[0];
+				_selectedProgramOutput = _programOutputs[0];
+				CurrentFrames = new LiveProgramFrames(_programOutputs.Select(output => new LiveProgramFrame(output.ProgramTexture, 0)));
+				CurrentFrame = CurrentFrames.Primary;
 			}
 			catch {
 				Dispose();
@@ -113,11 +111,11 @@ namespace ShitDesigner.Main {
 		}
 
 		public LiveParameterApplicationResult Apply(LiveParameterRequest request) {
-			if (!_scenesById.TryGetValue(request.SceneId, out var scene))
+			if (!_programOutputsBySceneId.TryGetValue(request.SceneId, out var scene))
 				return Reject(request, "The requested live scene does not exist.");
 
 			if (request.Kind == LiveParameterRequestKind.SelectScene) {
-				_selectedScene = scene;
+				_selectedProgramOutput = scene;
 				return Accept(request);
 			}
 
@@ -128,50 +126,46 @@ namespace ShitDesigner.Main {
 
 		public void Evaluate(double deltaSeconds) {
 			EnsureUsable();
-			var result = _selectedScene.Runtime.AdvanceGraphClock(deltaSeconds * Mathf.Lerp(0f, 2f, _selectedScene.Root.Motion));
-			if (result.IsFailure) throw new InvalidOperationException(result.Error.Message);
+			foreach (var scene in _programOutputs) {
+				var result = scene.Runtime.AdvanceGraphClock(deltaSeconds * Mathf.Lerp(0f, 2f, scene.Root.Motion));
+				if (result.IsFailure) throw new InvalidOperationException(result.Error.Message);
+			}
 		}
 
 		public void SceneUpdate(double deltaSeconds) {
 			EnsureUsable();
-			var result = _selectedScene.Runtime.AdvancePhysics(deltaSeconds * Mathf.Lerp(0f, 2f, _selectedScene.Root.Motion));
-			if (result.IsFailure) throw new InvalidOperationException(result.Error.Message);
+			foreach (var scene in _programOutputs) {
+				var result = scene.Runtime.AdvancePhysics(deltaSeconds * Mathf.Lerp(0f, 2f, scene.Root.Motion));
+				if (result.IsFailure) throw new InvalidOperationException(result.Error.Message);
+			}
 		}
 
-		public LiveProgramFrame Render() {
+		public LiveProgramFrames Render() {
 			EnsureUsable();
 			var nextFrame = _frameNumber + 1;
 			if (nextFrame == 0) nextFrame = 1;
-			var result = _selectedScene.Runtime.Render(_renderTexture, ProgramWidth, ProgramHeight, nextFrame);
-			if (result.IsFailure || result.Value == null || !result.Value.Rendered)
-				throw new InvalidOperationException(result.IsFailure ? result.Error.Message : "The selected live scene did not render.");
-
-			Graphics.Blit(_renderTexture, _programTexture);
+			foreach (var scene in _programOutputs) {
+				var result = scene.Runtime.Render(scene.RenderTexture, ProgramWidth, ProgramHeight, nextFrame);
+				if (result.IsFailure || result.Value == null || !result.Value.Rendered)
+					throw new InvalidOperationException(result.IsFailure ? result.Error.Message : "A live ProgramOutput did not render.");
+				Graphics.Blit(scene.RenderTexture, scene.ProgramTexture);
+			}
 			_frameNumber = nextFrame;
-			CurrentFrame = new LiveProgramFrame(_programTexture, _frameNumber);
-			return CurrentFrame;
+			CurrentFrames = new LiveProgramFrames(_programOutputs.Select(output => new LiveProgramFrame(output.ProgramTexture, _frameNumber)));
+			CurrentFrame = CurrentFrames.Primary;
+			return CurrentFrames;
 		}
 
 		public LiveParameterDefinition[] GetSelectedParameterDefinitions()
-			=> _selectedScene?.Root.GetParameterDefinitions() ?? Array.Empty<LiveParameterDefinition>();
+			=> _selectedProgramOutput?.Root.GetParameterDefinitions() ?? Array.Empty<LiveParameterDefinition>();
 
 		public void Dispose() {
 			if (_disposed) return;
 			_disposed = true;
-			for (var index = _scenes.Count - 1; index >= 0; index--) _scenes[index].Dispose();
-			_scenes.Clear();
-			_scenesById.Clear();
+			for (var index = _programOutputs.Count - 1; index >= 0; index--) _programOutputs[index].Dispose();
+			_programOutputs.Clear();
+			_programOutputsBySceneId.Clear();
 			_sceneManager?.Dispose();
-			if (_programTexture != null) {
-				_programTexture.Release();
-				if (UnityEngine.Application.isPlaying) UnityEngine.Object.Destroy(_programTexture);
-				else UnityEngine.Object.DestroyImmediate(_programTexture);
-			}
-			if (_renderTexture != null) {
-				_renderTexture.Release();
-				if (UnityEngine.Application.isPlaying) UnityEngine.Object.Destroy(_renderTexture);
-				else UnityEngine.Object.DestroyImmediate(_renderTexture);
-			}
 		}
 
 		private void CreateScene(Scene3DDefinition definition, int index) {
@@ -185,21 +179,56 @@ namespace ShitDesigner.Main {
 			}
 			root.Initialize(definition.Id);
 			created.Value.BindGraphClock();
-			var scene = new LiveScene(definition, created.Value, root);
-			_scenes.Add(scene);
-			_scenesById.Add(definition.Id, scene);
+			var programTexture = CreateTexture("ShitDesigner.Main.ProgramOutput." + index, 0, RenderTextureFormat.ARGBHalf);
+			RenderTexture renderTexture = null;
+			try {
+				ClearTexture(programTexture);
+				var renderFormat = SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null
+					? RenderTextureFormat.ARGB32
+					: RenderTextureFormat.ARGBHalf;
+				renderTexture = CreateTexture("ShitDesigner.Main.ProgramRender." + index, 24, renderFormat);
+				var scene = new LiveProgramOutput(definition, created.Value, root, programTexture, renderTexture);
+				_programOutputs.Add(scene);
+				_programOutputsBySceneId.Add(definition.Id, scene);
+			}
+			catch {
+				ReleaseTexture(programTexture);
+				ReleaseTexture(renderTexture);
+				created.Value.Dispose();
+				throw;
+			}
 		}
 
-		private void ClearProgramTexture() {
+		private static RenderTexture CreateTexture(string name, int depth, RenderTextureFormat format) {
+			var texture = new RenderTexture(ProgramWidth, ProgramHeight, depth, format) {
+				name = name,
+				useMipMap = false,
+				autoGenerateMips = false
+			};
+			if (!texture.Create()) {
+				ReleaseTexture(texture);
+				throw new InvalidOperationException("A ProgramOutput texture could not be created.");
+			}
+			return texture;
+		}
+
+		private static void ClearTexture(RenderTexture texture) {
 			var previous = RenderTexture.active;
-			RenderTexture.active = _programTexture;
+			RenderTexture.active = texture;
 			GL.Clear(true, true, Color.black);
 			RenderTexture.active = previous;
 		}
 
+		private static void ReleaseTexture(RenderTexture texture) {
+			if (texture == null) return;
+			texture.Release();
+			if (UnityEngine.Application.isPlaying) UnityEngine.Object.Destroy(texture);
+			else UnityEngine.Object.DestroyImmediate(texture);
+		}
+
 		private void EnsureUsable() {
 			if (_disposed) throw new ObjectDisposedException(nameof(LiveGraphRuntime));
-			if (_selectedScene == null) throw new InvalidOperationException("A live scene is not selected.");
+			if (_selectedProgramOutput == null) throw new InvalidOperationException("A live ProgramOutput is not selected.");
 		}
 
 		private static LiveParameterApplicationResult Accept(LiveParameterRequest request)

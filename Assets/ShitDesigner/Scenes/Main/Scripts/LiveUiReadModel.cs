@@ -29,14 +29,14 @@ namespace ShitDesigner.Main {
 		public IReadOnlyList<LiveParameterApplicationResult> RequestResults { get; }
 
 		public LiveUiReadModel(ulong frameNumber, IReadOnlyList<LiveSceneReadModel> scenes, string selectedSceneId,
-			IReadOnlyList<LiveParameterDefinition> parameters, LiveProgramFrame programFrame, LiveExternalDisplayOutput output,
+			IReadOnlyList<LiveParameterDefinition> parameters, LiveProgramFrames programFrames, LiveExternalDisplayOutput output,
 			LiveCapabilitySnapshot capabilities, string diagnostic, IReadOnlyList<LiveParameterApplicationResult> requestResults) {
 			FrameNumber = frameNumber;
 			Scenes = scenes ?? Array.Empty<LiveSceneReadModel>();
 			SelectedSceneId = selectedSceneId ?? string.Empty;
 			Parameters = parameters ?? Array.Empty<LiveParameterDefinition>();
-			ProgramTexture = programFrame.Texture;
-			ProgramFrameNumber = programFrame.FrameNumber;
+			ProgramTexture = programFrames.Primary.Texture;
+			ProgramFrameNumber = programFrames.Primary.FrameNumber;
 			ConnectedDisplayCount = output?.ConnectedDisplayCount ?? 0;
 			ExternalDisplayNumbers = output?.ConnectedExternalDisplayNumbers ?? Array.Empty<int>();
 			IsDisplayOutputActive = output != null && output.IsOutputActive;

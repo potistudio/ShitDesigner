@@ -27,10 +27,11 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(host.ReadModel.ProgramTexture.format, Is.EqualTo(RenderTextureFormat.ARGBHalf));
 			Assert.That(host.ReadModel.ProgramFrameNumber, Is.GreaterThan(0));
 			var runtime = (LiveGraphRuntime)typeof(ApplicationLiveHost).GetField("_runtime", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(host);
-			var renderTexture = (RenderTexture)typeof(LiveGraphRuntime).GetField("_renderTexture", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(runtime);
-			Assert.That(renderTexture, Is.Not.Null);
-			Assert.That(renderTexture, Is.Not.SameAs(host.ReadModel.ProgramTexture), "Scene rendering must be staged before replacing the last successful Program frame.");
+			Assert.That(runtime.CurrentFrames.Count, Is.EqualTo(2));
+			Assert.That(runtime.CurrentFrames[0].Texture, Is.Not.SameAs(runtime.CurrentFrames[1].Texture));
+			Assert.That(runtime.CurrentFrames[0].Texture, Is.SameAs(host.ReadModel.ProgramTexture));
 			Assert.That(HasVisiblePixels(host.ReadModel.ProgramTexture), Is.True);
+			Assert.That(HasVisiblePixels(runtime.CurrentFrames[1].Texture), Is.True);
 
 			var previousScene = host.ReadModel.SelectedSceneId;
 			var nextScene = host.ReadModel.Scenes.Single(scene => scene.Id != previousScene);
