@@ -30,12 +30,12 @@
                                 <ui:Label text="02" class="demo-cell-number"/>
                                 <ui:Label text="SHIFT" class="demo-cell-label"/>
                             </ui:VisualElement>
-                            <ui:VisualElement class="demo-grid-cell">
+                            <ui:VisualElement class="demo-grid-cell demo-grid-cell-last">
                                 <ui:Label text="03" class="demo-cell-number"/>
                                 <ui:Label text="ECHO" class="demo-cell-label"/>
                             </ui:VisualElement>
                         </ui:VisualElement>
-                        <ui:VisualElement class="demo-grid-row">
+                        <ui:VisualElement class="demo-grid-row demo-grid-row-last">
                             <ui:VisualElement class="demo-grid-cell">
                                 <ui:Label text="04" class="demo-cell-number"/>
                                 <ui:Label text="GRADE" class="demo-cell-label"/>
@@ -44,7 +44,7 @@
                                 <ui:Label text="05" class="demo-cell-number"/>
                                 <ui:Label text="MIX" class="demo-cell-label"/>
                             </ui:VisualElement>
-                            <ui:VisualElement class="demo-grid-cell demo-cell-output">
+                            <ui:VisualElement class="demo-grid-cell demo-grid-cell-last demo-cell-output">
                                 <ui:Label text="06" class="demo-cell-number"/>
                                 <ui:Label text="OUTPUT" class="demo-cell-label"/>
                             </ui:VisualElement>

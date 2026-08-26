@@ -105,6 +105,7 @@ namespace ShitDesigner.Main {
 					value = parameter.Value,
 					userData = parameter.Id
 				};
+				slider.AddToClassList("parameter-slider");
 				slider.RegisterValueChangedCallback(change => {
 					if (!_updating && _host?.ReadModel != null)
 						ShowEnqueueRejection(_host.ParameterQueue.EnqueueSetParameter(_host.ReadModel.SelectedSceneId, (string)slider.userData, change.newValue));
