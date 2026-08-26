@@ -5,12 +5,10 @@
             <ui:VisualElement class="preview-stack">
                 <ui:VisualElement name="program-monitor" class="program-monitor"/>
                 <ui:VisualElement class="live-fader-panel">
-                    <ui:Label text="LIVE PARAMETERS" class="live-fader-title"/>
                     <ui:VisualElement name="parameter-controls" class="parameter-controls"/>
                 </ui:VisualElement>
             </ui:VisualElement>
             <ui:VisualElement class="control-panel">
-                <ui:Label text="LIVE CONTROL" class="panel-title"/>
                 <ui:VisualElement name="patch-controls" class="patch-controls"/>
                 <ui:Label name="display-selector" class="display-selector" text="OUTPUT: No external Display"/>
                 <ui:VisualElement class="output-actions">
