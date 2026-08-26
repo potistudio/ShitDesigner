@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace ShitDesigner.Main {
-	/// <summary>Reflects the latest completed live frame and queues only scene and public-parameter requests.</summary>
+	/// <summary>Reflects the latest completed live frame and queues patch and parameter requests.</summary>
 	[DisallowMultipleComponent]
 	[DefaultExecutionOrder(1100)]
 	public sealed class LiveUiController : MonoBehaviour {
@@ -14,7 +14,8 @@ namespace ShitDesigner.Main {
 		private ApplicationLiveHost _host;
 		private LiveExternalDisplayOutput _output;
 		private VisualElement _programMonitor;
-		private DropdownField _sceneSelector;
+		private VisualElement _patchControls;
+		private Button _loadPatchButton;
 		private VisualElement _parameterControls;
 		private Label _capabilityLabel;
 		private Label _diagnosticLabel;
@@ -27,7 +28,7 @@ namespace ShitDesigner.Main {
 		private Label _confirmationTitle;
 		private Label _confirmationMessage;
 		private VisualElement _confirmationOverlay;
-		private string _renderedSceneId = string.Empty;
+		private string _renderedPatchId = string.Empty;
 		private bool _pendingOutputActive;
 		private bool _showingOutputError;
 		private bool _initialized;
@@ -41,7 +42,8 @@ namespace ShitDesigner.Main {
 			if (root == null) throw new InvalidOperationException("The live UIDocument has no visual tree.");
 
 			_programMonitor = Required<VisualElement>(root, "program-monitor");
-			_sceneSelector = Required<DropdownField>(root, "scene-selector");
+			_patchControls = Required<VisualElement>(root, "patch-controls");
+			_loadPatchButton = Required<Button>(root, "load-preloaded-patch");
 			_parameterControls = Required<VisualElement>(root, "parameter-controls");
 			_capabilityLabel = Required<Label>(root, "capability-status");
 			_diagnosticLabel = Required<Label>(root, "diagnostic-status");
@@ -54,7 +56,7 @@ namespace ShitDesigner.Main {
 			_confirmationTitle = Required<Label>(root, "output-confirm-title");
 			_confirmationMessage = Required<Label>(root, "output-confirm-message");
 			_confirmationOverlay = Required<VisualElement>(root, "output-confirm-overlay");
-			_sceneSelector.RegisterValueChangedCallback(OnSceneSelected);
+			_loadPatchButton.clicked += LoadPreloadedPatch;
 			_outputButton.clicked += RequestOutputToggle;
 			_identifyButton.clicked += _output.IdentifyDisplay;
 			_confirmationCancelButton.clicked += HideOutputConfirmation;
@@ -64,7 +66,7 @@ namespace ShitDesigner.Main {
 		}
 
 		public void Shutdown() {
-			if (_sceneSelector != null) _sceneSelector.UnregisterValueChangedCallback(OnSceneSelected);
+			if (_loadPatchButton != null) _loadPatchButton.clicked -= LoadPreloadedPatch;
 			if (_outputButton != null) _outputButton.clicked -= RequestOutputToggle;
 			if (_identifyButton != null && _output != null) _identifyButton.clicked -= _output.IdentifyDisplay;
 			if (_confirmationCancelButton != null) _confirmationCancelButton.clicked -= HideOutputConfirmation;
@@ -72,7 +74,7 @@ namespace ShitDesigner.Main {
 			_initialized = false;
 			_host = null;
 			_output = null;
-			_renderedSceneId = string.Empty;
+			_renderedPatchId = string.Empty;
 		}
 
 		private void LateUpdate() {
@@ -83,16 +85,14 @@ namespace ShitDesigner.Main {
 				_programMonitor.style.backgroundImage = model.ProgramTexture == null
 					? StyleKeyword.None
 					: new StyleBackground(Background.FromRenderTexture(model.ProgramTexture));
-				_sceneSelector.choices = model.Scenes.Select(scene => scene.Name).ToList();
-				var selected = model.Scenes.FirstOrDefault(scene => scene.Id == model.SelectedSceneId);
-				if (!string.IsNullOrEmpty(selected.Id)) _sceneSelector.SetValueWithoutNotify(selected.Name);
+				RefreshPatchControls(model);
 				var connectedDisplayLabels = Enumerable.Range(2, Math.Max(0, model.ConnectedDisplayCount - 1)).Select(number => "Display " + number).ToList();
 				if (connectedDisplayLabels.Count == 0) connectedDisplayLabels.Add("No external Display");
 				_displaySelector.text = "OUTPUT: " + string.Join(", ", connectedDisplayLabels);
 				_outputButton.text = model.IsDisplayOutputActive ? "STOP OUTPUT" : "START OUTPUT";
 				_capabilityLabel.text = $"MIDI: {(model.Capabilities.MidiAvailable ? "READY" : "UNAVAILABLE")}  DISPLAY: {(model.Capabilities.ExternalDisplayAvailable ? "READY" : "UNAVAILABLE")}  FRAME: {model.ProgramFrameNumber}";
 				_diagnosticLabel.text = ResolveDiagnostic(model);
-				if (_renderedSceneId != model.SelectedSceneId) RebuildParameters(model);
+				if (_renderedPatchId != model.LoadedPatchId) RebuildParameters(model);
 				else RefreshParameterValues(model);
 			}
 			finally { _updating = false; }
@@ -114,7 +114,7 @@ namespace ShitDesigner.Main {
 				slider.AddToClassList("parameter-slider");
 				slider.RegisterValueChangedCallback(change => {
 					if (!_updating && _host?.ReadModel != null)
-						ShowEnqueueRejection(_host.ParameterQueue.EnqueueSetParameter(_host.ReadModel.SelectedSceneId, (string)slider.userData, change.newValue));
+						ShowEnqueueRejection(_host.ParameterQueue.EnqueueSetParameter(_host.ReadModel.LoadedPatchId, (string)slider.userData, change.newValue));
 				});
 				var label = new Label(parameter.DisplayName);
 				label.AddToClassList("parameter-fader-label");
@@ -123,7 +123,7 @@ namespace ShitDesigner.Main {
 				channel.Add(label);
 				_parameterControls.Add(channel);
 			}
-			_renderedSceneId = model.SelectedSceneId;
+			_renderedPatchId = model.LoadedPatchId;
 		}
 
 		private void RefreshParameterValues(LiveUiReadModel model) {
@@ -134,10 +134,35 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		private void OnSceneSelected(ChangeEvent<string> change) {
-			if (_updating || _host?.ReadModel == null) return;
-			var scene = _host.ReadModel.Scenes.FirstOrDefault(candidate => candidate.Name == change.newValue);
-			if (!string.IsNullOrEmpty(scene.Id)) ShowEnqueueRejection(_host.ParameterQueue.EnqueueSelectScene(scene.Id));
+		private void RefreshPatchControls(LiveUiReadModel model) {
+			if (_patchControls.childCount != model.Patches.Count) RebuildPatchControls(model);
+			foreach (var patch in model.Patches) {
+				var button = _patchControls.Q<Button>("patch-" + patch.Id);
+				if (button == null) continue;
+				button.EnableInClassList("is-loaded", patch.Id == model.LoadedPatchId);
+				button.EnableInClassList("is-preloaded", patch.Id == model.PreloadedPatchId);
+			}
+			var preloaded = model.Patches.FirstOrDefault(patch => patch.Id == model.PreloadedPatchId);
+			_loadPatchButton.text = string.IsNullOrEmpty(preloaded.Id) ? "LOAD PATCH" : "LOAD " + preloaded.Name;
+			_loadPatchButton.SetEnabled(!string.IsNullOrEmpty(preloaded.Id) && preloaded.Id != model.LoadedPatchId);
+		}
+
+		private void RebuildPatchControls(LiveUiReadModel model) {
+			_patchControls.Clear();
+			foreach (var patch in model.Patches) {
+				var patchId = patch.Id;
+				var button = new Button(() => ShowEnqueueRejection(_host.ParameterQueue.EnqueuePreloadPatch(patchId))) {
+					name = "patch-" + patchId,
+					text = patch.Name
+				};
+				button.AddToClassList("patch-button");
+				_patchControls.Add(button);
+			}
+		}
+
+		private void LoadPreloadedPatch() {
+			var preloadedPatchId = _host?.ReadModel?.PreloadedPatchId;
+			if (!string.IsNullOrWhiteSpace(preloadedPatchId)) ShowEnqueueRejection(_host.ParameterQueue.EnqueueLoadPatch(preloadedPatchId));
 		}
 
 		private void RequestOutputToggle() {

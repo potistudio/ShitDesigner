@@ -30,8 +30,8 @@ namespace ShitDesigner.Main {
 		private LiveGraphRuntime _runtime;
 		private LiveKeyboardInput _keyboard;
 		private LiveMidiInput _midi;
-		private string[] _sceneIds = Array.Empty<string>();
-		private LiveSceneReadModel[] _scenes = Array.Empty<LiveSceneReadModel>();
+		private string[] _patchIds = Array.Empty<string>();
+		private LivePatchReadModel[] _patches = Array.Empty<LivePatchReadModel>();
 		private ulong _tickFrameNumber;
 
 		public ApplicationLiveHostState State { get; private set; } = ApplicationLiveHostState.Cold;
@@ -54,12 +54,12 @@ namespace ShitDesigner.Main {
 
 				_runtime = _graphBootstrap.CreateRuntime();
 				_shutdown.Add(() => { _runtime?.Dispose(); _runtime = null; });
-				_sceneIds = _runtime.Scenes.Select(scene => scene.Id).ToArray();
-				_scenes = _runtime.Scenes.Select(scene => new LiveSceneReadModel(scene.Id, scene.DisplayName)).ToArray();
+				_patchIds = _runtime.Patches.Select(patch => patch.Id).ToArray();
+				_patches = _runtime.Patches.Select(patch => new LivePatchReadModel(patch.Id, patch.DisplayName)).ToArray();
 				_keyboard = new LiveKeyboardInput(_parameterQueue);
 				_midiInputManager.InitializeForHostPolling();
 				_shutdown.Add(_midiInputManager.Shutdown);
-				_midi = new LiveMidiInput(_midiInputManager, _parameterQueue, _sceneIds);
+				_midi = new LiveMidiInput(_midiInputManager, _parameterQueue, _patchIds);
 				_shutdown.Add(() => { _midi?.Dispose(); _midi = null; });
 				_externalDisplay.Initialize();
 				_shutdown.Add(_externalDisplay.Shutdown);
@@ -85,8 +85,8 @@ namespace ShitDesigner.Main {
 			unchecked { _tickFrameNumber++; }
 			if (_tickFrameNumber == 0) _tickFrameNumber = 1;
 
-			_keyboard.Poll(_runtime.SelectedSceneId, _sceneIds);
-			_midi.SetSelectedScene(_runtime.SelectedSceneId);
+			_keyboard.Poll(_runtime.LoadedPatchId, _patchIds);
+			_midi.SetSelectedPatch(_runtime.LoadedPatchId);
 			_midiInputManager.Poll();
 			ApplyRequests();
 			try {
@@ -121,8 +121,8 @@ namespace ShitDesigner.Main {
 		}
 
 		private void PublishReadModel(string diagnostic) {
-			ReadModel = new LiveUiReadModel(_tickFrameNumber, _scenes, _runtime?.SelectedSceneId,
-				_runtime?.GetSelectedParameterDefinitions(), _runtime?.CurrentFrames ?? default(LiveProgramFrames), _externalDisplay,
+			ReadModel = new LiveUiReadModel(_tickFrameNumber, _patches, _runtime?.LoadedPatchId, _runtime?.PreloadedPatchId,
+				_runtime?.GetLoadedPatchParameterDefinitions(), _runtime?.CurrentFrames ?? default(LiveProgramFrames), _externalDisplay,
 				_capabilityMonitor != null ? _capabilityMonitor.Snapshot : default(LiveCapabilitySnapshot), diagnostic,
 				_requestResults.ToArray());
 		}

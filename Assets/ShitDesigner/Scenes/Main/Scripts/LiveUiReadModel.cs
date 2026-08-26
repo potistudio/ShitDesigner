@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace ShitDesigner.Main {
-	public readonly struct LiveSceneReadModel {
+	public readonly struct LivePatchReadModel {
 		public string Id { get; }
 		public string Name { get; }
 
-		public LiveSceneReadModel(string id, string name) {
+		public LivePatchReadModel(string id, string name) {
 			Id = id;
 			Name = name;
 		}
@@ -15,8 +15,9 @@ namespace ShitDesigner.Main {
 
 	public sealed class LiveUiReadModel {
 		public ulong FrameNumber { get; }
-		public IReadOnlyList<LiveSceneReadModel> Scenes { get; }
-		public string SelectedSceneId { get; }
+		public IReadOnlyList<LivePatchReadModel> Patches { get; }
+		public string LoadedPatchId { get; }
+		public string PreloadedPatchId { get; }
 		public IReadOnlyList<LiveParameterDefinition> Parameters { get; }
 		public RenderTexture ProgramTexture { get; }
 		public ulong ProgramFrameNumber { get; }
@@ -28,12 +29,13 @@ namespace ShitDesigner.Main {
 		public string Diagnostic { get; }
 		public IReadOnlyList<LiveParameterApplicationResult> RequestResults { get; }
 
-		public LiveUiReadModel(ulong frameNumber, IReadOnlyList<LiveSceneReadModel> scenes, string selectedSceneId,
+		public LiveUiReadModel(ulong frameNumber, IReadOnlyList<LivePatchReadModel> patches, string loadedPatchId, string preloadedPatchId,
 			IReadOnlyList<LiveParameterDefinition> parameters, LiveProgramFrames programFrames, LiveExternalDisplayOutput output,
 			LiveCapabilitySnapshot capabilities, string diagnostic, IReadOnlyList<LiveParameterApplicationResult> requestResults) {
 			FrameNumber = frameNumber;
-			Scenes = scenes ?? Array.Empty<LiveSceneReadModel>();
-			SelectedSceneId = selectedSceneId ?? string.Empty;
+			Patches = patches ?? Array.Empty<LivePatchReadModel>();
+			LoadedPatchId = loadedPatchId ?? string.Empty;
+			PreloadedPatchId = preloadedPatchId ?? string.Empty;
 			Parameters = parameters ?? Array.Empty<LiveParameterDefinition>();
 			ProgramTexture = programFrames.Primary.Texture;
 			ProgramFrameNumber = programFrames.Primary.FrameNumber;

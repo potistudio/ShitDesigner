@@ -9,15 +9,15 @@ namespace ShitDesigner.Main.Tests {
 	[TestFixture]
 	public sealed class LiveInputTests {
 		[Test]
-		public void MidiMappingQueuesSceneAndParameterRequestsInEventOrder() {
+		public void MidiMappingQueuesPatchAndParameterRequestsInEventOrder() {
 			var owner = new GameObject("MIDI");
 			try {
 				var manager = owner.AddComponent<MidiInputManager>();
 				var source = new QueueMidiInputSource();
 				manager.Configure(new NullMidiApplication(), new NullLiveControlApplication(), source);
 				var queue = new LiveParameterQueue();
-				using (var input = new LiveMidiInput(manager, queue, new[] { "scene-a", "scene-b" })) {
-					input.SetSelectedScene("scene-a");
+				using (var input = new LiveMidiInput(manager, queue, new[] { "patch-a", "patch-b" })) {
+					input.SetSelectedPatch("patch-a");
 					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.Note, 1, 37), 127));
 					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.ControlChange, 1, 21), 64));
 					manager.Poll();
@@ -25,16 +25,19 @@ namespace ShitDesigner.Main.Tests {
 
 				var requests = new List<LiveParameterRequest>();
 				queue.Drain(requests);
-				Assert.That(requests.Count, Is.EqualTo(2));
-				Assert.That(requests[0].SceneId, Is.EqualTo("scene-b"));
-				Assert.That(requests[1].SceneId, Is.EqualTo("scene-a"));
-				Assert.That(requests[1].ParameterId, Is.EqualTo(LiveGraphClockRateParameter.ParameterId));
+				Assert.That(requests.Count, Is.EqualTo(3));
+				Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.PreloadPatch));
+				Assert.That(requests[0].PatchId, Is.EqualTo("patch-b"));
+				Assert.That(requests[1].Kind, Is.EqualTo(LiveParameterRequestKind.LoadPatch));
+				Assert.That(requests[1].PatchId, Is.EqualTo("patch-b"));
+				Assert.That(requests[2].PatchId, Is.EqualTo("patch-a"));
+				Assert.That(requests[2].ParameterId, Is.EqualTo(LiveGraphClockRateParameter.ParameterId));
 			}
 			finally { Object.DestroyImmediate(owner); }
 		}
 
 		[Test]
-		public void MidiTriggerBindingQueuesFlashForTheSelectedScene() {
+		public void MidiTriggerBindingQueuesFlashForTheLoadedPatch() {
 			var owner = new GameObject("MIDI");
 			try {
 				var manager = owner.AddComponent<MidiInputManager>();
@@ -42,8 +45,8 @@ namespace ShitDesigner.Main.Tests {
 				manager.SetBindings(new[] { new MidiLiveControlBinding(string.Empty, MidiControlKind.Note, 1, 36, output: MidiLiveControlBindingOutput.Trigger) });
 				manager.Configure(new NullMidiApplication(), new NullLiveControlApplication(), source);
 				var queue = new LiveParameterQueue();
-				using (var input = new LiveMidiInput(manager, queue, new[] { "scene-a" })) {
-					input.SetSelectedScene("scene-a");
+				using (var input = new LiveMidiInput(manager, queue, new[] { "patch-a" })) {
+					input.SetSelectedPatch("patch-a");
 					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.Note, 1, 36), 127));
 					manager.Poll();
 				}
@@ -52,7 +55,7 @@ namespace ShitDesigner.Main.Tests {
 				queue.Drain(requests);
 				Assert.That(requests, Has.Count.EqualTo(1));
 				Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.TriggerFlash));
-				Assert.That(requests[0].SceneId, Is.EqualTo("scene-a"));
+				Assert.That(requests[0].PatchId, Is.EqualTo("patch-a"));
 			}
 			finally { Object.DestroyImmediate(owner); }
 		}
@@ -66,8 +69,8 @@ namespace ShitDesigner.Main.Tests {
 				manager.SetBindings(new[] { new MidiLiveControlBinding(string.Empty, MidiControlKind.Note, 1, 60, output: MidiLiveControlBindingOutput.Trigger) });
 				manager.Configure(new NullMidiApplication(), new NullLiveControlApplication(), source);
 				var queue = new LiveParameterQueue();
-				using (var input = new LiveMidiInput(manager, queue, new[] { "scene-a" })) {
-					input.SetSelectedScene("scene-a");
+				using (var input = new LiveMidiInput(manager, queue, new[] { "patch-a" })) {
+					input.SetSelectedPatch("patch-a");
 					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.Note, 1, 60), 127));
 					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.Note, 1, 60), 127));
 					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.Note, 1, 60), 0));

@@ -148,13 +148,14 @@
 - `ApplicationLiveHost` はBootでRuntimeを作成し、ライブ実行Tickで各処理を定義した順序で呼び、ShutdownでRuntimeを破棄する。
 - コードへハードコードするのはノード構成、接続および公開パラメーター対応だけとする。Prefab、`Scene3DDefinition`、ShaderなどのAsset参照をGUIDまたはパスとしてコードへ埋め込まない。
 
-### 2026-08-26: シーン数はInspectorで設定し、Boot時にすべて生成する
+### 2026-08-26: パッチ数はInspectorで設定し、Boot時にすべて生成する
 
-- `LiveGraphBootstrap` は任意数の `ShitDesignerSceneDefinition` をシリアライズして保持する。
-- `ShitDesignerSceneDefinition` はUnityの `Scene3DDefinition` をノードグループとして参照し、ライブUIへ公開するパラメーターを明示的に束ねる。これはUnityのSceneとは別の論理的なShitDesignerシーンである。
+- `LiveGraphBootstrap` は任意数の `PatchDefinition` をシリアライズして保持する。
+- `PatchDefinition` はUnityの `Scene3DDefinition` をノードグループとして参照し、ライブUIへ公開するパラメーターを明示的に束ねる。これはUnityのSceneとは別の論理的なパッチである。
 - Bootは設定されたすべてのUnityシーンノードRuntimeを生成して保持する。
-- シーン切替は選択中のShitDesignerシーンを変更するだけとし、Runtimeの生成または破棄は行わない。
-- 選択中のShitDesignerシーンに含まれるノードだけを更新および描画する。すべてのRuntimeはShutdownで破棄する。
+- パッチのロードは事前ロード済みのパッチを選択するだけとし、Runtimeの生成または破棄は行わない。
+- 選択中のパッチに含まれるノードだけを更新および描画する。すべてのRuntimeはShutdownで破棄する。
+- 事前ロード対象は常に1件だけ保持する。ロード要求はそのパッチIDと一致する場合だけ受理する。
 
 ### 2026-08-26: 各3Dシーンのルートが公開パラメーターAPIを提供する
 
@@ -182,10 +183,10 @@
 - `LiveUiController` はライブ実行Tickの後にRead Modelを更新し、RuntimeまたはTextureの所有権を持たない。
 - UIはProgram Monitorを表示する。外部Display出力の開始または停止およびDisplay識別は `LiveParameterQueue` を経由せず、外部Display専用スクリプトの制御ポートへ直接要求する。
 
-### 2026-08-26: 公開パラメーターはShitDesignerシーン境界で解決する
+### 2026-08-26: 公開パラメーターはパッチ境界で解決する
 
-- `ShitDesignerSceneDefinition` の公開パラメーターは、Scene3DDefinitionのIDとその `LiveSceneRoot` が提供するパラメーターIDへ対応付ける。
-- `SetParameter` はShitDesignerシーンの公開IDだけを受け付け、対応するUnityシーンノードの `LiveSceneRoot` へ委譲する。
+- `PatchDefinition` の公開パラメーターは、Scene3DDefinitionのIDとその `LiveSceneRoot` が提供するパラメーターIDへ対応付ける。
+- `SetParameter` はパッチの公開IDだけを受け付け、対応するUnityシーンノードの `LiveSceneRoot` へ委譲する。
 - Unityシーンノードが提供していないパラメーターはBootを失敗させる。UIおよび入力側は下位ノードの内部パラメーターを直接指定しない。
 
 ### 2026-08-26: Mainシーンは既存の起動・ライブ実行コンポーネントをLive Host構成へ置き換える
