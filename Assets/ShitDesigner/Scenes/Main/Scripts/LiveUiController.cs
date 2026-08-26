@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -27,6 +28,7 @@ namespace ShitDesigner.Main {
 		private Label _confirmationMessage;
 		private VisualElement _confirmationOverlay;
 		private string _renderedSceneId = string.Empty;
+		private readonly HashSet<Slider> _activeSliderInteractions = new HashSet<Slider>();
 		private bool _pendingOutputActive;
 		private bool _showingOutputError;
 		private bool _initialized;
@@ -72,6 +74,7 @@ namespace ShitDesigner.Main {
 			_host = null;
 			_output = null;
 			_renderedSceneId = string.Empty;
+			_activeSliderInteractions.Clear();
 		}
 
 		private void LateUpdate() {
@@ -98,6 +101,7 @@ namespace ShitDesigner.Main {
 		}
 
 		private void RebuildParameters(LiveUiReadModel model) {
+			_activeSliderInteractions.Clear();
 			_parameterControls.Clear();
 			foreach (var parameter in model.Parameters) {
 				var slider = new Slider(parameter.DisplayName, parameter.Minimum, parameter.Maximum) {
@@ -110,14 +114,19 @@ namespace ShitDesigner.Main {
 					if (!_updating && _host?.ReadModel != null)
 						ShowEnqueueRejection(_host.ParameterQueue.EnqueueSetParameter(_host.ReadModel.SelectedSceneId, (string)slider.userData, change.newValue));
 				});
+				slider.RegisterCallback<PointerDownEvent>(_ => _activeSliderInteractions.Add(slider), TrickleDown.TrickleDown);
+				slider.RegisterCallback<PointerUpEvent>(_ => _activeSliderInteractions.Remove(slider), TrickleDown.TrickleDown);
+				slider.RegisterCallback<PointerCaptureOutEvent>(_ => _activeSliderInteractions.Remove(slider), TrickleDown.TrickleDown);
 				_parameterControls.Add(slider);
 			}
 			_renderedSceneId = model.SelectedSceneId;
 		}
 
 		private void RefreshParameterValues(LiveUiReadModel model) {
-			foreach (var parameter in model.Parameters)
-				_parameterControls.Q<Slider>("parameter-" + parameter.Id)?.SetValueWithoutNotify(parameter.Value);
+			foreach (var parameter in model.Parameters) {
+				var slider = _parameterControls.Q<Slider>("parameter-" + parameter.Id);
+				if (slider != null && !_activeSliderInteractions.Contains(slider)) slider.SetValueWithoutNotify(parameter.Value);
+			}
 		}
 
 		private void OnSceneSelected(ChangeEvent<string> change) {
