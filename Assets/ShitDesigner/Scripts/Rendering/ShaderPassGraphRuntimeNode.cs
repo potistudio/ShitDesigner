@@ -142,10 +142,41 @@ namespace ShitDesigner.Rendering {
 		/// the graph-bound Evaluate path.</summary>
 		public Result<RenderTexture, Diagnostic> Render(RenderTexture source, RenderTexture target, ulong frameNumber,
 			double graphTime = 0d, bool paused = false, bool reset = false) {
+			return RenderDirect(source, target, frameNumber, graphTime, paused, reset);
+		}
+
+		/// <summary>Direct graph-composition seam. Bootstrap-created graphs
+		/// provide every connected ImageFrame input by its declared port.</summary>
+		public Result<RenderTexture, Diagnostic> Render(IReadOnlyDictionary<PortId, Texture> inputs, RenderTexture target,
+			ulong frameNumber, double graphTime = 0d, bool paused = false, bool reset = false) {
 			if (_disposed) return Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.disposed", "Shader pass graph node is disposed."));
 			if (target == null || !target.IsCreated()) return Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.target", "A created RenderTexture target is required."));
 			if (frameNumber == 0) return Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.frame", "Frame number must be positive."));
 			try {
+				ApplyDirectParameters();
+				var source = BindDirectInputs(inputs);
+				ShaderRuntimeUniformApplier.Apply(_material, _binding, graphTime, 0d, frameNumber,
+					target.width, target.height, StableSeed(NodeId.Value));
+				_material.SetFloat("_Paused", paused ? 1f : 0f);
+				_material.SetFloat("_Reset", reset ? 1f : 0f);
+				var result = RenderCore(source, target, frameNumber, graphTime, paused, reset);
+				if (result.IsSuccess) LastOutputTexture = target;
+				return result;
+			}
+			catch (Exception exception) {
+				return Result.Failure<RenderTexture, Diagnostic>(new Diagnostic(new DiagnosticCode("rendering.shader_graph.render_failed"), Severity.Error,
+					exception.Message, nodeId: NodeId, nodeTypeId: TypeId, generationId: GenerationId,
+					module: "rendering", exception: DiagnosticExceptionInfo.FromException(exception)));
+			}
+		}
+
+		private Result<RenderTexture, Diagnostic> RenderDirect(RenderTexture source, RenderTexture target, ulong frameNumber,
+			double graphTime, bool paused, bool reset) {
+			if (_disposed) return Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.disposed", "Shader pass graph node is disposed."));
+			if (target == null || !target.IsCreated()) return Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.target", "A created RenderTexture target is required."));
+			if (frameNumber == 0) return Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.frame", "Frame number must be positive."));
+			try {
+				ApplyDirectParameters();
 				Texture input = source ?? (Texture)Texture2D.blackTexture;
 				ShaderRuntimeUniformApplier.Apply(_material, _binding, graphTime, 0d, frameNumber,
 					target.width, target.height, StableSeed(NodeId.Value));
@@ -285,6 +316,36 @@ namespace ShitDesigner.Rendering {
 			return source ?? Texture2D.blackTexture;
 		}
 
+		private Texture BindDirectInputs(IReadOnlyDictionary<PortId, Texture> inputs) {
+			Texture source = null;
+			if (_binding.Inputs.Count > 0) {
+				foreach (var input in _binding.Inputs) {
+					if (input.Role == ShaderInputRole.History || input.Type != NodePortType.ImageFrame) continue;
+					Texture texture = null;
+					if (inputs != null) inputs.TryGetValue(input.PortId, out texture);
+					if (texture == null && input.Required)
+						throw new InvalidOperationException("Required shader graph input is unavailable: " + input.PortId.Value);
+					texture = texture ?? DefaultTexture(input.DefaultImage);
+					_material.SetTexture(input.Property, texture);
+					if (source == null && (input.Role == ShaderInputRole.Primary || _binding.Inputs.Count == 1)) source = texture;
+				}
+			}
+			else if (!_generator) {
+				var firstId = _blend ? new PortId("a") : new PortId("input");
+				inputs?.TryGetValue(firstId, out source);
+				if (source == null) throw new InvalidOperationException("Required shader graph input is unavailable: " + firstId.Value);
+				_material.SetTexture(PropertyFor(firstId, "_MainTex"), source);
+				if (_blend) {
+					Texture second = null;
+					if (inputs != null) inputs.TryGetValue(new PortId("b"), out second);
+					if (second == null) throw new InvalidOperationException("Required shader graph input is unavailable: b");
+					_material.SetTexture(PropertyFor(new PortId("b"), "_TexB"), second);
+				}
+			}
+			BindHistoryTextures();
+			return source ?? Texture2D.blackTexture;
+		}
+
 		private void BindHistoryTextures() {
 			if (_history == null) return;
 			foreach (var input in _binding.Inputs.Where(x => x.Role == ShaderInputRole.History)) {
@@ -338,6 +399,13 @@ namespace ShitDesigner.Rendering {
 		private void ApplyParameters(FrameSnapshot snapshot) {
 			foreach (var parameter in _binding.Parameters)
 				if (snapshot.EffectiveValues.TryGetValue(new ParameterKey(NodeId, parameter.ParameterId), out var value)) ApplyTypedParameter(parameter.Property, parameter, value);
+		}
+
+		private void ApplyDirectParameters() {
+			foreach (var parameter in _record.Parameters) {
+				var binding = _binding.Parameters.FirstOrDefault(candidate => candidate.ParameterId == parameter.Id);
+				if (binding != null) ApplyTypedParameter(binding.Property, binding, parameter.Value);
+			}
 		}
 
 		private void ApplyTypedParameter(string property, ShaderParameterBinding binding, ParameterValue value) {

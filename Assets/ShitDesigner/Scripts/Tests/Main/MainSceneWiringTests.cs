@@ -40,6 +40,8 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(graph.Scenes.All(definition => definition != null && !string.IsNullOrWhiteSpace(definition.Id) && definition.Prefab != null), Is.True);
 				Assert.That(graph.Scenes.Select(definition => definition.Id).Distinct().Count(), Is.EqualTo(2));
 				Assert.That(graph.Scenes.All(definition => definition.Prefab.GetComponent<LiveSceneRoot>() != null), Is.True);
+				var serializedGraph = new SerializedObject(graph);
+				Assert.That(serializedGraph.FindProperty("_shaderManifest").objectReferenceValue, Is.Not.Null);
 
 				var serializedHost = new SerializedObject(host);
 				Assert.That(serializedHost.FindProperty("_graphBootstrap").objectReferenceValue, Is.SameAs(graph));
