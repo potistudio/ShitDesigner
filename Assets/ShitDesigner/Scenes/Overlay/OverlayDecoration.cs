@@ -9,6 +9,10 @@ namespace ShitDesigner.Presentation.Overlay {
 		private const float EdgeInset = 32f;
 		private const float CornerSize = 112f;
 		private const float StripSize = 176f;
+		private const int CircularStrokeCount = 24;
+		private const float CircularStrokeRadius = 132f;
+		private const float CircularStrokeLength = 14f;
+		private const float CircularStrokeThickness = 2f;
 
 		private static readonly Color LineColor = new Color(0.91f, 0.93f, 0.95f, 0.74f);
 		private static readonly Color AccentColor = new Color(0.34f, 0.65f, 1f, 0.68f);
@@ -50,6 +54,7 @@ namespace ShitDesigner.Presentation.Overlay {
 			AddHorizontalStrip(top: false);
 			AddVerticalStrip(right: false);
 			AddVerticalStrip(right: true);
+			AddCircularStrokes();
 		}
 
 		private void OnDisable() {
@@ -109,6 +114,36 @@ namespace ShitDesigner.Presentation.Overlay {
 
 			AddBar(parent, horizontalX, cornerY, length, 1f, AccentColor);
 			AddBar(parent, cornerX, verticalY, 1f, length, AccentColor);
+		}
+
+		private void AddCircularStrokes() {
+			var ring = new VisualElement {
+				name = "overlay-circular-strokes",
+				pickingMode = PickingMode.Ignore
+			};
+			ring.style.position = Position.Absolute;
+			ring.style.left = Percent(50f);
+			ring.style.top = Percent(50f);
+			ring.style.width = Pixels(CircularStrokeRadius * 2f);
+			ring.style.height = Pixels(CircularStrokeRadius * 2f);
+			ring.style.marginLeft = Pixels(-CircularStrokeRadius);
+			ring.style.marginTop = Pixels(-CircularStrokeRadius);
+			_decorationRoot.Add(ring);
+
+			for (var index = 0; index < CircularStrokeCount; index++) {
+				var angle = index * 360f / CircularStrokeCount - 90f;
+				var radians = angle * Mathf.Deg2Rad;
+				var stroke = new VisualElement { pickingMode = PickingMode.Ignore };
+				stroke.style.position = Position.Absolute;
+				stroke.style.left = Pixels(CircularStrokeRadius + Mathf.Cos(radians) * CircularStrokeRadius - CircularStrokeLength / 2f);
+				stroke.style.top = Pixels(CircularStrokeRadius + Mathf.Sin(radians) * CircularStrokeRadius - CircularStrokeThickness / 2f);
+				stroke.style.width = Pixels(CircularStrokeLength);
+				stroke.style.height = Pixels(CircularStrokeThickness);
+				stroke.style.opacity = 0.54f;
+				stroke.style.backgroundColor = index % 6 == 0 ? AccentColor : LineColor;
+				stroke.style.rotate = new StyleRotate(new Rotate(angle));
+				ring.Add(stroke);
+			}
 		}
 
 		private void AddHorizontalStrip(bool top) {
