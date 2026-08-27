@@ -72615,6 +72615,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2075394285}
+  - component: {fileID: 2075394286}
   m_Layer: 0
   m_Name: Stage
   m_TagString: Untagged
@@ -72647,6 +72648,20 @@ Transform:
   - {fileID: 1194831651}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2075394286
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2075394284}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66f2df6ae4c748e8bd2e8d877a42d3be, type: 3}
+  m_Name: ""
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.BpmAnimatorSpeedController
+  _controller: {fileID: 9100000, guid: 8e18ea88c56d5f3448910cecc7ffc53c, type: 2}
+  _referenceBpm: 145
 --- !u!1001 &2076812455
 PrefabInstance:
   m_ObjectHideFlags: 0
