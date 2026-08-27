@@ -16348,6 +16348,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 477062991}
+  - component: {fileID: 477062992}
   m_Layer: 0
   m_Name: MovingLightGroup
   m_TagString: Untagged
@@ -16441,6 +16442,26 @@ Transform:
   - {fileID: 1460065631}
   m_Father: {fileID: 59383918}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &477062992
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 477062990}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36dbeab5d2624da19f83bd004a6c8577, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.StageLightShowController
+  _panAmplitude: 55
+  _tiltAmplitude: 28
+  _panSpeed: 0.55
+  _tiltSpeed: 0.8
+  _strobeEnabled: 1
+  _strobeFrequency: 2.5
+  _strobeDutyCycle: 0.32
+  _minimumBrightness: 0.03
 --- !u!1 &478505573
 GameObject:
   m_ObjectHideFlags: 0
