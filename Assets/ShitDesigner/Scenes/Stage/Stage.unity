@@ -119,14 +119,40 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &1307245559
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1307245560}
+  m_Layer: 0
+  m_Name: Camera Target
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1307245560
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1307245559}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.07, y: 1.115, z: -9.813}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6452511269319969887}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1554467357 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8786916374323912300, guid: 723bfbdaab71a9f418b1c0525aaf45ea, type: 3}
-  m_PrefabInstance: {fileID: 6452511269319969886}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &1554467358 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 8580070107194367128, guid: 723bfbdaab71a9f418b1c0525aaf45ea, type: 3}
   m_PrefabInstance: {fileID: 6452511269319969886}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &2006838059
@@ -256,7 +282,7 @@ Transform:
   m_GameObject: {fileID: 2006838059}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.5650928, y: 1.22, z: -10.13}
+  m_LocalPosition: {x: -1.986, y: 1.22, z: -10.078}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -276,8 +302,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.SplineCameraRail
   path: {fileID: 2006838060}
   cameraTransform: {fileID: 1554467357}
-  target: {fileID: 1554467358}
-  speed: 0.5
+  target: {fileID: 1307245560}
+  speed: 0.1
   startOffset: 0
   loop: 1
   alignToPath: 1
@@ -337,6 +363,22 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8786916374323912300, guid: 723bfbdaab71a9f418b1c0525aaf45ea, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.98428285
+      objectReference: {fileID: 0}
+    - target: {fileID: 8786916374323912300, guid: 723bfbdaab71a9f418b1c0525aaf45ea, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.16586623
+      objectReference: {fileID: 0}
+    - target: {fileID: 8786916374323912300, guid: 723bfbdaab71a9f418b1c0525aaf45ea, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.059785355
+      objectReference: {fileID: 0}
+    - target: {fileID: 8786916374323912300, guid: 723bfbdaab71a9f418b1c0525aaf45ea, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0.010074716
+      objectReference: {fileID: 0}
     - target: {fileID: 8983510021190656550, guid: 723bfbdaab71a9f418b1c0525aaf45ea, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -347,6 +389,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 6225306745496578670, guid: 723bfbdaab71a9f418b1c0525aaf45ea, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2006838061}
+    - targetCorrespondingSourceObject: {fileID: 6225306745496578670, guid: 723bfbdaab71a9f418b1c0525aaf45ea, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1307245560}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 723bfbdaab71a9f418b1c0525aaf45ea, type: 3}
 --- !u!4 &6452511269319969887 stripped
