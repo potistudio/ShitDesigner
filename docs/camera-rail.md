@@ -10,3 +10,7 @@
 4. Select the prefab root to adjust `Spline Camera Rail > Speed`, `Start Offset`, `Loop`, or `Align To Path`.
 
 The camera follows the spline tangent when `Align To Path` is enabled. The existing `CylindricalObjectFlythrough` remains responsible for generating the object field; its legacy linear camera speed is disabled for this prefab.
+
+## Stage
+
+The `Stage` scene uses the scene-local `Spline` object as its camera path. Select that object to edit the knots and adjust `Spline Camera Rail`; it drives the Stage prefab's `Main Camera` without requiring Timeline.
