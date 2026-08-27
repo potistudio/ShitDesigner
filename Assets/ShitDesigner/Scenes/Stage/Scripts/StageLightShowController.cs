@@ -34,7 +34,11 @@ namespace ShitDesigner.Stage {
 		private float _minimumBrightness = 0.03f;
 
 		private readonly List<LightRig> _lightRigs = new();
-		private readonly MaterialPropertyBlock _propertyBlock = new();
+		private MaterialPropertyBlock _propertyBlock;
+
+		private void Awake() {
+			_propertyBlock = new MaterialPropertyBlock();
+		}
 
 		private void OnEnable() {
 			BuildLightRigs();
