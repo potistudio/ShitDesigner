@@ -1,6 +1,13 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
     <Style src="project://database/Assets/ShitDesigner/Scenes/Main/MainUI.uss?fileID=7433441132597879392&amp;guid=7e3b7d42d5904ebf83a22f50f92ce618&amp;type=3#MainUI"/>
     <ui:VisualElement name="main-ui" class="main-ui">
+        <ui:VisualElement name="top-bar" class="top-bar">
+            <ui:Label name="display-selector" class="display-selector" text="OUTPUT: No external Display"/>
+            <ui:VisualElement class="output-actions">
+                <ui:Button name="output-toggle" text="START OUTPUT" class="output-action"/>
+                <ui:Button name="identify-display" text="IDENTIFY" class="output-action output-action-secondary"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
         <ui:VisualElement class="workspace">
             <ui:VisualElement class="preview-stack">
                 <ui:VisualElement name="program-monitor" class="program-monitor"/>
@@ -14,11 +21,6 @@
                         <ui:TextField name="bpm-field" class="tempo-bpm-input" is-delayed="true"/>
                         <ui:Button name="bpm-tap" text="TAP" class="tempo-tap-button"/>
                     </ui:VisualElement>
-                </ui:VisualElement>
-                <ui:Label name="display-selector" class="display-selector" text="OUTPUT: No external Display"/>
-                <ui:VisualElement class="output-actions">
-                    <ui:Button name="output-toggle" text="START OUTPUT" class="output-action"/>
-                    <ui:Button name="identify-display" text="IDENTIFY" class="output-action output-action-secondary"/>
                 </ui:VisualElement>
                 <ui:Label name="capability-status" class="status-label"/>
                 <ui:Label name="diagnostic-status" class="diagnostic-label"/>
