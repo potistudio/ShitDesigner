@@ -175,6 +175,13 @@
 }
 
 .tempo-bpm-input .unity-base-text-field__input {
+    height: 30px;
+    min-height: 30px;
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-left: 8px;
+    padding-right: 8px;
+    -unity-text-align: middle-left;
     color: rgb(232, 236, 242);
     background-color: rgb(13, 15, 18);
     border-width: 1px;
