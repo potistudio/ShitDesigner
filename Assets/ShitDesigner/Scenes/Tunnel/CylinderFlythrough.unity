@@ -167,6 +167,38 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4680049667518520785, guid: 52d135c910953af43a7424639474c3c2, type: 3}
+      propertyPath: randomSeed
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4680049667518520785, guid: 52d135c910953af43a7424639474c3c2, type: 3}
+      propertyPath: cameraSpeed
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4680049667518520785, guid: 52d135c910953af43a7424639474c3c2, type: 3}
+      propertyPath: radialJitter
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 4680049667518520785, guid: 52d135c910953af43a7424639474c3c2, type: 3}
+      propertyPath: cylinderRadius
+      value: 12
+      objectReference: {fileID: 0}
+    - target: {fileID: 4680049667518520785, guid: 52d135c910953af43a7424639474c3c2, type: 3}
+      propertyPath: alignToCylinder
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4680049667518520785, guid: 52d135c910953af43a7424639474c3c2, type: 3}
+      propertyPath: objectScaleRange.x
+      value: 0.25
+      objectReference: {fileID: 0}
+    - target: {fileID: 4680049667518520785, guid: 52d135c910953af43a7424639474c3c2, type: 3}
+      propertyPath: objectScaleRange.y
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6129218759055021740, guid: 52d135c910953af43a7424639474c3c2, type: 3}
+      propertyPath: path
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 7787689742687978739, guid: 52d135c910953af43a7424639474c3c2, type: 3}
       propertyPath: m_Name
       value: Cylinder Flythrough
