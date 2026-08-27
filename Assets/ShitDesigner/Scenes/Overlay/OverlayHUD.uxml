@@ -1,0 +1,30 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/ShitDesigner/Scenes/Overlay/OverlayHUD.uss?fileID=7433441132597879392&amp;guid=15707d875afe4d8eb80b004c8d28a8ff&amp;type=3#OverlayHUD"/>
+    <ui:VisualElement name="overlay-hud" class="overlay-hud">
+        <ui:VisualElement name="hud-top-left" class="hud-card hud-top-left">
+            <ui:Label text="SHIT DESIGNER" class="hud-title"/>
+            <ui:VisualElement class="hud-status-row">
+                <ui:VisualElement class="hud-status-dot"/>
+                <ui:Label text="LIVE OUTPUT" class="hud-status"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <ui:VisualElement name="hud-top-right" class="hud-card hud-top-right">
+            <ui:Label text="PROGRAM 01" class="hud-label"/>
+            <ui:Label text="60 FPS" class="hud-value hud-mono"/>
+        </ui:VisualElement>
+
+        <ui:VisualElement name="hud-bottom-left" class="hud-card hud-bottom-left">
+            <ui:Label text="BPM  120.0" class="hud-value hud-mono"/>
+            <ui:Label text="PATCH 01  /  READY" class="hud-label"/>
+        </ui:VisualElement>
+
+        <ui:VisualElement name="hud-bottom-right" class="hud-card hud-bottom-right">
+            <ui:VisualElement class="hud-output-row">
+                <ui:VisualElement class="hud-status-dot"/>
+                <ui:Label text="OUTPUT 100%" class="hud-status"/>
+            </ui:VisualElement>
+            <ui:Label text="SYSTEM HEALTHY" class="hud-label"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
