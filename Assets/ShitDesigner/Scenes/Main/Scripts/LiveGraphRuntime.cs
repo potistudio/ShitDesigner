@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using ShitDesigner.Core;
+using ShitDesigner.Media;
 using ShitDesigner.Nodes;
 using ShitDesigner.Rendering;
 using ShitDesigner.Runtime;
@@ -155,10 +156,11 @@ namespace ShitDesigner.Main {
 		private readonly RenderTexture _shaderGraphTexture;
 		private readonly LiveProgramShaderGraph _programGraph;
 		private readonly LiveProgramFlash _flash;
+		private readonly AssetFlashComponent _assetFlash;
 
 		public LiveProgramOutput(Scene3DDefinition definition, SceneNodeRuntime runtime, LiveSceneRoot root,
 			RenderTexture programTexture, RenderTexture renderTexture, RenderTexture shaderGraphTexture,
-			LiveProgramShaderGraph programGraph, LiveProgramFlash flash) {
+			LiveProgramShaderGraph programGraph, LiveProgramFlash flash, AssetFlashComponent assetFlash) {
 			Definition = definition ?? throw new ArgumentNullException(nameof(definition));
 			Runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
 			Root = root ?? throw new ArgumentNullException(nameof(root));
@@ -167,6 +169,7 @@ namespace ShitDesigner.Main {
 			_shaderGraphTexture = shaderGraphTexture ?? throw new ArgumentNullException(nameof(shaderGraphTexture));
 			_programGraph = programGraph ?? throw new ArgumentNullException(nameof(programGraph));
 			_flash = flash ?? throw new ArgumentNullException(nameof(flash));
+			_assetFlash = assetFlash;
 		}
 
 		public void Render(double graphTime, double deltaSeconds, ulong frameNumber) {
@@ -177,7 +180,11 @@ namespace ShitDesigner.Main {
 			_flash.Render(_shaderGraphTexture, ProgramTexture, graphTime);
 		}
 
-		public void TriggerFlash(double graphTime) => _flash.Trigger(graphTime);
+		public void TriggerFlash(double graphTime) {
+			_flash.Trigger(graphTime);
+			if (_assetFlash == null || !_assetFlash.TryTrigger(1) || _assetFlash.OutputTexture == null) return;
+			_flash.TriggerAsset(graphTime, _assetFlash.OutputTexture, _assetFlash.DurationSeconds);
+		}
 
 		public void Dispose() {
 			_flash.Dispose();

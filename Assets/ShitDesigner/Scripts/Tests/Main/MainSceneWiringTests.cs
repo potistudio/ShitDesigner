@@ -2,6 +2,7 @@ using System.Linq;
 using NUnit.Framework;
 using ShitDesigner.Bootstrap;
 using ShitDesigner.Input;
+using ShitDesigner.Media;
 using ShitDesigner.Rendering;
 using ShitDesigner.Scene;
 using UnityEditor;
@@ -20,6 +21,7 @@ namespace ShitDesigner.Main.Tests {
 				var root = scene.GetRootGameObjects().Single();
 				var host = root.GetComponent<ApplicationLiveHost>();
 				var graph = root.GetComponent<LiveGraphBootstrap>();
+				var assetFlash = root.GetComponent<AssetFlashComponent>();
 				var midi = root.GetComponent<MidiInputManager>();
 				var capability = root.GetComponent<LiveCapabilityMonitor>();
 				var output = root.GetComponent<LiveExternalDisplayOutput>();
@@ -29,6 +31,7 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(root.name, Is.EqualTo("Main Live Host"));
 				Assert.That(host, Is.Not.Null);
 				Assert.That(graph, Is.Not.Null);
+				Assert.That(assetFlash, Is.Not.Null);
 				Assert.That(midi, Is.Not.Null);
 				Assert.That(capability, Is.Not.Null);
 				Assert.That(output, Is.Not.Null);
@@ -52,6 +55,14 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(stagePrefab.GetComponent("BpmAnimatorSpeedController"), Is.Not.Null);
 				var serializedGraph = new SerializedObject(graph);
 				Assert.That(serializedGraph.FindProperty("_shaderManifest").objectReferenceValue, Is.Not.Null);
+				Assert.That(serializedGraph.FindProperty("_assetFlash").objectReferenceValue, Is.SameAs(assetFlash));
+				var serializedAssetFlash = new SerializedObject(assetFlash);
+				Assert.That(serializedAssetFlash.FindProperty("m_UseKeyboardInput").boolValue, Is.False);
+				var slots = serializedAssetFlash.FindProperty("m_Slots");
+				Assert.That(slots.arraySize, Is.EqualTo(8));
+				Assert.That(slots.GetArrayElementAtIndex(0).FindPropertyRelative("m_Kind").enumValueIndex,
+					Is.EqualTo((int)AssetFlashComponentMediaKind.Image));
+				Assert.That(slots.GetArrayElementAtIndex(0).FindPropertyRelative("m_Image").objectReferenceValue, Is.Not.Null);
 
 				var serializedHost = new SerializedObject(host);
 				Assert.That(serializedHost.FindProperty("_graphBootstrap").objectReferenceValue, Is.SameAs(graph));

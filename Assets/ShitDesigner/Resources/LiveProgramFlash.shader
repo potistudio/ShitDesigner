@@ -4,6 +4,8 @@ Shader "Hidden/ShitDesigner/LiveProgramFlash"
 	{
 		_MainTex ("Source", 2D) = "white" {}
 		_FlashAmount ("Flash Amount", Range(0, 1)) = 0
+		_AssetFlashTexture ("Asset Flash Texture", 2D) = "black" {}
+		_AssetFlashAmount ("Asset Flash Amount", Range(0, 1)) = 0
 	}
 
 	SubShader
@@ -33,6 +35,8 @@ Shader "Hidden/ShitDesigner/LiveProgramFlash"
 
 			sampler2D _MainTex;
 			float _FlashAmount;
+			sampler2D _AssetFlashTexture;
+			float _AssetFlashAmount;
 
 			v2f vert(appdata input)
 			{
@@ -45,7 +49,9 @@ Shader "Hidden/ShitDesigner/LiveProgramFlash"
 			fixed4 frag(v2f input) : SV_Target
 			{
 				fixed4 color = tex2D(_MainTex, input.uv);
+				fixed4 asset = tex2D(_AssetFlashTexture, input.uv);
 				color.rgb = lerp(color.rgb, 1.0, saturate(_FlashAmount));
+				color.rgb = lerp(color.rgb, asset.rgb, saturate(asset.a * _AssetFlashAmount));
 				return color;
 			}
 			ENDCG
