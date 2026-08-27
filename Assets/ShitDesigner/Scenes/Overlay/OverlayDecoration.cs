@@ -6,18 +6,27 @@ namespace ShitDesigner.Presentation.Overlay {
 	[RequireComponent(typeof(PanelRenderer))]
 	[DefaultExecutionOrder(1100)]
 	public sealed class OverlayDecoration : MonoBehaviour {
-		private const float EdgeInset = 32f;
-		private const float CornerSize = 112f;
-		private const float StripSize = 176f;
-		private const int CircularStrokeCount = 24;
-		private const float CircularStrokeRadius = 132f;
-		private const float CircularStrokeLength = 14f;
-		private const float CircularStrokeThickness = 2f;
-
-		private static readonly Color LineColor = new Color(0.91f, 0.93f, 0.95f, 0.74f);
-		private static readonly Color AccentColor = new Color(0.34f, 0.65f, 1f, 0.68f);
-
 		[SerializeField] private PanelRenderer _panelRenderer;
+		[SerializeField, Min(0f)] private float _edgeInset = 32f;
+		[SerializeField, Min(1f)] private float _cornerSize = 112f;
+		[SerializeField, Min(0.1f)] private float _cornerLineThickness = 1f;
+		[SerializeField, Min(0f)] private float _innerCornerInset = 12f;
+		[SerializeField, Min(0.1f)] private float _innerCornerLength = 44f;
+		[SerializeField, Min(0.1f)] private float _cornerNodeSize = 5f;
+		[SerializeField, Min(0.1f)] private float _cornerNodeOffset = 3f;
+		[SerializeField, Min(0f)] private float _cornerNodeRadius = 3f;
+		[SerializeField, Min(1f)] private float _stripSize = 176f;
+		[SerializeField, Min(0.1f)] private float _stripHeight = 5f;
+		[SerializeField, Range(0f, 1f)] private float _stripOpacity = 0.62f;
+		[SerializeField, Min(1)] private int _circularStrokeCount = 24;
+		[SerializeField, Min(1f)] private float _circularStrokeRadius = 132f;
+		[SerializeField, Min(0.1f)] private float _circularStrokeLength = 14f;
+		[SerializeField, Min(0.1f)] private float _circularStrokeThickness = 2f;
+		[SerializeField, Range(0f, 1f)] private float _circularStrokeOpacity = 0.54f;
+		[SerializeField] private float _circularStrokeStartAngle = -90f;
+		[SerializeField, Min(1)] private int _accentStrokeInterval = 6;
+		[SerializeField] private Color _lineColor = new Color(0.91f, 0.93f, 0.95f, 0.74f);
+		[SerializeField] private Color _accentColor = new Color(0.34f, 0.65f, 1f, 0.68f);
 
 		private VisualElement _decorationRoot;
 		private Coroutine _reloadRoutine;
@@ -80,40 +89,38 @@ namespace ShitDesigner.Presentation.Overlay {
 		private void AddCorner(bool right, bool bottom) {
 			var corner = new VisualElement { pickingMode = PickingMode.Ignore };
 			corner.style.position = Position.Absolute;
-			corner.style.width = Pixels(CornerSize);
-			corner.style.height = Pixels(CornerSize);
-			if (right) corner.style.right = Pixels(EdgeInset);
-			else corner.style.left = Pixels(EdgeInset);
-			if (bottom) corner.style.bottom = Pixels(EdgeInset);
-			else corner.style.top = Pixels(EdgeInset);
+			corner.style.width = Pixels(_cornerSize);
+			corner.style.height = Pixels(_cornerSize);
+			if (right) corner.style.right = Pixels(_edgeInset);
+			else corner.style.left = Pixels(_edgeInset);
+			if (bottom) corner.style.bottom = Pixels(_edgeInset);
+			else corner.style.top = Pixels(_edgeInset);
 			_decorationRoot.Add(corner);
 
-			var horizontalY = bottom ? CornerSize - 1f : 0f;
-			var verticalX = right ? CornerSize - 1f : 0f;
-			AddBar(corner, 0f, horizontalY, CornerSize, 1f, LineColor);
-			AddBar(corner, verticalX, 0f, 1f, CornerSize, LineColor);
+			var horizontalY = bottom ? _cornerSize - _cornerLineThickness : 0f;
+			var verticalX = right ? _cornerSize - _cornerLineThickness : 0f;
+			AddBar(corner, 0f, horizontalY, _cornerSize, _cornerLineThickness, _lineColor);
+			AddBar(corner, verticalX, 0f, _cornerLineThickness, _cornerSize, _lineColor);
 
 			AddInnerCorner(corner, right, bottom);
 
-			var nodeX = right ? CornerSize - 3f : -2f;
-			var nodeY = bottom ? CornerSize - 3f : -2f;
-			var node = AddBar(corner, nodeX, nodeY, 5f, 5f, LineColor);
-			node.style.borderTopLeftRadius = Pixels(3f);
-			node.style.borderTopRightRadius = Pixels(3f);
-			node.style.borderBottomLeftRadius = Pixels(3f);
-			node.style.borderBottomRightRadius = Pixels(3f);
+			var nodeX = right ? _cornerSize - _cornerNodeOffset : _cornerNodeOffset - _cornerNodeSize;
+			var nodeY = bottom ? _cornerSize - _cornerNodeOffset : _cornerNodeOffset - _cornerNodeSize;
+			var node = AddBar(corner, nodeX, nodeY, _cornerNodeSize, _cornerNodeSize, _lineColor);
+			node.style.borderTopLeftRadius = Pixels(_cornerNodeRadius);
+			node.style.borderTopRightRadius = Pixels(_cornerNodeRadius);
+			node.style.borderBottomLeftRadius = Pixels(_cornerNodeRadius);
+			node.style.borderBottomRightRadius = Pixels(_cornerNodeRadius);
 		}
 
-		private static void AddInnerCorner(VisualElement parent, bool right, bool bottom) {
-			const float inset = 12f;
-			const float length = 44f;
-			var cornerX = right ? CornerSize - inset : inset;
-			var cornerY = bottom ? CornerSize - inset : inset;
-			var horizontalX = right ? cornerX - length : cornerX;
-			var verticalY = bottom ? cornerY - length : cornerY;
+		private void AddInnerCorner(VisualElement parent, bool right, bool bottom) {
+			var cornerX = right ? _cornerSize - _innerCornerInset : _innerCornerInset;
+			var cornerY = bottom ? _cornerSize - _innerCornerInset : _innerCornerInset;
+			var horizontalX = right ? cornerX - _innerCornerLength : cornerX;
+			var verticalY = bottom ? cornerY - _innerCornerLength : cornerY;
 
-			AddBar(parent, horizontalX, cornerY, length, 1f, AccentColor);
-			AddBar(parent, cornerX, verticalY, 1f, length, AccentColor);
+			AddBar(parent, horizontalX, cornerY, _innerCornerLength, _cornerLineThickness, _accentColor);
+			AddBar(parent, cornerX, verticalY, _cornerLineThickness, _innerCornerLength, _accentColor);
 		}
 
 		private void AddCircularStrokes() {
@@ -124,23 +131,23 @@ namespace ShitDesigner.Presentation.Overlay {
 			ring.style.position = Position.Absolute;
 			ring.style.left = Percent(50f);
 			ring.style.top = Percent(50f);
-			ring.style.width = Pixels(CircularStrokeRadius * 2f);
-			ring.style.height = Pixels(CircularStrokeRadius * 2f);
-			ring.style.marginLeft = Pixels(-CircularStrokeRadius);
-			ring.style.marginTop = Pixels(-CircularStrokeRadius);
+			ring.style.width = Pixels(_circularStrokeRadius * 2f);
+			ring.style.height = Pixels(_circularStrokeRadius * 2f);
+			ring.style.marginLeft = Pixels(-_circularStrokeRadius);
+			ring.style.marginTop = Pixels(-_circularStrokeRadius);
 			_decorationRoot.Add(ring);
 
-			for (var index = 0; index < CircularStrokeCount; index++) {
-				var angle = index * 360f / CircularStrokeCount - 90f;
+			for (var index = 0; index < _circularStrokeCount; index++) {
+				var angle = index * 360f / _circularStrokeCount + _circularStrokeStartAngle;
 				var radians = angle * Mathf.Deg2Rad;
 				var stroke = new VisualElement { pickingMode = PickingMode.Ignore };
 				stroke.style.position = Position.Absolute;
-				stroke.style.left = Pixels(CircularStrokeRadius + Mathf.Cos(radians) * CircularStrokeRadius - CircularStrokeLength / 2f);
-				stroke.style.top = Pixels(CircularStrokeRadius + Mathf.Sin(radians) * CircularStrokeRadius - CircularStrokeThickness / 2f);
-				stroke.style.width = Pixels(CircularStrokeLength);
-				stroke.style.height = Pixels(CircularStrokeThickness);
-				stroke.style.opacity = 0.54f;
-				stroke.style.backgroundColor = index % 6 == 0 ? AccentColor : LineColor;
+				stroke.style.left = Pixels(_circularStrokeRadius + Mathf.Cos(radians) * _circularStrokeRadius - _circularStrokeLength / 2f);
+				stroke.style.top = Pixels(_circularStrokeRadius + Mathf.Sin(radians) * _circularStrokeRadius - _circularStrokeThickness / 2f);
+				stroke.style.width = Pixels(_circularStrokeLength);
+				stroke.style.height = Pixels(_circularStrokeThickness);
+				stroke.style.opacity = _circularStrokeOpacity;
+				stroke.style.backgroundColor = index % _accentStrokeInterval == 0 ? _accentColor : _lineColor;
 				stroke.style.rotate = new StyleRotate(new Rotate(angle));
 				ring.Add(stroke);
 			}
@@ -149,42 +156,42 @@ namespace ShitDesigner.Presentation.Overlay {
 		private void AddHorizontalStrip(bool top) {
 			var strip = CreateStrip();
 			strip.style.left = Percent(50f);
-			strip.style.width = Pixels(StripSize);
-			strip.style.height = Pixels(5f);
-			strip.style.marginLeft = Pixels(-StripSize / 2f);
+			strip.style.width = Pixels(_stripSize);
+			strip.style.height = Pixels(_stripHeight);
+			strip.style.marginLeft = Pixels(-_stripSize / 2f);
 			strip.style.flexDirection = FlexDirection.Row;
 			strip.style.alignItems = Align.Center;
 			strip.style.justifyContent = Justify.SpaceBetween;
-			if (top) strip.style.top = Pixels(EdgeInset);
-			else strip.style.bottom = Pixels(EdgeInset);
+			if (top) strip.style.top = Pixels(_edgeInset);
+			else strip.style.bottom = Pixels(_edgeInset);
 
-			AddSegment(strip, 12f, 1f, LineColor);
-			AddSegment(strip, 72f, 1f, LineColor);
-			AddSegment(strip, 28f, 1f, AccentColor);
-			AddSegment(strip, 12f, 1f, LineColor);
+			AddSegment(strip, 12f, _cornerLineThickness, _lineColor);
+			AddSegment(strip, 72f, _cornerLineThickness, _lineColor);
+			AddSegment(strip, 28f, _cornerLineThickness, _accentColor);
+			AddSegment(strip, 12f, _cornerLineThickness, _lineColor);
 		}
 
 		private void AddVerticalStrip(bool right) {
 			var strip = CreateStrip();
 			strip.style.top = Percent(50f);
-			strip.style.width = Pixels(5f);
-			strip.style.height = Pixels(StripSize);
-			strip.style.marginTop = Pixels(-StripSize / 2f);
+			strip.style.width = Pixels(_stripHeight);
+			strip.style.height = Pixels(_stripSize);
+			strip.style.marginTop = Pixels(-_stripSize / 2f);
 			strip.style.flexDirection = FlexDirection.Column;
 			strip.style.alignItems = Align.Center;
 			strip.style.justifyContent = Justify.SpaceBetween;
-			if (right) strip.style.right = Pixels(EdgeInset);
-			else strip.style.left = Pixels(EdgeInset);
+			if (right) strip.style.right = Pixels(_edgeInset);
+			else strip.style.left = Pixels(_edgeInset);
 
-			AddSegment(strip, 1f, 12f, LineColor);
-			AddSegment(strip, 1f, 72f, LineColor);
-			AddSegment(strip, 1f, 28f, AccentColor);
+			AddSegment(strip, _cornerLineThickness, 12f, _lineColor);
+			AddSegment(strip, _cornerLineThickness, 72f, _lineColor);
+			AddSegment(strip, _cornerLineThickness, 28f, _accentColor);
 		}
 
 		private VisualElement CreateStrip() {
 			var strip = new VisualElement { pickingMode = PickingMode.Ignore };
 			strip.style.position = Position.Absolute;
-			strip.style.opacity = 0.62f;
+			strip.style.opacity = _stripOpacity;
 			_decorationRoot.Add(strip);
 			return strip;
 		}
