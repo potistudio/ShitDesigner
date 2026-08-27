@@ -141,6 +141,7 @@ GameObject:
   - component: {fileID: 6129218759055021737}
   - component: {fileID: 6129218759055021738}
   - component: {fileID: 6129218759055021739}
+  - component: {fileID: 6129218759055021740}
   m_Layer: 0
   m_Name: Cylinder Flythrough
   m_TagString: Untagged
@@ -162,6 +163,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2589893887373257150}
+  - {fileID: 6129218759055021741}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &4680049667518520785
@@ -192,7 +194,7 @@ MonoBehaviour:
   - {r: 0.6, g: 0.2, b: 1, a: 1}
   - {r: 1, g: 0.65, b: 0.08, a: 1}
   sceneCamera: {fileID: 8028075610238429505}
-  cameraSpeed: 1.5
+  cameraSpeed: 0
   cameraStartZ: 0
   loopCamera: 1
 --- !u!114 &6129218759055021737
@@ -243,3 +245,159 @@ MonoBehaviour:
   _value: 0.5
   _minimumMultiplier: 0.75
   _maximumMultiplier: 1.25
+--- !u!114 &6129218759055021740
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7787689742687978739}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fcbec41a5ec4c2488f26d2f08eab4be, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.SplineCameraRail
+  path: {fileID: 6129218759055021742}
+  cameraTransform: {fileID: 2589893887373257150}
+  speed: 1.5
+  startOffset: 0
+  loop: 1
+  alignToPath: 1
+--- !u!1 &6129218759055021743
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6129218759055021741}
+  - component: {fileID: 6129218759055021742}
+  m_Layer: 0
+  m_Name: Camera Rail
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6129218759055021741
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6129218759055021743}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 942998968145708805}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6129218759055021742
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6129218759055021743}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dab5c7d4c32e743048dfca98e2d5914f, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Unity.Splines::UnityEngine.Splines.SplineContainer
+  m_Spline:
+    m_EditModeType: 1
+    m_Knots: []
+    m_Length: -1
+    m_MetaData: []
+    m_Closed: 0
+  m_Splines:
+  - m_EditModeType: 1
+    m_Knots:
+    - Position:
+        x: 0
+        y: 0
+        z: 0
+      TangentIn:
+        x: 0
+        y: 0
+        z: 0
+      TangentOut:
+        x: 0
+        y: 0
+        z: 16
+      Rotation:
+        value:
+          x: 0
+          y: 0
+          z: 0
+          w: 1
+    - Position:
+        x: 2
+        y: 1
+        z: 34
+      TangentIn:
+        x: -8
+        y: -4
+        z: -12
+      TangentOut:
+        x: 8
+        y: 4
+        z: 12
+      Rotation:
+        value:
+          x: 0
+          y: 0
+          z: 0
+          w: 1
+    - Position:
+        x: -2
+        y: -1
+        z: 68
+      TangentIn:
+        x: -8
+        y: -4
+        z: -12
+      TangentOut:
+        x: 8
+        y: 4
+        z: 12
+      Rotation:
+        value:
+          x: 0
+          y: 0
+          z: 0
+          w: 1
+    - Position:
+        x: 0
+        y: 0
+        z: 100
+      TangentIn:
+        x: -16
+        y: 0
+        z: -16
+      TangentOut:
+        x: 0
+        y: 0
+        z: 0
+      Rotation:
+        value:
+          x: 0
+          y: 0
+          z: 0
+          w: 1
+    m_Length: -1
+    m_MetaData:
+    - Mode: 0
+      Tension: 0.33333334
+    - Mode: 0
+      Tension: 0.33333334
+    - Mode: 0
+      Tension: 0.33333334
+    - Mode: 0
+      Tension: 0.33333334
+    m_Closed: 0
+  m_Knots:
+    m_KnotsLink: []
