@@ -11,6 +11,8 @@ namespace ShitDesigner.Scene {
 		[Header("Path")]
 		[SerializeField] private SplineContainer path;
 		[SerializeField] private Transform cameraTransform;
+		[Header("Framing")]
+		[SerializeField] private Transform target;
 		[Min(0f)][SerializeField] private float speed = 1.5f;
 		[Range(0f, 1f)][SerializeField] private float startOffset;
 		[SerializeField] private bool loop = true;
@@ -74,6 +76,13 @@ namespace ShitDesigner.Scene {
 			if (!path.Evaluate(normalized, out float3 position, out float3 tangent, out float3 upVector)) return;
 
 			cameraTransform.position = (Vector3)position;
+			if (target != null) {
+				var targetDirection = target.position - cameraTransform.position;
+				if (targetDirection.sqrMagnitude > 0.000001f) {
+					cameraTransform.rotation = Quaternion.LookRotation(targetDirection, Vector3.up);
+					return;
+				}
+			}
 			if (alignToPath && math.lengthsq(tangent) > 0.000001f && math.lengthsq(upVector) > 0.000001f)
 				cameraTransform.rotation = Quaternion.LookRotation((Vector3)tangent, (Vector3)upVector);
 		}
