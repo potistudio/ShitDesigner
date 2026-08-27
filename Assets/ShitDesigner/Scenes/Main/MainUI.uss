@@ -4,12 +4,27 @@
     right: 0;
     top: 0;
     bottom: 0;
+    flex-direction: column;
     color: rgb(232, 236, 242);
     background-color: rgb(13, 15, 18);
 }
 
+.top-bar {
+    height: 40px;
+    min-height: 40px;
+    flex-shrink: 0;
+    flex-direction: row;
+    align-items: center;
+    padding-left: 8px;
+    padding-right: 8px;
+    background-color: rgb(21, 24, 29);
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(48, 55, 65);
+}
+
 .workspace {
     flex-grow: 1;
+    min-height: 0;
     flex-direction: row;
 }
 
@@ -251,6 +266,19 @@
     margin-top: 4px;
 }
 
+.top-bar .display-selector {
+    flex-grow: 1;
+    min-width: 0;
+    margin-top: 0;
+    margin-right: 8px;
+}
+
+.top-bar .output-actions {
+    width: 240px;
+    flex-shrink: 0;
+    margin-top: 0;
+}
+
 .output-action {
     flex-grow: 1;
     height: 32px;
@@ -258,6 +286,11 @@
     background-color: rgb(29, 34, 41);
     border-width: 1px;
     border-color: rgb(48, 55, 65);
+}
+
+.top-bar .output-action {
+    flex-grow: 0;
+    width: 116px;
 }
 
 .output-action-secondary {
