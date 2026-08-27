@@ -6,6 +6,7 @@ namespace ShitDesigner.Scene {
 	[DisallowMultipleComponent]
 	public sealed class BpmShapeMotionScene : MonoBehaviour, IBpmClockReceiver {
 		[Range(30f, 300f)][SerializeField] private float _previewBpm = 138f;
+		[SerializeField] private AnimationCurve _easing = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
 		private Material _material;
 		private MaterialPropertyBlock _propertyBlock;
@@ -77,7 +78,7 @@ namespace ShitDesigner.Scene {
 			if (beat != _configuredBeat) ConfigureBeat(beat);
 
 			var phase = Mathf.Clamp01((float)(_totalBeats - beat));
-			var progress = phase * phase * (3f - 2f * phase);
+			var progress = _easing == null || _easing.length == 0 ? phase : Mathf.Clamp01(_easing.Evaluate(phase));
 			var size = _targetSize * Mathf.Lerp(.85f, 1f, progress);
 			_shape.localPosition = Vector3.zero;
 			_shape.localRotation = Quaternion.Euler(0f, 0f, _startAngle + _rotation * progress);
