@@ -4,6 +4,7 @@
   "references": [
     "ShitDesigner.Bootstrap",
     "ShitDesigner.Core",
+    "ShitDesigner.Media",
     "ShitDesigner.Runtime",
     "ShitDesigner.Scene",
     "ShitDesigner.Input",

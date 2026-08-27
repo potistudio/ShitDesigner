@@ -60,6 +60,7 @@ namespace ShitDesigner.Media {
 
 		[SerializeField, Min(.01f)] private float m_DurationSeconds = .25f;
 		[SerializeField] private bool m_UseUnscaledTime = true;
+		[SerializeField] private bool m_UseKeyboardInput = true;
 		[SerializeField] private Renderer m_TargetRenderer;
 		[SerializeField] private string m_TextureProperty = "_BaseMap";
 		[SerializeField] private bool m_DisableRendererWhenIdle = true;
@@ -76,6 +77,7 @@ namespace ShitDesigner.Media {
 		public int ActiveSlot => m_ActiveSlot < 0 ? 0 : m_ActiveSlot + 1;
 		public Texture OutputTexture => m_OutputTexture;
 		public float DurationSeconds { get => m_DurationSeconds; set => m_DurationSeconds = Mathf.Max(.01f, value); }
+		public bool UseKeyboardInput { get => m_UseKeyboardInput; set => m_UseKeyboardInput = value; }
 		public event Action<Texture> OutputChanged;
 
 		private static AssetFlashComponentSlot[] CreateSlots() {
@@ -99,6 +101,7 @@ namespace ShitDesigner.Media {
 		}
 
 		private void PollKeyboard() {
+			if (!m_UseKeyboardInput) return;
 			var keyboard = Keyboard.current;
 			if (keyboard == null) return;
 			for (var index = 0; index < m_Slots.Length; index++) {

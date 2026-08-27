@@ -6,6 +6,7 @@
     "ShitDesigner.Application",
     "ShitDesigner.Bootstrap",
     "ShitDesigner.Core",
+    "ShitDesigner.Media",
     "ShitDesigner.Input",
     "ShitDesigner.Rendering",
     "ShitDesigner.Runtime",
