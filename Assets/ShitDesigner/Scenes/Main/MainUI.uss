@@ -274,7 +274,7 @@
 }
 
 .top-bar .output-actions {
-    width: 240px;
+    width: 216px;
     flex-shrink: 0;
     margin-top: 0;
 }
@@ -290,7 +290,9 @@
 
 .top-bar .output-action {
     flex-grow: 0;
-    width: 116px;
+    width: 104px;
+    height: 28px;
+    font-size: 10px;
 }
 
 .output-action-secondary {
