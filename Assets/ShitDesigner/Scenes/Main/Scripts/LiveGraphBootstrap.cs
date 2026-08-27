@@ -15,12 +15,16 @@ namespace ShitDesigner.Main {
 	public sealed class LiveGraphBootstrap : MonoBehaviour {
 		private static readonly LiveProgramGraphDefinition ProgramGraph = new LiveProgramGraphDefinition(
 			"scene",
-			"echo",
+			"composite",
 			new[] {
-				new LiveProgramGraphNodeDefinition("echo", "shitdesigner.shader.temporal.echo")
+				new LiveProgramGraphNodeDefinition("background", "shitdesigner.shader.generator.fbm-clouds"),
+				new LiveProgramGraphNodeDefinition("echo", "shitdesigner.shader.temporal.echo"),
+				new LiveProgramGraphNodeDefinition("composite", "shitdesigner.shader.blend.premultiplied_over")
 			},
 			new[] {
-				new LiveProgramGraphConnection("scene", "echo", "input")
+				new LiveProgramGraphConnection("scene", "echo", "input"),
+				new LiveProgramGraphConnection("echo", "composite", "a"),
+				new LiveProgramGraphConnection("background", "composite", "b")
 			});
 
 		[SerializeField] private PatchDefinition[] _patches = Array.Empty<PatchDefinition>();
@@ -80,6 +84,7 @@ namespace ShitDesigner.Main {
 			var created = sceneManager.Create(new SceneCreateRequest(NodeInstanceId.New(), SceneNodeKind.ThreeD,
 				"ShitDesigner.Main.LiveScene." + index, 1, definition.Prefab));
 			if (created.IsFailure) throw new InvalidOperationException(created.Error.Message);
+			ConfigureGeneratedBackgroundCamera(created.Value.Camera);
 			var root = created.Value.Root.GetComponent<LiveSceneRoot>();
 			if (root == null) {
 				created.Value.Dispose();
@@ -149,6 +154,12 @@ namespace ShitDesigner.Main {
 				for (var index = nodes.Count - 1; index >= 0; index--) nodes[index].Dispose();
 				throw;
 			}
+		}
+
+		private static void ConfigureGeneratedBackgroundCamera(Camera camera) {
+			if (camera == null) throw new ArgumentNullException(nameof(camera));
+			camera.clearFlags = CameraClearFlags.SolidColor;
+			camera.backgroundColor = Color.clear;
 		}
 
 		private static void ValidateDefinitions(IReadOnlyList<PatchDefinition> definitions) {
