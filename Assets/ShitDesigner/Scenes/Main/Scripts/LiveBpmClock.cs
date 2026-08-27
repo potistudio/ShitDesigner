@@ -2,7 +2,9 @@ using System;
 using ShitDesigner.Scene;
 
 namespace ShitDesigner.Main {
-	/// <summary>Owns the tempo shared by every patch in the live graph.</summary>
+	/// <summary>
+	/// Owns the tempo shared by every patch in the live graph.
+	/// </summary>
 	public sealed class LiveBpmClock {
 		public const float MinimumBpm = 30f;
 		public const float MaximumBpm = 300f;

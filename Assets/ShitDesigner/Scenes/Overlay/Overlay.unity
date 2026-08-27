@@ -213,7 +213,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
   m_RenderShadows: 1
   m_RequiresDepthTextureOption: 2
@@ -322,26 +322,28 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 66e152022db44e7ebe6e4af434a5a2a3, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   _panelRenderer: {fileID: 1089600316}
   _edgeInset: 32
   _cornerSize: 112
   _cornerLineThickness: 1
-  _innerCornerInset: 12
+  _innerCornerInset: 16
   _innerCornerLength: 44
   _cornerNodeSize: 5
   _cornerNodeOffset: 3
   _cornerNodeRadius: 3
   _stripSize: 176
   _stripHeight: 5
-  _stripOpacity: 0.62
-  _circularStrokeCount: 24
-  _circularStrokeRadius: 132
-  _circularStrokeLength: 14
+  _stripOpacity: 0.388
+  _circularStrokeCount: 18
+  _circularStrokeRadius: 128
+  _circularStrokeLength: 16
   _circularStrokeThickness: 2
-  _circularStrokeOpacity: 0.54
-  _circularStrokeStartAngle: -90
+  _circularStrokeOpacity: 0.383
+  _circularStrokeStartAngle: 0
+  _circularStrokeRotationMaxSpeed: 10
+  _circularStrokeRotationNoiseFrequency: 0.1
   _accentStrokeInterval: 6
   _lineColor: {r: 0.91, g: 0.93, b: 0.95, a: 0.74}
   _accentColor: {r: 0.34, g: 0.65, b: 1, a: 0.68}
