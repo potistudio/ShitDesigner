@@ -24,12 +24,15 @@ namespace ShitDesigner.Presentation.Overlay {
 		[SerializeField, Min(0.1f)] private float _circularStrokeThickness = 2f;
 		[SerializeField, Range(0f, 1f)] private float _circularStrokeOpacity = 0.54f;
 		[SerializeField] private float _circularStrokeStartAngle = -90f;
+		[SerializeField] private float _circularStrokeRotationSpeed = 3f;
 		[SerializeField, Min(1)] private int _accentStrokeInterval = 6;
 		[SerializeField] private Color _lineColor = new Color(0.91f, 0.93f, 0.95f, 0.74f);
 		[SerializeField] private Color _accentColor = new Color(0.34f, 0.65f, 1f, 0.68f);
 
 		private VisualElement _decorationRoot;
+		private VisualElement _circularStrokeRoot;
 		private Coroutine _reloadRoutine;
+		private float _circularStrokeRotation;
 
 		private void OnEnable() {
 			if (_panelRenderer == null) _panelRenderer = GetComponent<PanelRenderer>();
@@ -66,6 +69,15 @@ namespace ShitDesigner.Presentation.Overlay {
 			AddCircularStrokes();
 		}
 
+		private void Update() {
+			if (_circularStrokeRoot == null) return;
+
+			_circularStrokeRotation = Mathf.Repeat(
+				_circularStrokeRotation + _circularStrokeRotationSpeed * Time.deltaTime,
+				360f);
+			_circularStrokeRoot.style.rotate = new StyleRotate(new Rotate(_circularStrokeRotation));
+		}
+
 		private void OnDisable() {
 			if (_reloadRoutine != null) {
 				StopCoroutine(_reloadRoutine);
@@ -74,6 +86,8 @@ namespace ShitDesigner.Presentation.Overlay {
 			if (_panelRenderer != null) _panelRenderer.UnregisterUIReloadCallback(OnUIReload);
 			_decorationRoot?.RemoveFromHierarchy();
 			_decorationRoot = null;
+			_circularStrokeRoot = null;
+			_circularStrokeRotation = 0f;
 		}
 
 		private IEnumerator ReloadUiAfterPanelInitialization() {
@@ -136,6 +150,8 @@ namespace ShitDesigner.Presentation.Overlay {
 			ring.style.marginLeft = Pixels(-_circularStrokeRadius);
 			ring.style.marginTop = Pixels(-_circularStrokeRadius);
 			_decorationRoot.Add(ring);
+			_circularStrokeRoot = ring;
+			ring.style.rotate = new StyleRotate(new Rotate(_circularStrokeRotation));
 
 			for (var index = 0; index < _circularStrokeCount; index++) {
 				var angle = index * 360f / _circularStrokeCount + _circularStrokeStartAngle;
