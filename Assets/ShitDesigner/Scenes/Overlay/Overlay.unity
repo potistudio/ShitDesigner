@@ -325,6 +325,26 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   _panelRenderer: {fileID: 1089600316}
+  _edgeInset: 32
+  _cornerSize: 112
+  _cornerLineThickness: 1
+  _innerCornerInset: 12
+  _innerCornerLength: 44
+  _cornerNodeSize: 5
+  _cornerNodeOffset: 3
+  _cornerNodeRadius: 3
+  _stripSize: 176
+  _stripHeight: 5
+  _stripOpacity: 0.62
+  _circularStrokeCount: 24
+  _circularStrokeRadius: 132
+  _circularStrokeLength: 14
+  _circularStrokeThickness: 2
+  _circularStrokeOpacity: 0.54
+  _circularStrokeStartAngle: -90
+  _accentStrokeInterval: 6
+  _lineColor: {r: 0.91, g: 0.93, b: 0.95, a: 0.74}
+  _accentColor: {r: 0.34, g: 0.65, b: 1, a: 0.68}
 --- !u!1931382934 &1089600316
 PanelRenderer:
   m_ObjectHideFlags: 0
