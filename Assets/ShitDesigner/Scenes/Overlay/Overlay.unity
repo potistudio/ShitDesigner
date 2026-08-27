@@ -289,6 +289,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1089600313}
   - component: {fileID: 1089600314}
+  - component: {fileID: 1089600315}
   m_Layer: 0
   m_Name: Overlay Decoration
   m_TagString: Untagged
@@ -325,7 +326,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UIElements.UIDocument
   m_PanelSettings: {fileID: 11400000, guid: acdb4ed592be84c4b8cf01d5947806f1, type: 2}
   m_ParentUI: {fileID: 0}
-  sourceAsset: {fileID: 9197481963319205126, guid: 588a5a6791fe4264bb52c55b51c074c7, type: 3}
+  sourceAsset: {fileID: 0}
   m_SortingOrder: 10
   m_Position: 0
   m_WorldSpaceSizeMode: 1
@@ -334,6 +335,19 @@ MonoBehaviour:
   m_PivotReferenceSize: 0
   m_Pivot: 0
   m_WorldSpaceCollider: {fileID: 0}
+--- !u!114 &1089600315
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1089600312}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66e152022db44e7ebe6e4af434a5a2a3, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _document: {fileID: 1089600314}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
