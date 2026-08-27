@@ -351,6 +351,15 @@ MonoBehaviour:
   _decorativeTextFontSize: 11
   _decorativeTextOpacity: 0.54
   _decorativeTextOffset: 12
+  _decorativeLogLines:
+  - N7 / QX-04 / /
+  - KZ_71 - 0A
+  - TRC_19-4F
+  - -- . . . //
+  _decorativeLogFontSize: 10
+  _decorativeLogOpacity: 0.42
+  _decorativeLogOffset: 12
+  _decorativeLogLineSpacing: 4
 --- !u!1931382934 &1089600316
 PanelRenderer:
   m_ObjectHideFlags: 0
