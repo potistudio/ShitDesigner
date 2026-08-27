@@ -1,0 +1,6 @@
+{
+	"name": "Win32Spin",
+	"references": [
+		"ShitDesigner.Scene"
+	]
+}

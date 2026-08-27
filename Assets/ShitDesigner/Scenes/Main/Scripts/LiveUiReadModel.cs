@@ -16,8 +16,12 @@ namespace ShitDesigner.Main {
 	public sealed class LiveUiReadModel {
 		public ulong FrameNumber { get; }
 		public IReadOnlyList<LivePatchReadModel> Patches { get; }
+		public IReadOnlyList<LivePatchSlotReadModel> PatchSlots { get; }
+		public int SelectedPatchSlotIndex { get; }
+		public string SelectedCatalogPatchId { get; }
 		public string LoadedPatchId { get; }
 		public string PreloadedPatchId { get; }
+		public LiveParameterDefinition Bpm { get; }
 		public IReadOnlyList<LiveParameterDefinition> Parameters { get; }
 		public RenderTexture ProgramTexture { get; }
 		public ulong ProgramFrameNumber { get; }
@@ -29,13 +33,18 @@ namespace ShitDesigner.Main {
 		public string Diagnostic { get; }
 		public IReadOnlyList<LiveParameterApplicationResult> RequestResults { get; }
 
-		public LiveUiReadModel(ulong frameNumber, IReadOnlyList<LivePatchReadModel> patches, string loadedPatchId, string preloadedPatchId,
-			IReadOnlyList<LiveParameterDefinition> parameters, LiveProgramFrames programFrames, LiveExternalDisplayOutput output,
+		public LiveUiReadModel(ulong frameNumber, IReadOnlyList<LivePatchReadModel> patches, IReadOnlyList<LivePatchSlotReadModel> patchSlots, int selectedPatchSlotIndex, string selectedCatalogPatchId,
+			string loadedPatchId, string preloadedPatchId,
+			LiveParameterDefinition bpm, IReadOnlyList<LiveParameterDefinition> parameters, LiveProgramFrames programFrames, LiveExternalDisplayOutput output,
 			LiveCapabilitySnapshot capabilities, string diagnostic, IReadOnlyList<LiveParameterApplicationResult> requestResults) {
 			FrameNumber = frameNumber;
 			Patches = patches ?? Array.Empty<LivePatchReadModel>();
+			PatchSlots = patchSlots ?? Array.Empty<LivePatchSlotReadModel>();
+			SelectedPatchSlotIndex = selectedPatchSlotIndex;
+			SelectedCatalogPatchId = selectedCatalogPatchId ?? string.Empty;
 			LoadedPatchId = loadedPatchId ?? string.Empty;
 			PreloadedPatchId = preloadedPatchId ?? string.Empty;
+			Bpm = bpm;
 			Parameters = parameters ?? Array.Empty<LiveParameterDefinition>();
 			ProgramTexture = programFrames.Primary.Texture;
 			ProgramFrameNumber = programFrames.Primary.FrameNumber;

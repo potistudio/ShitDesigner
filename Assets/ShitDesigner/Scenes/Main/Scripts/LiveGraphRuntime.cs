@@ -276,6 +276,7 @@ namespace ShitDesigner.Main {
 
 		private readonly LiveGraph _graph;
 		private readonly Dictionary<string, PatchDefinition> _patchDefinitionsById;
+		private readonly LiveBpmClock _bpmClock = new LiveBpmClock();
 		private readonly List<LivePatch> _createdPatches = new List<LivePatch>();
 		private LivePatch _loadedPatch;
 		private LivePatch _preloadedPatch;
@@ -289,6 +290,7 @@ namespace ShitDesigner.Main {
 		public IReadOnlyList<PatchDefinition> Patches => _graph.PatchDefinitions;
 		public LiveProgramFrame CurrentFrame { get; private set; }
 		public LiveProgramFrames CurrentFrames { get; private set; }
+		public LiveParameterDefinition BpmDefinition => _bpmClock.Definition;
 
 		internal LiveGraphRuntime(LiveGraph graph) {
 			_graph = graph ?? throw new ArgumentNullException(nameof(graph));
@@ -300,6 +302,8 @@ namespace ShitDesigner.Main {
 		}
 
 		public LiveParameterApplicationResult Apply(LiveParameterRequest request) {
+			if (request.Kind == LiveParameterRequestKind.SetBpm)
+				return _bpmClock.TrySetBpm(request.Value, out var bpmRejection) ? Accept(request) : Reject(request, bpmRejection);
 			if (!_patchDefinitionsById.TryGetValue(request.PatchId, out var definition)) return Reject(request, "The requested patch does not exist.");
 			if (request.Kind == LiveParameterRequestKind.PreloadPatch) {
 				if (_preloadedPatch?.Definition == definition) return Accept(request);
@@ -310,9 +314,16 @@ namespace ShitDesigner.Main {
 			}
 			if (request.Kind == LiveParameterRequestKind.LoadPatch) {
 				if (_preloadedPatch?.Definition != definition) return Reject(request, "The requested patch has not been preloaded.");
-				var previousLoadedPatch = _loadedPatch;
-				_loadedPatch = _preloadedPatch;
-				if (previousLoadedPatch != _loadedPatch) DisposePatch(previousLoadedPatch);
+				LoadPreloadedPatch();
+				return Accept(request);
+			}
+			if (request.Kind == LiveParameterRequestKind.LaunchPatch) {
+				if (_preloadedPatch?.Definition != definition) {
+					var nextPreloadedPatch = CreatePatch(definition);
+					if (_preloadedPatch != _loadedPatch) DisposePatch(_preloadedPatch);
+					_preloadedPatch = nextPreloadedPatch;
+				}
+				LoadPreloadedPatch();
 				return Accept(request);
 			}
 			var patch = _preloadedPatch?.Definition == definition ? _preloadedPatch : _loadedPatch?.Definition == definition ? _loadedPatch : null;
@@ -328,9 +339,12 @@ namespace ShitDesigner.Main {
 			EnsureUsable();
 			_lastDeltaSeconds = Math.Max(0d, deltaSeconds);
 			_graphTime += _lastDeltaSeconds;
+			_bpmClock.Advance(_lastDeltaSeconds);
 			foreach (var scene in _loadedPatch.Outputs) {
 				var result = scene.Runtime.AdvanceGraphClock(_lastDeltaSeconds * scene.Root.TimeScale);
 				if (result.IsFailure) throw new InvalidOperationException(result.Error.Message);
+				var bpmResult = scene.Runtime.ApplyBpmClock(_bpmClock.State);
+				if (bpmResult.IsFailure) throw new InvalidOperationException(bpmResult.Error.Message);
 			}
 		}
 
@@ -374,6 +388,12 @@ namespace ShitDesigner.Main {
 			patch.Dispose();
 		}
 
+		private void LoadPreloadedPatch() {
+			var previousLoadedPatch = _loadedPatch;
+			_loadedPatch = _preloadedPatch;
+			if (previousLoadedPatch != _loadedPatch) DisposePatch(previousLoadedPatch);
+		}
+
 		private void EnsureUsable() {
 			if (_disposed) throw new ObjectDisposedException(nameof(LiveGraphRuntime));
 			if (_loadedPatch == null) throw new InvalidOperationException("A patch is not loaded.");
@@ -396,10 +416,10 @@ namespace ShitDesigner.Main {
 				foreach (var node in definition.Nodes) outputsByNodeId.Add(node.Id, createOutput(node));
 				Outputs = outputsByNodeId.Values.ToArray();
 				_parameters = definition.Parameters.ToDictionary(parameter => parameter.Id, parameter => {
-				var output = outputsByNodeId[parameter.NodeId];
-				var source = output.Root.GetParameterDefinitions().FirstOrDefault(candidate => candidate.Id == parameter.ParameterId);
-				if (string.IsNullOrWhiteSpace(source.Id)) throw new InvalidOperationException("A published scene parameter is not provided by its Unity scene node: " + parameter.Id + ".");
-				return new LivePublishedParameter(parameter, output.Root, source);
+					var output = outputsByNodeId[parameter.NodeId];
+					var source = output.Root.GetParameterDefinitions().FirstOrDefault(candidate => candidate.Id == parameter.ParameterId);
+					if (string.IsNullOrWhiteSpace(source.Id)) throw new InvalidOperationException("A published scene parameter is not provided by its Unity scene node: " + parameter.Id + ".");
+					return new LivePublishedParameter(parameter, output.Root, source);
 				}, StringComparer.Ordinal);
 			}
 			catch {

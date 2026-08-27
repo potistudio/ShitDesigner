@@ -9,7 +9,12 @@
                 </ui:VisualElement>
             </ui:VisualElement>
             <ui:VisualElement class="control-panel">
-                <ui:VisualElement name="patch-controls" class="patch-controls"/>
+                <ui:VisualElement name="tempo-controls" class="tempo-controls is-hidden">
+                    <ui:VisualElement class="tempo-input-row">
+                        <ui:TextField name="bpm-field" class="tempo-bpm-input" is-delayed="true"/>
+                        <ui:Button name="bpm-tap" text="TAP" class="tempo-tap-button"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
                 <ui:Label name="display-selector" class="display-selector" text="OUTPUT: No external Display"/>
                 <ui:VisualElement class="output-actions">
                     <ui:Button name="output-toggle" text="START OUTPUT" class="output-action"/>
@@ -17,6 +22,15 @@
                 </ui:VisualElement>
                 <ui:Label name="capability-status" class="status-label"/>
                 <ui:Label name="diagnostic-status" class="diagnostic-label"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement class="patch-dock">
+			<ui:VisualElement name="patch-slot-controls" class="patch-slot-controls"/>
+            <ui:VisualElement class="patch-actions">
+				<ui:Button name="cue-patch-slot" text="CUE" class="patch-action"/>
+				<ui:Button name="launch-patch-slot" text="PLAY" class="patch-action patch-action-primary"/>
+				<ui:Button name="clear-patch-slot" text="CLEAR" class="patch-action"/>
+                <ui:ScrollView name="patch-controls" class="patch-controls" mode="Horizontal" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden"/>
             </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="output-confirm-overlay" class="confirmation-overlay is-hidden">

@@ -28,6 +28,22 @@ namespace ShitDesigner.Scene {
 		void AdvanceGraphClock(double deltaSeconds);
 	}
 
+	/// <summary>Describes the shared tempo clock at one live-graph evaluation point.</summary>
+	public readonly struct BpmClockState {
+		public float BeatsPerMinute { get; }
+		public double TotalBeats { get; }
+
+		public BpmClockState(float beatsPerMinute, double totalBeats) {
+			BeatsPerMinute = beatsPerMinute;
+			TotalBeats = totalBeats;
+		}
+	}
+
+	/// <summary>Receives the shared tempo clock immediately before an isolated Scene is rendered.</summary>
+	public interface IBpmClockReceiver {
+		void SetBpmClock(BpmClockState clock);
+	}
+
 	/// <summary>One of the reserved user layers 8..31. Releasing the lease is
 	/// deliberately separate from destroying a node; the Scene manager returns
 	/// it only after unload has completed.</summary>
@@ -187,6 +203,7 @@ namespace ShitDesigner.Scene {
 	public sealed class SceneNodeRuntime : IDisposable {
 		private readonly SceneIsolationManager _owner;
 		private ISceneGraphClockReceiver[] _graphClockReceivers = Array.Empty<ISceneGraphClockReceiver>();
+		private IBpmClockReceiver[] _bpmClockReceivers = Array.Empty<IBpmClockReceiver>();
 		private bool _destroyRequested;
 		private double _physicsAccumulator;
 
@@ -220,9 +237,9 @@ namespace ShitDesigner.Scene {
 		public UnitResult<Diagnostic> SimulatePhysics(float stepSeconds) => _owner.SimulatePhysics(this, stepSeconds);
 
 		public void BindGraphClock() {
-			_graphClockReceivers = Root == null
-				? Array.Empty<ISceneGraphClockReceiver>()
-				: Root.GetComponentsInChildren<MonoBehaviour>(true).OfType<ISceneGraphClockReceiver>().ToArray();
+			var receivers = Root == null ? Array.Empty<MonoBehaviour>() : Root.GetComponentsInChildren<MonoBehaviour>(true);
+			_graphClockReceivers = receivers.OfType<ISceneGraphClockReceiver>().ToArray();
+			_bpmClockReceivers = receivers.OfType<IBpmClockReceiver>().ToArray();
 			foreach (var receiver in _graphClockReceivers) receiver.SetGraphClockDriven(true);
 		}
 
@@ -238,6 +255,23 @@ namespace ShitDesigner.Scene {
 			catch (Exception exception) {
 				return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("scene.animation.failed"), Severity.Error,
 					"A Scene prefab animation failed while advancing the graph clock.", nodeId: NodeId, generationId: GenerationId,
+					module: "scene", exception: DiagnosticExceptionInfo.FromException(exception)));
+			}
+		}
+
+		public UnitResult<Diagnostic> ApplyBpmClock(BpmClockState clock) {
+			if (float.IsNaN(clock.BeatsPerMinute) || float.IsInfinity(clock.BeatsPerMinute) || clock.BeatsPerMinute <= 0f
+				|| double.IsNaN(clock.TotalBeats) || double.IsInfinity(clock.TotalBeats) || clock.TotalBeats < 0d)
+				return AnimationFailure("scene.bpm-clock.state", "BPM clock values must be positive and finite.");
+			if (State != SceneLifecycleState.Ready)
+				return AnimationFailure("scene.bpm-clock.scene", "Scene node is not ready for BPM animation.");
+			try {
+				foreach (var receiver in _bpmClockReceivers) receiver.SetBpmClock(clock);
+				return UnitResult.Success<Diagnostic>();
+			}
+			catch (Exception exception) {
+				return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("scene.bpm-clock.failed"), Severity.Error,
+					"A Scene prefab animation failed while receiving the BPM clock.", nodeId: NodeId, generationId: GenerationId,
 					module: "scene", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 		}
