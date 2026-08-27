@@ -5,7 +5,9 @@ namespace ShitDesigner.Main {
 	public enum LiveParameterRequestKind {
 		PreloadPatch,
 		LoadPatch,
+		LaunchPatch,
 		SetParameter,
+		SetBpm,
 		TriggerFlash
 	}
 
@@ -58,8 +60,14 @@ namespace ShitDesigner.Main {
 		public LiveParameterEnqueueResult EnqueueLoadPatch(string patchId)
 			=> Enqueue(LiveParameterRequestKind.LoadPatch, patchId, string.Empty, 0f);
 
+		public LiveParameterEnqueueResult EnqueueLaunchPatch(string patchId)
+			=> Enqueue(LiveParameterRequestKind.LaunchPatch, patchId, string.Empty, 0f);
+
 		public LiveParameterEnqueueResult EnqueueSetParameter(string patchId, string parameterId, float value)
 			=> Enqueue(LiveParameterRequestKind.SetParameter, patchId, parameterId, value);
+
+		public LiveParameterEnqueueResult EnqueueSetBpm(float bpm)
+			=> Enqueue(LiveParameterRequestKind.SetBpm, string.Empty, string.Empty, bpm);
 
 		public LiveParameterEnqueueResult EnqueueTriggerFlash(string patchId)
 			=> Enqueue(LiveParameterRequestKind.TriggerFlash, patchId, string.Empty, 0f);
@@ -74,7 +82,7 @@ namespace ShitDesigner.Main {
 
 		private LiveParameterEnqueueResult Enqueue(LiveParameterRequestKind kind, string patchId, string parameterId, float value) {
 			if (_requests.Count >= Capacity) return LiveParameterEnqueueResult.Reject("The live parameter queue is full.");
-			if (string.IsNullOrWhiteSpace(patchId)) return LiveParameterEnqueueResult.Reject("A patch ID is required.");
+			if (kind != LiveParameterRequestKind.SetBpm && string.IsNullOrWhiteSpace(patchId)) return LiveParameterEnqueueResult.Reject("A patch ID is required.");
 			if (kind == LiveParameterRequestKind.SetParameter && string.IsNullOrWhiteSpace(parameterId))
 				return LiveParameterEnqueueResult.Reject("A parameter ID is required.");
 

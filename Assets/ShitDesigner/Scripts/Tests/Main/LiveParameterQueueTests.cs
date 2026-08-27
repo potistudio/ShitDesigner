@@ -45,6 +45,35 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void LaunchPatchQueuesAsOneAtomicRequest() {
+			var queue = new LiveParameterQueue();
+
+			var result = queue.EnqueueLaunchPatch("patch-b");
+
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+			Assert.That(result.Accepted, Is.True);
+			Assert.That(requests, Has.Count.EqualTo(1));
+			Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.LaunchPatch));
+			Assert.That(requests[0].PatchId, Is.EqualTo("patch-b"));
+		}
+
+		[Test]
+		public void SetBpmQueuesAGlobalRequestWithoutAPatchId() {
+			var queue = new LiveParameterQueue();
+
+			var result = queue.EnqueueSetBpm(138f);
+
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+			Assert.That(result.Accepted, Is.True);
+			Assert.That(requests, Has.Count.EqualTo(1));
+			Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.SetBpm));
+			Assert.That(requests[0].PatchId, Is.Empty);
+			Assert.That(requests[0].Value, Is.EqualTo(138f));
+		}
+
+		[Test]
 		public void FullQueueRejectsNewRequestsWithoutAssigningASequence() {
 			var queue = new LiveParameterQueue();
 			for (var index = 0; index < LiveParameterQueue.Capacity; index++)

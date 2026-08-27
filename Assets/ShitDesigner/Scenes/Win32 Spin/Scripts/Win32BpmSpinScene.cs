@@ -2,23 +2,26 @@ using System;
 using UnityEngine;
 
 namespace ShitDesigner.Scene {
-	/// <summary>Rotates one scattered Win32 icon field from the scene graph clock.</summary>
+	/// <summary>Rotates one scattered Win32 icon field from the shared BPM clock.</summary>
 	[DisallowMultipleComponent]
-	public sealed class Win32BpmSpinScene : MonoBehaviour, ISceneGraphClockReceiver {
+	public sealed class Win32BpmSpinScene : MonoBehaviour, IBpmClockReceiver {
 		[SerializeField] private Texture2D[] _images = Array.Empty<Texture2D>();
-		[Min(1f)][SerializeField] private float _bpm = 138f;
 		[Min(.1f)][SerializeField] private float _sphereRadius = 5.2f;
 		[Min(.1f)][SerializeField] private float _iconSize = .62f;
+		[Min(1)][SerializeField] private int m_Count = 1000;
 
 		private MaterialPropertyBlock _propertyBlock;
 		private Transform _generatedRoot;
 		private Material _material;
 		private System.Random _random;
 		private Quaternion _rotationStart;
-		private Quaternion _rotationTarget;
-		private double _elapsedSeconds;
-		private int _nextBeat;
-		private bool _graphClockDriven;
+		private Vector3 _rotationAxis;
+		private float _rotationDegrees;
+		private float _rotationStartBeat;
+		private double _totalBeats;
+		private int _nextRotationIndex;
+
+		private const int BeatsPerRotation = 2;
 
 		private void Awake() {
 			_propertyBlock = new MaterialPropertyBlock();
@@ -38,18 +41,14 @@ namespace ShitDesigner.Scene {
 		}
 
 		private void OnValidate() {
-			_bpm = Mathf.Max(1f, _bpm);
+			m_Count = Mathf.Max(1, m_Count);
 			_sphereRadius = Mathf.Max(.1f, _sphereRadius);
 			_iconSize = Mathf.Max(.1f, _iconSize);
 		}
 
-		public void SetGraphClockDriven(bool graphClockDriven) {
-			_graphClockDriven = graphClockDriven;
-		}
-
-		public void AdvanceGraphClock(double deltaSeconds) {
-			if (!_graphClockDriven || deltaSeconds <= 0d) return;
-			Advance(deltaSeconds);
+		public void SetBpmClock(BpmClockState clock) {
+			_totalBeats = clock.TotalBeats;
+			ApplyAnimation();
 		}
 
 		[ContextMenu("Rebuild Icon Sphere")]
@@ -65,12 +64,12 @@ namespace ShitDesigner.Scene {
 			_generatedRoot.gameObject.hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSave;
 			_material = CreateMaterial();
 
-			var itemIndex = 0;
-			for (var index = 0; index < _images.Length; index++) {
-				var image = _images[index];
-				if (image == null) continue;
+			var images = Array.FindAll(_images, image => image != null);
+			if (images.Length == 0) return;
+			for (var index = 0; index < m_Count; index++) {
+				var image = images[_random.Next(images.Length)];
 				var icon = GameObject.CreatePrimitive(PrimitiveType.Quad);
-				icon.name = "Win32 Icon " + (itemIndex + 1).ToString("000");
+				icon.name = "Win32 Icon " + (index + 1).ToString("000");
 				icon.transform.SetParent(_generatedRoot, false);
 				icon.layer = gameObject.layer;
 				icon.hideFlags = HideFlags.DontSave;
@@ -82,41 +81,41 @@ namespace ShitDesigner.Scene {
 				var scale = _iconSize * NextFloat(_random, .55f, 1.45f);
 				var aspect = image.height == 0 ? 1f : (float)image.width / image.height;
 				icon.transform.localPosition = RandomPointInSphere(_random, _sphereRadius);
+				icon.transform.localRotation = Quaternion.AngleAxis(NextFloat(_random, 0f, 360f), RandomAxis(_random));
 				icon.transform.localScale = new Vector3(scale * aspect, scale, 1f);
-				itemIndex++;
 			}
 
 			_rotationStart = Quaternion.identity;
-			_rotationTarget = Quaternion.identity;
-			_nextBeat = 0;
-			ApplyAnimation();
-		}
-
-		private void Advance(double deltaSeconds) {
-			_elapsedSeconds += deltaSeconds;
+			_rotationAxis = Vector3.forward;
+			_rotationDegrees = 0f;
+			_rotationStartBeat = 0f;
+			_nextRotationIndex = 0;
 			ApplyAnimation();
 		}
 
 		private void ApplyAnimation() {
 			if (_generatedRoot == null) return;
-			var beats = (float)(_elapsedSeconds * _bpm / 60d);
-			var currentBeat = Mathf.FloorToInt(beats);
-			if (currentBeat >= _nextBeat) {
+			var beats = (float)_totalBeats;
+			var currentRotationIndex = Mathf.FloorToInt(beats / BeatsPerRotation);
+			if (currentRotationIndex >= _nextRotationIndex) {
 				_rotationStart = _generatedRoot.localRotation;
-				_rotationTarget = RandomRotation(_random);
-				_nextBeat = currentBeat + 1;
+				_rotationAxis = RandomAxis(_random);
+				_rotationDegrees = NextFloat(_random, 400f, 720f) * (_random.Next(2) == 0 ? -1f : 1f);
+				_rotationStartBeat = currentRotationIndex * BeatsPerRotation;
+				_nextRotationIndex = currentRotationIndex + 1;
 			}
 
-			var phase = Mathf.Repeat(beats, 1f);
+			var phase = Mathf.Clamp01((beats - _rotationStartBeat) / BeatsPerRotation);
 			var easedPhase = 1f - Mathf.Pow(1f - phase, 3f);
-			_generatedRoot.localRotation = Quaternion.Slerp(_rotationStart, _rotationTarget, easedPhase);
+			_generatedRoot.localRotation = _rotationStart * Quaternion.AngleAxis(_rotationDegrees * easedPhase, _rotationAxis);
 		}
 
-		private static Quaternion RandomRotation(System.Random random) {
-			return Quaternion.Euler(
-				NextFloat(random, -46f, 46f),
-				NextFloat(random, -46f, 46f),
-				NextFloat(random, -32f, 32f));
+		private static Vector3 RandomAxis(System.Random random) {
+			Vector3 axis;
+			do {
+				axis = new Vector3(NextFloat(random, -1f, 1f), NextFloat(random, -1f, 1f), NextFloat(random, -1f, 1f));
+			} while (axis.sqrMagnitude < .01f);
+			return axis.normalized;
 		}
 
 		private static Vector3 RandomPointInSphere(System.Random random, float radius) {
@@ -168,7 +167,7 @@ namespace ShitDesigner.Scene {
 
 		private static void DestroyOwnedObject(UnityEngine.Object value) {
 			if (value == null) return;
-			if (Application.isPlaying) Destroy(value); else DestroyImmediate(value);
+			if (UnityEngine.Application.isPlaying) Destroy(value); else DestroyImmediate(value);
 		}
 	}
 }
