@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace ShitDesigner.Presentation.Overlay {
+namespace ShitDesigner.Overlay {
 	[RequireComponent(typeof(PanelRenderer))]
 	[DefaultExecutionOrder(1100)]
 	public sealed class OverlayDecoration : MonoBehaviour {
@@ -33,7 +33,8 @@ namespace ShitDesigner.Presentation.Overlay {
 		[SerializeField, Min(1)] private int _decorativeTextFontSize = 11;
 		[SerializeField, Range(0f, 1f)] private float _decorativeTextOpacity = 0.54f;
 		[SerializeField, Min(0f)] private float _decorativeTextOffset = 12f;
-		[SerializeField] private string[] _decorativeLogLines = {
+		[SerializeField]
+		private string[] _decorativeLogLines = {
 			"[00:17:04] INFO TRACE_READY",
 			"[00:17:05] INFO BUFFER_STABLE",
 			"[00:17:06] INFO SIGNAL_HOLD",

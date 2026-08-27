@@ -172,7 +172,8 @@ PrefabInstance:
       value: Cylinder Flythrough
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 6129218759055021743, guid: 52d135c910953af43a7424639474c3c2, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 52d135c910953af43a7424639474c3c2, type: 3}
