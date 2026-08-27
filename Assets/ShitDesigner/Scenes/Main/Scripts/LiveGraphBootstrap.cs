@@ -17,7 +17,7 @@ namespace ShitDesigner.Main {
 			"scene",
 			"composite",
 			new[] {
-				new LiveProgramGraphNodeDefinition("background", "shitdesigner.shader.generator.fbm-clouds"),
+				new LiveProgramGraphNodeDefinition("background", "shitdesigner.shader.generator.concentric-rings"),
 				new LiveProgramGraphNodeDefinition("echo", "shitdesigner.shader.temporal.echo"),
 				new LiveProgramGraphNodeDefinition("composite", "shitdesigner.shader.blend.premultiplied_over")
 			},
