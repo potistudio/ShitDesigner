@@ -17,14 +17,10 @@ namespace ShitDesigner.Main {
 			"scene",
 			"echo",
 			new[] {
-				new LiveProgramGraphNodeDefinition("invert", "shitdesigner.shader.color.invert"),
-				new LiveProgramGraphNodeDefinition("contrast", "shitdesigner.shader.color.contrast"),
 				new LiveProgramGraphNodeDefinition("echo", "shitdesigner.shader.temporal.echo")
 			},
 			new[] {
-				new LiveProgramGraphConnection("scene", "invert", "input"),
-				new LiveProgramGraphConnection("invert", "contrast", "input"),
-				new LiveProgramGraphConnection("contrast", "echo", "input")
+				new LiveProgramGraphConnection("scene", "echo", "input")
 			});
 
 		[SerializeField] private PatchDefinition[] _patches = Array.Empty<PatchDefinition>();
