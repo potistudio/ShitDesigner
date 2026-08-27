@@ -231,6 +231,7 @@ namespace ShitDesigner.Main {
 					userData = index
 				};
 				button.AddToClassList("patch-slot-button");
+				button.EnableInClassList("is-last", slotIndex == slotCount - 1);
 				_patchSlotControls.Add(button);
 			}
 		}
