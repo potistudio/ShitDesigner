@@ -15,14 +15,16 @@ namespace ShitDesigner.Main {
 	public sealed class LiveGraphBootstrap : MonoBehaviour {
 		private static readonly LiveProgramGraphDefinition ProgramGraph = new LiveProgramGraphDefinition(
 			"scene",
-			"contrast",
+			"echo",
 			new[] {
 				new LiveProgramGraphNodeDefinition("invert", "shitdesigner.shader.color.invert"),
-				new LiveProgramGraphNodeDefinition("contrast", "shitdesigner.shader.color.contrast")
+				new LiveProgramGraphNodeDefinition("contrast", "shitdesigner.shader.color.contrast"),
+				new LiveProgramGraphNodeDefinition("echo", "shitdesigner.shader.temporal.echo")
 			},
 			new[] {
 				new LiveProgramGraphConnection("scene", "invert", "input"),
-				new LiveProgramGraphConnection("invert", "contrast", "input")
+				new LiveProgramGraphConnection("invert", "contrast", "input"),
+				new LiveProgramGraphConnection("contrast", "echo", "input")
 			});
 
 		[SerializeField] private PatchDefinition[] _patches = Array.Empty<PatchDefinition>();
