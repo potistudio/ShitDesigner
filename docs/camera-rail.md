@@ -7,10 +7,10 @@
 1. Open `Assets/ShitDesigner/Scenes/Cylinder Flythrough.prefab`.
 2. Select the `Camera Rail` child.
 3. Edit the knots and Bezier tangents in the `Spline Container` component in the Scene view.
-4. Select the prefab root to adjust `Spline Camera Rail > Speed`, `Start Offset`, `Loop`, or `Align To Path`.
+4. Select the prefab root to adjust `Spline Camera Rail > Speed`, `Start Offset`, `Loop`, `Align To Path`, or `Target`.
 
-The camera follows the spline tangent when `Align To Path` is enabled. The existing `CylindricalObjectFlythrough` remains responsible for generating the object field; its legacy linear camera speed is disabled for this prefab.
+The camera follows `Target` when it is assigned; otherwise it follows the spline tangent when `Align To Path` is enabled. The existing `CylindricalObjectFlythrough` remains responsible for generating the object field; its legacy linear camera speed is disabled for this prefab.
 
 ## Stage
 
-The `Stage` scene uses the scene-local `Spline` object as its camera path. Select that object to edit the knots and adjust `Spline Camera Rail`; it drives the Stage prefab's `Main Camera` without requiring Timeline.
+The `Stage` scene uses the scene-local `Spline` object as its camera path and the prefab's `Center` transform as its target. Select the `Spline` object to edit the knots and adjust `Spline Camera Rail`; it drives the Stage prefab's `Main Camera` without requiring Timeline.

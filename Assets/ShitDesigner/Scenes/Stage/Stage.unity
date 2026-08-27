@@ -119,6 +119,16 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!4 &1554467357 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8786916374323912300, guid: 723bfbdaab71a9f418b1c0525aaf45ea, type: 3}
+  m_PrefabInstance: {fileID: 6452511269319969886}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1554467358 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8580070107194367128, guid: 723bfbdaab71a9f418b1c0525aaf45ea, type: 3}
+  m_PrefabInstance: {fileID: 6452511269319969886}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2006838059
 GameObject:
   m_ObjectHideFlags: 0
@@ -147,7 +157,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dab5c7d4c32e743048dfca98e2d5914f, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.Splines::UnityEngine.Splines.SplineContainer
   m_Spline:
     m_EditModeType: 1
@@ -237,24 +247,6 @@ MonoBehaviour:
       m_Data: []
   m_Knots:
     m_KnotsLink: []
---- !u!114 &2006838062
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2006838059}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2fcbec41a5ec4c2488f26d2f08eab4be, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.SplineCameraRail
-  path: {fileID: 2006838060}
-  cameraTransform: {fileID: 8786916374323912300, guid: 723bfbdaab71a9f418b1c0525aaf45ea, type: 3}
-  speed: 1.5
-  startOffset: 0
-  loop: 1
-  alignToPath: 1
 --- !u!4 &2006838061
 Transform:
   m_ObjectHideFlags: 0
@@ -270,6 +262,25 @@ Transform:
   m_Children: []
   m_Father: {fileID: 6452511269319969887}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2006838062
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2006838059}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fcbec41a5ec4c2488f26d2f08eab4be, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.SplineCameraRail
+  path: {fileID: 2006838060}
+  cameraTransform: {fileID: 1554467357}
+  target: {fileID: 1554467358}
+  speed: 0.5
+  startOffset: 0
+  loop: 1
+  alignToPath: 1
 --- !u!1001 &6452511269319969886
 PrefabInstance:
   m_ObjectHideFlags: 0
