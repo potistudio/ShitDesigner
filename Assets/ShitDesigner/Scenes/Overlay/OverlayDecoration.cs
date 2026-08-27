@@ -33,6 +33,16 @@ namespace ShitDesigner.Presentation.Overlay {
 		[SerializeField, Min(1)] private int _decorativeTextFontSize = 11;
 		[SerializeField, Range(0f, 1f)] private float _decorativeTextOpacity = 0.54f;
 		[SerializeField, Min(0f)] private float _decorativeTextOffset = 12f;
+		[SerializeField] private string[] _decorativeLogLines = {
+			"N7 / QX-04 / /",
+			"KZ_71 - 0A",
+			"TRC_19-4F",
+			"-- . . . //"
+		};
+		[SerializeField, Min(1)] private int _decorativeLogFontSize = 10;
+		[SerializeField, Range(0f, 1f)] private float _decorativeLogOpacity = 0.42f;
+		[SerializeField, Min(0f)] private float _decorativeLogOffset = 12f;
+		[SerializeField, Min(0f)] private float _decorativeLogLineSpacing = 4f;
 
 		private VisualElement _decorationRoot;
 		private VisualElement _circularStrokeRoot;
@@ -77,6 +87,7 @@ namespace ShitDesigner.Presentation.Overlay {
 			AddVerticalStrip(right: true);
 			AddCircularStrokes();
 			AddDecorativeText();
+			AddDecorativeLog();
 		}
 
 		private void Update() {
@@ -197,6 +208,27 @@ namespace ShitDesigner.Presentation.Overlay {
 			label.style.opacity = _decorativeTextOpacity;
 			label.style.unityTextAlign = TextAnchor.MiddleCenter;
 			_decorationRoot.Add(label);
+		}
+
+		private void AddDecorativeLog() {
+			if (_decorativeLogLines == null || _decorativeLogLines.Length == 0) return;
+
+			for (var index = 0; index < _decorativeLogLines.Length; index++) {
+				var label = new Label(_decorativeLogLines[index]) {
+					name = "overlay-decorative-log-" + index,
+					pickingMode = PickingMode.Ignore
+				};
+				label.style.position = Position.Absolute;
+				label.style.top = Pixels(_edgeInset + _stripHeight + _decorativeLogOffset + index * (_decorativeLogFontSize + _decorativeLogLineSpacing));
+				label.style.right = Pixels(_edgeInset);
+				label.style.width = Pixels(_stripSize);
+				label.style.height = Pixels(_decorativeLogFontSize + _decorativeLogLineSpacing);
+				label.style.fontSize = _decorativeLogFontSize;
+				label.style.color = index == 0 ? _accentColor : _lineColor;
+				label.style.opacity = _decorativeLogOpacity;
+				label.style.unityTextAlign = TextAnchor.MiddleRight;
+				_decorationRoot.Add(label);
+			}
 		}
 
 		private void AddHorizontalStrip(bool top) {
