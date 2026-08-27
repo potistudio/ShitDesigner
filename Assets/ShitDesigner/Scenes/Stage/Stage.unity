@@ -437,6 +437,7 @@ GameObject:
   - component: {fileID: 23396542}
   - component: {fileID: 23396544}
   - component: {fileID: 23396543}
+  - component: {fileID: 23396545}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -516,6 +517,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 23396541}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &23396545
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 23396541}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &26180694
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1170,7 +1183,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &59383918
 Transform:
   m_ObjectHideFlags: 0
@@ -3263,6 +3276,7 @@ GameObject:
   - component: {fileID: 161602039}
   - component: {fileID: 161602041}
   - component: {fileID: 161602040}
+  - component: {fileID: 161602042}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -3342,6 +3356,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 161602038}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &161602042
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 161602038}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &171871175
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5189,6 +5215,7 @@ GameObject:
   - component: {fileID: 242269772}
   - component: {fileID: 242269774}
   - component: {fileID: 242269773}
+  - component: {fileID: 242269775}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -5268,6 +5295,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 242269771}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &242269775
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 242269771}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &252593391
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6135,6 +6174,7 @@ GameObject:
   - component: {fileID: 278188545}
   - component: {fileID: 278188547}
   - component: {fileID: 278188546}
+  - component: {fileID: 278188548}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -6214,6 +6254,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 278188544}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &278188548
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 278188544}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &282132417
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7161,6 +7213,7 @@ GameObject:
   - component: {fileID: 292404924}
   - component: {fileID: 292404926}
   - component: {fileID: 292404925}
+  - component: {fileID: 292404927}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -7240,6 +7293,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 292404923}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &292404927
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 292404923}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &292622077
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -8514,6 +8579,7 @@ GameObject:
   - component: {fileID: 311735424}
   - component: {fileID: 311735426}
   - component: {fileID: 311735425}
+  - component: {fileID: 311735427}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -8593,6 +8659,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 311735423}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &311735427
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 311735423}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &319192684
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -9894,6 +9972,7 @@ GameObject:
   - component: {fileID: 351921233}
   - component: {fileID: 351921235}
   - component: {fileID: 351921234}
+  - component: {fileID: 351921236}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -9973,6 +10052,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 351921232}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &351921236
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 351921232}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &352206268
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -10057,6 +10148,7 @@ GameObject:
   - component: {fileID: 352569755}
   - component: {fileID: 352569757}
   - component: {fileID: 352569756}
+  - component: {fileID: 352569758}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -10136,6 +10228,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 352569754}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &352569758
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 352569754}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!4 &360264343 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ea78cfa4d590273479651f4427daa5b6, type: 3}
@@ -14821,6 +14925,7 @@ GameObject:
   - component: {fileID: 444242846}
   - component: {fileID: 444242848}
   - component: {fileID: 444242847}
+  - component: {fileID: 444242849}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -14900,6 +15005,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 444242845}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &444242849
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 444242845}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1 &444776081
 GameObject:
   m_ObjectHideFlags: 0
@@ -14911,6 +15028,7 @@ GameObject:
   - component: {fileID: 444776082}
   - component: {fileID: 444776084}
   - component: {fileID: 444776083}
+  - component: {fileID: 444776085}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -14990,6 +15108,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 444776081}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &444776085
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 444776081}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &445982919
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -16322,6 +16452,7 @@ GameObject:
   - component: {fileID: 478505574}
   - component: {fileID: 478505576}
   - component: {fileID: 478505575}
+  - component: {fileID: 478505577}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -16401,6 +16532,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 478505573}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &478505577
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 478505573}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!4 &481245093 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ea78cfa4d590273479651f4427daa5b6, type: 3}
@@ -18122,6 +18265,7 @@ GameObject:
   - component: {fileID: 516628930}
   - component: {fileID: 516628932}
   - component: {fileID: 516628931}
+  - component: {fileID: 516628933}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -18201,6 +18345,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 516628929}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &516628933
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 516628929}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!4 &518408518 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4026346596071144181, guid: 73b0236c7220a344f803f3ae0b5aafdd, type: 3}
@@ -18346,6 +18502,7 @@ GameObject:
   - component: {fileID: 532854914}
   - component: {fileID: 532854916}
   - component: {fileID: 532854915}
+  - component: {fileID: 532854917}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -18425,6 +18582,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 532854913}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &532854917
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 532854913}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &535772612
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -19668,6 +19837,7 @@ GameObject:
   - component: {fileID: 591983646}
   - component: {fileID: 591983648}
   - component: {fileID: 591983647}
+  - component: {fileID: 591983649}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -19747,6 +19917,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 591983645}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &591983649
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 591983645}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &592773173
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -27425,6 +27607,7 @@ GameObject:
   - component: {fileID: 806619125}
   - component: {fileID: 806619127}
   - component: {fileID: 806619126}
+  - component: {fileID: 806619128}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -27504,6 +27687,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 806619124}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &806619128
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 806619124}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &809084537
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -29595,6 +29790,7 @@ GameObject:
   - component: {fileID: 894230945}
   - component: {fileID: 894230947}
   - component: {fileID: 894230946}
+  - component: {fileID: 894230948}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -29674,6 +29870,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 894230944}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &894230948
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 894230944}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!4 &896084921 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ea78cfa4d590273479651f4427daa5b6, type: 3}
@@ -31176,6 +31384,7 @@ GameObject:
   - component: {fileID: 922274662}
   - component: {fileID: 922274664}
   - component: {fileID: 922274663}
+  - component: {fileID: 922274665}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -31255,6 +31464,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 922274661}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &922274665
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 922274661}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!4 &924120056 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ea78cfa4d590273479651f4427daa5b6, type: 3}
@@ -35008,6 +35229,7 @@ GameObject:
   - component: {fileID: 1057738754}
   - component: {fileID: 1057738756}
   - component: {fileID: 1057738755}
+  - component: {fileID: 1057738757}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -35087,6 +35309,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1057738753}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1057738757
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1057738753}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &1057882765
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -37195,6 +37429,7 @@ GameObject:
   - component: {fileID: 1107786242}
   - component: {fileID: 1107786244}
   - component: {fileID: 1107786243}
+  - component: {fileID: 1107786245}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -37274,6 +37509,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1107786241}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1107786245
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1107786241}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1 &1108808301
 GameObject:
   m_ObjectHideFlags: 0
@@ -37871,6 +38118,7 @@ GameObject:
   - component: {fileID: 1123386366}
   - component: {fileID: 1123386368}
   - component: {fileID: 1123386367}
+  - component: {fileID: 1123386369}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -37950,6 +38198,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1123386365}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1123386369
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1123386365}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &1126940379
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -39042,6 +39302,7 @@ GameObject:
   - component: {fileID: 1145184062}
   - component: {fileID: 1145184064}
   - component: {fileID: 1145184063}
+  - component: {fileID: 1145184065}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -39121,6 +39382,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1145184061}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1145184065
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1145184061}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &1147138519
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -39635,6 +39908,7 @@ GameObject:
   - component: {fileID: 1169330442}
   - component: {fileID: 1169330444}
   - component: {fileID: 1169330443}
+  - component: {fileID: 1169330445}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -39714,6 +39988,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1169330441}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1169330445
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1169330441}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &1170448637
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -39865,6 +40151,7 @@ GameObject:
   - component: {fileID: 1177408294}
   - component: {fileID: 1177408296}
   - component: {fileID: 1177408295}
+  - component: {fileID: 1177408297}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -39944,6 +40231,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1177408293}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1177408297
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1177408293}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!4 &1177529481 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ea78cfa4d590273479651f4427daa5b6, type: 3}
@@ -40407,6 +40706,7 @@ GameObject:
   - component: {fileID: 1181219962}
   - component: {fileID: 1181219964}
   - component: {fileID: 1181219963}
+  - component: {fileID: 1181219965}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -40486,6 +40786,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1181219961}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1181219965
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1181219961}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1 &1181748870
 GameObject:
   m_ObjectHideFlags: 0
@@ -41555,6 +41867,7 @@ GameObject:
   - component: {fileID: 1214239351}
   - component: {fileID: 1214239353}
   - component: {fileID: 1214239352}
+  - component: {fileID: 1214239354}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -41634,6 +41947,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1214239350}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1214239354
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1214239350}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!4 &1216365267 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ea78cfa4d590273479651f4427daa5b6, type: 3}
@@ -44343,6 +44668,7 @@ GameObject:
   - component: {fileID: 1282473772}
   - component: {fileID: 1282473774}
   - component: {fileID: 1282473773}
+  - component: {fileID: 1282473775}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -44422,6 +44748,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1282473771}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1282473775
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1282473771}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1 &1282504421
 GameObject:
   m_ObjectHideFlags: 0
@@ -44548,6 +44886,7 @@ GameObject:
   - component: {fileID: 1286686533}
   - component: {fileID: 1286686535}
   - component: {fileID: 1286686534}
+  - component: {fileID: 1286686536}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -44627,6 +44966,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1286686532}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1286686536
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1286686532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1 &1289013399
 GameObject:
   m_ObjectHideFlags: 0
@@ -45191,6 +45542,7 @@ GameObject:
   - component: {fileID: 1299091481}
   - component: {fileID: 1299091483}
   - component: {fileID: 1299091482}
+  - component: {fileID: 1299091484}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -45270,6 +45622,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1299091480}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1299091484
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1299091480}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!4 &1299861427 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ea78cfa4d590273479651f4427daa5b6, type: 3}
@@ -46173,6 +46537,7 @@ GameObject:
   - component: {fileID: 1323226764}
   - component: {fileID: 1323226766}
   - component: {fileID: 1323226765}
+  - component: {fileID: 1323226767}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -46252,6 +46617,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1323226763}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1323226767
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1323226763}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!4 &1323362209 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 9120878139393355818, guid: f59d2dc425cc798498173cb765e86d3b, type: 3}
@@ -50223,6 +50600,7 @@ GameObject:
   - component: {fileID: 1448684594}
   - component: {fileID: 1448684596}
   - component: {fileID: 1448684595}
+  - component: {fileID: 1448684597}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -50302,6 +50680,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1448684593}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1448684597
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1448684593}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!4 &1450157710 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ea78cfa4d590273479651f4427daa5b6, type: 3}
@@ -50318,6 +50708,7 @@ GameObject:
   - component: {fileID: 1452177208}
   - component: {fileID: 1452177210}
   - component: {fileID: 1452177209}
+  - component: {fileID: 1452177211}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -50397,6 +50788,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1452177207}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1452177211
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1452177207}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!4 &1458473560 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ea78cfa4d590273479651f4427daa5b6, type: 3}
@@ -50418,6 +50821,7 @@ GameObject:
   - component: {fileID: 1460834911}
   - component: {fileID: 1460834913}
   - component: {fileID: 1460834912}
+  - component: {fileID: 1460834914}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -50497,6 +50901,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1460834910}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1460834914
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1460834910}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &1465032576
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -50610,6 +51026,7 @@ GameObject:
   - component: {fileID: 1471686251}
   - component: {fileID: 1471686253}
   - component: {fileID: 1471686252}
+  - component: {fileID: 1471686254}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -50689,6 +51106,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1471686250}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1471686254
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1471686250}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &1473307892
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -50767,6 +51196,7 @@ GameObject:
   - component: {fileID: 1480798797}
   - component: {fileID: 1480798799}
   - component: {fileID: 1480798798}
+  - component: {fileID: 1480798800}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -50846,6 +51276,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1480798796}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1480798800
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1480798796}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &1487897235
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -52290,6 +52732,7 @@ GameObject:
   - component: {fileID: 1505838998}
   - component: {fileID: 1505839000}
   - component: {fileID: 1505838999}
+  - component: {fileID: 1505839001}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -52369,6 +52812,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1505838997}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1505839001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1505838997}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &1507848636
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -53251,6 +53706,7 @@ GameObject:
   - component: {fileID: 1533384901}
   - component: {fileID: 1533384903}
   - component: {fileID: 1533384902}
+  - component: {fileID: 1533384904}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -53330,6 +53786,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1533384900}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1533384904
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1533384900}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1 &1538626598
 GameObject:
   m_ObjectHideFlags: 0
@@ -53827,6 +54295,7 @@ GameObject:
   - component: {fileID: 1551657503}
   - component: {fileID: 1551657505}
   - component: {fileID: 1551657504}
+  - component: {fileID: 1551657506}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -53906,6 +54375,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1551657502}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1551657506
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1551657502}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &1553787346
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -55517,6 +55998,7 @@ GameObject:
   - component: {fileID: 1619949625}
   - component: {fileID: 1619949627}
   - component: {fileID: 1619949626}
+  - component: {fileID: 1619949628}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -55596,6 +56078,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1619949624}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1619949628
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1619949624}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &1623250009
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -56038,6 +56532,7 @@ GameObject:
   - component: {fileID: 1642606712}
   - component: {fileID: 1642606714}
   - component: {fileID: 1642606713}
+  - component: {fileID: 1642606715}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -56117,6 +56612,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1642606711}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1642606715
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1642606711}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &1643285923
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -60270,6 +60777,7 @@ GameObject:
   - component: {fileID: 1741725633}
   - component: {fileID: 1741725635}
   - component: {fileID: 1741725634}
+  - component: {fileID: 1741725636}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -60349,6 +60857,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1741725632}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1741725636
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1741725632}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1 &1743221595
 GameObject:
   m_ObjectHideFlags: 0
@@ -60360,6 +60880,7 @@ GameObject:
   - component: {fileID: 1743221596}
   - component: {fileID: 1743221598}
   - component: {fileID: 1743221597}
+  - component: {fileID: 1743221599}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -60439,6 +60960,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1743221595}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1743221599
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1743221595}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!4 &1746456003 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ea78cfa4d590273479651f4427daa5b6, type: 3}
@@ -61579,6 +62112,7 @@ GameObject:
   - component: {fileID: 1792146760}
   - component: {fileID: 1792146762}
   - component: {fileID: 1792146761}
+  - component: {fileID: 1792146763}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -61658,6 +62192,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1792146759}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1792146763
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1792146759}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &1792442037
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -62658,6 +63204,7 @@ GameObject:
   - component: {fileID: 1801755435}
   - component: {fileID: 1801755437}
   - component: {fileID: 1801755436}
+  - component: {fileID: 1801755438}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -62737,6 +63284,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1801755434}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1801755438
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1801755434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &1802987622
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -63524,6 +64083,7 @@ GameObject:
   - component: {fileID: 1834439613}
   - component: {fileID: 1834439615}
   - component: {fileID: 1834439614}
+  - component: {fileID: 1834439616}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -63603,6 +64163,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1834439612}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1834439616
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1834439612}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &1836440321
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -67535,6 +68107,7 @@ GameObject:
   - component: {fileID: 1968212043}
   - component: {fileID: 1968212045}
   - component: {fileID: 1968212044}
+  - component: {fileID: 1968212046}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -67614,6 +68187,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1968212042}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1968212046
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1968212042}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1 &1969879505
 GameObject:
   m_ObjectHideFlags: 0
@@ -67786,6 +68371,7 @@ GameObject:
   - component: {fileID: 1978065051}
   - component: {fileID: 1978065053}
   - component: {fileID: 1978065052}
+  - component: {fileID: 1978065054}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -67865,6 +68451,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1978065050}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &1978065054
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1978065050}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &1978928562
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -69933,6 +70531,7 @@ GameObject:
   - component: {fileID: 2039135068}
   - component: {fileID: 2039135070}
   - component: {fileID: 2039135069}
+  - component: {fileID: 2039135071}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -70012,6 +70611,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2039135067}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &2039135071
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2039135067}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &2041230567
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -70179,6 +70790,7 @@ GameObject:
   - component: {fileID: 2051525257}
   - component: {fileID: 2051525259}
   - component: {fileID: 2051525258}
+  - component: {fileID: 2051525260}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -70258,6 +70870,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2051525256}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &2051525260
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2051525256}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1001 &2054196464
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -73393,6 +74017,7 @@ GameObject:
   - component: {fileID: 2133096017}
   - component: {fileID: 2133096019}
   - component: {fileID: 2133096018}
+  - component: {fileID: 2133096020}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -73472,6 +74097,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2133096016}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &2133096020
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2133096016}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1 &2135944337
 GameObject:
   m_ObjectHideFlags: 0
@@ -73523,6 +74160,7 @@ GameObject:
   - component: {fileID: 2137599233}
   - component: {fileID: 2137599235}
   - component: {fileID: 2137599234}
+  - component: {fileID: 2137599236}
   m_Layer: 0
   m_Name: Volumetric Lighting
   m_TagString: Untagged
@@ -73602,6 +74240,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2137599232}
   m_Mesh: {fileID: -2432090755550338912, guid: cc6e569f344529a47ac1e575dfa6387b, type: 3}
+--- !u!114 &2137599236
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2137599232}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0abf5c8e7ee43ba8ced6baf0943c6c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.VolumetricLightingBounds
 --- !u!1 &2139951521
 GameObject:
   m_ObjectHideFlags: 0
@@ -74378,6 +75028,7 @@ GameObject:
   - component: {fileID: 4858300452998872189}
   - component: {fileID: 618687664362214393}
   - component: {fileID: 1867041829149755347}
+  - component: {fileID: 4858300452998872190}
   m_Layer: 0
   m_Name: Area Light
   m_TagString: Untagged
@@ -74571,6 +75222,35 @@ Transform:
   m_Children: []
   m_Father: {fileID: 59383918}
   m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
+--- !u!114 &4858300452998872190
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1659505970839723442}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!4 &5886844021290701701
 Transform:
   m_ObjectHideFlags: 0
