@@ -5,6 +5,8 @@ Shader "ShitDesigner/Stage/Volumetric Lighting"
 		[HDR] _Color ("Color", Color) = (1, 1, 1, 1)
 		_Intensity ("Intensity", Range(0, 20)) = 2
 		_Density ("Density", Range(0, 1)) = 0.35
+		_BeamAngle ("Beam Angle", Range(1, 120)) = 30
+		_BeamDistance ("Beam Distance", Range(0.1, 100)) = 10
 		_EdgeSoftness ("Edge Softness", Range(0.1, 8)) = 2
 		_StartFade ("Start Fade", Range(0, 1)) = 0.05
 		_EndFade ("End Fade", Range(0, 1)) = 0.2
@@ -50,6 +52,8 @@ Shader "ShitDesigner/Stage/Volumetric Lighting"
 			half4 _Color;
 			half _Intensity;
 			half _Density;
+			half _BeamAngle;
+			half _BeamDistance;
 			half _EdgeSoftness;
 			half _StartFade;
 			half _EndFade;
@@ -63,7 +67,6 @@ Shader "ShitDesigner/Stage/Volumetric Lighting"
 			{
 				float4 positionOS : POSITION;
 				float3 normalOS : NORMAL;
-				float2 uv : TEXCOORD0;
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
@@ -72,7 +75,7 @@ Shader "ShitDesigner/Stage/Volumetric Lighting"
 				float4 positionHCS : SV_POSITION;
 				float3 positionWS : TEXCOORD0;
 				half3 normalWS : TEXCOORD1;
-				float2 uv : TEXCOORD2;
+				half beamProgress : TEXCOORD2;
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 				UNITY_VERTEX_OUTPUT_STEREO
 			};
@@ -84,12 +87,21 @@ Shader "ShitDesigner/Stage/Volumetric Lighting"
 				UNITY_TRANSFER_INSTANCE_ID(input, output);
 				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
 
-				VertexPositionInputs positionInputs = GetVertexPositionInputs(input.positionOS.xyz);
-				VertexNormalInputs normalInputs = GetVertexNormalInputs(input.normalOS);
+				half beamProgress = saturate(0.5h - input.positionOS.y);
+				half halfAngleTangent = tan(radians(_BeamAngle * 0.5h));
+				float2 radialDirection = input.positionOS.xz / max(length(input.positionOS.xz), 0.0001);
+				float3 positionOS = float3(
+					radialDirection.x * beamProgress * _BeamDistance * halfAngleTangent,
+					-beamProgress * _BeamDistance,
+					radialDirection.y * beamProgress * _BeamDistance * halfAngleTangent);
+				half3 normalOS = normalize(half3(radialDirection.x, halfAngleTangent, radialDirection.y));
+
+				VertexPositionInputs positionInputs = GetVertexPositionInputs(positionOS);
+				VertexNormalInputs normalInputs = GetVertexNormalInputs(normalOS);
 				output.positionHCS = positionInputs.positionCS;
 				output.positionWS = positionInputs.positionWS;
 				output.normalWS = normalInputs.normalWS;
-				output.uv = input.uv;
+				output.beamProgress = beamProgress;
 				return output;
 			}
 
@@ -102,8 +114,8 @@ Shader "ShitDesigner/Stage/Volumetric Lighting"
 				half viewFacing = abs(dot(normalize(input.normalWS), viewDirectionWS));
 				half edgeFade = pow(saturate(viewFacing), _EdgeSoftness);
 
-				half startFade = smoothstep(0, max(_StartFade, 0.0001h), input.uv.y);
-				half endFade = 1 - smoothstep(1 - max(_EndFade, 0.0001h), 1, input.uv.y);
+				half startFade = smoothstep(0, max(_StartFade, 0.0001h), input.beamProgress);
+				half endFade = 1 - smoothstep(1 - max(_EndFade, 0.0001h), 1, input.beamProgress);
 
 				float2 noiseOffset = _Time.y * _NoiseSpeed.xy;
 				float2 noiseUV = input.positionWS.xz * _NoiseScale + noiseOffset;
