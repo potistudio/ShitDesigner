@@ -347,6 +347,10 @@ MonoBehaviour:
   _accentStrokeInterval: 6
   _lineColor: {r: 0.91, g: 0.93, b: 0.95, a: 0.74}
   _accentColor: {r: 0.34, g: 0.65, b: 1, a: 0.68}
+  _decorativeText: ZKQ_04_17
+  _decorativeTextFontSize: 11
+  _decorativeTextOpacity: 0.54
+  _decorativeTextOffset: 12
 --- !u!1931382934 &1089600316
 PanelRenderer:
   m_ObjectHideFlags: 0

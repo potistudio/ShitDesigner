@@ -29,6 +29,10 @@ namespace ShitDesigner.Presentation.Overlay {
 		[SerializeField, Min(1)] private int _accentStrokeInterval = 6;
 		[SerializeField] private Color _lineColor = new Color(0.91f, 0.93f, 0.95f, 0.74f);
 		[SerializeField] private Color _accentColor = new Color(0.34f, 0.65f, 1f, 0.68f);
+		[SerializeField] private string _decorativeText = "ZKQ_04_17";
+		[SerializeField, Min(1)] private int _decorativeTextFontSize = 11;
+		[SerializeField, Range(0f, 1f)] private float _decorativeTextOpacity = 0.54f;
+		[SerializeField, Min(0f)] private float _decorativeTextOffset = 12f;
 
 		private VisualElement _decorationRoot;
 		private VisualElement _circularStrokeRoot;
@@ -72,6 +76,7 @@ namespace ShitDesigner.Presentation.Overlay {
 			AddVerticalStrip(right: false);
 			AddVerticalStrip(right: true);
 			AddCircularStrokes();
+			AddDecorativeText();
 		}
 
 		private void Update() {
@@ -175,6 +180,23 @@ namespace ShitDesigner.Presentation.Overlay {
 				stroke.style.rotate = new StyleRotate(new Rotate(angle));
 				ring.Add(stroke);
 			}
+		}
+
+		private void AddDecorativeText() {
+			var label = new Label(_decorativeText) {
+				name = "overlay-decorative-text",
+				pickingMode = PickingMode.Ignore
+			};
+			label.style.position = Position.Absolute;
+			label.style.left = Percent(50f);
+			label.style.top = Pixels(_edgeInset + _stripHeight + _decorativeTextOffset);
+			label.style.width = Pixels(_stripSize);
+			label.style.marginLeft = Pixels(-_stripSize / 2f);
+			label.style.fontSize = _decorativeTextFontSize;
+			label.style.color = _lineColor;
+			label.style.opacity = _decorativeTextOpacity;
+			label.style.unityTextAlign = TextAnchor.MiddleCenter;
+			_decorationRoot.Add(label);
 		}
 
 		private void AddHorizontalStrip(bool top) {
