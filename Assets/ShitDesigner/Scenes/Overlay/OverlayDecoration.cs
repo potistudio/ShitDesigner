@@ -1,8 +1,9 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace ShitDesigner.Presentation.Overlay {
-	[RequireComponent(typeof(UIDocument))]
+	[RequireComponent(typeof(PanelRenderer))]
 	[DefaultExecutionOrder(1100)]
 	public sealed class OverlayDecoration : MonoBehaviour {
 		private const float EdgeInset = 32f;
@@ -12,32 +13,23 @@ namespace ShitDesigner.Presentation.Overlay {
 		private static readonly Color LineColor = new Color(0.91f, 0.93f, 0.95f, 0.74f);
 		private static readonly Color AccentColor = new Color(0.34f, 0.65f, 1f, 0.68f);
 
-		[SerializeField] private UIDocument _document;
+		[SerializeField] private PanelRenderer _panelRenderer;
 
 		private VisualElement _decorationRoot;
+		private Coroutine _reloadRoutine;
 
 		private void OnEnable() {
-			if (_document == null) _document = GetComponent<UIDocument>();
-			BuildDecoration();
+			if (_panelRenderer == null) _panelRenderer = GetComponent<PanelRenderer>();
+			if (_panelRenderer == null) return;
+
+			_panelRenderer.RegisterUIReloadCallback(OnUIReload);
+			_reloadRoutine = StartCoroutine(ReloadUiAfterPanelInitialization());
 		}
 
-		private void Start() {
-			if (_decorationRoot == null) BuildDecoration();
-		}
+		private void OnUIReload(PanelRenderer renderer, VisualElement rootElement) {
+			if (rootElement == null) return;
 
-		private void OnDisable() {
-			if (_decorationRoot == null) return;
-			_decorationRoot.RemoveFromHierarchy();
-			_decorationRoot = null;
-		}
-
-		private void BuildDecoration() {
-			if (_document == null) return;
-
-			var panelRoot = _document.rootVisualElement;
-			if (panelRoot == null) return;
-
-			panelRoot.Clear();
+			if (_decorationRoot != null) _decorationRoot.RemoveFromHierarchy();
 			_decorationRoot = new VisualElement {
 				name = "overlay-decoration",
 				pickingMode = PickingMode.Ignore
@@ -47,7 +39,7 @@ namespace ShitDesigner.Presentation.Overlay {
 			_decorationRoot.style.right = Pixels(0f);
 			_decorationRoot.style.top = Pixels(0f);
 			_decorationRoot.style.bottom = Pixels(0f);
-			panelRoot.Add(_decorationRoot);
+			rootElement.Add(_decorationRoot);
 
 			AddCorner(right: false, bottom: false);
 			AddCorner(right: true, bottom: false);
@@ -58,6 +50,26 @@ namespace ShitDesigner.Presentation.Overlay {
 			AddHorizontalStrip(top: false);
 			AddVerticalStrip(right: false);
 			AddVerticalStrip(right: true);
+		}
+
+		private void OnDisable() {
+			if (_reloadRoutine != null) {
+				StopCoroutine(_reloadRoutine);
+				_reloadRoutine = null;
+			}
+			if (_panelRenderer != null) _panelRenderer.UnregisterUIReloadCallback(OnUIReload);
+			_decorationRoot?.RemoveFromHierarchy();
+			_decorationRoot = null;
+		}
+
+		private IEnumerator ReloadUiAfterPanelInitialization() {
+			yield return null;
+			_reloadRoutine = null;
+			if (_panelRenderer == null) yield break;
+
+			var asset = _panelRenderer.visualTreeAsset;
+			_panelRenderer.visualTreeAsset = null;
+			_panelRenderer.visualTreeAsset = asset;
 		}
 
 		private void AddCorner(bool right, bool bottom) {
@@ -76,10 +88,7 @@ namespace ShitDesigner.Presentation.Overlay {
 			AddBar(corner, 0f, horizontalY, CornerSize, 1f, LineColor);
 			AddBar(corner, verticalX, 0f, 1f, CornerSize, LineColor);
 
-			var insetX = right ? CornerSize - 12f - 44f : 12f;
-			var insetY = bottom ? CornerSize - 12f - 44f : 12f;
-			AddBar(corner, insetX, insetY, 44f, 1f, AccentColor);
-			AddBar(corner, insetX, insetY, 1f, 44f, AccentColor);
+			AddInnerCorner(corner);
 
 			var nodeX = right ? CornerSize - 3f : -2f;
 			var nodeY = bottom ? CornerSize - 3f : -2f;
@@ -88,6 +97,11 @@ namespace ShitDesigner.Presentation.Overlay {
 			node.style.borderTopRightRadius = Pixels(3f);
 			node.style.borderBottomLeftRadius = Pixels(3f);
 			node.style.borderBottomRightRadius = Pixels(3f);
+		}
+
+		private static void AddInnerCorner(VisualElement parent) {
+			AddBar(parent, 12f, 12f, 44f, 1f, AccentColor);
+			AddBar(parent, 12f, 12f, 1f, 44f, AccentColor);
 		}
 
 		private void AddHorizontalStrip(bool top) {
