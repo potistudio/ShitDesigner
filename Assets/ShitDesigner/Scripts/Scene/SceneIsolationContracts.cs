@@ -430,9 +430,15 @@ namespace ShitDesigner.Scene {
 			if (root == null) return Failure("scene.layer.root", "A Scene hierarchy root is required.");
 			if (layer < SceneLayerPool.FirstReservedLayer || layer > SceneLayerPool.LastReservedLayer)
 				return Failure("scene.layer.range", "Only reserved Scene layers 8..31 may be assigned.");
+			var layerMask = 1 << layer;
 			foreach (var transform in root.GetComponentsInChildren<Transform>(true)) transform.gameObject.layer = layer;
-			foreach (var camera in root.GetComponentsInChildren<Camera>(true)) camera.cullingMask = 1 << layer;
-			foreach (var light in root.GetComponentsInChildren<Light>(true)) light.cullingMask = 1 << layer;
+			foreach (var camera in root.GetComponentsInChildren<Camera>(true)) {
+				camera.cullingMask = layerMask;
+				var additionalCameraData = camera.GetComponent<UniversalAdditionalCameraData>();
+				if (additionalCameraData != null) additionalCameraData.volumeLayerMask = layerMask;
+			}
+			foreach (var light in root.GetComponentsInChildren<Light>(true)) light.cullingMask = layerMask;
+			foreach (var reflectionProbe in root.GetComponentsInChildren<ReflectionProbe>(true)) reflectionProbe.cullingMask = layerMask;
 			return UnitResult.Success<Diagnostic>();
 		}
 
