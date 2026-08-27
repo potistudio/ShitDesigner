@@ -14,6 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
   _id: stage
   _displayName: Stage
+  _flash:
+    _image: {fileID: 2800000, guid: 7811e043fc896e74592668a1a45cd6bc, type: 3}
+    _durationSeconds: 0.25
   _nodeGroups:
   - _id: source
     _displayName: Source

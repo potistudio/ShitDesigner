@@ -30,16 +30,37 @@ namespace ShitDesigner.Scene {
 		public string ParameterId => _parameterId ?? string.Empty;
 	}
 
+	[Serializable]
+	public sealed class PatchFlashDefinition {
+		[SerializeField] private Texture2D _image;
+		[SerializeField, Min(.01f)] private float _durationSeconds = .25f;
+
+		public Texture2D Image => _image;
+		public float DurationSeconds => _durationSeconds;
+
+		public UnitResult<Diagnostic> Validate() {
+			if (_image == null) return Failure("patch.definition.flash.image", "A configured patch flash requires an image.");
+			if (float.IsNaN(_durationSeconds) || float.IsInfinity(_durationSeconds) || _durationSeconds <= 0f)
+				return Failure("patch.definition.flash.duration", "A configured patch flash requires a positive duration.");
+			return UnitResult.Success<Diagnostic>();
+		}
+
+		private static UnitResult<Diagnostic> Failure(string code, string message)
+			=> UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "scene"));
+	}
+
 	/// <summary>Logical live patch composed from Unity scene nodes and published controls.</summary>
 	[CreateAssetMenu(fileName = "PatchDefinition", menuName = "ShitDesigner/Patch Definition")]
 	public sealed class PatchDefinition : ScriptableObject {
 		[SerializeField] private string _id;
 		[SerializeField] private string _displayName;
+		[SerializeField] private PatchFlashDefinition _flash;
 		[SerializeField] private PatchNodeGroup[] _nodeGroups = Array.Empty<PatchNodeGroup>();
 		[SerializeField] private PatchParameter[] _parameters = Array.Empty<PatchParameter>();
 
 		public string Id => _id ?? string.Empty;
 		public string DisplayName => _displayName ?? string.Empty;
+		public PatchFlashDefinition Flash => _flash;
 		public IReadOnlyList<PatchNodeGroup> NodeGroups => _nodeGroups ?? Array.Empty<PatchNodeGroup>();
 		public IReadOnlyList<PatchParameter> Parameters => _parameters ?? Array.Empty<PatchParameter>();
 		public IEnumerable<Scene3DDefinition> Nodes => NodeGroups.Where(group => group != null).SelectMany(group => group.Nodes);
@@ -58,6 +79,7 @@ namespace ShitDesigner.Scene {
 				return Failure("patch.definition.parameter", "Published patch parameters require IDs, names, nodes, and source parameters.");
 			if (Parameters.GroupBy(parameter => parameter.Id, StringComparer.Ordinal).Any(group => group.Count() > 1)) return Failure("patch.definition.parameter_duplicate", "Published patch parameter IDs must be unique.");
 			if (Parameters.Any(parameter => !nodes.Any(node => string.Equals(node.Id, parameter.NodeId, StringComparison.Ordinal)))) return Failure("patch.definition.parameter_node", "A published patch parameter references an unknown scene node.");
+			if (Flash != null && Flash.Validate().IsFailure) return Failure("patch.definition.flash", "A patch flash definition is invalid.");
 			return UnitResult.Success<Diagnostic>();
 		}
 

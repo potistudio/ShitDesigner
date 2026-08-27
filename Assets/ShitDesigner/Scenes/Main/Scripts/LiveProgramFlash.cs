@@ -25,7 +25,7 @@ namespace ShitDesigner.Main {
 		}
 	}
 
-	/// <summary>Applies an input-triggered white flash after the Program shader graph.</summary>
+	/// <summary>Applies an input-triggered white or patch image flash after the Program shader graph.</summary>
 	internal sealed class LiveProgramFlash : IDisposable {
 		private static readonly int FlashAmount = Shader.PropertyToID("_FlashAmount");
 		private static readonly int AssetFlashTexture = Shader.PropertyToID("_AssetFlashTexture");
