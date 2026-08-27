@@ -3,15 +3,17 @@ using ShitDesigner.Scene;
 using UnityEngine;
 
 namespace ShitDesigner.Stage {
-	/// <summary>Scales the selected Animator controller playback rate from the shared BPM clock.</summary>
+	/// <summary>
+	/// Scales the selected Animator controller playback rate from the shared BPM clock.
+	/// </summary>
 	[DisallowMultipleComponent]
 	public sealed class BpmAnimatorSpeedController : MonoBehaviour, IBpmClockReceiver {
 		private const float DefaultReferenceBpm = 145f;
 
-		[SerializeField] private RuntimeAnimatorController _controller;
-		[SerializeField, Min(0.01f)] private float _referenceBpm = DefaultReferenceBpm;
+		[SerializeField] private RuntimeAnimatorController m_Animator;
+		[SerializeField, Min(1.0f)] private float m_ReferenceBpm = DefaultReferenceBpm;
 
-		private readonly List<Animator> _animators = new List<Animator>();
+		private readonly List<Animator> m_Animators = new List<Animator>();
 
 		private void Awake() {
 			FindAnimators();
@@ -22,24 +24,21 @@ namespace ShitDesigner.Stage {
 			SetAnimatorSpeed(1f);
 		}
 
-		private void OnValidate() {
-			_referenceBpm = Mathf.Max(0.01f, _referenceBpm);
-		}
-
 		public void SetBpmClock(BpmClockState clock) {
-			SetAnimatorSpeed(clock.BeatsPerMinute / _referenceBpm);
+			SetAnimatorSpeed(clock.BeatsPerMinute / m_ReferenceBpm);
 		}
 
 		private void FindAnimators() {
-			_animators.Clear();
-			if (_controller == null) return;
+			m_Animators.Clear();
+			if (m_Animator == null)
+				return;
 
 			foreach (var animator in GetComponentsInChildren<Animator>(true))
-				if (animator.runtimeAnimatorController == _controller) _animators.Add(animator);
+				if (animator.runtimeAnimatorController == m_Animator) m_Animators.Add(animator);
 		}
 
 		private void SetAnimatorSpeed(float speed) {
-			foreach (var animator in _animators) animator.speed = speed;
+			foreach (var animator in m_Animators) animator.speed = speed;
 		}
 	}
 }
