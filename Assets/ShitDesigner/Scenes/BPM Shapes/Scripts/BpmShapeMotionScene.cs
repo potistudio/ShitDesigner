@@ -7,14 +7,6 @@ namespace ShitDesigner.Scene {
 	public sealed class BpmShapeMotionScene : MonoBehaviour, IBpmClockReceiver {
 		[Range(30f, 300f)][SerializeField] private float _previewBpm = 138f;
 
-		private static readonly Color[] Palette = {
-			new Color(1f, .22f, .32f),
-			new Color(1f, .78f, .12f),
-			new Color(.12f, .92f, .82f),
-			new Color(.28f, .48f, 1f),
-			new Color(.92f, .25f, 1f)
-		};
-
 		private Material _material;
 		private MaterialPropertyBlock _propertyBlock;
 		private Mesh[] _meshes = Array.Empty<Mesh>();
@@ -69,6 +61,7 @@ namespace ShitDesigner.Scene {
 			_shapeFilter = _shape.gameObject.AddComponent<MeshFilter>();
 			_shapeRenderer = _shape.gameObject.AddComponent<MeshRenderer>();
 			_shapeRenderer.sharedMaterial = _material;
+			SetColor(_shapeRenderer, Color.white);
 			_configuredBeat = long.MinValue;
 			ApplyAnimation();
 		}
@@ -79,20 +72,21 @@ namespace ShitDesigner.Scene {
 			if (beat != _configuredBeat) ConfigureBeat(beat);
 
 			var phase = Mathf.Clamp01((float)(_totalBeats - beat));
-			var progress = 1f - Mathf.Pow(1f - phase, 3f);
+			var progress = phase * phase * (3f - 2f * phase);
+			var size = _targetSize * Mathf.Lerp(.85f, 1f, progress);
+			var width = size * Mathf.Lerp(1f, .65f, progress);
 			_shape.localPosition = Vector3.zero;
 			_shape.localRotation = Quaternion.Euler(0f, 0f, _startAngle + _rotation * progress);
-			_shape.localScale = Vector3.one * (_targetSize * progress);
+			_shape.localScale = new Vector3(width, size, 1f);
 		}
 
 		private void ConfigureBeat(long beat) {
 			_configuredBeat = beat;
 			var random = new System.Random(unchecked((int)(beat * 7919L + 1979L)));
-			_targetSize = NextFloat(random, 3f, 8f);
+			_targetSize = NextFloat(random, 3f, 5f);
 			_startAngle = NextFloat(random, 0f, 360f);
-			_rotation = NextFloat(random, 90f, 540f) * (random.Next(2) == 0 ? -1f : 1f);
+			_rotation = NextFloat(random, 15f, 60f) * (random.Next(2) == 0 ? -1f : 1f);
 			_shapeFilter.sharedMesh = _meshes[random.Next(_meshes.Length)];
-			SetColor(_shapeRenderer, Palette[random.Next(Palette.Length)]);
 		}
 
 		private void SetColor(Renderer renderer, Color color) {
