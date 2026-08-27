@@ -24,8 +24,7 @@ namespace ShitDesigner.Presentation.Overlay {
 		[SerializeField, Min(0.1f)] private float _circularStrokeThickness = 2f;
 		[SerializeField, Range(0f, 1f)] private float _circularStrokeOpacity = 0.54f;
 		[SerializeField] private float _circularStrokeStartAngle = -90f;
-		[SerializeField] private float _circularStrokeRotationSpeed = 3f;
-		[SerializeField, Min(0f)] private float _circularStrokeRotationSpeedVariation = 5f;
+		[SerializeField, Min(0f)] private float _circularStrokeRotationMaxSpeed = 3f;
 		[SerializeField, Min(0f)] private float _circularStrokeRotationNoiseFrequency = 0.15f;
 		[SerializeField, Min(1)] private int _accentStrokeInterval = 6;
 		[SerializeField] private Color _lineColor = new Color(0.91f, 0.93f, 0.95f, 0.74f);
@@ -80,7 +79,7 @@ namespace ShitDesigner.Presentation.Overlay {
 
 			_circularStrokeNoiseTime += Time.deltaTime * _circularStrokeRotationNoiseFrequency;
 			var noise = Mathf.PerlinNoise(_circularStrokeNoiseSeed, _circularStrokeNoiseTime) * 2f - 1f;
-			var rotationSpeed = _circularStrokeRotationSpeed + noise * _circularStrokeRotationSpeedVariation;
+			var rotationSpeed = noise * _circularStrokeRotationMaxSpeed;
 			_circularStrokeRotation = Mathf.Repeat(_circularStrokeRotation + rotationSpeed * Time.deltaTime, 360f);
 			_circularStrokeRoot.style.rotate = new StyleRotate(new Rotate(_circularStrokeRotation));
 		}
