@@ -58,11 +58,14 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(serializedGraph.FindProperty("_assetFlash").objectReferenceValue, Is.SameAs(assetFlash));
 				var serializedAssetFlash = new SerializedObject(assetFlash);
 				Assert.That(serializedAssetFlash.FindProperty("m_UseKeyboardInput").boolValue, Is.False);
+				var flashPatch = serializedAssetFlash.FindProperty("m_Patch").objectReferenceValue as AssetFlashPatchDefinition;
+				Assert.That(flashPatch, Is.Not.Null);
+				Assert.That(flashPatch.Id, Is.EqualTo("asset-flash"));
 				var slots = serializedAssetFlash.FindProperty("m_Slots");
 				Assert.That(slots.arraySize, Is.EqualTo(8));
-				Assert.That(slots.GetArrayElementAtIndex(0).FindPropertyRelative("m_Kind").enumValueIndex,
-					Is.EqualTo((int)AssetFlashComponentMediaKind.Image));
-				Assert.That(slots.GetArrayElementAtIndex(0).FindPropertyRelative("m_Image").objectReferenceValue, Is.Not.Null);
+				Assert.That(slots.GetArrayElementAtIndex(0).FindPropertyRelative("m_Image").objectReferenceValue, Is.Null);
+				Assert.That(flashPatch.TryGetImage(1, out var image), Is.True);
+				Assert.That(image, Is.Not.Null);
 
 				var serializedHost = new SerializedObject(host);
 				Assert.That(serializedHost.FindProperty("_graphBootstrap").objectReferenceValue, Is.SameAs(graph));
