@@ -3,6 +3,7 @@ using UnityEngine.UIElements;
 
 namespace ShitDesigner.Presentation.Overlay {
 	[RequireComponent(typeof(UIDocument))]
+	[DefaultExecutionOrder(1100)]
 	public sealed class OverlayDecoration : MonoBehaviour {
 		private const float EdgeInset = 32f;
 		private const float CornerSize = 112f;
@@ -18,6 +19,10 @@ namespace ShitDesigner.Presentation.Overlay {
 		private void OnEnable() {
 			if (_document == null) _document = GetComponent<UIDocument>();
 			BuildDecoration();
+		}
+
+		private void Start() {
+			if (_decorationRoot == null) BuildDecoration();
 		}
 
 		private void OnDisable() {
