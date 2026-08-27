@@ -25,6 +25,8 @@ namespace ShitDesigner.Presentation.Overlay {
 		[SerializeField, Range(0f, 1f)] private float _circularStrokeOpacity = 0.54f;
 		[SerializeField] private float _circularStrokeStartAngle = -90f;
 		[SerializeField] private float _circularStrokeRotationSpeed = 3f;
+		[SerializeField, Min(0f)] private float _circularStrokeRotationSpeedVariation = 5f;
+		[SerializeField, Min(0f)] private float _circularStrokeRotationNoiseFrequency = 0.15f;
 		[SerializeField, Min(1)] private int _accentStrokeInterval = 6;
 		[SerializeField] private Color _lineColor = new Color(0.91f, 0.93f, 0.95f, 0.74f);
 		[SerializeField] private Color _accentColor = new Color(0.34f, 0.65f, 1f, 0.68f);
@@ -33,11 +35,15 @@ namespace ShitDesigner.Presentation.Overlay {
 		private VisualElement _circularStrokeRoot;
 		private Coroutine _reloadRoutine;
 		private float _circularStrokeRotation;
+		private float _circularStrokeNoiseTime;
+		private float _circularStrokeNoiseSeed;
 
 		private void OnEnable() {
 			if (_panelRenderer == null) _panelRenderer = GetComponent<PanelRenderer>();
 			if (_panelRenderer == null) return;
 
+			_circularStrokeNoiseSeed = Random.Range(0f, 1000f);
+			_circularStrokeNoiseTime = 0f;
 			_panelRenderer.RegisterUIReloadCallback(OnUIReload);
 			_reloadRoutine = StartCoroutine(ReloadUiAfterPanelInitialization());
 		}
@@ -72,9 +78,10 @@ namespace ShitDesigner.Presentation.Overlay {
 		private void Update() {
 			if (_circularStrokeRoot == null) return;
 
-			_circularStrokeRotation = Mathf.Repeat(
-				_circularStrokeRotation + _circularStrokeRotationSpeed * Time.deltaTime,
-				360f);
+			_circularStrokeNoiseTime += Time.deltaTime * _circularStrokeRotationNoiseFrequency;
+			var noise = Mathf.PerlinNoise(_circularStrokeNoiseSeed, _circularStrokeNoiseTime) * 2f - 1f;
+			var rotationSpeed = _circularStrokeRotationSpeed + noise * _circularStrokeRotationSpeedVariation;
+			_circularStrokeRotation = Mathf.Repeat(_circularStrokeRotation + rotationSpeed * Time.deltaTime, 360f);
 			_circularStrokeRoot.style.rotate = new StyleRotate(new Rotate(_circularStrokeRotation));
 		}
 
@@ -88,6 +95,8 @@ namespace ShitDesigner.Presentation.Overlay {
 			_decorationRoot = null;
 			_circularStrokeRoot = null;
 			_circularStrokeRotation = 0f;
+			_circularStrokeNoiseTime = 0f;
+			_circularStrokeNoiseSeed = 0f;
 		}
 
 		private IEnumerator ReloadUiAfterPanelInitialization() {
