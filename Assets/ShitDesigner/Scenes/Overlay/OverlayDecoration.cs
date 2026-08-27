@@ -29,15 +29,15 @@ namespace ShitDesigner.Presentation.Overlay {
 		[SerializeField, Min(1)] private int _accentStrokeInterval = 6;
 		[SerializeField] private Color _lineColor = new Color(0.91f, 0.93f, 0.95f, 0.74f);
 		[SerializeField] private Color _accentColor = new Color(0.34f, 0.65f, 1f, 0.68f);
-		[SerializeField] private string _decorativeText = "ZKQ_04_17";
+		[SerializeField] private string _decorativeText = "TRACE BUFFER";
 		[SerializeField, Min(1)] private int _decorativeTextFontSize = 11;
 		[SerializeField, Range(0f, 1f)] private float _decorativeTextOpacity = 0.54f;
 		[SerializeField, Min(0f)] private float _decorativeTextOffset = 12f;
 		[SerializeField] private string[] _decorativeLogLines = {
-			"N7 / QX-04 / /",
-			"KZ_71 - 0A",
-			"TRC_19-4F",
-			"-- . . . //"
+			"[00:17:04] INFO TRACE_READY",
+			"[00:17:05] INFO BUFFER_STABLE",
+			"[00:17:06] INFO SIGNAL_HOLD",
+			"[00:17:07] INFO ROUTE_CLOSED"
 		};
 		[SerializeField, Min(1)] private int _decorativeLogFontSize = 10;
 		[SerializeField, Range(0f, 1f)] private float _decorativeLogOpacity = 0.42f;
