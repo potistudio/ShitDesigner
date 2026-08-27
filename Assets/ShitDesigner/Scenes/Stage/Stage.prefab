@@ -5165,6 +5165,13 @@ MonoBehaviour:
   _strobeFrequency: 2
   _strobeDutyCycle: 0.25
   _minimumBrightness: 0
+  _colorCycleEnabled: 1
+  _colorCycleSpeed: 0.12
+  _colorPalette:
+  - {r: 0.1, g: 0.75, b: 1, a: 1}
+  - {r: 1, g: 0.12, b: 0.72, a: 1}
+  - {r: 0.55, g: 0.2, b: 1, a: 1}
+  - {r: 1, g: 0.45, b: 0.08, a: 1}
 --- !u!1 &3455498450694139850
 GameObject:
   m_ObjectHideFlags: 0
@@ -11791,6 +11798,13 @@ MonoBehaviour:
   _strobeFrequency: 2.5
   _strobeDutyCycle: 0.32
   _minimumBrightness: 0.03
+  _colorCycleEnabled: 1
+  _colorCycleSpeed: 0.12
+  _colorPalette:
+  - {r: 0.1, g: 0.75, b: 1, a: 1}
+  - {r: 1, g: 0.12, b: 0.72, a: 1}
+  - {r: 0.55, g: 0.2, b: 1, a: 1}
+  - {r: 1, g: 0.45, b: 0.08, a: 1}
 --- !u!1 &9044742040616349075
 GameObject:
   m_ObjectHideFlags: 0
