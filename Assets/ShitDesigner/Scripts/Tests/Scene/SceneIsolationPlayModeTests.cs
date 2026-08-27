@@ -73,8 +73,12 @@ namespace ShitDesigner.Tests.Scene {
 				var camera = child.AddComponent<Camera>();
 				var additionalCameraData = child.AddComponent<UniversalAdditionalCameraData>();
 				additionalCameraData.renderType = CameraRenderType.Base;
+				var reflectionProbe = child.AddComponent<ReflectionProbe>();
+				reflectionProbe.enabled = false;
 				Assert.That(SceneIsolationManager.AssignLayerRecursively(root, 12).IsSuccess, Is.True);
 				Assert.That(SceneIsolationManager.ValidatePrefab(root, SceneNodeKind.ThreeD, 12, camera).IsSuccess, Is.True);
+				Assert.That(additionalCameraData.volumeLayerMask, Is.EqualTo(1 << 12));
+				Assert.That(reflectionProbe.cullingMask, Is.EqualTo(1 << 12));
 				Assert.That(camera.rect.x, Is.EqualTo(0f));
 				Assert.That(camera.rect.y, Is.EqualTo(0f));
 				Assert.That(camera.rect.width, Is.EqualTo(1f));
