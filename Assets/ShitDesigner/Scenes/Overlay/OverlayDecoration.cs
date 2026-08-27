@@ -88,7 +88,7 @@ namespace ShitDesigner.Presentation.Overlay {
 			AddBar(corner, 0f, horizontalY, CornerSize, 1f, LineColor);
 			AddBar(corner, verticalX, 0f, 1f, CornerSize, LineColor);
 
-			AddInnerCorner(corner);
+			AddInnerCorner(corner, right, bottom);
 
 			var nodeX = right ? CornerSize - 3f : -2f;
 			var nodeY = bottom ? CornerSize - 3f : -2f;
@@ -99,9 +99,16 @@ namespace ShitDesigner.Presentation.Overlay {
 			node.style.borderBottomRightRadius = Pixels(3f);
 		}
 
-		private static void AddInnerCorner(VisualElement parent) {
-			AddBar(parent, 12f, 12f, 44f, 1f, AccentColor);
-			AddBar(parent, 12f, 12f, 1f, 44f, AccentColor);
+		private static void AddInnerCorner(VisualElement parent, bool right, bool bottom) {
+			const float inset = 12f;
+			const float length = 44f;
+			var cornerX = right ? CornerSize - inset : inset;
+			var cornerY = bottom ? CornerSize - inset : inset;
+			var horizontalX = right ? cornerX - length : cornerX;
+			var verticalY = bottom ? cornerY - length : cornerY;
+
+			AddBar(parent, horizontalX, cornerY, length, 1f, AccentColor);
+			AddBar(parent, cornerX, verticalY, 1f, length, AccentColor);
 		}
 
 		private void AddHorizontalStrip(bool top) {
