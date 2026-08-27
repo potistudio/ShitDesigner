@@ -36,14 +36,18 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(document, Is.Not.Null);
 				Assert.That(document.visualTreeAsset, Is.Not.Null);
 				Assert.That(document.panelSettings, Is.Not.Null);
-				Assert.That(graph.Patches.Length, Is.EqualTo(4));
+				Assert.That(graph.Patches.Length, Is.EqualTo(5));
 				Assert.That(graph.Patches.All(definition => definition != null && !string.IsNullOrWhiteSpace(definition.Id) && definition.NodeGroups.Count > 0), Is.True);
-				Assert.That(graph.Patches.Select(definition => definition.Id).Distinct().Count(), Is.EqualTo(4));
+				Assert.That(graph.Patches.Select(definition => definition.Id).Distinct().Count(), Is.EqualTo(5));
 				Assert.That(graph.Patches.SelectMany(definition => definition.Nodes).All(node => node.Prefab.GetComponent<LiveSceneRoot>() != null), Is.True);
 				var bpmShapes = graph.Patches.Single(definition => definition.Id == "bpm-shapes");
 				var bpmShapesPrefab = bpmShapes.Nodes.Single().Prefab;
 				Assert.That(bpmShapesPrefab.GetComponent("BpmShapeMotionScene"), Is.Not.Null);
 				Assert.That(bpmShapesPrefab.GetComponentInChildren<Camera>().orthographic, Is.True);
+				var stage = graph.Patches.Single(definition => definition.Id == "stage");
+				var stagePrefab = stage.Nodes.Single().Prefab;
+				Assert.That(stagePrefab.GetComponent<LiveGraphClockRateParameter>(), Is.Not.Null);
+				Assert.That(stagePrefab.GetComponent("BpmAnimatorSpeedController"), Is.Not.Null);
 				var serializedGraph = new SerializedObject(graph);
 				Assert.That(serializedGraph.FindProperty("_shaderManifest").objectReferenceValue, Is.Not.Null);
 
