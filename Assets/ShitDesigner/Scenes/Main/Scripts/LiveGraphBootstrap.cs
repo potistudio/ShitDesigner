@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using ShitDesigner.Core;
-using ShitDesigner.Media;
 using ShitDesigner.Nodes;
 using ShitDesigner.Rendering;
 using ShitDesigner.Runtime;
@@ -26,7 +25,6 @@ namespace ShitDesigner.Main {
 
 		[SerializeField] private PatchDefinition[] _patches = Array.Empty<PatchDefinition>();
 		[SerializeField] private ShaderNodeManifestAsset _shaderManifest;
-		[SerializeField] private AssetFlashComponent _assetFlash;
 
 		public PatchDefinition[] Patches => _patches ?? Array.Empty<PatchDefinition>();
 		public int ProgramOutputCount => Patches.Sum(patch => patch == null ? 0 : patch.Nodes.Count());
@@ -51,8 +49,8 @@ namespace ShitDesigner.Main {
 			var nodeIndices = definitions.SelectMany(definition => definition.Nodes).Select((node, index) => new { node.Id, Index = index })
 				.ToDictionary(node => node.Id, node => node.Index, StringComparer.Ordinal);
 			try {
-				return new LiveGraph(sceneManager, renderPool, definitions, node =>
-					BuildOutput(sceneManager, renderPool, node, nodeIndices[node.Id], shaderDefinitions, flashShader, _assetFlash));
+				return new LiveGraph(sceneManager, renderPool, definitions, (node, flashPatch) =>
+					BuildOutput(sceneManager, renderPool, node, nodeIndices[node.Id], shaderDefinitions, flashShader, flashPatch));
 			}
 			catch {
 				sceneManager.Dispose();
@@ -78,7 +76,7 @@ namespace ShitDesigner.Main {
 
 		private static LiveProgramOutput BuildOutput(SceneIsolationManager sceneManager, RenderTexturePool renderPool,
 			Scene3DDefinition definition, int index, IReadOnlyDictionary<NodeTypeId, LiveProgramShaderDefinition> shaderDefinitions,
-			Shader flashShader, AssetFlashComponent assetFlash) {
+			Shader flashShader, PatchFlashDefinition flashPatch) {
 			var created = sceneManager.Create(new SceneCreateRequest(NodeInstanceId.New(), SceneNodeKind.ThreeD,
 				"ShitDesigner.Main.LiveScene." + index, 1, definition.Prefab));
 			if (created.IsFailure) throw new InvalidOperationException(created.Error.Message);
@@ -101,7 +99,7 @@ namespace ShitDesigner.Main {
 				shaderGraphTexture = CreateTexture("ShitDesigner.Main.ProgramGraphOutput." + index, 0, RenderTextureFormat.ARGBHalf);
 				shaderGraph = BuildProgramShaderGraph(renderPool, shaderDefinitions, definition.Id);
 				flash = new LiveProgramFlash(flashShader);
-				return new LiveProgramOutput(definition, created.Value, root, programTexture, renderTexture, shaderGraphTexture, shaderGraph, flash, assetFlash);
+				return new LiveProgramOutput(definition, created.Value, root, programTexture, renderTexture, shaderGraphTexture, shaderGraph, flash, flashPatch);
 			}
 			catch {
 				flash?.Dispose();

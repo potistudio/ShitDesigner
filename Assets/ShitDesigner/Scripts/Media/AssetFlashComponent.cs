@@ -58,7 +58,6 @@ namespace ShitDesigner.Media {
 			Key.Digit8
 		};
 
-		[SerializeField] private AssetFlashPatchDefinition m_Patch;
 		[SerializeField, Min(.01f)] private float m_DurationSeconds = .25f;
 		[SerializeField] private bool m_UseUnscaledTime = true;
 		[SerializeField] private bool m_UseKeyboardInput = true;
@@ -74,10 +73,8 @@ namespace ShitDesigner.Media {
 		private double m_VisibleUntil;
 		private Texture m_OutputTexture;
 		private bool m_Initialized;
-		private bool m_PatchApplied;
 
 		public int ActiveSlot => m_ActiveSlot < 0 ? 0 : m_ActiveSlot + 1;
-		public AssetFlashPatchDefinition Patch => m_Patch;
 		public Texture OutputTexture => m_OutputTexture;
 		public float DurationSeconds { get => m_DurationSeconds; set => m_DurationSeconds = Mathf.Max(.01f, value); }
 		public bool UseKeyboardInput { get => m_UseKeyboardInput; set => m_UseKeyboardInput = value; }
@@ -91,7 +88,6 @@ namespace ShitDesigner.Media {
 
 		private void Awake() {
 			EnsureSlots();
-			ApplyPatch();
 			InitializePlayers();
 			ApplyOutput(null);
 		}
@@ -182,16 +178,7 @@ namespace ShitDesigner.Media {
 
 		private void EnsureInitialized() {
 			EnsureSlots();
-			ApplyPatch();
 			if (!m_Initialized) InitializePlayers();
-		}
-
-		private void ApplyPatch() {
-			if (m_Patch == null || m_PatchApplied) return;
-			m_DurationSeconds = Mathf.Max(.01f, m_Patch.DurationSeconds);
-			for (var index = 0; index < m_Slots.Length; index++)
-				m_Slots[index].SetImage(m_Patch.TryGetImage(index + 1, out var image) ? image : null);
-			m_PatchApplied = true;
 		}
 
 		private void EnsureSlots() {

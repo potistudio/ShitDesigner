@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using ShitDesigner.Core;
-using ShitDesigner.Media;
 using ShitDesigner.Nodes;
 using ShitDesigner.Rendering;
 using ShitDesigner.Runtime;
@@ -53,11 +52,11 @@ namespace ShitDesigner.Main {
 	internal sealed class LiveGraph : IDisposable {
 		private readonly SceneIsolationManager _sceneManager;
 		private readonly RenderTexturePool _renderPool;
-		private readonly Func<Scene3DDefinition, LiveProgramOutput> _createOutput;
+		private readonly Func<Scene3DDefinition, PatchFlashDefinition, LiveProgramOutput> _createOutput;
 		public IReadOnlyList<PatchDefinition> PatchDefinitions { get; }
 
 		public LiveGraph(SceneIsolationManager sceneManager, RenderTexturePool renderPool, IEnumerable<PatchDefinition> patchDefinitions,
-			Func<Scene3DDefinition, LiveProgramOutput> createOutput) {
+			Func<Scene3DDefinition, PatchFlashDefinition, LiveProgramOutput> createOutput) {
 			_sceneManager = sceneManager ?? throw new ArgumentNullException(nameof(sceneManager));
 			_renderPool = renderPool ?? throw new ArgumentNullException(nameof(renderPool));
 			_createOutput = createOutput ?? throw new ArgumentNullException(nameof(createOutput));
@@ -65,7 +64,7 @@ namespace ShitDesigner.Main {
 			if (PatchDefinitions.Count == 0) throw new ArgumentException("A live graph requires patches.");
 		}
 
-		public LiveProgramOutput CreateOutput(Scene3DDefinition definition) => _createOutput(definition);
+		public LiveProgramOutput CreateOutput(Scene3DDefinition definition, PatchFlashDefinition flashPatch) => _createOutput(definition, flashPatch);
 
 		public void Dispose() {
 			_sceneManager.Dispose();
@@ -156,11 +155,11 @@ namespace ShitDesigner.Main {
 		private readonly RenderTexture _shaderGraphTexture;
 		private readonly LiveProgramShaderGraph _programGraph;
 		private readonly LiveProgramFlash _flash;
-		private readonly AssetFlashComponent _assetFlash;
+		private readonly PatchFlashDefinition _flashPatch;
 
 		public LiveProgramOutput(Scene3DDefinition definition, SceneNodeRuntime runtime, LiveSceneRoot root,
 			RenderTexture programTexture, RenderTexture renderTexture, RenderTexture shaderGraphTexture,
-			LiveProgramShaderGraph programGraph, LiveProgramFlash flash, AssetFlashComponent assetFlash) {
+			LiveProgramShaderGraph programGraph, LiveProgramFlash flash, PatchFlashDefinition flashPatch) {
 			Definition = definition ?? throw new ArgumentNullException(nameof(definition));
 			Runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
 			Root = root ?? throw new ArgumentNullException(nameof(root));
@@ -169,7 +168,7 @@ namespace ShitDesigner.Main {
 			_shaderGraphTexture = shaderGraphTexture ?? throw new ArgumentNullException(nameof(shaderGraphTexture));
 			_programGraph = programGraph ?? throw new ArgumentNullException(nameof(programGraph));
 			_flash = flash ?? throw new ArgumentNullException(nameof(flash));
-			_assetFlash = assetFlash;
+			_flashPatch = flashPatch;
 		}
 
 		public void Render(double graphTime, double deltaSeconds, ulong frameNumber) {
@@ -182,8 +181,8 @@ namespace ShitDesigner.Main {
 
 		public void TriggerFlash(double graphTime) {
 			_flash.Trigger(graphTime);
-			if (_assetFlash == null || !_assetFlash.TryTrigger(1) || _assetFlash.OutputTexture == null) return;
-			_flash.TriggerAsset(graphTime, _assetFlash.OutputTexture, _assetFlash.DurationSeconds);
+			if (_flashPatch?.Image == null) return;
+			_flash.TriggerAsset(graphTime, _flashPatch.Image, _flashPatch.DurationSeconds);
 		}
 
 		public void Dispose() {
@@ -415,12 +414,12 @@ namespace ShitDesigner.Main {
 		public PatchDefinition Definition { get; }
 		public IReadOnlyList<LiveProgramOutput> Outputs { get; }
 
-		public LivePatch(PatchDefinition definition, Func<Scene3DDefinition, LiveProgramOutput> createOutput) {
+		public LivePatch(PatchDefinition definition, Func<Scene3DDefinition, PatchFlashDefinition, LiveProgramOutput> createOutput) {
 			Definition = definition ?? throw new ArgumentNullException(nameof(definition));
 			if (createOutput == null) throw new ArgumentNullException(nameof(createOutput));
 			var outputsByNodeId = new Dictionary<string, LiveProgramOutput>(StringComparer.Ordinal);
 			try {
-				foreach (var node in definition.Nodes) outputsByNodeId.Add(node.Id, createOutput(node));
+				foreach (var node in definition.Nodes) outputsByNodeId.Add(node.Id, createOutput(node, definition.Flash));
 				Outputs = outputsByNodeId.Values.ToArray();
 				_parameters = definition.Parameters.ToDictionary(parameter => parameter.Id, parameter => {
 					var output = outputsByNodeId[parameter.NodeId];

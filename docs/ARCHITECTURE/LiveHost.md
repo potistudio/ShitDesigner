@@ -152,6 +152,7 @@
 
 - `LiveGraphBootstrap` は任意数の `PatchDefinition` をシリアライズして保持する。
 - `PatchDefinition` はUnityの `Scene3DDefinition` をノードグループとして参照し、ライブUIへ公開するパラメーターを明示的に束ねる。これはUnityのSceneとは別の論理的なパッチである。
+- `PatchDefinition` は任意の `PatchFlashDefinition` を持ち、発火時に表示する画像と表示時間をパッチ単位で定義する。未設定のパッチは画像フラッシュを行わず、共通の白フラッシュだけを行う。
 - Bootは最初のパッチだけを事前ロードする。
 - パッチの事前ロード時に対象のUnityシーンノードRuntimeと描画リソースを生成する。
 - 事前ロード対象は常に1件だけ保持する。別のパッチを事前ロードすると、表示中ではない前の事前ロード対象を破棄する。
