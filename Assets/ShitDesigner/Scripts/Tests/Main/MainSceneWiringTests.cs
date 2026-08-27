@@ -46,6 +46,8 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(bpmShapesPrefab.GetComponentInChildren<Camera>().orthographic, Is.True);
 				var stage = graph.Patches.Single(definition => definition.Id == "stage");
 				var stagePrefab = stage.Nodes.Single().Prefab;
+				Assert.That(stage.Parameters.Single().NodeId, Is.EqualTo(stage.Nodes.Single().Id));
+				Assert.That(stage.Parameters.Single().ParameterId, Is.EqualTo(LiveGraphClockRateParameter.ParameterId));
 				Assert.That(stagePrefab.GetComponent<LiveGraphClockRateParameter>(), Is.Not.Null);
 				Assert.That(stagePrefab.GetComponent("BpmAnimatorSpeedController"), Is.Not.Null);
 				var serializedGraph = new SerializedObject(graph);
