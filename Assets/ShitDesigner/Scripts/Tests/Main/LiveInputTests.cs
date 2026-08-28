@@ -6,10 +6,44 @@ using ShitDesigner.Input;
 using ShitDesigner.Scene;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 
 namespace ShitDesigner.Main.Tests {
 	[TestFixture]
 	public sealed class LiveInputTests {
+		[Test]
+		public void KeyboardMappingQueuesPressedAndReleasedParameterRequestsForLoadedPatch() {
+			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.A));
+			Keyboard keyboard = null;
+			try {
+				keyboard = InputSystem.AddDevice<Keyboard>();
+				keyboard.MakeCurrent();
+				var queue = new LiveParameterQueue();
+				var input = new LiveKeyboardInput(queue, new[] { patch }, _ => { }, _ => { }, _ => { }, () => { }, _ => { });
+
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.A));
+				InputSystem.Update();
+				input.Poll("patch-a");
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+				InputSystem.Update();
+				input.Poll("patch-a");
+
+				var requests = new List<LiveParameterRequest>();
+				queue.Drain(requests);
+				Assert.That(requests, Has.Count.EqualTo(2));
+				Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.SetParameter));
+				Assert.That(requests[0].ParameterId, Is.EqualTo("motion"));
+				Assert.That(requests[0].Value, Is.EqualTo(1f));
+				Assert.That(requests[1].ParameterId, Is.EqualTo("motion"));
+				Assert.That(requests[1].Value, Is.EqualTo(0f));
+			}
+			finally {
+				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
+				Object.DestroyImmediate(patch);
+			}
+		}
+
 		[Test]
 		public void MidiMappingQueuesPreloadedPatchLoadAndParameterRequestsInEventOrder() {
 			var owner = new GameObject("MIDI");
@@ -117,6 +151,21 @@ namespace ShitDesigner.Main.Tests {
 				input.FindPropertyRelative("m_RawMinimum").intValue = binding.RawMinimum;
 				input.FindPropertyRelative("m_RawMaximum").intValue = binding.RawMaximum;
 				input.FindPropertyRelative("m_Invert").boolValue = binding.Invert;
+				input.FindPropertyRelative("m_ParameterId").stringValue = binding.ParameterId;
+			}
+			serialized.ApplyModifiedPropertiesWithoutUndo();
+			return patch;
+		}
+
+		private static PatchDefinition CreateKeyboardPatch(string id, params PatchKeyboardInputBinding[] keyboardInputs) {
+			var patch = CreatePatch(id);
+			var serialized = new SerializedObject(patch);
+			var inputs = serialized.FindProperty("m_KeyboardInputs");
+			inputs.arraySize = keyboardInputs.Length;
+			for (var index = 0; index < keyboardInputs.Length; index++) {
+				var input = inputs.GetArrayElementAtIndex(index);
+				var binding = keyboardInputs[index];
+				input.FindPropertyRelative("m_Key").enumValueIndex = (int)binding.Key;
 				input.FindPropertyRelative("m_ParameterId").stringValue = binding.ParameterId;
 			}
 			serialized.ApplyModifiedPropertiesWithoutUndo();
