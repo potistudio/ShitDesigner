@@ -65,6 +65,7 @@ MonoBehaviour:
   _id: shower_sequence
   _displayName: Shower Sequence
   _shower: {fileID: 4698484083944753630}
+  m_RandomCamera: {fileID: 137906465678496544}
   _value: 0
 --- !u!114 &137906465678496544
 MonoBehaviour:
@@ -77,11 +78,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5ae7c42bebcb492bacf366b2f204b19e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Scene.ShowerRandomCamera
+  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.ShowerRandomCamera
   m_Camera: {fileID: 6570670809088618801}
   m_Target: {fileID: 289278298075985152}
   m_MovementRange: {x: 0.4, y: 0.25, z: 0.35}
   m_MovementSpeed: 0.12
+  m_TeleportDistance: 2
   m_RandomSeed: 2718
 --- !u!1 &1504417746781492947
 GameObject:

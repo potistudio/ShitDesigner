@@ -13,6 +13,7 @@ namespace ShitDesigner.Scene {
 		[Header("Motion")]
 		[SerializeField] private Vector3 m_MovementRange = new Vector3(0.4f, 0.25f, 0.35f);
 		[Min(0f)][SerializeField] private float m_MovementSpeed = 0.12f;
+		[Min(0.01f)][SerializeField] private float m_TeleportDistance = 2f;
 		[SerializeField] private int m_RandomSeed = 2718;
 
 		private bool m_GraphClockDriven;
@@ -21,6 +22,7 @@ namespace ShitDesigner.Scene {
 		private float m_NoiseSeed;
 		private float m_NoiseTime;
 		private Vector3 m_BaseLocalPosition;
+		private System.Random m_Random;
 
 		private void OnEnable() {
 			m_GraphClockDriven = false;
@@ -40,6 +42,7 @@ namespace ShitDesigner.Scene {
 			m_MovementRange.y = Mathf.Max(0f, m_MovementRange.y);
 			m_MovementRange.z = Mathf.Max(0f, m_MovementRange.z);
 			m_MovementSpeed = Mathf.Max(0f, m_MovementSpeed);
+			m_TeleportDistance = Mathf.Max(0.01f, m_TeleportDistance);
 			m_Initialized = false;
 		}
 
@@ -54,6 +57,18 @@ namespace ShitDesigner.Scene {
 				return;
 
 			Advance((float)Math.Min(deltaSeconds, float.MaxValue));
+		}
+
+		public void TeleportRandomly() {
+			Initialize();
+			if (m_Camera == null || m_Target == null)
+				return;
+
+			m_Random ??= new System.Random(m_RandomSeed);
+			m_Camera.transform.position = m_Target.position + NextRandomDirection() * m_TeleportDistance;
+			m_NoiseTime = 0f;
+			m_BaseLocalPosition = m_Camera.transform.localPosition - Vector3.Scale(GetNoiseOffset(), m_MovementRange);
+			ApplyOrientation();
 		}
 
 		private void Advance(float deltaSeconds) {
@@ -83,6 +98,7 @@ namespace ShitDesigner.Scene {
 
 			m_NoiseSeed = Mathf.Repeat(m_RandomSeed * 0.61803399f, 1000f);
 			m_NoiseTime = 0f;
+			m_Random = new System.Random(m_RandomSeed);
 			m_Initialized = true;
 		}
 
@@ -91,12 +107,18 @@ namespace ShitDesigner.Scene {
 			if (m_Camera == null)
 				return;
 
-			var noiseOffset = new Vector3(
+			m_Camera.transform.localPosition = m_BaseLocalPosition + Vector3.Scale(GetNoiseOffset(), m_MovementRange);
+			ApplyOrientation();
+		}
+
+		private Vector3 GetNoiseOffset() {
+			return new Vector3(
 				SampleNoise(0f),
 				SampleNoise(37.1f),
 				SampleNoise(73.7f));
-			m_Camera.transform.localPosition = m_BaseLocalPosition + Vector3.Scale(noiseOffset, m_MovementRange);
+		}
 
+		private void ApplyOrientation() {
 			if (m_Target == null)
 				return;
 
@@ -107,6 +129,16 @@ namespace ShitDesigner.Scene {
 
 		private float SampleNoise(float axisOffset) {
 			return Mathf.PerlinNoise(m_NoiseSeed + axisOffset, m_NoiseTime) * 2f - 1f;
+		}
+
+		private Vector3 NextRandomDirection() {
+			var vertical = Mathf.Lerp(-0.65f, 0.65f, (float)m_Random.NextDouble());
+			var horizontalAngle = (float)m_Random.NextDouble() * Mathf.PI * 2f;
+			var horizontalLength = Mathf.Sqrt(1f - vertical * vertical);
+			return new Vector3(
+				Mathf.Cos(horizontalAngle) * horizontalLength,
+				vertical,
+				Mathf.Sin(horizontalAngle) * horizontalLength);
 		}
 	}
 }
