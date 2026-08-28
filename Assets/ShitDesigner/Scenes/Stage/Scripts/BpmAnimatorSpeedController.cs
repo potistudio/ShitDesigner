@@ -6,7 +6,7 @@ using UnityEngine;
 namespace ShitDesigner.Stage {
 	/// <summary>
 	/// Synchronizes the selected Animator controller with the shared BPM clock and
-	/// optionally evaluates it at a fixed frame rate.
+	/// optionally evaluates it at a fixed animation-time frame rate.
 	/// </summary>
 	[DisallowMultipleComponent]
 	public sealed class BpmAnimatorSpeedController : MonoBehaviour, IBpmClockReceiver, ISceneGraphClockReceiver {
@@ -49,7 +49,7 @@ namespace ShitDesigner.Stage {
 				return;
 
 			var frameDuration = 1d / m_PosterizeFrameRate;
-			m_PosterizeAccumulator += deltaSeconds;
+			m_PosterizeAccumulator += deltaSeconds * m_AnimatorSpeed;
 			if (double.IsNaN(m_PosterizeAccumulator) || double.IsInfinity(m_PosterizeAccumulator)) {
 				m_PosterizeAccumulator = 0d;
 				return;
@@ -60,7 +60,7 @@ namespace ShitDesigner.Stage {
 				return;
 
 			m_PosterizeAccumulator -= frameCount * frameDuration;
-			var updateSeconds = (float)Math.Min(frameCount * frameDuration * m_AnimatorSpeed, float.MaxValue);
+			var updateSeconds = (float)Math.Min(frameCount * frameDuration, float.MaxValue);
 			foreach (var animator in m_Animators) {
 				if (animator == null)
 					continue;
