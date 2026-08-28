@@ -4,6 +4,8 @@ using System.Linq;
 using CSharpFunctionalExtensions;
 using ShitDesigner.Core;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.Video;
 
 namespace ShitDesigner.Scene {
 	[Serializable]
@@ -81,17 +83,22 @@ namespace ShitDesigner.Scene {
 	public sealed class PatchGraphNode {
 		[SerializeField] private string _id;
 		[SerializeField] private string _typeId;
+		// Main's authored live host uses a direct Unity clip reference; the
+		// standalone project runtime continues to use the MediaAsset parameter.
+		[SerializeField] private VideoClip m_VideoClip;
 		[SerializeField] private List<PatchGraphParameter> _parameters = new List<PatchGraphParameter>();
 
 		public string Id => (_id ?? string.Empty).Trim();
 		public string TypeId => (_typeId ?? string.Empty).Trim();
+		public VideoClip VideoClip => m_VideoClip;
 		public IReadOnlyList<PatchGraphParameter> Parameters => _parameters ?? (IReadOnlyList<PatchGraphParameter>)Array.Empty<PatchGraphParameter>();
 
 		public PatchGraphNode() { }
 
-		public PatchGraphNode(string id, string typeId, IEnumerable<PatchGraphParameter> parameters = null) {
+		public PatchGraphNode(string id, string typeId, IEnumerable<PatchGraphParameter> parameters = null, VideoClip videoClip = null) {
 			_id = id;
 			_typeId = typeId;
+			m_VideoClip = videoClip;
 			_parameters = new List<PatchGraphParameter>(parameters ?? Enumerable.Empty<PatchGraphParameter>());
 		}
 
@@ -217,6 +224,36 @@ namespace ShitDesigner.Scene {
 	}
 
 	[Serializable]
+	public sealed class PatchKeyboardInputBinding {
+		[SerializeField] private Key m_Key = Key.None;
+		[SerializeField] private string m_ParameterId;
+
+		public Key Key => m_Key;
+		public string ParameterId => (m_ParameterId ?? string.Empty).Trim();
+
+		public PatchKeyboardInputBinding() { }
+
+		public PatchKeyboardInputBinding(string parameterId, Key key) {
+			m_ParameterId = parameterId ?? string.Empty;
+			m_Key = key;
+		}
+
+		public bool Matches(Key key) => m_Key == key;
+		public float Value(bool pressed) => pressed ? 1f : 0f;
+
+		public UnitResult<Diagnostic> Validate() {
+			if (m_Key == Key.None || !Enum.IsDefined(typeof(Key), m_Key))
+				return Failure("patch.definition.keyboard_input.key", "A patch keyboard input requires a valid key.");
+			if (string.IsNullOrWhiteSpace(ParameterId))
+				return Failure("patch.definition.keyboard_input.parameter", "A patch keyboard input requires a target parameter.");
+			return UnitResult.Success<Diagnostic>();
+		}
+
+		private static UnitResult<Diagnostic> Failure(string code, string message)
+			=> UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "scene"));
+	}
+
+	[Serializable]
 	public sealed class PatchMidiInputBinding {
 		[SerializeField] private MidiControlKind m_MessageType = MidiControlKind.ControlChange;
 		[SerializeField, Range(1, 16)] private int m_Channel = 1;
@@ -304,6 +341,7 @@ namespace ShitDesigner.Scene {
 		[SerializeField] private PatchProgramGraph _programGraph = new PatchProgramGraph();
 		[SerializeField] private List<Scene3DDefinition> _nodes = new List<Scene3DDefinition>();
 		[SerializeField] private List<PatchParameter> _parameters = new List<PatchParameter>();
+		[SerializeField] private List<PatchKeyboardInputBinding> m_KeyboardInputs = new List<PatchKeyboardInputBinding>();
 		[SerializeField] private List<PatchMidiInputBinding> m_MidiInputs = new List<PatchMidiInputBinding>();
 
 		public string Id => _id ?? string.Empty;
@@ -312,6 +350,7 @@ namespace ShitDesigner.Scene {
 		public PatchProgramGraph ProgramGraph => _programGraph;
 		public IReadOnlyList<Scene3DDefinition> Nodes => _nodes ?? (IReadOnlyList<Scene3DDefinition>)Array.Empty<Scene3DDefinition>();
 		public IReadOnlyList<PatchParameter> Parameters => _parameters ?? (IReadOnlyList<PatchParameter>)Array.Empty<PatchParameter>();
+		public IReadOnlyList<PatchKeyboardInputBinding> KeyboardInputs => m_KeyboardInputs ?? (IReadOnlyList<PatchKeyboardInputBinding>)Array.Empty<PatchKeyboardInputBinding>();
 		public IReadOnlyList<PatchMidiInputBinding> MidiInputs => m_MidiInputs ?? (IReadOnlyList<PatchMidiInputBinding>)Array.Empty<PatchMidiInputBinding>();
 
 		public UnitResult<Diagnostic> Validate() {
@@ -328,6 +367,9 @@ namespace ShitDesigner.Scene {
 				return Failure("patch.definition.parameter", "Published patch parameters require IDs, names, nodes, and source parameters.");
 			if (Parameters.GroupBy(parameter => parameter.Id, StringComparer.Ordinal).Any(group => group.Count() > 1)) return Failure("patch.definition.parameter_duplicate", "Published patch parameter IDs must be unique.");
 			if (Parameters.Any(parameter => !nodes.Any(node => string.Equals(node.Id, parameter.NodeId, StringComparison.Ordinal)))) return Failure("patch.definition.parameter_node", "A published patch parameter references an unknown scene node.");
+			if (KeyboardInputs.Any(binding => binding == null || binding.Validate().IsFailure)) return Failure("patch.definition.keyboard_input", "Every patch keyboard input must be valid.");
+			if (KeyboardInputs.Any(binding => !Parameters.Any(parameter => parameter != null && string.Equals(parameter.Id, binding.ParameterId, StringComparison.Ordinal))))
+				return Failure("patch.definition.keyboard_input_parameter", "A patch keyboard input references an unknown published parameter.");
 			if (MidiInputs.Any(binding => binding == null || binding.Validate().IsFailure)) return Failure("patch.definition.midi_input", "Every patch MIDI input must be valid.");
 			if (MidiInputs.Any(binding => !Parameters.Any(parameter => parameter != null && string.Equals(parameter.Id, binding.ParameterId, StringComparison.Ordinal))))
 				return Failure("patch.definition.midi_input_parameter", "A patch MIDI input references an unknown published parameter.");

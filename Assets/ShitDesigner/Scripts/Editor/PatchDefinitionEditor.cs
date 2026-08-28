@@ -16,6 +16,7 @@ namespace ShitDesigner.Editor {
 		private SerializedProperty _programGraph;
 		private SerializedProperty _nodes;
 		private SerializedProperty _parameters;
+		private SerializedProperty m_KeyboardInputs;
 		private SerializedProperty m_MidiInputs;
 		private SerializedProperty _flash;
 
@@ -25,6 +26,7 @@ namespace ShitDesigner.Editor {
 			_programGraph = serializedObject.FindProperty("_programGraph");
 			_nodes = serializedObject.FindProperty("_nodes");
 			_parameters = serializedObject.FindProperty("_parameters");
+			m_KeyboardInputs = serializedObject.FindProperty("m_KeyboardInputs");
 			m_MidiInputs = serializedObject.FindProperty("m_MidiInputs");
 			_flash = serializedObject.FindProperty("_flash");
 		}
@@ -46,6 +48,9 @@ namespace ShitDesigner.Editor {
 
 			EditorGUILayout.Space(6f);
 			EditorGUILayout.PropertyField(_parameters, new GUIContent("Published Parameters"), true);
+
+			EditorGUILayout.Space(6f);
+			EditorGUILayout.PropertyField(m_KeyboardInputs, new GUIContent("Keyboard Inputs", "Maps keyboard keys to published parameters while this patch is loaded. Pressed is 1 and released is 0."), true);
 
 			EditorGUILayout.Space(6f);
 			EditorGUILayout.PropertyField(m_MidiInputs, new GUIContent("MIDI Inputs", "Maps MIDI controls to published parameters while this patch is loaded."), true);
@@ -160,6 +165,33 @@ namespace ShitDesigner.Editor {
 		}
 	}
 
+	[CustomPropertyDrawer(typeof(PatchKeyboardInputBinding))]
+	public sealed class PatchKeyboardInputBindingDrawer : PropertyDrawer {
+		private const float LineSpacing = 2f;
+
+		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
+			EditorGUI.BeginProperty(position, label, property);
+			var key = property.FindPropertyRelative("m_Key");
+			var parameterId = property.FindPropertyRelative("m_ParameterId");
+			var y = position.y;
+
+			EditorGUI.PropertyField(Line(position, ref y), key, new GUIContent("Key"));
+			PatchInputBindingDrawerUtility.DrawParameterPopup(Line(position, ref y), parameterId,
+				property.serializedObject.FindProperty("_parameters"));
+
+			EditorGUI.EndProperty();
+		}
+
+		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+			=> EditorGUIUtility.singleLineHeight * 2f + LineSpacing;
+
+		private static Rect Line(Rect position, ref float y) {
+			var line = new Rect(position.x, y, position.width, EditorGUIUtility.singleLineHeight);
+			y += EditorGUIUtility.singleLineHeight + LineSpacing;
+			return line;
+		}
+	}
+
 	[CustomPropertyDrawer(typeof(PatchMidiInputBinding))]
 	public sealed class PatchMidiInputBindingDrawer : PropertyDrawer {
 		private const float LineSpacing = 2f;
@@ -187,7 +219,8 @@ namespace ShitDesigner.Editor {
 			rawMinimum.intValue = EditorGUI.IntField(Line(position, ref y), new GUIContent("Raw Minimum"), rawMinimum.intValue);
 			rawMaximum.intValue = EditorGUI.IntField(Line(position, ref y), new GUIContent("Raw Maximum"), rawMaximum.intValue);
 			EditorGUI.PropertyField(Line(position, ref y), invert, new GUIContent("Invert"));
-			DrawParameterPopup(Line(position, ref y), parameterId, property.serializedObject.FindProperty("_parameters"));
+			PatchInputBindingDrawerUtility.DrawParameterPopup(Line(position, ref y), parameterId,
+				property.serializedObject.FindProperty("_parameters"));
 
 			EditorGUI.EndProperty();
 		}
@@ -195,7 +228,17 @@ namespace ShitDesigner.Editor {
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
 			=> EditorGUIUtility.singleLineHeight * 7f + LineSpacing * 6f;
 
-		private static void DrawParameterPopup(Rect position, SerializedProperty parameterId, SerializedProperty parameters) {
+		private static int NativeMaximum(MidiControlKind type) => type == MidiControlKind.PitchBend ? 16383 : 127;
+
+		private static Rect Line(Rect position, ref float y) {
+			var line = new Rect(position.x, y, position.width, EditorGUIUtility.singleLineHeight);
+			y += EditorGUIUtility.singleLineHeight + LineSpacing;
+			return line;
+		}
+	}
+
+	internal static class PatchInputBindingDrawerUtility {
+		internal static void DrawParameterPopup(Rect position, SerializedProperty parameterId, SerializedProperty parameters) {
 			if (parameters == null || parameters.arraySize == 0) {
 				EditorGUI.PropertyField(position, parameterId, new GUIContent("Parameter ID"));
 				return;
@@ -230,21 +273,16 @@ namespace ShitDesigner.Editor {
 			var next = EditorGUI.Popup(position, "Parameter", selected, labels.ToArray());
 			if (next != selected) parameterId.stringValue = values[next];
 		}
-
-		private static int NativeMaximum(MidiControlKind type) => type == MidiControlKind.PitchBend ? 16383 : 127;
-
-		private static Rect Line(Rect position, ref float y) {
-			var line = new Rect(position.x, y, position.width, EditorGUIUtility.singleLineHeight);
-			y += EditorGUIUtility.singleLineHeight + LineSpacing;
-			return line;
-		}
 	}
 
 	[CustomPropertyDrawer(typeof(PatchGraphNode))]
 	public sealed class PatchGraphNodeDrawer : PropertyDrawer {
 		private const string ManifestAssetPath = "Assets/ShitDesigner/Scripts/Nodes/ShaderNodeManifest.asset";
+		private const string VideoPlayerTypeId = "shitdesigner.video.player";
 		private const float LineSpacing = 2f;
 		private static ShaderNodeManifestAsset _manifest;
+		private static NodeDefinitionCatalog _catalog;
+		private static ShaderNodeManifestAsset _catalogManifest;
 		private static readonly Dictionary<string, int> ParameterAddSelections = new Dictionary<string, int>(StringComparer.Ordinal);
 
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
@@ -258,7 +296,14 @@ namespace ShitDesigner.Editor {
 				var indent = EditorGUI.indentLevel;
 				EditorGUI.indentLevel++;
 				EditorGUI.PropertyField(Line(position, ref y), id, new GUIContent("ID"));
-				DrawTypeIdPopup(Line(position, ref y), typeId);
+				var typeChanged = DrawTypeIdPopup(Line(position, ref y), typeId);
+				var videoClip = property.FindPropertyRelative("m_VideoClip");
+				if (IsVideoPlayer(typeId.stringValue) && videoClip != null) {
+					EditorGUI.PropertyField(Line(position, ref y), videoClip, new GUIContent("Video Clip", "The clip used by the Main live host for this VideoPlayer node."));
+				}
+				else if (typeChanged && videoClip != null) {
+					videoClip.objectReferenceValue = null;
+				}
 				var parametersHeight = EditorGUI.GetPropertyHeight(parameters, new GUIContent("Parameters"), true);
 				EditorGUI.PropertyField(new Rect(position.x, y, position.width, parametersHeight), parameters, new GUIContent("Parameters"), true);
 				y += parametersHeight + LineSpacing;
@@ -271,7 +316,10 @@ namespace ShitDesigner.Editor {
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
 			if (!property.isExpanded) return EditorGUIUtility.singleLineHeight;
 			var parameters = property.FindPropertyRelative("_parameters");
-			var height = EditorGUIUtility.singleLineHeight * 3f + LineSpacing * 3f
+			var isVideoPlayer = IsVideoPlayer(property.FindPropertyRelative("_typeId").stringValue);
+			var fixedLineCount = isVideoPlayer ? 4f : 3f;
+			var fixedSpacingCount = isVideoPlayer ? 4f : 3f;
+			var height = EditorGUIUtility.singleLineHeight * fixedLineCount + LineSpacing * fixedSpacingCount
 				+ EditorGUI.GetPropertyHeight(parameters, new GUIContent("Parameters"), true);
 			return GetAddableParameters(property.FindPropertyRelative("_typeId").stringValue, parameters).Count == 0
 				? height
@@ -289,25 +337,24 @@ namespace ShitDesigner.Editor {
 			var button = new Rect(popup.xMax + LineSpacing, field.y, buttonWidth, field.height);
 			selected = EditorGUI.Popup(popup, selected, addable.Select(FormatParameterLabel).ToArray());
 			ParameterAddSelections[key] = selected;
-			if (GUI.Button(button, "Add")) AddParameter(parameters, typeId, addable[selected].Id);
+			if (GUI.Button(button, "Add")) AddParameter(parameters, typeId, addable[selected].Id.Value);
 		}
 
-		private static List<ShaderNodeManifestAssetParameter> GetAddableParameters(string typeId, SerializedProperty parameters) {
-			var entry = ResolveManifest()?.Find(typeId);
-			if (entry == null) return new List<ShaderNodeManifestAssetParameter>();
+		private static List<NodeParameterDefinition> GetAddableParameters(string typeId, SerializedProperty parameters) {
+			var entry = ResolveNodeEntry(typeId);
+			if (entry == null) return new List<NodeParameterDefinition>();
 			var existing = new HashSet<string>(StringComparer.Ordinal);
 			for (var index = 0; index < parameters.arraySize; index++)
 				existing.Add(parameters.GetArrayElementAtIndex(index).FindPropertyRelative("_id").stringValue);
 			return entry.Parameters
-				.Where(parameter => parameter != null && !parameter.IsHidden && !existing.Contains(parameter.Id))
+				.Where(parameter => parameter != null && !parameter.IsHidden && !existing.Contains(parameter.Id.Value))
 				.OrderBy(parameter => parameter.DisplayOrder)
 				.ThenBy(parameter => parameter.DisplayName, StringComparer.Ordinal)
 				.ToList();
 		}
 
 		private static void AddParameter(SerializedProperty parameters, string typeId, string parameterId) {
-			var runtimeDefinition = ResolveManifest()?.BuildRuntimeManifest().Find(typeId)?.Parameters
-				.FirstOrDefault(parameter => string.Equals(parameter.Id.Value, parameterId, StringComparison.Ordinal));
+			var runtimeDefinition = ResolveNodeEntry(typeId)?.Definition.FindParameter(new ParameterId(parameterId));
 			if (runtimeDefinition == null) return;
 			var index = parameters.arraySize;
 			parameters.arraySize++;
@@ -336,25 +383,26 @@ namespace ShitDesigner.Editor {
 			}
 		}
 
-		private static void DrawTypeIdPopup(Rect position, SerializedProperty typeId) {
-			var manifest = ResolveManifest();
-			if (manifest == null) {
+		private static bool DrawTypeIdPopup(Rect position, SerializedProperty typeId) {
+			var catalog = ResolveCatalog();
+			if (catalog == null) {
 				EditorGUI.PropertyField(position, typeId, new GUIContent("Type ID"));
-				return;
+				return false;
 			}
 
-			var entries = manifest.Entries
-				.Where(entry => entry != null && !string.IsNullOrWhiteSpace(entry.TypeId))
+			var entries = catalog.Entries
+				.Where(entry => entry != null && entry.UserAddable && !entry.SystemOwned
+					&& (entry.ShaderBinding != null || entry.TypeId.Value == VideoPlayerTypeId))
 				.OrderBy(entry => entry.Category, StringComparer.Ordinal)
 				.ThenBy(entry => entry.DisplayName, StringComparer.Ordinal)
-				.ThenBy(entry => entry.TypeId, StringComparer.Ordinal)
+				.ThenBy(entry => entry.TypeId.Value, StringComparer.Ordinal)
 				.ToList();
 			if (entries.Count == 0) {
 				EditorGUI.PropertyField(position, typeId, new GUIContent("Type ID"));
-				return;
+				return false;
 			}
 
-			var values = entries.Select(entry => entry.TypeId).ToList();
+			var values = entries.Select(entry => entry.TypeId.Value).ToList();
 			var labels = entries.Select(FormatLabel).ToList();
 			var current = typeId.stringValue ?? string.Empty;
 			if (string.IsNullOrWhiteSpace(current)) {
@@ -369,7 +417,9 @@ namespace ShitDesigner.Editor {
 			var selected = values.IndexOf(current);
 			var field = EditorGUI.PrefixLabel(position, new GUIContent("Type ID"));
 			var next = EditorGUI.Popup(field, selected, labels.ToArray());
-			if (next != selected) typeId.stringValue = values[next];
+			if (next == selected) return false;
+			typeId.stringValue = values[next];
+			return true;
 		}
 
 		internal static ShaderNodeManifestAsset ResolveManifest() {
@@ -386,13 +436,37 @@ namespace ShitDesigner.Editor {
 			return null;
 		}
 
-		private static string FormatLabel(ShaderNodeManifestAssetEntry entry)
-			=> string.IsNullOrWhiteSpace(entry.Category)
-				? entry.DisplayName + " (" + entry.TypeId + ")"
-				: entry.Category + "/" + entry.DisplayName + " (" + entry.TypeId + ")";
+		private static NodeDefinitionCatalog ResolveCatalog() {
+			var manifest = ResolveManifest();
+			if (manifest == null) return null;
+			if (_catalog != null && ReferenceEquals(_catalogManifest, manifest)) return _catalog;
+			try {
+				_catalog = NodeDefinitionCatalog.CreateInitial(manifest.BuildRuntimeManifest());
+				_catalogManifest = manifest;
+				return _catalog;
+			}
+			catch (Exception exception) {
+				Debug.LogException(exception);
+				_catalog = null;
+				_catalogManifest = null;
+				return null;
+			}
+		}
 
-		private static string FormatParameterLabel(ShaderNodeManifestAssetParameter parameter)
-			=> string.IsNullOrWhiteSpace(parameter.DisplayName) ? parameter.Id : parameter.DisplayName + " (" + parameter.Id + ")";
+		private static NodeCatalogEntry ResolveNodeEntry(string typeId)
+			=> ResolveCatalog()?.Entries.FirstOrDefault(entry => entry != null && string.Equals(entry.TypeId.Value, typeId ?? string.Empty, StringComparison.Ordinal));
+
+		internal static NodeCatalogEntry ResolveNodeEntryForConnection(string typeId) => ResolveNodeEntry(typeId);
+
+		private static bool IsVideoPlayer(string typeId) => string.Equals(typeId, VideoPlayerTypeId, StringComparison.Ordinal);
+
+		private static string FormatLabel(NodeCatalogEntry entry)
+			=> string.IsNullOrWhiteSpace(entry.Category)
+				? entry.DisplayName + " (" + entry.TypeId.Value + ")"
+				: entry.Category + "/" + entry.DisplayName + " (" + entry.TypeId.Value + ")";
+
+		private static string FormatParameterLabel(NodeParameterDefinition parameter)
+			=> string.IsNullOrWhiteSpace(parameter.DisplayName) ? parameter.Id.Value : parameter.DisplayName + " (" + parameter.Id.Value + ")";
 
 		private static Rect Line(Rect position, ref float y) {
 			var line = new Rect(position.x, y, position.width, EditorGUIUtility.singleLineHeight);
@@ -461,7 +535,7 @@ namespace ShitDesigner.Editor {
 				EditorGUI.PropertyField(position, targetPortId, new GUIContent("Target Port"));
 				return;
 			}
-			DrawPopup(position, "Target Port", targetPortId, ports.Select(port => port.Id).ToList(), ports.Select(FormatPortLabel).ToList());
+			DrawPopup(position, "Target Port", targetPortId, ports.Select(port => port.Id.Value).ToList(), ports.Select(FormatPortLabel).ToList());
 		}
 
 		private static bool DrawPopup(Rect position, string label, SerializedProperty property, List<string> values, List<string> labels) {
@@ -484,21 +558,23 @@ namespace ShitDesigner.Editor {
 
 		private static void AssignFirstTargetPort(SerializedProperty targetPortId, SerializedProperty graphNodes, string targetNodeId) {
 			var ports = GetTargetPorts(graphNodes, targetNodeId);
-			if (ports.Count > 0) targetPortId.stringValue = ports[0].Id;
+			if (ports.Count > 0) targetPortId.stringValue = ports[0].Id.Value;
 		}
 
-		private static List<ShaderNodeManifestAssetInput> GetTargetPorts(SerializedProperty graphNodes, string targetNodeId) {
+		private static List<NodePortDefinition> GetTargetPorts(SerializedProperty graphNodes, string targetNodeId) {
 			for (var index = 0; index < graphNodes.arraySize; index++) {
 				var node = graphNodes.GetArrayElementAtIndex(index);
 				if (!string.Equals(node.FindPropertyRelative("_id").stringValue, targetNodeId, StringComparison.Ordinal)) continue;
-				var entry = PatchGraphNodeDrawer.ResolveManifest()?.Find(node.FindPropertyRelative("_typeId").stringValue);
-				return entry == null ? new List<ShaderNodeManifestAssetInput>() : entry.Inputs.Where(input => input != null).ToList();
+				var entry = PatchGraphNodeDrawer.ResolveNodeEntryForConnection(node.FindPropertyRelative("_typeId").stringValue);
+				return entry == null
+					? new List<NodePortDefinition>()
+					: entry.Ports.Where(port => port != null && port.Direction == NodePortDirection.Input).ToList();
 			}
-			return new List<ShaderNodeManifestAssetInput>();
+			return new List<NodePortDefinition>();
 		}
 
-		private static string FormatPortLabel(ShaderNodeManifestAssetInput port)
-			=> string.IsNullOrWhiteSpace(port.DisplayName) ? port.Id : port.DisplayName + " (" + port.Id + ")";
+		private static string FormatPortLabel(NodePortDefinition port)
+			=> string.IsNullOrWhiteSpace(port.DisplayName) ? port.Id.Value : port.DisplayName + " (" + port.Id.Value + ")";
 
 		private static Rect Line(Rect position, ref float y) {
 			var line = new Rect(position.x, y, position.width, EditorGUIUtility.singleLineHeight);

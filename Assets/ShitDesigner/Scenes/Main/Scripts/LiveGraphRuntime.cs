@@ -7,6 +7,7 @@ using ShitDesigner.Rendering;
 using ShitDesigner.Runtime;
 using ShitDesigner.Scene;
 using UnityEngine;
+using UnityEngine.Video;
 
 namespace ShitDesigner.Main {
 	public readonly struct LiveProgramFrame {
@@ -224,7 +225,13 @@ namespace ShitDesigner.Main {
 		}
 	}
 
-	internal sealed class LiveProgramShaderGraphNode : IDisposable {
+	internal interface ILiveProgramGraphNode : IDisposable {
+		string Id { get; }
+		RenderTexture Target { get; }
+		void Render(IReadOnlyDictionary<string, Texture> outputs, double graphTime, ulong frameNumber);
+	}
+
+	internal sealed class LiveProgramShaderGraphNode : ILiveProgramGraphNode {
 		private readonly ShaderPassGraphRuntimeNode _runtime;
 		public string Id { get; }
 		public RenderTexture Target { get; }
@@ -256,12 +263,111 @@ namespace ShitDesigner.Main {
 		}
 	}
 
+	internal sealed class LiveProgramVideoGraphNode : ILiveProgramGraphNode {
+		private readonly GameObject _host;
+		private readonly VideoPlayer _player;
+		private readonly RenderTexture _target;
+		private readonly bool _playing;
+		private readonly double _playhead;
+		private readonly float _speed;
+		private readonly bool _loop;
+		private bool _playheadApplied;
+		private bool _disposed;
+
+		public string Id { get; }
+		public RenderTexture Target => _target;
+
+		public LiveProgramVideoGraphNode(string id, RenderTexture target, VideoClip clip, bool playing, double playhead, float speed, bool loop) {
+			if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("A live Program video node ID is required.", nameof(id));
+			if (target == null) throw new ArgumentNullException(nameof(target));
+			if (clip == null) throw new ArgumentNullException(nameof(clip));
+			if (double.IsNaN(playhead) || double.IsInfinity(playhead) || playhead < 0d) throw new ArgumentOutOfRangeException(nameof(playhead));
+			if (float.IsNaN(speed) || float.IsInfinity(speed) || speed < 0f || speed > 4f) throw new ArgumentOutOfRangeException(nameof(speed));
+
+			Id = id.Trim();
+			_target = target;
+			_playing = playing;
+			_playhead = playhead;
+			_speed = speed;
+			_loop = loop;
+			_host = new GameObject("ShitDesigner.Main.Video." + Id);
+			try {
+				_player = _host.AddComponent<VideoPlayer>();
+				_player.playOnAwake = false;
+				_player.waitForFirstFrame = true;
+				_player.renderMode = VideoRenderMode.APIOnly;
+				_player.audioOutputMode = VideoAudioOutputMode.None;
+				_player.sendFrameReadyEvents = false;
+				_player.source = VideoSource.VideoClip;
+				_player.clip = clip;
+				_player.isLooping = _loop;
+				_player.playbackSpeed = _speed;
+				_player.Prepare();
+			}
+			catch {
+				DestroyObject(_host);
+				throw;
+			}
+		}
+
+		public void Render(IReadOnlyDictionary<string, Texture> outputs, double graphTime, ulong frameNumber) {
+			if (_disposed) throw new ObjectDisposedException(nameof(LiveProgramVideoGraphNode));
+			if (_player.isPrepared) {
+				if (!_playheadApplied) {
+					_player.time = _playhead;
+					_playheadApplied = true;
+				}
+				if (_playing) {
+					_player.timeReference = VideoTimeReference.ExternalTime;
+					_player.externalReferenceTime = _playhead + graphTime;
+					if (!_player.isPlaying) _player.Play();
+				}
+				else if (_player.isPlaying) _player.Pause();
+			}
+
+			var source = _player.texture;
+			if (source == null) ClearTexture(_target);
+			else Graphics.Blit(source, _target);
+		}
+
+		public void Dispose() {
+			if (_disposed) return;
+			_disposed = true;
+			if (_player != null) {
+				try { _player.Stop(); } catch { }
+			}
+			DestroyObject(_host);
+			ReleaseTexture(_target);
+		}
+
+		private static void ClearTexture(RenderTexture texture) {
+			var previous = RenderTexture.active;
+			try {
+				RenderTexture.active = texture;
+				GL.Clear(true, true, Color.black);
+			}
+			finally { RenderTexture.active = previous; }
+		}
+
+		private static void ReleaseTexture(RenderTexture texture) {
+			if (texture == null) return;
+			texture.Release();
+			DestroyObject(texture);
+		}
+
+		private static void DestroyObject(UnityEngine.Object value) {
+			if (value == null) return;
+			if (UnityEngine.Application.isPlaying) UnityEngine.Object.Destroy(value);
+			else UnityEngine.Object.DestroyImmediate(value);
+		}
+	}
+
 	internal sealed class LiveProgramShaderGraph : IDisposable {
 		private readonly string _sourceNodeId;
 		private readonly string _outputNodeId;
-		private readonly IReadOnlyList<LiveProgramShaderGraphNode> _nodes;
+		private readonly IReadOnlyList<ILiveProgramGraphNode> _nodes;
 
-		internal LiveProgramShaderGraph(GraphDefinition definition, IEnumerable<LiveProgramShaderGraphNode> nodes) {
+		internal LiveProgramShaderGraph(GraphDefinition definition, IEnumerable<ILiveProgramGraphNode> nodes) {
 			if (definition == null) throw new ArgumentNullException(nameof(definition));
 			_sourceNodeId = definition.SourceNodeId;
 			_outputNodeId = definition.OutputNodeId;
