@@ -92,6 +92,29 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 			finally { UnityEngine.Object.DestroyImmediate(material); }
 		}
 
+		[UnityTest]
+		public IEnumerator RecursiveRectangles_BeatPhaseControlsRevealWhenClockIsAvailable() {
+			RequireGraphicsDevice();
+			var material = CreateMaterial();
+			try {
+				Configure(material);
+				material.SetFloat("_BeatSync", 1f);
+				material.SetFloat("_SD_HasBeatClock", 1f);
+				material.SetFloat("_Gutter", 0f);
+				material.SetFloat("_SD_BeatPhase", 0f);
+				Color32[] beatStart = null;
+				yield return Render(material, 48, 32, result => beatStart = result);
+
+				material.SetFloat("_SD_BeatPhase", .999f);
+				Color32[] beatEnd = null;
+				yield return Render(material, 48, 32, result => beatEnd = result);
+
+				Assert.That(beatStart.Distinct().Count(), Is.EqualTo(1));
+				Assert.That(beatEnd.Distinct().Count(), Is.GreaterThan(1));
+			}
+			finally { UnityEngine.Object.DestroyImmediate(material); }
+		}
+
 		private static void RequireGraphicsDevice() {
 			if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
 				Assert.Ignore("A GPU graphics device is required for the recursive rectangle render probe.");
@@ -112,6 +135,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 			material.SetFloat("_RatioMin", .25f);
 			material.SetFloat("_RatioMax", .75f);
 			material.SetInt("_StructureSeed", 193);
+			material.SetFloat("_BeatSync", 0f);
 			material.SetFloat("_RevealProgress", 1f);
 			material.SetFloat("_SplitDuration", .15f);
 			material.SetFloat("_SplitStagger", .04f);

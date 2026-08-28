@@ -1,4 +1,5 @@
 using System;
+using ShitDesigner.Rendering;
 using ShitDesigner.Scene;
 
 namespace ShitDesigner.Main {
@@ -20,6 +21,7 @@ namespace ShitDesigner.Main {
 
 		public LiveBpmClock(float beatsPerMinute = DefaultBpm) {
 			if (!TrySetBpm(beatsPerMinute, out var rejectionReason)) throw new ArgumentOutOfRangeException(nameof(beatsPerMinute), rejectionReason);
+			ShaderBeatClock.Publish(_totalBeats);
 		}
 
 		public bool TrySetBpm(float beatsPerMinute, out string rejectionReason) {
@@ -36,6 +38,7 @@ namespace ShitDesigner.Main {
 			if (double.IsNaN(deltaSeconds) || double.IsInfinity(deltaSeconds) || deltaSeconds < 0d)
 				throw new ArgumentOutOfRangeException(nameof(deltaSeconds), "BPM clock delta must be finite and non-negative.");
 			_totalBeats += deltaSeconds * _beatsPerMinute / 60d;
+			ShaderBeatClock.Publish(_totalBeats);
 		}
 	}
 }

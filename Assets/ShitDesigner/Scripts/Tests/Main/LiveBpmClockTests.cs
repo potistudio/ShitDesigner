@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using ShitDesigner.Rendering;
 
 namespace ShitDesigner.Main.Tests {
 	[TestFixture]
@@ -26,6 +27,18 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(accepted, Is.False);
 			Assert.That(rejection, Is.Not.Empty);
 			Assert.That(clock.BeatsPerMinute, Is.EqualTo(120f));
+		}
+
+		[Test]
+		public void AdvancingPublishesBeatAndBarPhasesForShaders() {
+			var clock = new LiveBpmClock(120f);
+
+			clock.Advance(.625d);
+
+			var frame = ShaderBeatClock.Current;
+			Assert.That(frame.IsAvailable, Is.True);
+			Assert.That(frame.BeatPhase, Is.EqualTo(.25f).Within(1e-6f));
+			Assert.That(frame.BarPhase, Is.EqualTo(.3125f).Within(1e-6f));
 		}
 	}
 }

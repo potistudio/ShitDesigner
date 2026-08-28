@@ -37,7 +37,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 			var recursive = asset.Find("shitdesigner.shader.generator.recursive-rectangles");
 			Assert.That(recursive, Is.Not.Null);
 			Assert.That(recursive.Shader, Is.Not.Null);
-			Assert.That(recursive.Parameters.Count, Is.EqualTo(15));
+			Assert.That(recursive.Parameters.Count, Is.EqualTo(16));
 			Assert.That(recursive.Parameters.Single(x => x.Id == "seed").Property, Is.EqualTo("_StructureSeed"));
 		}
 
@@ -91,11 +91,30 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 					Assert.That(material.GetFloat(ShaderFrameUniformNames.Seed), Is.EqualTo(.25f).Within(.0001f), entry.TypeId.Value);
 					if (material.HasProperty(ShaderFrameUniformNames.SeedAlias))
 						Assert.That(material.GetFloat(ShaderFrameUniformNames.SeedAlias), Is.EqualTo(.25f).Within(.0001f), entry.TypeId.Value);
+					Assert.That(material.GetFloat(ShaderFrameUniformNames.BeatPhase), Is.EqualTo(0f).Within(.0001f), entry.TypeId.Value);
 				}
 				finally {
 					UnityEngine.Object.DestroyImmediate(material);
 				}
 			}
+		}
+
+		[Test]
+		public void RecursiveRectangles_ReceivesThePublishedBeatClock() {
+			var asset = AssetDatabase.LoadAssetAtPath<ShaderNodeManifestAsset>(ManifestPath);
+			var entry = asset.BuildRuntimeManifest().Find("shitdesigner.shader.generator.recursive-rectangles");
+			var shader = asset.Find(entry.TypeId.Value).Shader;
+			var material = new Material(shader);
+			try {
+				ShaderBeatClock.Publish(3.25d);
+				var binding = new ShaderMaterialBinding(entry.ShaderKey, shader, descriptor: entry.ToShaderBinding());
+				ShaderRuntimeUniformApplier.Apply(material, binding, graphTime: 0d, deltaTime: 0d,
+					frameNumber: 1, width: 64, height: 64, seed: 0f);
+
+				Assert.That(material.GetFloat(ShaderFrameUniformNames.HasBeatClock), Is.EqualTo(1f));
+				Assert.That(material.GetFloat(ShaderFrameUniformNames.BeatPhase), Is.EqualTo(.25f).Within(.0001f));
+			}
+			finally { UnityEngine.Object.DestroyImmediate(material); }
 		}
 	}
 }

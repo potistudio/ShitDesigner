@@ -20,6 +20,7 @@ namespace ShitDesigner.Rendering {
 		public const string BeatPhase = "_SD_BeatPhase";
 		public const string BeatPulse = "_SD_BeatPulse";
 		public const string BarPhase = "_SD_BarPhase";
+		public const string HasBeatClock = "_SD_HasBeatClock";
 		public const string Pointer = "_SD_Pointer";
 		// Family shader compatibility aliases.  The neutral runtime names
 		// above remain canonical, while Audio/Temporal/Raymarch families also
@@ -168,9 +169,14 @@ namespace ShitDesigner.Rendering {
 			material.SetFloat(ShaderFrameUniformNames.Frame, frame);
 			material.SetVector(ShaderFrameUniformNames.Resolution, resolution);
 			material.SetFloat(ShaderFrameUniformNames.Seed, seed);
-			material.SetFloat(ShaderFrameUniformNames.BeatPhase, 0f);
-			material.SetFloat(ShaderFrameUniformNames.BeatPulse, 0f);
-			material.SetFloat(ShaderFrameUniformNames.BarPhase, 0f);
+			// The availability property is an explicit opt-in so publishing the
+			// live tempo does not change existing shader-family behavior.
+			var usesBeatClock = material.HasProperty(ShaderFrameUniformNames.HasBeatClock);
+			var beat = usesBeatClock ? ShaderBeatClock.Current : default(ShaderBeatClockFrame);
+			material.SetFloat(ShaderFrameUniformNames.BeatPhase, beat.BeatPhase);
+			material.SetFloat(ShaderFrameUniformNames.BeatPulse, beat.BeatPulse);
+			material.SetFloat(ShaderFrameUniformNames.BarPhase, beat.BarPhase);
+			if (usesBeatClock) material.SetFloat(ShaderFrameUniformNames.HasBeatClock, beat.IsAvailable ? 1f : 0f);
 			material.SetVector(ShaderFrameUniformNames.Pointer, Vector4.zero);
 			material.SetFloat(ShaderFrameUniformNames.VjVariant, binding.SourceVariant);
 			material.SetFloat(ShaderFrameUniformNames.Variant, binding.SourceVariant);

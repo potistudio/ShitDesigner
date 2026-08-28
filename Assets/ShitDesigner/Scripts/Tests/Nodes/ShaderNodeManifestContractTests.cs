@@ -24,7 +24,7 @@ namespace ShitDesigner.Nodes.Tests {
 			Assert.That(recursive.Inputs, Is.Empty);
 			Assert.That(recursive.Parameters.Select(x => x.Id.Value), Is.EqualTo(new[]
 			{
-				"max_depth", "min_leaf_size", "split_probability", "axis_mode", "ratio_min", "ratio_max", "seed",
+				"max_depth", "min_leaf_size", "split_probability", "axis_mode", "ratio_min", "ratio_max", "seed", "beat_sync",
 				"reveal_progress", "split_duration", "split_stagger", "easing", "color_a", "color_b", "gutter", "line_color"
 			}));
 			Assert.That(recursive.Parameters.Single(x => x.Id.Value == "axis_mode").EnumMapping["random"], Is.EqualTo(3));

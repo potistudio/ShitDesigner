@@ -335,6 +335,7 @@ namespace ShitDesigner.Nodes {
 				Parameter("ratio_min", "Ratio Min", ParameterType.Float, ParameterValue.FromFloat(.25f), "_RatioMin", ParameterValue.FromFloat(0f), ParameterValue.FromFloat(1f), group: "Structure", order: 4),
 				Parameter("ratio_max", "Ratio Max", ParameterType.Float, ParameterValue.FromFloat(.75f), "_RatioMax", ParameterValue.FromFloat(0f), ParameterValue.FromFloat(1f), group: "Structure", order: 5),
 				Parameter("seed", "Seed", ParameterType.Int, ParameterValue.FromInt(1), "_StructureSeed", ParameterValue.FromInt(-1000000), ParameterValue.FromInt(1000000), group: "Structure", order: 6),
+				Parameter("beat_sync", "Beat Sync", ParameterType.Bool, ParameterValue.FromBool(true), "_BeatSync", group: "Animation", order: 9),
 				Parameter("reveal_progress", "Reveal Progress", ParameterType.Float, ParameterValue.FromFloat(1f), "_RevealProgress", ParameterValue.FromFloat(0f), ParameterValue.FromFloat(1f), group: "Animation", order: 10),
 				Parameter("split_duration", "Split Duration", ParameterType.Float, ParameterValue.FromFloat(.15f), "_SplitDuration", ParameterValue.FromFloat(.001f), ParameterValue.FromFloat(1f), group: "Animation", order: 11),
 				Parameter("split_stagger", "Split Stagger", ParameterType.Float, ParameterValue.FromFloat(.04f), "_SplitStagger", ParameterValue.FromFloat(0f), ParameterValue.FromFloat(1f), group: "Animation", order: 12),

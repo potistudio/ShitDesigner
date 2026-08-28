@@ -85,12 +85,13 @@ childBounds = ExpandFromSplit(finalChildBounds, e)
 
 | Parameter | 型 | 内容 |
 |---|---|---|
+| `beat_sync` | Bool | 共有BPMクロックが利用可能な場合、1拍を分割全体の進行度として使用する |
 | `reveal_progress` | Float | 分割全体の進行度 |
 | `split_duration` | Float | 1回の分割に要する進行時間 |
 | `split_stagger` | Float | 親の完了後から子の開始までの間隔 |
 | `easing` | Enum | `linear`、`smooth_step`、`ease_in`、`ease_out`、`ease_in_out` |
 
-`reveal_progress` は通常のEffectiveValueとして扱い、論理コントロールまたは既存のフレーム同期経路から更新する。ノード内部でUnity Timeを直接参照しない。
+`beat_sync` が有効で共有BPMクロックを利用できる場合、拍の先頭を進行度0、次の拍の直前を進行度1として分割を繰り返す。共有BPMクロックがない場合、または `beat_sync` が無効な場合は `reveal_progress` を使用する。`reveal_progress` は通常のEffectiveValueとして扱い、論理コントロールまたは既存のフレーム同期経路から更新する。ノード内部でUnity Timeを直接参照しない。
 
 ### Easing
 

@@ -330,6 +330,27 @@ MonoBehaviour:
       step: 0
       isReadOnly: 0
       isHidden: 0
+    - id: beat_sync
+      sourceId: beat_sync
+      displayName: Beat Sync
+      property: _BeatSync
+      type: 2
+      defaultValue: bool:true
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Animation
+      displayOrder: 9
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
     - id: reveal_progress
       sourceId: reveal_progress
       displayName: Reveal Progress
