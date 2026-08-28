@@ -4,9 +4,9 @@ Shader "ShitDesigner/Stage/Instanced Penlight"
 	{
 		[HDR] _BaseColor ("Base Color", Color) = (0.1, 0.8, 1, 1)
 		_GlowStrength ("Glow Strength", Range(0, 10)) = 3
-		_RattleAngle ("Rattle Angle", Range(0, 90)) = 38
-		_RattleSpeed ("Rattle Speed", Range(0, 24)) = 16
-		_WristBounce ("Wrist Bounce", Range(0, 0.5)) = 0.08
+		_RattleAngle ("Rattle Angle", Range(0, 30)) = 9
+		_RattleSpeed ("Rattle Speed", Range(0, 24)) = 12
+		_WristBounce ("Wrist Bounce", Range(0, 0.5)) = 0.06
 	}
 
 	SubShader
@@ -83,12 +83,13 @@ Shader "ShitDesigner/Stage/Instanced Penlight"
 				float phase = UNITY_ACCESS_INSTANCED_PROP(PerInstance, _Phase);
 				float animationTime = _Time.y * _RattleSpeed + phase * 6.2831853f;
 				float primarySwing = sin(animationTime);
-				float bellShake = sign(primarySwing) * pow(abs(primarySwing), 0.45f);
-				float wristFlick = sin(animationTime * 2.0 + phase * 3.1415927f) * (1.0 - abs(primarySwing)) * 0.16f;
-				float roll = sin(animationTime * 1.5f + phase * 3.1415927f) * 0.13f;
+				float rebound = sin(animationTime * 2.0 + phase * 3.1415927f) * 0.18f;
+				float rattle = (primarySwing + rebound) * 0.85f;
+				float directionX = sin(phase * 6.2831853f);
+				float directionZ = cos(phase * 6.2831853f);
 				float angle = radians(_RattleAngle);
-				float3 positionOS = RotateZ(RotateX(input.positionOS.xyz, (roll + wristFlick) * angle), (bellShake + wristFlick) * angle);
-				positionOS.y += abs(primarySwing) * _WristBounce;
+				float3 positionOS = RotateZ(RotateX(input.positionOS.xyz, rattle * angle * directionX), rattle * angle * directionZ);
+				positionOS.y += rattle * _WristBounce;
 				output.positionHCS = TransformObjectToHClip(positionOS);
 
 				half pulse = 0.82h + 0.18h * abs(primarySwing);
