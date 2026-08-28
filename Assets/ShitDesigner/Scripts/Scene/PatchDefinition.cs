@@ -123,8 +123,9 @@ namespace ShitDesigner.Scene {
 	[Serializable]
 	public sealed class PatchProgramGraph {
 		public const string ImagePortId = "image";
+		public const string SceneInputNodeId = "scene";
 
-		[SerializeField] private string _sourceNodeId = "scene";
+		[SerializeField] private string _sourceNodeId = SceneInputNodeId;
 		[SerializeField] private string _outputNodeId = "composite";
 		[SerializeField] private PatchGraphNode[] _nodes = Array.Empty<PatchGraphNode>();
 		[SerializeField] private PatchGraphConnection[] _connections = Array.Empty<PatchGraphConnection>();
