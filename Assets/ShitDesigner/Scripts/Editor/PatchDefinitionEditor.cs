@@ -26,6 +26,7 @@ namespace ShitDesigner.Editor {
 		private string _manifestError = string.Empty;
 		private Scene3DDefinition[] _sceneDefinitions = Array.Empty<Scene3DDefinition>();
 		private readonly Dictionary<string, int> _parameterAddSelections = new Dictionary<string, int>(StringComparer.Ordinal);
+		private readonly Dictionary<string, bool> _graphNodeFoldouts = new Dictionary<string, bool>(StringComparer.Ordinal);
 		private int _nodeAddSelection = -1;
 
 		private void OnEnable() {
@@ -104,10 +105,13 @@ namespace ShitDesigner.Editor {
 				var nodeId = node.FindPropertyRelative("_id");
 				var typeId = node.FindPropertyRelative("_typeId");
 				var entry = FindRuntimeEntry(typeId.stringValue);
+				var foldoutKey = node.propertyPath;
+				if (!_graphNodeFoldouts.TryGetValue(foldoutKey, out var expanded)) expanded = true;
 
 				EditorGUILayout.BeginVertical("box");
 				EditorGUILayout.BeginHorizontal();
-				EditorGUILayout.LabelField("Node " + (index + 1), EditorStyles.boldLabel);
+				_graphNodeFoldouts[foldoutKey] = EditorGUILayout.Foldout(expanded, "Node " + (index + 1), true, EditorStyles.boldLabel);
+				var typeChanged = DrawNodeTypeSelector(typeId, GUIContent.none);
 				if (GUILayout.Button("Remove", GUILayout.Width(70f))) {
 					RemoveGraphNode(nodes, index, nodeId.stringValue);
 					EditorGUILayout.EndHorizontal();
@@ -116,19 +120,16 @@ namespace ShitDesigner.Editor {
 				}
 				EditorGUILayout.EndHorizontal();
 
-				EditorGUI.BeginDisabledGroup(true);
-				EditorGUILayout.TextField(new GUIContent("Generated ID", "Graph node IDs are generated and used by connection selectors."), nodeId.stringValue);
-				EditorGUI.EndDisabledGroup();
-
-				var typeChanged = DrawNodeTypeSelector(typeId);
 				if (typeChanged) {
 					entry = FindRuntimeEntry(typeId.stringValue);
 					SyncGraphNodeParameters(node, entry);
 				}
-				if (entry != null) DrawGraphParameters(node, entry);
-				else {
-					EditorGUILayout.PropertyField(node.FindPropertyRelative("_parameters"), new GUIContent("Parameters"), true);
-					EditorGUILayout.HelpBox("The selected node type is not available in the generated Shader Manifest.", MessageType.Warning);
+				if (_graphNodeFoldouts[foldoutKey]) {
+					if (entry != null) DrawGraphParameters(node, entry);
+					else {
+						EditorGUILayout.PropertyField(node.FindPropertyRelative("_parameters"), new GUIContent("Parameters"), true);
+						EditorGUILayout.HelpBox("The selected node type is not available in the generated Shader Manifest.", MessageType.Warning);
+					}
 				}
 				EditorGUILayout.EndVertical();
 			}
@@ -150,10 +151,10 @@ namespace ShitDesigner.Editor {
 			EditorGUILayout.EndHorizontal();
 		}
 
-		private bool DrawNodeTypeSelector(SerializedProperty typeId) {
+		private bool DrawNodeTypeSelector(SerializedProperty typeId, GUIContent label = null) {
 			var entries = GetManifestEntries().ToList();
 			if (entries.Count == 0) {
-				EditorGUILayout.PropertyField(typeId, new GUIContent("Type ID"));
+				EditorGUILayout.PropertyField(typeId, label ?? new GUIContent("Type ID"));
 				return false;
 			}
 
@@ -170,7 +171,7 @@ namespace ShitDesigner.Editor {
 			}
 
 			var selected = values.IndexOf(current);
-			var next = EditorGUILayout.Popup(new GUIContent("Node Type", "Select a generated shader node; the Type ID is stored automatically."), selected, labels.ToArray());
+			var next = EditorGUILayout.Popup(label ?? new GUIContent("Node Type", "Select a generated shader node; the Type ID is stored automatically."), selected, labels.ToArray(), GUILayout.MinWidth(120f));
 			if (next == selected) return false;
 			typeId.stringValue = values[next];
 			return true;
@@ -184,26 +185,21 @@ namespace ShitDesigner.Editor {
 				var id = parameter.FindPropertyRelative("_id");
 				var definition = entry.Parameters.FirstOrDefault(candidate => candidate != null && string.Equals(candidate.Id.Value, id.stringValue, StringComparison.Ordinal));
 
-				EditorGUILayout.BeginVertical("box");
 				EditorGUILayout.BeginHorizontal();
-				EditorGUILayout.LabelField(definition == null ? "Parameter" : definition.DisplayName, EditorStyles.boldLabel);
+				EditorGUILayout.LabelField((index + 1) + ".", GUILayout.Width(22f));
+				DrawParameterSelector(parameter, entry, GUIContent.none);
 				if (GUILayout.Button("Remove", GUILayout.Width(70f))) {
 					parameters.DeleteArrayElementAtIndex(index);
 					EditorGUILayout.EndHorizontal();
-					EditorGUILayout.EndVertical();
 					break;
 				}
 				EditorGUILayout.EndHorizontal();
 
-				DrawParameterSelector(parameter, entry);
 				definition = entry.Parameters.FirstOrDefault(candidate => candidate != null && string.Equals(candidate.Id.Value, id.stringValue, StringComparison.Ordinal));
 				if (definition != null) {
 					SetParameterType(parameter, definition.Type);
 					EditorGUI.BeginDisabledGroup(definition.Definition.IsReadOnly);
 					DrawParameterValue(parameter, definition);
-					EditorGUI.EndDisabledGroup();
-					EditorGUI.BeginDisabledGroup(true);
-					EditorGUILayout.EnumPopup(new GUIContent("Type"), definition.Type);
 					EditorGUI.EndDisabledGroup();
 				}
 				else {
@@ -211,7 +207,6 @@ namespace ShitDesigner.Editor {
 					EditorGUILayout.PropertyField(parameter.FindPropertyRelative("_type"), new GUIContent("Type"));
 					EditorGUILayout.HelpBox("This parameter is not provided by the selected node type.", MessageType.Warning);
 				}
-				EditorGUILayout.EndVertical();
 			}
 
 			var addable = entry.Parameters.Where(parameter => parameter != null && !parameter.Definition.IsHidden
@@ -228,7 +223,7 @@ namespace ShitDesigner.Editor {
 			EditorGUILayout.LabelField("Parameters not added here use the manifest defaults.", EditorStyles.miniLabel);
 		}
 
-		private void DrawParameterSelector(SerializedProperty parameter, ShaderNodeManifestEntry entry) {
+		private void DrawParameterSelector(SerializedProperty parameter, ShaderNodeManifestEntry entry, GUIContent label = null) {
 			var id = parameter.FindPropertyRelative("_id");
 			var candidates = entry.Parameters.Where(candidate => candidate != null).ToList();
 			if (candidates.Count == 0) return;
@@ -245,7 +240,7 @@ namespace ShitDesigner.Editor {
 			}
 
 			var selected = values.IndexOf(current);
-			var next = EditorGUILayout.Popup(new GUIContent("Parameter", "Select a manifest parameter; its type and default value are derived automatically."), selected, labels.ToArray());
+			var next = EditorGUILayout.Popup(label ?? new GUIContent("Parameter", "Select a manifest parameter; its type and default value are derived automatically."), selected, labels.ToArray());
 			if (next == selected) return;
 			id.stringValue = values[next];
 			var definition = candidates.FirstOrDefault(candidate => string.Equals(candidate.Id.Value, id.stringValue, StringComparison.Ordinal));
@@ -303,34 +298,31 @@ namespace ShitDesigner.Editor {
 				var targetPortId = connection.FindPropertyRelative("_targetPortId");
 				if (sourcePortId != null) sourcePortId.stringValue = PatchProgramGraph.ImagePortId;
 
-				EditorGUILayout.BeginVertical("box");
-				EditorGUILayout.BeginHorizontal();
-				EditorGUILayout.LabelField("Connection " + (index + 1), EditorStyles.boldLabel);
+				EditorGUILayout.BeginHorizontal("box");
+				EditorGUILayout.LabelField((index + 1) + ".", GUILayout.Width(22f));
+				if (sourceIds.Count > 0) DrawPopup("From", sourceNodeId, sourceIds, sourceLabels);
+				else EditorGUILayout.LabelField("From: Scene Input");
+
+				var targetIds = GetGraphNodeIds(nodes, out var targetLabels);
+				var ports = new List<string>();
+				var portLabels = new List<string>();
+				if (targetIds.Count > 0) {
+					var targetChanged = DrawPopup("To", targetNodeId, targetIds, targetLabels);
+					var targetEntry = FindRuntimeEntryForGraphNode(nodes, targetNodeId.stringValue);
+					ports = GetImageInputPorts(targetEntry, out portLabels);
+					if (targetChanged && ports.Count > 0) targetPortId.stringValue = ports[0];
+					if (ports.Count > 0) DrawPopup("Port", targetPortId, ports, portLabels);
+					else targetPortId.stringValue = string.Empty;
+				}
 				if (GUILayout.Button("Remove", GUILayout.Width(70f))) {
 					connections.DeleteArrayElementAtIndex(index);
 					EditorGUILayout.EndHorizontal();
-					EditorGUILayout.EndVertical();
 					break;
 				}
 				EditorGUILayout.EndHorizontal();
 
-				if (sourceIds.Count > 0) DrawPopup("Source Node", sourceNodeId, sourceIds, sourceLabels);
-				else EditorGUILayout.HelpBox("Add graph nodes before creating a connection.", MessageType.Info);
-				EditorGUI.BeginDisabledGroup(true);
-				EditorGUILayout.TextField(new GUIContent("Source Port", "Shader graph nodes expose the image output port."), PatchProgramGraph.ImagePortId);
-				EditorGUI.EndDisabledGroup();
-
-				var targetIds = GetGraphNodeIds(nodes, out var targetLabels);
-				if (targetIds.Count > 0) {
-					var targetChanged = DrawPopup("Target Node", targetNodeId, targetIds, targetLabels);
-					var targetEntry = FindRuntimeEntryForGraphNode(nodes, targetNodeId.stringValue);
-					var ports = GetImageInputPorts(targetEntry, out var portLabels);
-					if (targetChanged && ports.Count > 0) targetPortId.stringValue = ports[0];
-					if (ports.Count > 0) DrawPopup("Target Port", targetPortId, ports, portLabels);
-					else EditorGUILayout.HelpBox("The target node has no image input ports.", MessageType.Warning);
-				}
-				else EditorGUILayout.HelpBox("Add a graph node before selecting a target.", MessageType.Info);
-				EditorGUILayout.EndVertical();
+				if (targetIds.Count == 0) EditorGUILayout.HelpBox("Add a graph node before creating a connection.", MessageType.Info);
+				else if (ports.Count == 0) EditorGUILayout.HelpBox("The target node has no image input ports.", MessageType.Warning);
 			}
 
 			if (GUILayout.Button("Add Connection")) AddGraphConnection(connections, nodes);
@@ -341,8 +333,9 @@ namespace ShitDesigner.Editor {
 			EditorGUILayout.HelpBox("Select the Scene3DDefinition assets used by this patch. Shader graph nodes are configured under Program Graph.", MessageType.None);
 			for (var nodeIndex = 0; nodeIndex < _nodes.arraySize; nodeIndex++) {
 				var node = _nodes.GetArrayElementAtIndex(nodeIndex);
-				EditorGUILayout.BeginHorizontal();
-				DrawSceneDefinitionSelector(node, new GUIContent("Scene Node " + (nodeIndex + 1)));
+				EditorGUILayout.BeginHorizontal("box");
+				EditorGUILayout.LabelField((nodeIndex + 1) + ".", GUILayout.Width(22f));
+				DrawSceneDefinitionSelector(node, GUIContent.none);
 				if (GUILayout.Button("Remove", GUILayout.Width(70f))) {
 					node.objectReferenceValue = null;
 					_nodes.DeleteArrayElementAtIndex(nodeIndex);
@@ -367,43 +360,43 @@ namespace ShitDesigner.Editor {
 				var nodeValues = nodeOptions.Select(node => node.Id).ToList();
 				var nodeLabels = nodeOptions.Select(node => node.Label).ToList();
 				var selectedNode = sceneNodes.FirstOrDefault(node => string.Equals(node.Id, nodeId.stringValue, StringComparison.Ordinal));
+				var parameterOptions = new List<SceneParameterOption>();
+				var parameterValues = new List<string>();
 
-				EditorGUILayout.BeginVertical("box");
-				EditorGUILayout.BeginHorizontal();
-				EditorGUILayout.LabelField("Parameter " + (index + 1), EditorStyles.boldLabel);
+				EditorGUILayout.BeginHorizontal("box");
+				EditorGUILayout.LabelField((index + 1) + ".", GUILayout.Width(22f));
+				if (nodeValues.Count > 0) {
+					var nodeChanged = DrawPopup("Node", nodeId, nodeValues, nodeLabels);
+					selectedNode = sceneNodes.FirstOrDefault(node => string.Equals(node.Id, nodeId.stringValue, StringComparison.Ordinal));
+					parameterOptions = GetSceneParameterOptions(selectedNode == null ? null : selectedNode.Definition);
+					parameterValues = parameterOptions.Select(option => option.Id).ToList();
+					var parameterLabels = parameterOptions.Select(option => option.Label).ToList();
+					if (nodeChanged && parameterValues.Count > 0) parameterId.stringValue = parameterValues[0];
+					if (parameterValues.Count > 0) DrawPopup("Parameter", parameterId, parameterValues, parameterLabels);
+					else EditorGUILayout.LabelField("No exposed parameter", EditorStyles.miniLabel);
+				}
+				else EditorGUILayout.LabelField("No Scene Node", EditorStyles.miniLabel);
 				if (GUILayout.Button("Remove", GUILayout.Width(70f))) {
 					_parameters.DeleteArrayElementAtIndex(index);
 					EditorGUILayout.EndHorizontal();
-					EditorGUILayout.EndVertical();
 					break;
 				}
 				EditorGUILayout.EndHorizontal();
 
-				if (nodeValues.Count > 0) {
-					var nodeChanged = DrawPopup("Scene Node", nodeId, nodeValues, nodeLabels);
-					selectedNode = sceneNodes.FirstOrDefault(node => string.Equals(node.Id, nodeId.stringValue, StringComparison.Ordinal));
-					var parameterOptions = GetSceneParameterOptions(selectedNode == null ? null : selectedNode.Definition);
-					var parameterValues = parameterOptions.Select(option => option.Id).ToList();
-					var parameterLabels = parameterOptions.Select(option => option.Label).ToList();
-					if (nodeChanged && parameterValues.Count > 0) parameterId.stringValue = parameterValues[0];
-					if (parameterValues.Count > 0) DrawPopup("Scene Parameter", parameterId, parameterValues, parameterLabels);
-					else {
-						EditorGUILayout.PropertyField(parameterId, new GUIContent("Parameter ID"));
-						EditorGUILayout.HelpBox("The selected prefab does not expose discoverable live parameters. The ID field is retained as a fallback.", MessageType.Info);
-					}
-					if (string.IsNullOrWhiteSpace(id.stringValue)) id.stringValue = CreatePublishedParameterId(parameterId.stringValue, index);
-					if (string.IsNullOrWhiteSpace(displayName.stringValue)) displayName.stringValue = GetSelectedLabel(parameterOptions, parameterId.stringValue, parameterId.stringValue);
-				}
-				else {
+				if (nodeValues.Count == 0) {
 					EditorGUILayout.HelpBox("Add a Scene3DDefinition to the Scene Nodes list before publishing a parameter.", MessageType.Info);
 					EditorGUILayout.PropertyField(nodeId, new GUIContent("Scene Node ID"));
 					EditorGUILayout.PropertyField(parameterId, new GUIContent("Parameter ID"));
 				}
-				EditorGUI.BeginDisabledGroup(true);
-				EditorGUILayout.TextField(new GUIContent("Generated ID", "The public parameter ID is generated when empty."), id.stringValue);
-				EditorGUI.EndDisabledGroup();
+				else if (parameterValues.Count == 0) {
+					EditorGUILayout.HelpBox("The selected prefab does not expose discoverable live parameters. The ID field is retained as a fallback.", MessageType.Info);
+					EditorGUILayout.PropertyField(parameterId, new GUIContent("Parameter ID"));
+				}
+				else {
+					if (string.IsNullOrWhiteSpace(id.stringValue)) id.stringValue = CreatePublishedParameterId(parameterId.stringValue, index);
+					if (string.IsNullOrWhiteSpace(displayName.stringValue)) displayName.stringValue = GetSelectedLabel(parameterOptions, parameterId.stringValue, parameterId.stringValue);
+				}
 				EditorGUILayout.PropertyField(displayName, new GUIContent("Display Name"));
-				EditorGUILayout.EndVertical();
 			}
 
 			if (sceneNodes.Count > 0 && GUILayout.Button("Add Published Parameter")) AddPublishedParameter(sceneNodes);
