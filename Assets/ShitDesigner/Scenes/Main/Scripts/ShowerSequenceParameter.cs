@@ -11,6 +11,7 @@ namespace ShitDesigner.Main {
 		[SerializeField] private string _id = ParameterId;
 		[SerializeField] private string _displayName = "Shower Sequence";
 		[SerializeField] private FallingObjectShower _shower;
+		[SerializeField] private ShowerRandomCamera m_RandomCamera;
 		[SerializeField] private Color _monochromeColor = Color.white;
 		[SerializeField] private float _value;
 
@@ -29,6 +30,8 @@ namespace ShitDesigner.Main {
 		public override void InitializeParameter() {
 			if (_shower == null)
 				_shower = GetComponentInChildren<FallingObjectShower>(true);
+			if (m_RandomCamera == null)
+				m_RandomCamera = GetComponent<ShowerRandomCamera>();
 			if (_shower == null) {
 				_initialized = false;
 				return;
@@ -79,6 +82,7 @@ namespace ShitDesigner.Main {
 		}
 
 		private void StartSequence() {
+			m_RandomCamera?.TeleportRandomly();
 			SetMonochromeEnabled(true);
 			_phase = SequencePhase.Monochrome;
 			_remainingSeconds = SequenceFrameDuration;
