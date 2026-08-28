@@ -3,6 +3,8 @@ using NUnit.Framework;
 using ShitDesigner.Application;
 using ShitDesigner.Core;
 using ShitDesigner.Input;
+using ShitDesigner.Scene;
+using UnityEditor;
 using UnityEngine;
 
 namespace ShitDesigner.Main.Tests {
@@ -11,15 +13,17 @@ namespace ShitDesigner.Main.Tests {
 		[Test]
 		public void MidiMappingQueuesPreloadedPatchLoadAndParameterRequestsInEventOrder() {
 			var owner = new GameObject("MIDI");
+			var patchA = CreatePatch("patch-a", new PatchMidiInputBinding("motion", MidiControlKind.ControlChange, 1, 74));
+			var patchB = CreatePatch("patch-b");
 			try {
 				var manager = owner.AddComponent<MidiInputManager>();
 				var source = new QueueMidiInputSource();
 				manager.Configure(new NullMidiApplication(), new NullLiveControlApplication(), source);
 				var queue = new LiveParameterQueue();
-				using (var input = new LiveMidiInput(manager, queue, new[] { "patch-a", "patch-b" })) {
+				using (var input = new LiveMidiInput(manager, queue, new[] { patchA, patchB })) {
 					input.SetSelectedPatch("patch-a");
 					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.Note, 1, 37), 127));
-					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.ControlChange, 1, 21), 64));
+					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.ControlChange, 1, 74), 64));
 					manager.Poll();
 				}
 
@@ -29,21 +33,27 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.LoadPatch));
 				Assert.That(requests[0].PatchId, Is.EqualTo("patch-b"));
 				Assert.That(requests[1].PatchId, Is.EqualTo("patch-a"));
-				Assert.That(requests[1].ParameterId, Is.EqualTo(LiveGraphClockRateParameter.ParameterId));
+				Assert.That(requests[1].ParameterId, Is.EqualTo("motion"));
+				Assert.That(requests[1].Value, Is.EqualTo(64f / 127f).Within(0.0001f));
 			}
-			finally { Object.DestroyImmediate(owner); }
+			finally {
+				Object.DestroyImmediate(owner);
+				Object.DestroyImmediate(patchA);
+				Object.DestroyImmediate(patchB);
+			}
 		}
 
 		[Test]
 		public void MidiTriggerBindingQueuesFlashForTheLoadedPatch() {
 			var owner = new GameObject("MIDI");
+			var patch = CreatePatch("patch-a");
 			try {
 				var manager = owner.AddComponent<MidiInputManager>();
 				var source = new QueueMidiInputSource();
 				manager.SetBindings(new[] { new MidiLiveControlBinding(string.Empty, MidiControlKind.Note, 1, 36, output: MidiLiveControlBindingOutput.Trigger) });
 				manager.Configure(new NullMidiApplication(), new NullLiveControlApplication(), source);
 				var queue = new LiveParameterQueue();
-				using (var input = new LiveMidiInput(manager, queue, new[] { "patch-a" })) {
+				using (var input = new LiveMidiInput(manager, queue, new[] { patch })) {
 					input.SetSelectedPatch("patch-a");
 					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.Note, 1, 36), 127));
 					manager.Poll();
@@ -55,19 +65,23 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.TriggerFlash));
 				Assert.That(requests[0].PatchId, Is.EqualTo("patch-a"));
 			}
-			finally { Object.DestroyImmediate(owner); }
+			finally {
+				Object.DestroyImmediate(owner);
+				Object.DestroyImmediate(patch);
+			}
 		}
 
 		[Test]
 		public void MidiTriggerBindingFiresOnlyOnTheRisingEdge() {
 			var owner = new GameObject("MIDI");
+			var patch = CreatePatch("patch-a");
 			try {
 				var manager = owner.AddComponent<MidiInputManager>();
 				var source = new QueueMidiInputSource();
 				manager.SetBindings(new[] { new MidiLiveControlBinding(string.Empty, MidiControlKind.Note, 1, 60, output: MidiLiveControlBindingOutput.Trigger) });
 				manager.Configure(new NullMidiApplication(), new NullLiveControlApplication(), source);
 				var queue = new LiveParameterQueue();
-				using (var input = new LiveMidiInput(manager, queue, new[] { "patch-a" })) {
+				using (var input = new LiveMidiInput(manager, queue, new[] { patch })) {
 					input.SetSelectedPatch("patch-a");
 					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.Note, 1, 60), 127));
 					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.Note, 1, 60), 127));
@@ -81,7 +95,32 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(requests, Has.Count.EqualTo(2));
 				Assert.That(requests, Has.All.Matches<LiveParameterRequest>(request => request.Kind == LiveParameterRequestKind.TriggerFlash));
 			}
-			finally { Object.DestroyImmediate(owner); }
+			finally {
+				Object.DestroyImmediate(owner);
+				Object.DestroyImmediate(patch);
+			}
+		}
+
+		private static PatchDefinition CreatePatch(string id, params PatchMidiInputBinding[] midiInputs) {
+			var patch = ScriptableObject.CreateInstance<PatchDefinition>();
+			var serialized = new SerializedObject(patch);
+			serialized.FindProperty("_id").stringValue = id;
+			serialized.FindProperty("_displayName").stringValue = id;
+			var inputs = serialized.FindProperty("m_MidiInputs");
+			inputs.arraySize = midiInputs.Length;
+			for (var index = 0; index < midiInputs.Length; index++) {
+				var input = inputs.GetArrayElementAtIndex(index);
+				var binding = midiInputs[index];
+				input.FindPropertyRelative("m_MessageType").enumValueIndex = (int)binding.MessageType;
+				input.FindPropertyRelative("m_Channel").intValue = binding.Channel;
+				input.FindPropertyRelative("m_Number").intValue = binding.Number;
+				input.FindPropertyRelative("m_RawMinimum").intValue = binding.RawMinimum;
+				input.FindPropertyRelative("m_RawMaximum").intValue = binding.RawMaximum;
+				input.FindPropertyRelative("m_Invert").boolValue = binding.Invert;
+				input.FindPropertyRelative("m_ParameterId").stringValue = binding.ParameterId;
+			}
+			serialized.ApplyModifiedPropertiesWithoutUndo();
+			return patch;
 		}
 
 		private sealed class QueueMidiInputSource : IMidiInputSource {

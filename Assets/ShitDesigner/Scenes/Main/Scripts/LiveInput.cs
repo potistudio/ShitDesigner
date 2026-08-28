@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using ShitDesigner.Core;
 using ShitDesigner.Input;
+using ShitDesigner.Scene;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -49,54 +50,73 @@ namespace ShitDesigner.Main {
 
 	/// <summary>Maps MIDI events to live requests without owning the MIDI device lifecycle.</summary>
 	public sealed class LiveMidiInput : IDisposable {
-		private readonly MidiInputManager _manager;
-		private readonly LiveParameterQueue _queue;
-		private readonly IReadOnlyList<string> _sceneIds;
-		private readonly int _channel;
-		private string _loadedPatchId;
+		private const int PatchSelectionChannel = 1;
+		private readonly MidiInputManager m_Manager;
+		private readonly LiveParameterQueue m_Queue;
+		private readonly IReadOnlyList<string> m_PatchIds;
+		private readonly IReadOnlyDictionary<string, PatchDefinition> m_PatchesById;
+		private string m_LoadedPatchId;
 
-		public LiveMidiInput(MidiInputManager manager, LiveParameterQueue queue, IReadOnlyList<string> sceneIds, int channel = 1) {
-			_manager = manager ?? throw new ArgumentNullException(nameof(manager));
-			_queue = queue ?? throw new ArgumentNullException(nameof(queue));
-			_sceneIds = sceneIds ?? throw new ArgumentNullException(nameof(sceneIds));
-			_channel = Mathf.Clamp(channel, 1, 16);
-			_manager.InputReceived += OnInputReceived;
-			_manager.TriggerReceived += OnTriggerReceived;
+		public LiveMidiInput(MidiInputManager manager, LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches) {
+			m_Manager = manager ?? throw new ArgumentNullException(nameof(manager));
+			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
+			if (patches == null) throw new ArgumentNullException(nameof(patches));
+
+			var patchIds = new List<string>(patches.Count);
+			var patchesById = new Dictionary<string, PatchDefinition>(StringComparer.Ordinal);
+			foreach (var patch in patches) {
+				if (patch == null || string.IsNullOrWhiteSpace(patch.Id)) throw new ArgumentException("Every live patch requires an ID.", nameof(patches));
+				if (!patchesById.TryAdd(patch.Id, patch)) throw new ArgumentException("Live patch IDs must be unique.", nameof(patches));
+				patchIds.Add(patch.Id);
+			}
+			m_PatchIds = patchIds;
+			m_PatchesById = patchesById;
+			m_Manager.InputReceived += OnInputReceived;
+			m_Manager.TriggerReceived += OnTriggerReceived;
 		}
 
-		public void SetSelectedPatch(string patchId) => _loadedPatchId = patchId ?? string.Empty;
+		public void SetSelectedPatch(string patchId) => m_LoadedPatchId = patchId ?? string.Empty;
 
 		public void Dispose() {
-			_manager.InputReceived -= OnInputReceived;
-			_manager.TriggerReceived -= OnTriggerReceived;
+			m_Manager.InputReceived -= OnInputReceived;
+			m_Manager.TriggerReceived -= OnTriggerReceived;
 		}
 
 		private void OnInputReceived(MidiInputEvent inputEvent) {
 			var control = inputEvent.Control;
-			if (control.Channel != _channel) return;
-			if (_manager.IsTriggerBinding(control)) return;
-			if (control.Kind == MidiControlKind.Note && inputEvent.RawValue > 0) {
+			if (m_Manager.IsTriggerBinding(control)) return;
+			if (control.Channel == PatchSelectionChannel && control.Kind == MidiControlKind.Note && inputEvent.RawValue > 0) {
 				var sceneIndex = control.Number - 36;
-				if (sceneIndex >= 0 && sceneIndex < _sceneIds.Count) SelectPatch(_sceneIds[sceneIndex]);
+				if (sceneIndex >= 0 && sceneIndex < m_PatchIds.Count) {
+					SelectPatch(m_PatchIds[sceneIndex]);
+					return;
+				}
+			}
+			if (control.Channel == PatchSelectionChannel && control.Kind == MidiControlKind.ControlChange && control.Number == 20 &&
+				!string.IsNullOrWhiteSpace(m_LoadedPatchId) && m_PatchIds.Count > 0) {
+				var normalized = inputEvent.RawValue / (float)control.RawMaximum;
+				var index = Mathf.RoundToInt(normalized * (m_PatchIds.Count - 1));
+				SelectPatch(m_PatchIds[index]);
 				return;
 			}
-			if (control.Kind != MidiControlKind.ControlChange || string.IsNullOrWhiteSpace(_loadedPatchId)) return;
-
-			var normalized = inputEvent.RawValue / (float)control.RawMaximum;
-			if (control.Number == 20 && _sceneIds.Count > 0) {
-				var index = Mathf.RoundToInt(normalized * (_sceneIds.Count - 1));
-				SelectPatch(_sceneIds[index]);
-			}
-			else if (control.Number == 21) _queue.EnqueueSetParameter(_loadedPatchId, LiveGraphClockRateParameter.ParameterId, normalized);
-			else if (control.Number == 22) _queue.EnqueueSetParameter(_loadedPatchId, LiveUniformScaleParameter.ParameterId, normalized);
+			QueuePatchParameterInputs(inputEvent);
 		}
 
 		private void OnTriggerReceived(MidiLiveControlBinding binding) {
-			if (!string.IsNullOrWhiteSpace(_loadedPatchId)) _queue.EnqueueTriggerFlash(_loadedPatchId);
+			if (!string.IsNullOrWhiteSpace(m_LoadedPatchId)) m_Queue.EnqueueTriggerFlash(m_LoadedPatchId);
+		}
+
+		private void QueuePatchParameterInputs(MidiInputEvent inputEvent) {
+			if (string.IsNullOrWhiteSpace(m_LoadedPatchId) || !m_PatchesById.TryGetValue(m_LoadedPatchId, out var patch)) return;
+
+			foreach (var binding in patch.MidiInputs) {
+				if (binding == null || !binding.Matches(inputEvent.Control)) continue;
+				m_Queue.EnqueueSetParameter(m_LoadedPatchId, binding.ParameterId, binding.Normalize(inputEvent.RawValue));
+			}
 		}
 
 		private void SelectPatch(string patchId) {
-			_queue.EnqueueLoadPatch(patchId);
+			m_Queue.EnqueueLoadPatch(patchId);
 		}
 	}
 }
