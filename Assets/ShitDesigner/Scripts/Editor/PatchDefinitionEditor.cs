@@ -218,7 +218,8 @@ namespace ShitDesigner.Editor {
 			}
 
 			var selected = values.IndexOf(current);
-			var next = EditorGUI.Popup(position, new GUIContent("Type ID"), selected, labels.ToArray());
+			var field = EditorGUI.PrefixLabel(position, new GUIContent("Type ID"));
+			var next = EditorGUI.Popup(field, selected, labels.ToArray());
 			if (next != selected) typeId.stringValue = values[next];
 		}
 
