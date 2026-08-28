@@ -48,6 +48,18 @@ namespace ShitDesigner.Scene {
 			MoveObjects((float)Math.Min(deltaSeconds, float.MaxValue));
 		}
 
+		public void Rearrange() {
+			if (_objects.Count == 0) {
+				CreateObjects();
+				return;
+			}
+
+			_random ??= new System.Random(randomSeed);
+			foreach (var fallingObject in _objects)
+				if (fallingObject.Transform != null)
+					ResetPosition(fallingObject, true);
+		}
+
 		private void OnValidate() {
 			objectCount = Mathf.Clamp(objectCount, 1, 1000);
 			objectScaleRange.x = Mathf.Max(0.01f, objectScaleRange.x);
