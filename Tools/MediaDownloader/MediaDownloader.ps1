@@ -1,4 +1,4 @@
-Add-Type -AssemblyName PresentationFramework
+﻿Add-Type -AssemblyName PresentationFramework
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
