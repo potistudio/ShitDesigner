@@ -78,5 +78,28 @@ namespace ShitDesigner.Main.Tests {
 			var first = EditorBuildSettings.scenes.First(scene => scene.enabled);
 			Assert.That(first.path, Is.EqualTo("Assets/ShitDesigner/Scenes/Main/Main.unity"));
 		}
+
+		[Test]
+		public void ExternalProgramDisplayCamera_UsesAnUrpRenderableSurface() {
+			var host = new GameObject("External Program Display Camera Test");
+			var source = new RenderTexture(4, 4, 0, RenderTextureFormat.ARGB32);
+			try {
+				Assert.That(source.Create(), Is.True);
+				var camera = host.AddComponent<Camera>();
+				var presenter = host.AddComponent<LiveProgramDisplayCamera>();
+
+				presenter.Initialize(camera, source);
+
+				Assert.That(camera.cullingMask, Is.EqualTo(1 << 31));
+				var renderer = host.GetComponentInChildren<MeshRenderer>();
+				Assert.That(renderer, Is.Not.Null);
+				Assert.That(renderer.sharedMaterial.shader.name, Is.EqualTo("Hidden/ShitDesigner/ProgramDisplay"));
+			}
+			finally {
+				source.Release();
+				Object.DestroyImmediate(source);
+				Object.DestroyImmediate(host);
+			}
+		}
 	}
 }
