@@ -41,4 +41,15 @@ namespace ShitDesigner.Scene {
 			}
 		}
 	}
+
+	/// <summary>Provides the current single color used by the shower render pass.</summary>
+	public static class ShowerMonochromeColor {
+		private static Color? _runtimeColor;
+
+		public static void SetRuntimeColor(Color color) {
+			_runtimeColor = color;
+		}
+
+		public static Color Resolve(Color defaultColor) => _runtimeColor ?? defaultColor;
+	}
 }
