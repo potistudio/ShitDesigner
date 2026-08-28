@@ -392,6 +392,409 @@ MonoBehaviour:
       variantId: default
       outputRole: image
       requiredFeatures: 0
+  - typeId: shitdesigner.shader.generator.recursive-rectangles
+    schemaVersion: 1
+    displayName: Recursive Rectangles
+    category: Shader/Generator
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - image
+    parameterIds:
+    - max_depth
+    - min_leaf_size
+    - split_probability
+    - axis_mode
+    - ratio_min
+    - ratio_max
+    - seed
+    - reveal_progress
+    - split_duration
+    - split_stagger
+    - easing
+    - color_a
+    - color_b
+    - gutter
+    - line_color
+    ports:
+    - id: image
+      displayName: Image
+      direction: 1
+      type: 0
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters:
+    - id: max_depth
+      displayName: Max Depth
+      type: 1
+      defaultValue: int:5
+      hasMinimum: 1
+      minimumValue: int:0
+      hasMaximum: 1
+      maximumValue: int:8
+      runtimeStateful: 0
+      enumOptions: []
+      group: Structure
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: min_leaf_size
+      displayName: Min Leaf Size
+      type: 0
+      defaultValue: float:0.08
+      hasMinimum: 1
+      minimumValue: float:0.001
+      hasMaximum: 1
+      maximumValue: float:0.5
+      runtimeStateful: 0
+      enumOptions: []
+      group: Structure
+      displayOrder: 1
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: split_probability
+      displayName: Split Probability
+      type: 0
+      defaultValue: float:0.9
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      group: Structure
+      displayOrder: 2
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: axis_mode
+      displayName: Axis Mode
+      type: 8
+      defaultValue: enum:longer_side
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions:
+      - longer_side
+      - horizontal
+      - vertical
+      - random
+      group: Structure
+      displayOrder: 3
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: ratio_min
+      displayName: Ratio Min
+      type: 0
+      defaultValue: float:0.25
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      group: Structure
+      displayOrder: 4
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: ratio_max
+      displayName: Ratio Max
+      type: 0
+      defaultValue: float:0.75
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      group: Structure
+      displayOrder: 5
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: seed
+      displayName: Seed
+      type: 1
+      defaultValue: int:1
+      hasMinimum: 1
+      minimumValue: int:-1000000
+      hasMaximum: 1
+      maximumValue: int:1000000
+      runtimeStateful: 0
+      enumOptions: []
+      group: Structure
+      displayOrder: 6
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: reveal_progress
+      displayName: Reveal Progress
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      group: Animation
+      displayOrder: 10
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: split_duration
+      displayName: Split Duration
+      type: 0
+      defaultValue: float:0.15
+      hasMinimum: 1
+      minimumValue: float:0.001
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      group: Animation
+      displayOrder: 11
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: split_stagger
+      displayName: Split Stagger
+      type: 0
+      defaultValue: float:0.04
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      group: Animation
+      displayOrder: 12
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: easing
+      displayName: Easing
+      type: 8
+      defaultValue: enum:smooth_step
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions:
+      - linear
+      - smooth_step
+      - ease_in
+      - ease_out
+      - ease_in_out
+      group: Animation
+      displayOrder: 13
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: color_a
+      displayName: Color A
+      type: 6
+      defaultValue: color:0.05,0.12,0.22,1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      group: Appearance
+      displayOrder: 20
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: color_b
+      displayName: Color B
+      type: 6
+      defaultValue: color:0.95,0.32,0.14,1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      group: Appearance
+      displayOrder: 21
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: gutter
+      displayName: Gutter
+      type: 0
+      defaultValue: float:0.004
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:0.1
+      runtimeStateful: 0
+      enumOptions: []
+      group: Appearance
+      displayOrder: 22
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: line_color
+      displayName: Line Color
+      type: 6
+      defaultValue: color:0.01,0.01,0.01,1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      group: Appearance
+      displayOrder: 23
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    shaderKey: builtin.shader.generator.recursive-rectangles
+    shader: {fileID: 4800000, guid: 8f6d4e27d20a4e4fa924f23529b4233a, type: 3}
+    templateMaterial: {fileID: 0}
+    outputPass: 0
+    shaderFamily: 0
+    shaderVariantId: default
+    shaderSourceVariant: 0
+    shaderRequiredFeatures: 0
+    shaderStateful: 0
+    shaderHistorySlots: 0
+    shaderAliases:
+    - recursive rectangles
+    - bsp rectangles
+    shaderInputs: []
+    shaderParameters:
+    - parameterId: max_depth
+      property: _MaxDepth
+      type: 1
+      enumKeys: []
+      enumValues: 
+    - parameterId: min_leaf_size
+      property: _MinLeafSize
+      type: 0
+      enumKeys: []
+      enumValues: 
+    - parameterId: split_probability
+      property: _SplitProbability
+      type: 0
+      enumKeys: []
+      enumValues: 
+    - parameterId: axis_mode
+      property: _AxisMode
+      type: 8
+      enumKeys:
+      - longer_side
+      - horizontal
+      - vertical
+      - random
+      enumValues: 00000000010000000200000003000000
+    - parameterId: ratio_min
+      property: _RatioMin
+      type: 0
+      enumKeys: []
+      enumValues: 
+    - parameterId: ratio_max
+      property: _RatioMax
+      type: 0
+      enumKeys: []
+      enumValues: 
+    - parameterId: seed
+      property: _StructureSeed
+      type: 1
+      enumKeys: []
+      enumValues: 
+    - parameterId: reveal_progress
+      property: _RevealProgress
+      type: 0
+      enumKeys: []
+      enumValues: 
+    - parameterId: split_duration
+      property: _SplitDuration
+      type: 0
+      enumKeys: []
+      enumValues: 
+    - parameterId: split_stagger
+      property: _SplitStagger
+      type: 0
+      enumKeys: []
+      enumValues: 
+    - parameterId: easing
+      property: _Easing
+      type: 8
+      enumKeys:
+      - linear
+      - smooth_step
+      - ease_in
+      - ease_out
+      - ease_in_out
+      enumValues: 0000000001000000020000000300000004000000
+    - parameterId: color_a
+      property: _ColorA
+      type: 6
+      enumKeys: []
+      enumValues: 
+    - parameterId: color_b
+      property: _ColorB
+      type: 6
+      enumKeys: []
+      enumValues: 
+    - parameterId: gutter
+      property: _Gutter
+      type: 0
+      enumKeys: []
+      enumValues: 
+    - parameterId: line_color
+      property: _LineColor
+      type: 6
+      enumKeys: []
+      enumValues: 
+    shaderPasses:
+    - id: main
+      index: 0
+      kind: 0
+      variantId: default
+      outputRole: image
+      requiredFeatures: 0
   - typeId: shitdesigner.shader.generator.solid-color
     schemaVersion: 1
     displayName: Solid Color

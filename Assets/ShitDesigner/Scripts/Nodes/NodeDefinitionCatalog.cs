@@ -271,8 +271,8 @@ namespace ShitDesigner.Nodes {
 		private readonly IReadOnlyCollection<string> _specializedNodeTypeIds;
 		public IReadOnlyList<NodeCatalogEntry> Entries => _entries;
 		/// <summary>All production-owned scene/video/feedback/shader types
-		/// represented by this catalog instance.  The static legacy property
-		/// remains for callers that only know the original three shader IDs.</summary>
+		/// represented by this catalog instance. The static projection covers
+		/// every built-in shader declaration.</summary>
 		public IReadOnlyCollection<string> SpecializedNodeTypeIdsForCatalog => _specializedNodeTypeIds;
 		public NodeDefinitionCatalog(IEnumerable<NodeCatalogEntry> entries, IEnumerable<string> specializedNodeTypeIds = null) {
 			_entries = new ReadOnlyCollection<NodeCatalogEntry>((entries ?? Enumerable.Empty<NodeCatalogEntry>()).ToList());

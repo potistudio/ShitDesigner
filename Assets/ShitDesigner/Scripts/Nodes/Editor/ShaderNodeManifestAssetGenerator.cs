@@ -47,7 +47,8 @@ namespace ShitDesigner.Nodes.Editor {
 			{
 				{ "builtin.shader.generator", "Assets/ShitDesigner/Scripts/Media/Shaders/BuiltinGenerator.shader" },
 				{ "builtin.shader.effect", "Assets/ShitDesigner/Scripts/Media/Shaders/BuiltinEffect.shader" },
-				{ "builtin.shader.blend2", "Assets/ShitDesigner/Scripts/Media/Shaders/BuiltinBlend2.shader" }
+				{ "builtin.shader.blend2", "Assets/ShitDesigner/Scripts/Media/Shaders/BuiltinBlend2.shader" },
+				{ "builtin.shader.generator.recursive-rectangles", "Assets/ShitDesigner/Scripts/Media/Shaders/RecursiveRectangles.shader" }
 			};
 
 		[MenuItem("ShitDesigner/VJ Shader Pack/Generate Manifest and Node Catalog")]
@@ -106,7 +107,7 @@ namespace ShitDesigner.Nodes.Editor {
 			var exact = catalog.ValidateAgainst(runtime);
 			if (exact.IsFailure) return Result.Failure<int, Diagnostic>(exact.Error);
 			var count = manifest.Entries.Count;
-			if (count != 441) return Result.Failure<int, Diagnostic>(Failure("nodes.shader_manifest_count", "Expected 438 VJ entries plus 3 legacy shader entries, found " + count + ".").Error);
+			if (count != 442) return Result.Failure<int, Diagnostic>(Failure("nodes.shader_manifest_count", "Expected 438 VJ entries plus 4 built-in shader entries, found " + count + ".").Error);
 			EditorUtility.SetDirty(manifestAsset);
 			EditorUtility.SetDirty(catalog);
 			AssetDatabase.SaveAssets();

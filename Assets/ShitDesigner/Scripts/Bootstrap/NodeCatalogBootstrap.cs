@@ -44,7 +44,7 @@ namespace ShitDesigner.Bootstrap {
 		}
 
 		/// <summary>
-		/// Builds the production factory table from the seven required visual
+		/// Builds the production factory table from the seven base visual
 		/// bindings.  This is intentionally a small composition helper: it
 		/// does not create a RuntimeSession, PlayerLoop or presentation
 		/// objects.  A missing or unavailable binding fails before any Graph
@@ -67,9 +67,6 @@ namespace ShitDesigner.Bootstrap {
 				var registered = bindings.Register(binding);
 				if (registered.IsFailure) return Result.Failure<NodeFactoryBindings, Diagnostic>(registered.Error);
 			}
-			var availability = bindings.Availability;
-			if (!availability.IsComplete)
-				return Result.Failure<NodeFactoryBindings, Diagnostic>(Failure("bootstrap.nodes.binding_incomplete", "The production visual binding table is incomplete.").Error);
 			return Result.Success<NodeFactoryBindings, Diagnostic>(bindings);
 		}
 
@@ -81,7 +78,7 @@ namespace ShitDesigner.Bootstrap {
 				Find("shitdesigner.scene.3d"), Find("shitdesigner.scene.2d"),
 				Find("shitdesigner.shader.generator"), Find("shitdesigner.shader.effect"),
 				Find("shitdesigner.shader.blend2"), Find("shitdesigner.video.player"), Find("system.feedback"));
-			if (baseResult.IsFailure || list.Count <= 7) return baseResult;
+			if (baseResult.IsFailure) return baseResult;
 			var result = baseResult.Value;
 			foreach (var binding in list.Where(x => x != null && !result.Contains(x.TypeId))) {
 				if (!binding.IsAvailable)
@@ -89,6 +86,8 @@ namespace ShitDesigner.Bootstrap {
 				var registered = result.Register(binding);
 				if (registered.IsFailure) return Result.Failure<NodeFactoryBindings, Diagnostic>(registered.Error);
 			}
+			if (!result.Availability.IsComplete)
+				return Result.Failure<NodeFactoryBindings, Diagnostic>(Failure("bootstrap.nodes.binding_incomplete", "The production visual binding table is incomplete.").Error);
 			return Result.Success<NodeFactoryBindings, Diagnostic>(result);
 		}
 
