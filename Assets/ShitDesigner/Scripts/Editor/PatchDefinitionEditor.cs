@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using ShitDesigner.Core;
 using ShitDesigner.Nodes;
 using ShitDesigner.Scene;
@@ -580,6 +581,128 @@ namespace ShitDesigner.Editor {
 			var line = new Rect(position.x, y, position.width, EditorGUIUtility.singleLineHeight);
 			y += EditorGUIUtility.singleLineHeight + LineSpacing;
 			return line;
+		}
+	}
+
+	[CustomPropertyDrawer(typeof(PatchParameter))]
+	public sealed class PatchParameterDrawer : PropertyDrawer {
+		private const float LineSpacing = 2f;
+
+		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
+			EditorGUI.BeginProperty(position, label, property);
+			var id = property.FindPropertyRelative("_id");
+			var displayName = property.FindPropertyRelative("_displayName");
+			var nodeId = property.FindPropertyRelative("_nodeId");
+			var parameterId = property.FindPropertyRelative("_parameterId");
+			var y = position.y;
+			property.isExpanded = EditorGUI.Foldout(Line(position, ref y), property.isExpanded, label, true);
+			if (property.isExpanded) {
+				var indent = EditorGUI.indentLevel;
+				EditorGUI.indentLevel++;
+				EditorGUI.PropertyField(Line(position, ref y), id, new GUIContent("ID"));
+				EditorGUI.PropertyField(Line(position, ref y), displayName, new GUIContent("Display Name"));
+				var nodes = GetSceneNodes(property.serializedObject.FindProperty("_nodes"));
+				var nodeChanged = DrawNodePopup(Line(position, ref y), nodeId, nodes);
+				var selectedNode = nodes.FirstOrDefault(node => string.Equals(node.Id, nodeId.stringValue, StringComparison.Ordinal));
+				var parameters = GetSceneParameters(selectedNode?.Definition);
+				if (nodeChanged && parameters.Count > 0) parameterId.stringValue = parameters[0].Id;
+				DrawParameterPopup(Line(position, ref y), parameterId, parameters);
+				EditorGUI.indentLevel = indent;
+			}
+			EditorGUI.EndProperty();
+		}
+
+		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+			=> property.isExpanded
+				? EditorGUIUtility.singleLineHeight * 5f + LineSpacing * 4f
+				: EditorGUIUtility.singleLineHeight;
+
+		private static bool DrawNodePopup(Rect position, SerializedProperty nodeId, List<SceneNodeOption> nodes) {
+			if (nodes.Count == 0) {
+				EditorGUI.PropertyField(position, nodeId, new GUIContent("Scene Node"));
+				return false;
+			}
+			return DrawPopup(position, "Scene Node", nodeId, nodes.Select(node => node.Id).ToList(), nodes.Select(node => node.Label).ToList());
+		}
+
+		private static void DrawParameterPopup(Rect position, SerializedProperty parameterId, List<SceneParameterOption> parameters) {
+			if (parameters.Count == 0) {
+				EditorGUI.PropertyField(position, parameterId, new GUIContent("Parameter"));
+				return;
+			}
+			DrawPopup(position, "Parameter", parameterId, parameters.Select(parameter => parameter.Id).ToList(), parameters.Select(parameter => parameter.Label).ToList());
+		}
+
+		private static bool DrawPopup(Rect position, string label, SerializedProperty property, List<string> values, List<string> labels) {
+			var current = property.stringValue ?? string.Empty;
+			if (!values.Contains(current, StringComparer.Ordinal)) {
+				values.Insert(0, current);
+				labels.Insert(0, string.IsNullOrWhiteSpace(current) ? "<None>" : "Missing: " + current);
+			}
+			var selected = values.IndexOf(current);
+			var field = EditorGUI.PrefixLabel(position, new GUIContent(label));
+			var next = EditorGUI.Popup(field, selected, labels.ToArray());
+			if (next == selected) return false;
+			property.stringValue = values[next];
+			return true;
+		}
+
+		private static List<SceneNodeOption> GetSceneNodes(SerializedProperty nodes) {
+			var options = new List<SceneNodeOption>();
+			if (nodes == null) return options;
+			var seen = new HashSet<string>(StringComparer.Ordinal);
+			for (var index = 0; index < nodes.arraySize; index++) {
+				var definition = nodes.GetArrayElementAtIndex(index).objectReferenceValue as Scene3DDefinition;
+				if (definition == null || string.IsNullOrWhiteSpace(definition.Id) || !seen.Add(definition.Id)) continue;
+				options.Add(new SceneNodeOption(definition.Id, string.IsNullOrWhiteSpace(definition.name) ? definition.Id : definition.name + " (" + definition.Id + ")", definition));
+			}
+			return options;
+		}
+
+		private static List<SceneParameterOption> GetSceneParameters(Scene3DDefinition definition) {
+			var options = new List<SceneParameterOption>();
+			if (definition == null || definition.Prefab == null) return options;
+			var seen = new HashSet<string>(StringComparer.Ordinal);
+			foreach (var component in definition.Prefab.GetComponentsInChildren<MonoBehaviour>(true)) {
+				if (component == null) continue;
+				var definitionProperty = component.GetType().GetProperty("Definition", BindingFlags.Instance | BindingFlags.Public);
+				if (definitionProperty == null || definitionProperty.GetIndexParameters().Length != 0) continue;
+				object parameter;
+				try { parameter = definitionProperty.GetValue(component); }
+				catch { continue; }
+				var id = ReadStringProperty(parameter, "Id");
+				if (string.IsNullOrWhiteSpace(id) || !seen.Add(id)) continue;
+				var displayName = ReadStringProperty(parameter, "DisplayName");
+				options.Add(new SceneParameterOption(id, string.IsNullOrWhiteSpace(displayName) ? id : displayName + " (" + id + ")"));
+			}
+			return options.OrderBy(option => option.Label, StringComparer.Ordinal).ToList();
+		}
+
+		private static string ReadStringProperty(object value, string propertyName) {
+			if (value == null) return string.Empty;
+			var property = value.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
+			if (property == null || property.PropertyType != typeof(string)) return string.Empty;
+			try { return property.GetValue(value) as string ?? string.Empty; }
+			catch { return string.Empty; }
+		}
+
+		private static Rect Line(Rect position, ref float y) {
+			var line = new Rect(position.x, y, position.width, EditorGUIUtility.singleLineHeight);
+			y += EditorGUIUtility.singleLineHeight + LineSpacing;
+			return line;
+		}
+
+		private sealed class SceneNodeOption {
+			public string Id { get; }
+			public string Label { get; }
+			public Scene3DDefinition Definition { get; }
+			public SceneNodeOption(string id, string label, Scene3DDefinition definition) { Id = id; Label = label; Definition = definition; }
+		}
+
+		private sealed class SceneParameterOption {
+			public string Id { get; }
+			public string Label { get; }
+			public SceneParameterOption(string id, string label) { Id = id; Label = label; }
 		}
 	}
 
