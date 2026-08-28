@@ -1,11 +1,12 @@
 using System;
+using ShitDesigner.Main;
 using UnityEngine;
 
 namespace ShitDesigner.Scene {
 	/// <summary>Moves the Shower camera through smooth noise while keeping it aimed at a target.</summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
-	public sealed class ShowerRandomCamera : MonoBehaviour, ISceneGraphClockReceiver {
+	public sealed class ShowerRandomCamera : MonoBehaviour, ISceneGraphClockReceiver, ILiveParameterTriggerReceiver {
 		[Header("References")]
 		[SerializeField] private Camera m_Camera;
 		[SerializeField] private Transform m_Target;
@@ -59,7 +60,7 @@ namespace ShitDesigner.Scene {
 			Advance((float)Math.Min(deltaSeconds, float.MaxValue));
 		}
 
-		public void TeleportRandomly() {
+		public void OnLiveParameterTriggered() {
 			Initialize();
 			if (m_Camera == null || m_Target == null)
 				return;
