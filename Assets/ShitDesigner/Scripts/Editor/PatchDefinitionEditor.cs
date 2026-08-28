@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using ShitDesigner.Core;
+using ShitDesigner.Nodes;
 using ShitDesigner.Scene;
 using UnityEditor;
 using UnityEngine;
@@ -151,6 +152,99 @@ namespace ShitDesigner.Editor {
 			if (result.Length == 0) return "item";
 			if (char.IsDigit(result[0])) result.Insert(0, "item_");
 			return result.ToString();
+		}
+	}
+
+	[CustomPropertyDrawer(typeof(PatchGraphNode))]
+	public sealed class PatchGraphNodeDrawer : PropertyDrawer {
+		private const string ManifestAssetPath = "Assets/ShitDesigner/Scripts/Nodes/ShaderNodeManifest.asset";
+		private const float LineSpacing = 2f;
+		private static ShaderNodeManifestAsset _manifest;
+
+		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
+			EditorGUI.BeginProperty(position, label, property);
+			var id = property.FindPropertyRelative("_id");
+			var typeId = property.FindPropertyRelative("_typeId");
+			var parameters = property.FindPropertyRelative("_parameters");
+			var y = position.y;
+			property.isExpanded = EditorGUI.Foldout(Line(position, ref y), property.isExpanded, label, true);
+			if (property.isExpanded) {
+				var indent = EditorGUI.indentLevel;
+				EditorGUI.indentLevel++;
+				EditorGUI.PropertyField(Line(position, ref y), id, new GUIContent("ID"));
+				DrawTypeIdPopup(Line(position, ref y), typeId);
+				var parametersHeight = EditorGUI.GetPropertyHeight(parameters, new GUIContent("Parameters"), true);
+				EditorGUI.PropertyField(new Rect(position.x, y, position.width, parametersHeight), parameters, new GUIContent("Parameters"), true);
+				EditorGUI.indentLevel = indent;
+			}
+			EditorGUI.EndProperty();
+		}
+
+		public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
+			if (!property.isExpanded) return EditorGUIUtility.singleLineHeight;
+			var parameters = property.FindPropertyRelative("_parameters");
+			return EditorGUIUtility.singleLineHeight * 3f + LineSpacing * 3f
+				+ EditorGUI.GetPropertyHeight(parameters, new GUIContent("Parameters"), true);
+		}
+
+		private static void DrawTypeIdPopup(Rect position, SerializedProperty typeId) {
+			var manifest = ResolveManifest();
+			if (manifest == null) {
+				EditorGUI.PropertyField(position, typeId, new GUIContent("Type ID"));
+				return;
+			}
+
+			var entries = manifest.Entries
+				.Where(entry => entry != null && !string.IsNullOrWhiteSpace(entry.TypeId))
+				.OrderBy(entry => entry.Category, StringComparer.Ordinal)
+				.ThenBy(entry => entry.DisplayName, StringComparer.Ordinal)
+				.ThenBy(entry => entry.TypeId, StringComparer.Ordinal)
+				.ToList();
+			if (entries.Count == 0) {
+				EditorGUI.PropertyField(position, typeId, new GUIContent("Type ID"));
+				return;
+			}
+
+			var values = entries.Select(entry => entry.TypeId).ToList();
+			var labels = entries.Select(FormatLabel).ToList();
+			var current = typeId.stringValue ?? string.Empty;
+			if (string.IsNullOrWhiteSpace(current)) {
+				values.Insert(0, string.Empty);
+				labels.Insert(0, "<None>");
+			}
+			else if (!values.Contains(current, StringComparer.Ordinal)) {
+				values.Insert(0, current);
+				labels.Insert(0, "Missing: " + current);
+			}
+
+			var selected = values.IndexOf(current);
+			var next = EditorGUI.Popup(position, new GUIContent("Type ID"), selected, labels.ToArray());
+			if (next != selected) typeId.stringValue = values[next];
+		}
+
+		private static ShaderNodeManifestAsset ResolveManifest() {
+			if (_manifest != null) return _manifest;
+			_manifest = AssetDatabase.LoadAssetAtPath<ShaderNodeManifestAsset>(ManifestAssetPath);
+			if (_manifest != null) return _manifest;
+			var matches = AssetDatabase.FindAssets("t:ShaderNodeManifestAsset");
+			for (var index = 0; index < matches.Length; index++) {
+				var candidate = AssetDatabase.LoadAssetAtPath<ShaderNodeManifestAsset>(AssetDatabase.GUIDToAssetPath(matches[index]));
+				if (candidate == null) continue;
+				_manifest = candidate;
+				return _manifest;
+			}
+			return null;
+		}
+
+		private static string FormatLabel(ShaderNodeManifestAssetEntry entry)
+			=> string.IsNullOrWhiteSpace(entry.Category)
+				? entry.DisplayName + " (" + entry.TypeId + ")"
+				: entry.DisplayName + " \u00b7 " + entry.Category + " (" + entry.TypeId + ")";
+
+		private static Rect Line(Rect position, ref float y) {
+			var line = new Rect(position.x, y, position.width, EditorGUIUtility.singleLineHeight);
+			y += EditorGUIUtility.singleLineHeight + LineSpacing;
+			return line;
 		}
 	}
 
