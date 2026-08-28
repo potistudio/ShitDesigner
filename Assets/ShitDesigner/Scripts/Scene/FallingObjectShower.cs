@@ -6,6 +6,8 @@ namespace ShitDesigner.Scene {
 	/// <summary>Maintains a randomized field of objects that continuously falls through the scene.</summary>
 	[DisallowMultipleComponent]
 	public sealed class FallingObjectShower : MonoBehaviour, ISceneGraphClockReceiver {
+		private const uint ShowerRenderingLayerMask = 1u << 8;
+
 		[Header("Object")]
 		[SerializeField] private GameObject[] objectPrefabs = Array.Empty<GameObject>();
 		[SerializeField, Min(1)] private int objectCount = 180;
@@ -72,6 +74,7 @@ namespace ShitDesigner.Scene {
 				var item = Instantiate(GetPrefab(_random.Next(prefabCount)), transform);
 				item.name = $"Falling Object {index + 1:000}";
 				SetLayerRecursively(item, gameObject.layer);
+				SetRenderingLayerMaskRecursively(item, ShowerRenderingLayerMask);
 				var fallingObject = new FallingObject(item.transform, NextFloat(fallSpeedRange.x, fallSpeedRange.y));
 				ResetPosition(fallingObject, true);
 				_objects.Add(fallingObject);
@@ -158,6 +161,11 @@ namespace ShitDesigner.Scene {
 		private static void SetLayerRecursively(GameObject root, int layer) {
 			foreach (var item in root.GetComponentsInChildren<Transform>(true))
 				item.gameObject.layer = layer;
+		}
+
+		private static void SetRenderingLayerMaskRecursively(GameObject root, uint renderingLayerMask) {
+			foreach (var renderer in root.GetComponentsInChildren<Renderer>(true))
+				renderer.renderingLayerMask = renderingLayerMask;
 		}
 
 		private static void DestroyOwnedObject(UnityEngine.Object value) {
