@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using NUnit.Framework;
+using ShitDesigner.Core;
 
 namespace ShitDesigner.Main.Tests {
 	[TestFixture]
@@ -28,6 +29,18 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(requests[2].ParameterId, Is.EqualTo("motion"));
 			Assert.That(requests[2].Value, Is.EqualTo(0.75f));
 			Assert.That(queue.Count, Is.Zero);
+		}
+
+		[Test]
+		public void TypedParameterValueIsPreserved() {
+			var queue = new LiveParameterQueue();
+
+			var result = queue.EnqueueSetParameter("patch-a", "tint", ParameterValue.FromColor(new ColorValue(.1f, .2f, .3f, 1f)));
+
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+			Assert.That(result.Accepted, Is.True);
+			Assert.That(requests[0].ParameterValue, Is.EqualTo(ParameterValue.FromColor(new ColorValue(.1f, .2f, .3f, 1f))));
 		}
 
 		[Test]

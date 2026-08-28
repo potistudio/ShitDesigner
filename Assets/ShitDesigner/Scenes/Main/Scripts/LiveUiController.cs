@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using ShitDesigner.Core;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -139,23 +140,12 @@ namespace ShitDesigner.Main {
 			foreach (var parameter in model.Parameters) {
 				var channel = new VisualElement { name = "parameter-channel-" + parameter.Id };
 				channel.AddToClassList("parameter-fader-channel");
-				var valueLabel = new Label(FormatParameterValue(parameter.Value)) { name = "parameter-value-" + parameter.Id };
+				var valueLabel = new Label(FormatParameterValue(parameter.TypedValue)) { name = "parameter-value-" + parameter.Id };
 				valueLabel.AddToClassList("parameter-fader-value");
-				var slider = new Slider(parameter.Minimum, parameter.Maximum) {
-					direction = SliderDirection.Vertical,
-					name = "parameter-" + parameter.Id,
-					value = parameter.Value,
-					userData = parameter.Id
-				};
-				slider.AddToClassList("parameter-slider");
-				slider.RegisterValueChangedCallback(change => {
-					if (!_updating && _host?.ReadModel != null)
-						ShowEnqueueRejection(_host.ParameterQueue.EnqueueSetParameter(_host.ReadModel.LoadedPatchId, (string)slider.userData, change.newValue));
-				});
 				var label = new Label(parameter.DisplayName);
 				label.AddToClassList("parameter-fader-label");
 				channel.Add(valueLabel);
-				channel.Add(slider);
+				channel.Add(CreateParameterControl(parameter));
 				channel.Add(label);
 				_parameterControls.Add(channel);
 			}
@@ -164,9 +154,108 @@ namespace ShitDesigner.Main {
 
 		private void RefreshParameterValues(LiveUiReadModel model) {
 			foreach (var parameter in model.Parameters) {
-				_parameterControls.Q<Slider>("parameter-" + parameter.Id)?.SetValueWithoutNotify(parameter.Value);
+				RefreshParameterControl(parameter);
 				var valueLabel = _parameterControls.Q<Label>("parameter-value-" + parameter.Id);
-				if (valueLabel != null) valueLabel.text = FormatParameterValue(parameter.Value);
+				if (valueLabel != null) valueLabel.text = FormatParameterValue(parameter.TypedValue);
+			}
+		}
+
+		private VisualElement CreateParameterControl(LiveParameterDefinition parameter) {
+			var name = "parameter-" + parameter.Id;
+			if (parameter.Type == ParameterType.Float && parameter.HasRange) {
+				var slider = new Slider(parameter.Minimum, parameter.Maximum) {
+					direction = SliderDirection.Vertical,
+					name = name,
+					value = parameter.TypedValue.AsFloat()
+				};
+				slider.AddToClassList("parameter-slider");
+				slider.RegisterValueChangedCallback(change => QueueParameter(parameter.Id, ParameterValue.FromFloat(change.newValue)));
+				return slider;
+			}
+
+			switch (parameter.Type) {
+				case ParameterType.Float:
+					var single = new FloatField { name = name, value = parameter.TypedValue.AsFloat() };
+					single.RegisterValueChangedCallback(change => QueueParameter(parameter.Id, ParameterValue.FromFloat(change.newValue)));
+					return single;
+				case ParameterType.Int:
+					var integer = new IntegerField { name = name, value = parameter.TypedValue.AsInt() };
+					integer.RegisterValueChangedCallback(change => QueueParameter(parameter.Id, ParameterValue.FromInt(change.newValue)));
+					return integer;
+				case ParameterType.Bool:
+					var toggle = new Toggle { name = name, value = parameter.TypedValue.AsBool() };
+					toggle.RegisterValueChangedCallback(change => QueueParameter(parameter.Id, ParameterValue.FromBool(change.newValue)));
+					return toggle;
+				case ParameterType.Color:
+				case ParameterType.Vector2:
+				case ParameterType.Vector3:
+				case ParameterType.Vector4:
+					return CreateComponentControl(parameter);
+				default:
+					var text = new TextField { name = name, value = parameter.TypedValue.AsString() };
+					text.RegisterValueChangedCallback(change => QueueParameter(parameter.Id, ParameterValue.FromEnum(change.newValue ?? string.Empty)));
+					return text;
+			}
+		}
+
+		private VisualElement CreateComponentControl(LiveParameterDefinition parameter) {
+			var values = Components(parameter.TypedValue);
+			var control = new VisualElement { name = "parameter-" + parameter.Id };
+			for (var index = 0; index < values.Length; index++) {
+				var componentIndex = index;
+				var field = new FloatField { name = "parameter-" + parameter.Id + "-" + index, value = values[index] };
+				field.RegisterValueChangedCallback(change => {
+					values[componentIndex] = change.newValue;
+					QueueParameter(parameter.Id, ComponentValue(parameter.Type, values));
+				});
+				control.Add(field);
+			}
+			return control;
+		}
+
+		private void RefreshParameterControl(LiveParameterDefinition parameter) {
+			var name = "parameter-" + parameter.Id;
+			if (parameter.Type == ParameterType.Float && parameter.HasRange) {
+				_parameterControls.Q<Slider>(name)?.SetValueWithoutNotify(parameter.TypedValue.AsFloat());
+				return;
+			}
+			switch (parameter.Type) {
+				case ParameterType.Float: _parameterControls.Q<FloatField>(name)?.SetValueWithoutNotify(parameter.TypedValue.AsFloat()); break;
+				case ParameterType.Int: _parameterControls.Q<IntegerField>(name)?.SetValueWithoutNotify(parameter.TypedValue.AsInt()); break;
+				case ParameterType.Bool: _parameterControls.Q<Toggle>(name)?.SetValueWithoutNotify(parameter.TypedValue.AsBool()); break;
+				case ParameterType.Color:
+				case ParameterType.Vector2:
+				case ParameterType.Vector3:
+				case ParameterType.Vector4:
+					var values = Components(parameter.TypedValue);
+					for (var index = 0; index < values.Length; index++) _parameterControls.Q<FloatField>(name + "-" + index)?.SetValueWithoutNotify(values[index]);
+					break;
+				default: _parameterControls.Q<TextField>(name)?.SetValueWithoutNotify(parameter.TypedValue.AsString()); break;
+			}
+		}
+
+		private void QueueParameter(string parameterId, ParameterValue value) {
+			if (!_updating && _host?.ReadModel != null)
+				ShowEnqueueRejection(_host.ParameterQueue.EnqueueSetParameter(_host.ReadModel.LoadedPatchId, parameterId, value));
+		}
+
+		private static float[] Components(ParameterValue value) {
+			switch (value.Type) {
+				case ParameterType.Vector2: var vector2 = value.AsVector2(); return new[] { vector2.X, vector2.Y };
+				case ParameterType.Vector3: var vector3 = value.AsVector3(); return new[] { vector3.X, vector3.Y, vector3.Z };
+				case ParameterType.Vector4: var vector4 = value.AsVector4(); return new[] { vector4.X, vector4.Y, vector4.Z, vector4.W };
+				case ParameterType.Color: var color = value.AsColor(); return new[] { color.R, color.G, color.B, color.A };
+				default: throw new ArgumentOutOfRangeException(nameof(value));
+			}
+		}
+
+		private static ParameterValue ComponentValue(ParameterType type, IReadOnlyList<float> values) {
+			switch (type) {
+				case ParameterType.Vector2: return ParameterValue.FromVector2(new Vector2Value(values[0], values[1]));
+				case ParameterType.Vector3: return ParameterValue.FromVector3(new Vector3Value(values[0], values[1], values[2]));
+				case ParameterType.Vector4: return ParameterValue.FromVector4(new Vector4Value(values[0], values[1], values[2], values[3]));
+				case ParameterType.Color: return ParameterValue.FromColor(new ColorValue(values[0], values[1], values[2], values[3]));
+				default: throw new ArgumentOutOfRangeException(nameof(type));
 			}
 		}
 
@@ -384,7 +473,14 @@ namespace ShitDesigner.Main {
 			return model.DisplayError;
 		}
 
-		private static string FormatParameterValue(float value) => value.ToString("0.00", CultureInfo.InvariantCulture);
+		private static string FormatParameterValue(ParameterValue value) {
+			switch (value.Type) {
+				case ParameterType.Float: return value.AsFloat().ToString("0.00", CultureInfo.InvariantCulture);
+				case ParameterType.Int: return value.AsInt().ToString(CultureInfo.InvariantCulture);
+				case ParameterType.Bool: return value.AsBool() ? "On" : "Off";
+				default: return value.ToString();
+			}
+		}
 
 		private static T Required<T>(VisualElement root, string name) where T : VisualElement {
 			var element = root.Q<T>(name);

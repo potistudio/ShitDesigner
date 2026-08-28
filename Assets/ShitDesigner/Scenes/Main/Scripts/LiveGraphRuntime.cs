@@ -477,7 +477,7 @@ namespace ShitDesigner.Main {
 				patch.TriggerFlash(_graphTime);
 				return Accept(request);
 			}
-			return patch.TrySetParameter(request.ParameterId, request.Value, out var reason) ? Accept(request) : Reject(request, reason);
+			return patch.TrySetParameter(request.ParameterId, request.ParameterValue, out var reason) ? Accept(request) : Reject(request, reason);
 		}
 
 		public void Evaluate(double deltaSeconds) {
@@ -564,9 +564,9 @@ namespace ShitDesigner.Main {
 					if (parameter.Source == PatchParameterSource.ProgramGraphNode) {
 						var graphNode = definition.ProgramGraph.Nodes.FirstOrDefault(node => string.Equals(node.Id, parameter.NodeId, StringComparison.Ordinal));
 						var source = graphNode?.FindParameter(parameter.ParameterId);
-						if (source == null || source.Type != ParameterType.Float)
-							throw new InvalidOperationException("A published graph parameter must reference a configured float parameter: " + parameter.Id + ".");
-						return (ILivePublishedParameter)new LivePublishedGraphParameter(parameter, outputsByNodeId.Values, source.Value.AsFloat());
+						if (source == null || !PatchGraphParameter.IsLiveControllable(source.Type))
+							throw new InvalidOperationException("A published graph parameter must reference a configured parameter supported by the live renderer: " + parameter.Id + ".");
+						return (ILivePublishedParameter)new LivePublishedGraphParameter(parameter, outputsByNodeId.Values, source.Value);
 					}
 					var output = outputsByNodeId[parameter.NodeId];
 					var sceneSource = output.Root.GetParameterDefinitions().FirstOrDefault(candidate => candidate.Id == parameter.ParameterId);
@@ -582,7 +582,7 @@ namespace ShitDesigner.Main {
 
 		public LiveParameterDefinition[] GetParameterDefinitions() => _parameters.Values.Select(parameter => parameter.ToDefinition()).ToArray();
 
-		public bool TrySetParameter(string id, float value, out string rejectionReason) {
+		public bool TrySetParameter(string id, ParameterValue value, out string rejectionReason) {
 			if (!_parameters.TryGetValue(id, out var parameter)) {
 				rejectionReason = "The parameter is not published by this patch.";
 				return false;
@@ -601,7 +601,7 @@ namespace ShitDesigner.Main {
 
 	internal interface ILivePublishedParameter {
 		LiveParameterDefinition ToDefinition();
-		bool TrySetParameter(float value, out string rejectionReason);
+		bool TrySetParameter(ParameterValue value, out string rejectionReason);
 	}
 
 	internal sealed class LivePublishedParameter : ILivePublishedParameter {
@@ -620,30 +620,36 @@ namespace ShitDesigner.Main {
 			return new LiveParameterDefinition(_definition.Id, _definition.DisplayName, Source.Minimum, Source.Maximum, current.Value);
 		}
 
-		public bool TrySetParameter(float value, out string rejectionReason) => Root.TrySetParameter(Source.Id, value, out rejectionReason);
+		public bool TrySetParameter(ParameterValue value, out string rejectionReason) {
+			if (value.Type != ParameterType.Float) {
+				rejectionReason = "The published scene parameter requires a float value.";
+				return false;
+			}
+			return Root.TrySetParameter(Source.Id, value.AsFloat(), out rejectionReason);
+		}
 	}
 
 	internal sealed class LivePublishedGraphParameter : ILivePublishedParameter {
 		private readonly PatchParameter _definition;
 		private readonly IReadOnlyCollection<LiveProgramOutput> _outputs;
-		private float _value;
+		private ParameterValue _value;
 
-		public LivePublishedGraphParameter(PatchParameter definition, IReadOnlyCollection<LiveProgramOutput> outputs, float value) {
+		public LivePublishedGraphParameter(PatchParameter definition, IReadOnlyCollection<LiveProgramOutput> outputs, ParameterValue value) {
 			_definition = definition ?? throw new ArgumentNullException(nameof(definition));
 			_outputs = outputs ?? throw new ArgumentNullException(nameof(outputs));
 			_value = value;
 		}
 
 		public LiveParameterDefinition ToDefinition()
-			=> new LiveParameterDefinition(_definition.Id, _definition.DisplayName, float.MinValue, float.MaxValue, _value);
+			=> new LiveParameterDefinition(_definition.Id, _definition.DisplayName, _value);
 
-		public bool TrySetParameter(float value, out string rejectionReason) {
-			if (float.IsNaN(value) || float.IsInfinity(value)) {
-				rejectionReason = "The parameter value must be finite.";
+		public bool TrySetParameter(ParameterValue value, out string rejectionReason) {
+			if (value.Type != _value.Type) {
+				rejectionReason = "The published graph parameter type does not match.";
 				return false;
 			}
 			foreach (var output in _outputs)
-				if (!output.TrySetGraphParameter(_definition.NodeId, _definition.ParameterId, ParameterValue.FromFloat(value), out rejectionReason)) return false;
+				if (!output.TrySetGraphParameter(_definition.NodeId, _definition.ParameterId, value, out rejectionReason)) return false;
 			_value = value;
 			rejectionReason = string.Empty;
 			return true;
