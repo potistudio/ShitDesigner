@@ -240,7 +240,7 @@ namespace ShitDesigner.Editor {
 		private static string FormatLabel(ShaderNodeManifestAssetEntry entry)
 			=> string.IsNullOrWhiteSpace(entry.Category)
 				? entry.DisplayName + " (" + entry.TypeId + ")"
-				: entry.DisplayName + " \u00b7 " + entry.Category + " (" + entry.TypeId + ")";
+				: entry.Category + "/" + entry.DisplayName + " (" + entry.TypeId + ")";
 
 		private static Rect Line(Rect position, ref float y) {
 			var line = new Rect(position.x, y, position.width, EditorGUIUtility.singleLineHeight);
