@@ -2857,6 +2857,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.BpmAnimatorSpeedController
   m_Animator: {fileID: 9100000, guid: 8e18ea88c56d5f3448910cecc7ffc53c, type: 2}
   m_ReferenceBpm: 145
+  m_PosterizeFrameRate: 12
 --- !u!114 &8626790382264376488
 MonoBehaviour:
   m_ObjectHideFlags: 0
