@@ -53,6 +53,7 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(stagePrefab.GetComponent("BpmAnimatorSpeedController"), Is.Not.Null);
 				var penlightCrowd = stagePrefab.GetComponent("InstancedPenlightCrowd");
 				Assert.That(penlightCrowd, Is.Not.Null);
+				Assert.That(penlightCrowd, Is.InstanceOf<IBpmClockReceiver>());
 				var serializedPenlightCrowd = new SerializedObject(penlightCrowd);
 				Assert.That(serializedPenlightCrowd.FindProperty("_count").intValue, Is.GreaterThan(1023));
 				Assert.That(((Material)serializedPenlightCrowd.FindProperty("_material").objectReferenceValue).enableInstancing, Is.True);

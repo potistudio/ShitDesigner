@@ -1,15 +1,19 @@
+using System;
 using System.Collections.Generic;
+using ShitDesigner.Scene;
 using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace ShitDesigner.Stage {
 	[DisallowMultipleComponent]
-	public sealed class InstancedPenlightCrowd : MonoBehaviour {
+	public sealed class InstancedPenlightCrowd : MonoBehaviour, IBpmClockReceiver {
 		private const int MaximumInstancesPerBatch = 1023;
 		private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+		private static readonly int BeatPositionId = Shader.PropertyToID("_BeatPosition");
 		private static readonly int PhaseId = Shader.PropertyToID("_Phase");
 
 		[SerializeField] private Material _material;
+		[SerializeField, Range(30f, 300f)] private float _previewBpm = 145f;
 		[SerializeField, Min(1)] private int _count = 4096;
 		[SerializeField] private Vector3 _center = new(8f, 0.2f, -3f);
 		[SerializeField, Min(0.1f)] private float _width = 24f;
@@ -25,16 +29,20 @@ namespace ShitDesigner.Stage {
 
 		private readonly List<Batch> _batches = new();
 		private Mesh _mesh;
+		private double _totalBeats;
+		private bool _usesExternalClock;
 
 		private void OnEnable() {
 			Rebuild();
 		}
 
 		private void Update() {
+			if (!_usesExternalClock) _totalBeats += Time.unscaledDeltaTime * _previewBpm / 60d;
 			if (_batches.Count == 0) Rebuild();
 			if (_mesh == null || _material == null || !SystemInfo.supportsInstancing) return;
 
 			foreach (var batch in _batches) {
+				batch.Properties.SetFloat(BeatPositionId, (float)_totalBeats);
 				Graphics.DrawMeshInstanced(
 					_mesh,
 					0,
@@ -49,8 +57,16 @@ namespace ShitDesigner.Stage {
 		}
 
 		private void OnValidate() {
+			_previewBpm = Mathf.Clamp(_previewBpm, 30f, 300f);
 			if (!isActiveAndEnabled) return;
 			Rebuild();
+		}
+
+		public void SetBpmClock(BpmClockState clock) {
+			if (double.IsNaN(clock.TotalBeats) || double.IsInfinity(clock.TotalBeats)) return;
+
+			_usesExternalClock = true;
+			_totalBeats = clock.TotalBeats;
 		}
 
 		private void OnDestroy() {
