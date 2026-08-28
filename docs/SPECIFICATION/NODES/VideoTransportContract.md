@@ -9,7 +9,7 @@
 | ParameterId | 型 | 既定値 | 規則 |
 |---|---|---:|---|
 | `transport.media_asset` | `MediaAssetReference` | null | Video素材だけを許可 |
-| `transport.playing` | `Bool` | `false` | 再生／一時停止 |
+| `transport.playing` | `Bool` | `true` | 再生／一時停止 |
 | `transport.playhead_seconds` | `Float` | `0.0` | 秒、最小0、素材長で動的クランプ |
 | `transport.speed` | `Float` | `1.0` | `0.0～4.0` |
 | `transport.loop` | `Bool` | `true` | 終端ループ |

@@ -168,7 +168,7 @@ namespace ShitDesigner.Main {
 							if (inputs.Count > 0)
 								throw new InvalidOperationException("The live Program VideoPlayer node does not accept image inputs: " + node.Id + ".");
 							nodes.Add(new LiveProgramVideoGraphNode(node.Id, target, authoredNode.VideoClip,
-								ReadBoolParameter(authoredNode, PlayingParameterId, false),
+								ReadBoolParameter(authoredNode, PlayingParameterId, true),
 								ReadFloatParameter(authoredNode, PlayheadParameterId, 0f),
 								ReadFloatParameter(authoredNode, SpeedParameterId, 1f),
 								ReadBoolParameter(authoredNode, LoopParameterId, true)));

@@ -145867,7 +145867,7 @@ MonoBehaviour:
     - id: transport.playing
       displayName: Playing
       type: 2
-      defaultValue: bool:false
+      defaultValue: bool:true
       hasMinimum: 0
       minimumValue: 
       hasMaximum: 0
