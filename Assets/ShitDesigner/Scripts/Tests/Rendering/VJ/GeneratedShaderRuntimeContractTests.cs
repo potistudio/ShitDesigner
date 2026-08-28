@@ -29,10 +29,16 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 			Assert.That(generated.Select(x => x.TypeId).Distinct(StringComparer.Ordinal).Count(), Is.EqualTo(438));
 			Assert.That(generated.All(x => x.Shader != null && x.Passes.Count > 0 && x.SourceVariant >= 0), Is.True);
 			Assert.That(generated.All(x => x.Passes.Any(pass => pass.Index == x.OutputPass && pass.VariantId == x.VariantId)), Is.True);
-			Assert.That(asset.Entries.Count(x => string.IsNullOrWhiteSpace(x.SourceLedger)), Is.EqualTo(3));
+			Assert.That(asset.Entries.Count(x => string.IsNullOrWhiteSpace(x.SourceLedger)), Is.EqualTo(4));
 			Assert.That(asset.Entries.Select(x => x.TypeId), Does.Contain("shitdesigner.shader.generator"));
 			Assert.That(asset.Entries.Select(x => x.TypeId), Does.Contain("shitdesigner.shader.effect"));
 			Assert.That(asset.Entries.Select(x => x.TypeId), Does.Contain("shitdesigner.shader.blend2"));
+			Assert.That(asset.Entries.Select(x => x.TypeId), Does.Contain("shitdesigner.shader.generator.recursive-rectangles"));
+			var recursive = asset.Find("shitdesigner.shader.generator.recursive-rectangles");
+			Assert.That(recursive, Is.Not.Null);
+			Assert.That(recursive.Shader, Is.Not.Null);
+			Assert.That(recursive.Parameters.Count, Is.EqualTo(15));
+			Assert.That(recursive.Parameters.Single(x => x.Id == "seed").Property, Is.EqualTo("_StructureSeed"));
 		}
 
 		[Test]
@@ -44,8 +50,8 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 			Assert.That(catalog.ValidateManifest().IsSuccess, Is.True);
 			var runtime = catalog.BuildRuntimeCatalog();
 			Assert.That(runtime.IsSuccess, Is.True, runtime.IsFailure ? runtime.Error.Message : string.Empty);
-			Assert.That(catalog.Entries.Count, Is.EqualTo(461));
-			Assert.That(catalog.Entries.Count(x => !string.IsNullOrWhiteSpace(x.ShaderKey)), Is.EqualTo(441));
+			Assert.That(catalog.Entries.Count, Is.EqualTo(462));
+			Assert.That(catalog.Entries.Count(x => !string.IsNullOrWhiteSpace(x.ShaderKey)), Is.EqualTo(442));
 			Assert.That(runtime.Value.Entries.Count, Is.EqualTo(catalog.Entries.Count));
 
 			foreach (var source in manifest.Entries) {

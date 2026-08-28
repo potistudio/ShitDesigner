@@ -153,6 +153,369 @@ MonoBehaviour:
       outputRole: image
       requiredFeatures: 0
     shader: {fileID: 4800000, guid: 33333333333333333333333333333333, type: 3}
+  - typeId: shitdesigner.shader.generator.recursive-rectangles
+    schemaVersion: 1
+    displayName: Recursive Rectangles
+    category: Shader/Generator
+    family: 0
+    shaderKey: builtin.shader.generator.recursive-rectangles
+    variantId: default
+    requiredFeatures: 0
+    stateful: 0
+    historySlots: 0
+    userAddable: 1
+    description: Deterministic BSP-based recursive rectangle generator.
+    priority: 
+    warmupFrames: 0
+    sourceLedger: 
+    sourceVariant: 0
+    outputPass: 0
+    aliases:
+    - recursive rectangles
+    - bsp rectangles
+    inputs: []
+    parameters:
+    - id: max_depth
+      sourceId: max_depth
+      displayName: Max Depth
+      property: _MaxDepth
+      type: 1
+      defaultValue: int:5
+      hasMinimum: 1
+      minimumValue: int:0
+      hasMaximum: 1
+      maximumValue: int:8
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Structure
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: min_leaf_size
+      sourceId: min_leaf_size
+      displayName: Min Leaf Size
+      property: _MinLeafSize
+      type: 0
+      defaultValue: float:0.08
+      hasMinimum: 1
+      minimumValue: float:0.001
+      hasMaximum: 1
+      maximumValue: float:0.5
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Structure
+      displayOrder: 1
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: split_probability
+      sourceId: split_probability
+      displayName: Split Probability
+      property: _SplitProbability
+      type: 0
+      defaultValue: float:0.9
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Structure
+      displayOrder: 2
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: axis_mode
+      sourceId: axis_mode
+      displayName: Axis Mode
+      property: _AxisMode
+      type: 8
+      defaultValue: enum:longer_side
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions:
+      - longer_side
+      - horizontal
+      - vertical
+      - random
+      enumMappingKeys:
+      - longer_side
+      - horizontal
+      - vertical
+      - random
+      enumMappingValues: 00000000010000000200000003000000
+      group: Structure
+      displayOrder: 3
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: ratio_min
+      sourceId: ratio_min
+      displayName: Ratio Min
+      property: _RatioMin
+      type: 0
+      defaultValue: float:0.25
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Structure
+      displayOrder: 4
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: ratio_max
+      sourceId: ratio_max
+      displayName: Ratio Max
+      property: _RatioMax
+      type: 0
+      defaultValue: float:0.75
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Structure
+      displayOrder: 5
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: seed
+      sourceId: seed
+      displayName: Seed
+      property: _StructureSeed
+      type: 1
+      defaultValue: int:1
+      hasMinimum: 1
+      minimumValue: int:-1000000
+      hasMaximum: 1
+      maximumValue: int:1000000
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Structure
+      displayOrder: 6
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: reveal_progress
+      sourceId: reveal_progress
+      displayName: Reveal Progress
+      property: _RevealProgress
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Animation
+      displayOrder: 10
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: split_duration
+      sourceId: split_duration
+      displayName: Split Duration
+      property: _SplitDuration
+      type: 0
+      defaultValue: float:0.15
+      hasMinimum: 1
+      minimumValue: float:0.001
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Animation
+      displayOrder: 11
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: split_stagger
+      sourceId: split_stagger
+      displayName: Split Stagger
+      property: _SplitStagger
+      type: 0
+      defaultValue: float:0.04
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Animation
+      displayOrder: 12
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: easing
+      sourceId: easing
+      displayName: Easing
+      property: _Easing
+      type: 8
+      defaultValue: enum:smooth_step
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions:
+      - linear
+      - smooth_step
+      - ease_in
+      - ease_out
+      - ease_in_out
+      enumMappingKeys:
+      - linear
+      - smooth_step
+      - ease_in
+      - ease_out
+      - ease_in_out
+      enumMappingValues: 0000000001000000020000000300000004000000
+      group: Animation
+      displayOrder: 13
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: color_a
+      sourceId: color_a
+      displayName: Color A
+      property: _ColorA
+      type: 6
+      defaultValue: color:0.05,0.12,0.22,1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Appearance
+      displayOrder: 20
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: color_b
+      sourceId: color_b
+      displayName: Color B
+      property: _ColorB
+      type: 6
+      defaultValue: color:0.95,0.32,0.14,1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Appearance
+      displayOrder: 21
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: gutter
+      sourceId: gutter
+      displayName: Gutter
+      property: _Gutter
+      type: 0
+      defaultValue: float:0.004
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:0.1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Appearance
+      displayOrder: 22
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: line_color
+      sourceId: line_color
+      displayName: Line Color
+      property: _LineColor
+      type: 6
+      defaultValue: color:0.01,0.01,0.01,1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Appearance
+      displayOrder: 23
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    passes:
+    - id: main
+      index: 0
+      kind: 0
+      variantId: default
+      outputRole: image
+      requiredFeatures: 0
+    shader: {fileID: 4800000, guid: 8f6d4e27d20a4e4fa924f23529b4233a, type: 3}
   - typeId: shitdesigner.shader.generator.solid-color
     schemaVersion: 1
     displayName: Solid Color

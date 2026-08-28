@@ -98,11 +98,13 @@ namespace ShitDesigner.Bootstrap {
 				var registered = shaders.Register(new ShaderMaterialBinding(pair.Key, pair.Value, descriptor: entry.ToShaderBinding()));
 				if (registered.IsFailure) return Result.Failure<IVisualBindingProvider, Diagnostic>(registered.Error);
 			}
-			// Every generated ledger entry keeps a direct Shader reference in
-			// the manifest asset.  Register by TypeId as well as family key so
-			// all variants can share a family shader without collapsing to the
-			// first variant in a key-only dictionary.
-			foreach (var entry in shaderManifest.Entries.Where(x => !x.ShaderKey.StartsWith("builtin.", StringComparison.Ordinal))) {
+			// Every manifest entry beyond the three serialized legacy roles keeps
+			// a direct Shader reference. Registering by TypeId lets shared family
+			// shaders and dedicated built-ins use the same runtime path.
+			foreach (var entry in shaderManifest.Entries.Where(x =>
+				!string.Equals(x.ShaderKey, "builtin.shader.generator", StringComparison.Ordinal) &&
+				!string.Equals(x.ShaderKey, "builtin.shader.effect", StringComparison.Ordinal) &&
+				!string.Equals(x.ShaderKey, "builtin.shader.blend2", StringComparison.Ordinal))) {
 				var assetEntry = shaderManifestAsset.Find(entry.TypeId.Value);
 				if (assetEntry == null || assetEntry.Shader == null)
 					return Failure("bootstrap.assets.shader_reference_missing", "A generated shader entry is missing its direct Shader reference: " + entry.TypeId.Value + ".");

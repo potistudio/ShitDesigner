@@ -9,7 +9,7 @@ using ShitDesigner.Runtime;
 namespace ShitDesigner.Nodes.Tests {
 	public sealed class BindingBuilderTests {
 		[Test]
-		public void Builder_RequiresAllSevenAndExposesReadOnlyAvailability() {
+		public void Builder_RequiresAllSpecializedBindingsAndExposesReadOnlyAvailability() {
 			var missing = NodeCatalogBootstrap.BuildProductionBindings(new IRuntimeVisualNodeBinding[0]);
 			Assert.That(missing.IsFailure, Is.True);
 
@@ -17,7 +17,7 @@ namespace ShitDesigner.Nodes.Tests {
 			{
 				Binding("shitdesigner.scene.3d"), Binding("shitdesigner.scene.2d"),
 				Binding("shitdesigner.shader.generator"), Binding("shitdesigner.shader.effect"),
-				Binding("shitdesigner.shader.blend2"), Binding("shitdesigner.video.player"),
+				Binding("shitdesigner.shader.blend2"), Binding("shitdesigner.shader.generator.recursive-rectangles"), Binding("shitdesigner.video.player"),
 				Binding("system.feedback")
 			});
 			Assert.That(complete.IsSuccess, Is.True, complete.IsFailure ? complete.Error.Message : string.Empty);

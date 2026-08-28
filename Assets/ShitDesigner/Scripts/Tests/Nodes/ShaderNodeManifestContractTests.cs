@@ -7,18 +7,28 @@ using ShitDesigner.Nodes;
 namespace ShitDesigner.Nodes.Tests {
 	public sealed class ShaderNodeManifestContractTests {
 		[Test]
-		public void BuiltinManifest_IsValidAndPreservesLegacyShaderIds() {
+		public void BuiltinManifest_IsValidAndContainsRecursiveRectangles() {
 			var manifest = ShaderNodeManifest.CreateBuiltIn();
 			var valid = ShaderNodeManifestValidator.Validate(manifest);
 
 			Assert.That(valid.IsSuccess, Is.True, valid.IsFailure ? valid.Error.Message : string.Empty);
-			Assert.That(manifest.Entries.Count, Is.EqualTo(3));
+			Assert.That(manifest.Entries.Count, Is.EqualTo(4));
 			Assert.That(manifest.Entries.Select(x => x.TypeId.Value), Is.EqualTo(new[]
 			{
 				"shitdesigner.shader.generator",
 				"shitdesigner.shader.effect",
-				"shitdesigner.shader.blend2"
+				"shitdesigner.shader.blend2",
+				"shitdesigner.shader.generator.recursive-rectangles"
 			}));
+			var recursive = manifest.Find("shitdesigner.shader.generator.recursive-rectangles");
+			Assert.That(recursive.Inputs, Is.Empty);
+			Assert.That(recursive.Parameters.Select(x => x.Id.Value), Is.EqualTo(new[]
+			{
+				"max_depth", "min_leaf_size", "split_probability", "axis_mode", "ratio_min", "ratio_max", "seed",
+				"reveal_progress", "split_duration", "split_stagger", "easing", "color_a", "color_b", "gutter", "line_color"
+			}));
+			Assert.That(recursive.Parameters.Single(x => x.Id.Value == "axis_mode").EnumMapping["random"], Is.EqualTo(3));
+			Assert.That(recursive.Parameters.Single(x => x.Id.Value == "easing").EnumMapping["ease_in_out"], Is.EqualTo(4));
 		}
 
 		[Test]

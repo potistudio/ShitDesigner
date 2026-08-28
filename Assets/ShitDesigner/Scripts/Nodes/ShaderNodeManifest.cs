@@ -296,7 +296,7 @@ namespace ShitDesigner.Nodes {
 		public ShaderNodeManifestEntry Find(string typeId) => NodeTypeId.TryParse(typeId, out var parsed) ? Find(parsed) : null;
 
 		/// <summary>
-		/// The three legacy declarations are intentionally expressed through
+		/// Built-in declarations are intentionally expressed through
 		/// the manifest. This keeps their stable IDs and properties intact
 		/// while allowing new families to be added without a second catalog.
 		/// </summary>
@@ -321,7 +321,47 @@ namespace ShitDesigner.Nodes {
 					new ShaderNodeManifestInput(new PortId("a"), "A", "_TexA", ShaderInputRole.Primary),
 					new ShaderNodeManifestInput(new PortId("b"), "B", "_TexB", ShaderInputRole.Secondary)
 				}, aliases: new[] { "blend2", "alpha blend" }, description: "Legacy two-input blend role.");
-			return new ShaderNodeManifest(new[] { generator, effect, blend });
+			var recursiveRectangles = CreateRecursiveRectangles();
+			return new ShaderNodeManifest(new[] { generator, effect, blend, recursiveRectangles });
+		}
+
+		private static ShaderNodeManifestEntry CreateRecursiveRectangles() {
+			var parameters = new[]
+			{
+				Parameter("max_depth", "Max Depth", ParameterType.Int, ParameterValue.FromInt(5), "_MaxDepth", ParameterValue.FromInt(0), ParameterValue.FromInt(8), group: "Structure", order: 0),
+				Parameter("min_leaf_size", "Min Leaf Size", ParameterType.Float, ParameterValue.FromFloat(.08f), "_MinLeafSize", ParameterValue.FromFloat(.001f), ParameterValue.FromFloat(.5f), group: "Structure", order: 1),
+				Parameter("split_probability", "Split Probability", ParameterType.Float, ParameterValue.FromFloat(.9f), "_SplitProbability", ParameterValue.FromFloat(0f), ParameterValue.FromFloat(1f), group: "Structure", order: 2),
+				EnumParameter("axis_mode", "Axis Mode", "_AxisMode", "longer_side", new[] { "longer_side", "horizontal", "vertical", "random" }, "Structure", 3),
+				Parameter("ratio_min", "Ratio Min", ParameterType.Float, ParameterValue.FromFloat(.25f), "_RatioMin", ParameterValue.FromFloat(0f), ParameterValue.FromFloat(1f), group: "Structure", order: 4),
+				Parameter("ratio_max", "Ratio Max", ParameterType.Float, ParameterValue.FromFloat(.75f), "_RatioMax", ParameterValue.FromFloat(0f), ParameterValue.FromFloat(1f), group: "Structure", order: 5),
+				Parameter("seed", "Seed", ParameterType.Int, ParameterValue.FromInt(1), "_StructureSeed", ParameterValue.FromInt(-1000000), ParameterValue.FromInt(1000000), group: "Structure", order: 6),
+				Parameter("reveal_progress", "Reveal Progress", ParameterType.Float, ParameterValue.FromFloat(1f), "_RevealProgress", ParameterValue.FromFloat(0f), ParameterValue.FromFloat(1f), group: "Animation", order: 10),
+				Parameter("split_duration", "Split Duration", ParameterType.Float, ParameterValue.FromFloat(.15f), "_SplitDuration", ParameterValue.FromFloat(.001f), ParameterValue.FromFloat(1f), group: "Animation", order: 11),
+				Parameter("split_stagger", "Split Stagger", ParameterType.Float, ParameterValue.FromFloat(.04f), "_SplitStagger", ParameterValue.FromFloat(0f), ParameterValue.FromFloat(1f), group: "Animation", order: 12),
+				EnumParameter("easing", "Easing", "_Easing", "smooth_step", new[] { "linear", "smooth_step", "ease_in", "ease_out", "ease_in_out" }, "Animation", 13),
+				Parameter("color_a", "Color A", ParameterType.Color, ParameterValue.FromColor(new ColorValue(.05f, .12f, .22f, 1f)), "_ColorA", group: "Appearance", order: 20),
+				Parameter("color_b", "Color B", ParameterType.Color, ParameterValue.FromColor(new ColorValue(.95f, .32f, .14f, 1f)), "_ColorB", group: "Appearance", order: 21),
+				Parameter("gutter", "Gutter", ParameterType.Float, ParameterValue.FromFloat(.004f), "_Gutter", ParameterValue.FromFloat(0f), ParameterValue.FromFloat(.1f), group: "Appearance", order: 22),
+				Parameter("line_color", "Line Color", ParameterType.Color, ParameterValue.FromColor(new ColorValue(.01f, .01f, .01f, 1f)), "_LineColor", group: "Appearance", order: 23)
+			};
+			return new ShaderNodeManifestEntry(
+				new NodeTypeId("shitdesigner.shader.generator.recursive-rectangles"), "Recursive Rectangles", "Shader/Generator",
+				ShaderNodeFamily.Generator, "builtin.shader.generator.recursive-rectangles", "default",
+				parameters: parameters, aliases: new[] { "recursive rectangles", "bsp rectangles" },
+				description: "Deterministic BSP-based recursive rectangle generator.");
+		}
+
+		private static ShaderNodeManifestParameter Parameter(string id, string displayName, ParameterType type,
+			ParameterValue defaultValue, string property, ParameterValue? minimum = null, ParameterValue? maximum = null,
+			string group = null, int order = 0) {
+			return new ShaderNodeManifestParameter(new ParameterId(id), displayName, type, defaultValue, property,
+				minimum, maximum, group: group, displayOrder: order);
+		}
+
+		private static ShaderNodeManifestParameter EnumParameter(string id, string displayName, string property,
+			string defaultValue, string[] options, string group, int order) {
+			return new ShaderNodeManifestParameter(new ParameterId(id), displayName, ParameterType.Enum,
+				ParameterValue.FromEnum(defaultValue), property, enumOptions: options, group: group, displayOrder: order);
 		}
 	}
 
