@@ -51,6 +51,11 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(stage.Parameters.Single().ParameterId, Is.EqualTo(LiveGraphClockRateParameter.ParameterId));
 				Assert.That(stagePrefab.GetComponent<LiveGraphClockRateParameter>(), Is.Not.Null);
 				Assert.That(stagePrefab.GetComponent("BpmAnimatorSpeedController"), Is.Not.Null);
+				var penlightCrowd = stagePrefab.GetComponent("InstancedPenlightCrowd");
+				Assert.That(penlightCrowd, Is.Not.Null);
+				var serializedPenlightCrowd = new SerializedObject(penlightCrowd);
+				Assert.That(serializedPenlightCrowd.FindProperty("_count").intValue, Is.GreaterThan(1023));
+				Assert.That(((Material)serializedPenlightCrowd.FindProperty("_material").objectReferenceValue).enableInstancing, Is.True);
 				var serializedGraph = new SerializedObject(graph);
 				Assert.That(serializedGraph.FindProperty("_shaderManifest").objectReferenceValue, Is.Not.Null);
 				Assert.That(graph.Patches.All(definition => definition.Flash != null && definition.Flash.Image != null), Is.True);
