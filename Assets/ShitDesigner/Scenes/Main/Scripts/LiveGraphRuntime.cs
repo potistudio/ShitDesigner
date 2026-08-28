@@ -72,15 +72,15 @@ namespace ShitDesigner.Main {
 		}
 	}
 
-	internal sealed class LiveProgramGraphDefinition {
+	internal sealed class GraphDefinition {
 		public string SourceNodeId { get; }
 		public string OutputNodeId { get; }
-		public IReadOnlyList<LiveProgramGraphNodeDefinition> Nodes { get; }
-		public IReadOnlyList<LiveProgramGraphConnection> Connections { get; }
-		public IReadOnlyList<LiveProgramGraphNodeDefinition> EvaluationOrder { get; }
+		public IReadOnlyList<NodeDefinition> Nodes { get; }
+		public IReadOnlyList<NodeConnection> Connections { get; }
+		public IReadOnlyList<NodeDefinition> EvaluationOrder { get; }
 
-		public LiveProgramGraphDefinition(string sourceNodeId, string outputNodeId,
-			IEnumerable<LiveProgramGraphNodeDefinition> nodes, IEnumerable<LiveProgramGraphConnection> connections) {
+		public GraphDefinition(string sourceNodeId, string outputNodeId,
+			IEnumerable<NodeDefinition> nodes, IEnumerable<NodeConnection> connections) {
 			SourceNodeId = RequireId(sourceNodeId, nameof(sourceNodeId));
 			OutputNodeId = RequireId(outputNodeId, nameof(outputNodeId));
 			Nodes = (nodes ?? throw new ArgumentNullException(nameof(nodes))).ToArray();
@@ -100,10 +100,10 @@ namespace ShitDesigner.Main {
 			EvaluationOrder = BuildEvaluationOrder();
 		}
 
-		private IReadOnlyList<LiveProgramGraphNodeDefinition> BuildEvaluationOrder() {
+		private IReadOnlyList<NodeDefinition> BuildEvaluationOrder() {
 			var remaining = Nodes.ToList();
 			var resolved = new HashSet<string>(StringComparer.Ordinal) { SourceNodeId };
-			var ordered = new List<LiveProgramGraphNodeDefinition>(Nodes.Count);
+			var ordered = new List<NodeDefinition>(Nodes.Count);
 			while (remaining.Count > 0) {
 				var next = remaining.FirstOrDefault(node => Connections.Where(connection => connection.TargetNodeId == node.Id)
 					.All(connection => resolved.Contains(connection.SourceNodeId)));
@@ -121,23 +121,23 @@ namespace ShitDesigner.Main {
 		}
 	}
 
-	internal sealed class LiveProgramGraphNodeDefinition {
+	internal sealed class NodeDefinition {
 		public string Id { get; }
 		public NodeTypeId TypeId { get; }
 
-		public LiveProgramGraphNodeDefinition(string id, string typeId) {
+		public NodeDefinition(string id, string typeId) {
 			if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("A live Program graph node ID is required.", nameof(id));
 			Id = id.Trim();
 			TypeId = new NodeTypeId(typeId);
 		}
 	}
 
-	internal sealed class LiveProgramGraphConnection {
+	internal sealed class NodeConnection {
 		public string SourceNodeId { get; }
 		public string TargetNodeId { get; }
 		public PortId TargetPortId { get; }
 
-		public LiveProgramGraphConnection(string sourceNodeId, string targetNodeId, string targetPortId) {
+		public NodeConnection(string sourceNodeId, string targetNodeId, string targetPortId) {
 			if (string.IsNullOrWhiteSpace(sourceNodeId) || string.IsNullOrWhiteSpace(targetNodeId))
 				throw new ArgumentException("Live Program graph connection node IDs are required.");
 			SourceNodeId = sourceNodeId.Trim();
@@ -249,7 +249,7 @@ namespace ShitDesigner.Main {
 		private readonly string _outputNodeId;
 		private readonly IReadOnlyList<LiveProgramShaderGraphNode> _nodes;
 
-		internal LiveProgramShaderGraph(LiveProgramGraphDefinition definition, IEnumerable<LiveProgramShaderGraphNode> nodes) {
+		internal LiveProgramShaderGraph(GraphDefinition definition, IEnumerable<LiveProgramShaderGraphNode> nodes) {
 			if (definition == null) throw new ArgumentNullException(nameof(definition));
 			_sourceNodeId = definition.SourceNodeId;
 			_outputNodeId = definition.OutputNodeId;
