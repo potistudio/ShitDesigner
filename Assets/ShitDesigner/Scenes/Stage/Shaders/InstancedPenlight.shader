@@ -62,14 +62,14 @@ Shader "ShitDesigner/Stage/Instanced Penlight"
 
 			float3 RotateX(float3 position, float angle)
 			{
-				float sine = cos(angle - 1.5707963f);
+				float sine = sin(angle);
 				float cosine = cos(angle);
 				return float3(position.x, position.y * cosine - position.z * sine, position.y * sine + position.z * cosine);
 			}
 
 			float3 RotateZ(float3 position, float angle)
 			{
-				float sine = cos(angle - 1.5707963f);
+				float sine = sin(angle);
 				float cosine = cos(angle);
 				return float3(position.x * cosine - position.y * sine, position.x * sine + position.y * cosine, position.z);
 			}
@@ -82,10 +82,10 @@ Shader "ShitDesigner/Stage/Instanced Penlight"
 
 				float phase = UNITY_ACCESS_INSTANCED_PROP(PerInstance, _Phase);
 				float animationTime = _Time.y * _RattleSpeed + phase * 6.2831853f;
-				float primarySwing = cos(animationTime - 1.5707963f);
+				float primarySwing = sin(animationTime);
 				float bellShake = sign(primarySwing) * pow(abs(primarySwing), 0.45f);
-				float wristFlick = cos(animationTime * 2.0 + phase * 3.1415927f - 1.5707963f) * (1.0 - abs(primarySwing)) * 0.16f;
-				float roll = cos(animationTime * 1.5f + phase * 3.1415927f - 1.5707963f) * 0.13f;
+				float wristFlick = sin(animationTime * 2.0 + phase * 3.1415927f) * (1.0 - abs(primarySwing)) * 0.16f;
+				float roll = sin(animationTime * 1.5f + phase * 3.1415927f) * 0.13f;
 				float angle = radians(_RattleAngle);
 				float3 positionOS = RotateZ(RotateX(input.positionOS.xyz, (roll + wristFlick) * angle), (bellShake + wristFlick) * angle);
 				positionOS.y += abs(primarySwing) * _WristBounce;
