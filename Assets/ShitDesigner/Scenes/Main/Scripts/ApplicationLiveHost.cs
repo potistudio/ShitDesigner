@@ -64,7 +64,7 @@ namespace ShitDesigner.Main {
 				_keyboard = new LiveKeyboardInput(_parameterQueue, slotIndex => { LaunchPatchSlot(slotIndex); }, slotIndex => { ClearPatchSlot(slotIndex); }, MoveCatalogSelection, () => { QueueSelectedCatalogPatch(); }, TapBpm);
 				_midiInputManager.InitializeForHostPolling();
 				_shutdown.Add(_midiInputManager.Shutdown);
-				_midi = new LiveMidiInput(_midiInputManager, _parameterQueue, _patchIds);
+				_midi = new LiveMidiInput(_midiInputManager, _parameterQueue, _runtime.Patches);
 				_shutdown.Add(() => { _midi?.Dispose(); _midi = null; });
 				_externalDisplay.Initialize();
 				_shutdown.Add(_externalDisplay.Shutdown);

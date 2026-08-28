@@ -16,6 +16,7 @@ namespace ShitDesigner.Editor {
 		private SerializedProperty _programGraph;
 		private SerializedProperty _nodes;
 		private SerializedProperty _parameters;
+		private SerializedProperty m_MidiInputs;
 		private SerializedProperty _flash;
 
 		private void OnEnable() {
@@ -24,6 +25,7 @@ namespace ShitDesigner.Editor {
 			_programGraph = serializedObject.FindProperty("_programGraph");
 			_nodes = serializedObject.FindProperty("_nodes");
 			_parameters = serializedObject.FindProperty("_parameters");
+			m_MidiInputs = serializedObject.FindProperty("m_MidiInputs");
 			_flash = serializedObject.FindProperty("_flash");
 		}
 
@@ -44,6 +46,9 @@ namespace ShitDesigner.Editor {
 
 			EditorGUILayout.Space(6f);
 			EditorGUILayout.PropertyField(_parameters, new GUIContent("Published Parameters"), true);
+
+			EditorGUILayout.Space(6f);
+			EditorGUILayout.PropertyField(m_MidiInputs, new GUIContent("MIDI Inputs", "Maps MIDI controls to published parameters while this patch is loaded."), true);
 
 			EditorGUILayout.Space(6f);
 			EditorGUILayout.PropertyField(_flash, new GUIContent("Flash"));
@@ -152,6 +157,86 @@ namespace ShitDesigner.Editor {
 			if (result.Length == 0) return "item";
 			if (char.IsDigit(result[0])) result.Insert(0, "item_");
 			return result.ToString();
+		}
+	}
+
+	[CustomPropertyDrawer(typeof(PatchMidiInputBinding))]
+	public sealed class PatchMidiInputBindingDrawer : PropertyDrawer {
+		private const float LineSpacing = 2f;
+
+		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
+			EditorGUI.BeginProperty(position, label, property);
+			var messageType = property.FindPropertyRelative("m_MessageType");
+			var channel = property.FindPropertyRelative("m_Channel");
+			var number = property.FindPropertyRelative("m_Number");
+			var rawMinimum = property.FindPropertyRelative("m_RawMinimum");
+			var rawMaximum = property.FindPropertyRelative("m_RawMaximum");
+			var invert = property.FindPropertyRelative("m_Invert");
+			var parameterId = property.FindPropertyRelative("m_ParameterId");
+			var y = position.y;
+			var previousType = (MidiControlKind)messageType.enumValueIndex;
+
+			EditorGUI.PropertyField(Line(position, ref y), messageType, new GUIContent("Message Type"));
+			var currentType = (MidiControlKind)messageType.enumValueIndex;
+			if (previousType != currentType && rawMaximum.intValue == NativeMaximum(previousType))
+				rawMaximum.intValue = NativeMaximum(currentType);
+
+			channel.intValue = EditorGUI.IntSlider(Line(position, ref y), new GUIContent("Channel"), channel.intValue, 1, 16);
+			number.intValue = EditorGUI.IntSlider(Line(position, ref y), new GUIContent("Number"), number.intValue, 0,
+				currentType == MidiControlKind.PitchBend ? 0 : 127);
+			rawMinimum.intValue = EditorGUI.IntField(Line(position, ref y), new GUIContent("Raw Minimum"), rawMinimum.intValue);
+			rawMaximum.intValue = EditorGUI.IntField(Line(position, ref y), new GUIContent("Raw Maximum"), rawMaximum.intValue);
+			EditorGUI.PropertyField(Line(position, ref y), invert, new GUIContent("Invert"));
+			DrawParameterPopup(Line(position, ref y), parameterId, property.serializedObject.FindProperty("_parameters"));
+
+			EditorGUI.EndProperty();
+		}
+
+		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+			=> EditorGUIUtility.singleLineHeight * 7f + LineSpacing * 6f;
+
+		private static void DrawParameterPopup(Rect position, SerializedProperty parameterId, SerializedProperty parameters) {
+			if (parameters == null || parameters.arraySize == 0) {
+				EditorGUI.PropertyField(position, parameterId, new GUIContent("Parameter ID"));
+				return;
+			}
+
+			var values = new List<string>();
+			var labels = new List<string>();
+			for (var index = 0; index < parameters.arraySize; index++) {
+				var parameter = parameters.GetArrayElementAtIndex(index);
+				var id = parameter.FindPropertyRelative("_id").stringValue;
+				if (string.IsNullOrWhiteSpace(id)) continue;
+				values.Add(id);
+				var displayName = parameter.FindPropertyRelative("_displayName").stringValue;
+				labels.Add(string.IsNullOrWhiteSpace(displayName) ? id : displayName + " (" + id + ")");
+			}
+			if (values.Count == 0) {
+				EditorGUI.PropertyField(position, parameterId, new GUIContent("Parameter ID"));
+				return;
+			}
+
+			var current = parameterId.stringValue ?? string.Empty;
+			if (string.IsNullOrWhiteSpace(current)) {
+				values.Insert(0, string.Empty);
+				labels.Insert(0, "<Select Parameter>");
+			}
+			else if (!values.Contains(current, StringComparer.Ordinal)) {
+				values.Insert(0, current);
+				labels.Insert(0, "Missing: " + current);
+			}
+
+			var selected = values.IndexOf(current);
+			var next = EditorGUI.Popup(position, "Parameter", selected, labels.ToArray());
+			if (next != selected) parameterId.stringValue = values[next];
+		}
+
+		private static int NativeMaximum(MidiControlKind type) => type == MidiControlKind.PitchBend ? 16383 : 127;
+
+		private static Rect Line(Rect position, ref float y) {
+			var line = new Rect(position.x, y, position.width, EditorGUIUtility.singleLineHeight);
+			y += EditorGUIUtility.singleLineHeight + LineSpacing;
+			return line;
 		}
 	}
 

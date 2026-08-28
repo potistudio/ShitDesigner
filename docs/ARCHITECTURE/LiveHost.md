@@ -155,6 +155,7 @@
 - Inspectorの可変長要素はUnity標準のリスト描画を使用し、各要素とその子要素を再帰的に表示する。追加・削除は各リストの標準操作から行う。
 - `PatchDefinition` のInspectorは生成済みShader Manifestとプロジェクト内の `Scene3DDefinition` を選択肢として表示する。ノード型、接続元/接続先、画像ポート、ShaderパラメーターおよびScene公開パラメーターのIDは、候補選択または定義からの自動生成を基本とし、手入力を要求しない。
 - `PatchDefinition` のShader graph node IDおよび公開パラメーターIDは、空欄の追加時にInspectorが一意な値を生成する。Scene3DDefinitionはScene Nodesリストから選択し、Scene Input IDは `scene` に固定し、Shader nodeのSource Portは `image` に固定する。
+- `PatchDefinition` はMIDI入力一覧を持ち、MIDIのメッセージ種別、チャンネル、番号、生値範囲、反転および対象となる公開パラメーターIDを設定する。`ApplicationLiveHost` はロード中パッチの設定だけを `LiveParameterQueue` の `SetParameter` 要求へ変換する。
 - Program graphのLook調整は `PatchDefinition` Assetの変更として保存し、C#スクリプトのコンパイルを必要としない。
 - `PatchDefinition` は任意の `PatchFlashDefinition` を持ち、発火時に表示する画像と表示時間をパッチ単位で定義する。未設定のパッチは画像フラッシュを行わず、共通の白フラッシュだけを行う。
 - Bootは最初のパッチだけを事前ロードする。

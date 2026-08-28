@@ -217,6 +217,66 @@ namespace ShitDesigner.Scene {
 	}
 
 	[Serializable]
+	public sealed class PatchMidiInputBinding {
+		[SerializeField] private MidiControlKind m_MessageType = MidiControlKind.ControlChange;
+		[SerializeField, Range(1, 16)] private int m_Channel = 1;
+		[SerializeField, Range(0, 127)] private int m_Number;
+		[SerializeField] private int m_RawMinimum;
+		[SerializeField] private int m_RawMaximum = 127;
+		[SerializeField] private bool m_Invert;
+		[SerializeField] private string m_ParameterId;
+
+		public MidiControlKind MessageType => m_MessageType;
+		public int Channel => m_Channel;
+		public int Number => m_Number;
+		public int RawMinimum => m_RawMinimum;
+		public int RawMaximum => m_RawMaximum;
+		public bool Invert => m_Invert;
+		public string ParameterId => (m_ParameterId ?? string.Empty).Trim();
+
+		public PatchMidiInputBinding() { }
+
+		public PatchMidiInputBinding(string parameterId, MidiControlKind messageType, int channel, int number,
+			int rawMinimum = 0, int rawMaximum = 127, bool invert = false) {
+			m_ParameterId = parameterId ?? string.Empty;
+			m_MessageType = messageType;
+			m_Channel = channel;
+			m_Number = number;
+			m_RawMinimum = rawMinimum;
+			m_RawMaximum = rawMaximum;
+			m_Invert = invert;
+		}
+
+		public bool Matches(MidiControl control)
+			=> control.Kind == MessageType && control.Channel == Channel && control.Number == Number;
+
+		public float Normalize(int rawValue) {
+			if (RawMinimum >= RawMaximum) throw new InvalidOperationException("Raw Minimum must be less than Raw Maximum.");
+			var normalized = Mathf.Clamp01((rawValue - RawMinimum) / (float)(RawMaximum - RawMinimum));
+			return Invert ? 1f - normalized : normalized;
+		}
+
+		public UnitResult<Diagnostic> Validate() {
+			if (!Enum.IsDefined(typeof(MidiControlKind), MessageType))
+				return Failure("patch.definition.midi_input.type", "A patch MIDI input requires a valid message type.");
+			if (Channel < 1 || Channel > 16)
+				return Failure("patch.definition.midi_input.channel", "A patch MIDI input channel must be between 1 and 16.");
+			if ((MessageType == MidiControlKind.PitchBend && Number != 0) || Number < 0 || Number > 127)
+				return Failure("patch.definition.midi_input.number", "A patch MIDI input number is outside the supported range.");
+
+			var nativeMaximum = MessageType == MidiControlKind.PitchBend ? 16383 : 127;
+			if (RawMinimum < 0 || RawMaximum > nativeMaximum || RawMinimum >= RawMaximum)
+				return Failure("patch.definition.midi_input.range", "A patch MIDI input raw range is invalid.");
+			if (string.IsNullOrWhiteSpace(ParameterId))
+				return Failure("patch.definition.midi_input.parameter", "A patch MIDI input requires a target parameter.");
+			return UnitResult.Success<Diagnostic>();
+		}
+
+		private static UnitResult<Diagnostic> Failure(string code, string message)
+			=> UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "scene"));
+	}
+
+	[Serializable]
 	public sealed class PatchFlashDefinition {
 		[SerializeField] private Texture2D _image;
 		[SerializeField, Min(.01f)] private float _durationSeconds = .25f;
@@ -244,6 +304,7 @@ namespace ShitDesigner.Scene {
 		[SerializeField] private PatchProgramGraph _programGraph = new PatchProgramGraph();
 		[SerializeField] private List<Scene3DDefinition> _nodes = new List<Scene3DDefinition>();
 		[SerializeField] private List<PatchParameter> _parameters = new List<PatchParameter>();
+		[SerializeField] private List<PatchMidiInputBinding> m_MidiInputs = new List<PatchMidiInputBinding>();
 
 		public string Id => _id ?? string.Empty;
 		public string DisplayName => _displayName ?? string.Empty;
@@ -251,6 +312,7 @@ namespace ShitDesigner.Scene {
 		public PatchProgramGraph ProgramGraph => _programGraph;
 		public IReadOnlyList<Scene3DDefinition> Nodes => _nodes ?? (IReadOnlyList<Scene3DDefinition>)Array.Empty<Scene3DDefinition>();
 		public IReadOnlyList<PatchParameter> Parameters => _parameters ?? (IReadOnlyList<PatchParameter>)Array.Empty<PatchParameter>();
+		public IReadOnlyList<PatchMidiInputBinding> MidiInputs => m_MidiInputs ?? (IReadOnlyList<PatchMidiInputBinding>)Array.Empty<PatchMidiInputBinding>();
 
 		public UnitResult<Diagnostic> Validate() {
 			if (string.IsNullOrWhiteSpace(Id)) return Failure("patch.definition.id", "A patch requires an ID.");
@@ -266,6 +328,9 @@ namespace ShitDesigner.Scene {
 				return Failure("patch.definition.parameter", "Published patch parameters require IDs, names, nodes, and source parameters.");
 			if (Parameters.GroupBy(parameter => parameter.Id, StringComparer.Ordinal).Any(group => group.Count() > 1)) return Failure("patch.definition.parameter_duplicate", "Published patch parameter IDs must be unique.");
 			if (Parameters.Any(parameter => !nodes.Any(node => string.Equals(node.Id, parameter.NodeId, StringComparison.Ordinal)))) return Failure("patch.definition.parameter_node", "A published patch parameter references an unknown scene node.");
+			if (MidiInputs.Any(binding => binding == null || binding.Validate().IsFailure)) return Failure("patch.definition.midi_input", "Every patch MIDI input must be valid.");
+			if (MidiInputs.Any(binding => !Parameters.Any(parameter => parameter != null && string.Equals(parameter.Id, binding.ParameterId, StringComparison.Ordinal))))
+				return Failure("patch.definition.midi_input_parameter", "A patch MIDI input references an unknown published parameter.");
 			if (Flash != null && Flash.Validate().IsFailure) return Failure("patch.definition.flash", "A patch flash definition is invalid.");
 			return UnitResult.Success<Diagnostic>();
 		}
