@@ -84,7 +84,7 @@ namespace ShitDesigner.Scene {
 				var item = Instantiate(GetPrefab(_random.Next(prefabCount)), transform);
 				item.name = $"Falling Object {index + 1:000}";
 				SetLayerRecursively(item, gameObject.layer);
-				(item.GetComponent<ShowerMonochromeApplicator>() ?? item.AddComponent<ShowerMonochromeApplicator>()).Apply();
+				(item.GetComponent<ShowerMonochromeApplicator>() ?? item.AddComponent<ShowerMonochromeApplicator>()).SetMonochromeEnabled(false);
 				var fallingObject = new FallingObject(item.transform, NextFloat(fallSpeedRange.x, fallSpeedRange.y));
 				ResetPosition(fallingObject, true);
 				_objects.Add(fallingObject);
