@@ -26,6 +26,11 @@ namespace ShitDesigner.Main {
 		public override void InitializeParameter() {
 			if (_shower == null)
 				_shower = GetComponentInChildren<FallingObjectShower>(true);
+			if (_shower == null) {
+				_initialized = false;
+				return;
+			}
+
 			SetMonochromeEnabled(false);
 			_initialized = true;
 		}
@@ -35,7 +40,7 @@ namespace ShitDesigner.Main {
 				rejectionReason = "The parameter value must be finite.";
 				return false;
 			}
-			if (!_initialized || _shower == null) {
+			if (!EnsureInitialized()) {
 				rejectionReason = "The shower sequence parameter has not been initialized.";
 				return false;
 			}
@@ -44,6 +49,14 @@ namespace ShitDesigner.Main {
 			StartSequence();
 			rejectionReason = string.Empty;
 			return true;
+		}
+
+		private bool EnsureInitialized() {
+			if (_initialized && _shower != null)
+				return true;
+
+			InitializeParameter();
+			return _initialized;
 		}
 
 		public void SetGraphClockDriven(bool graphClockDriven) {
