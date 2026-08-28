@@ -84,7 +84,7 @@ Shader "ShitDesigner/Stage/Instanced Penlight"
 				float animationTime = _Time.y * _RattleSpeed + phase * 6.2831853f;
 				float primarySwing = cos(animationTime - 1.5707963f);
 				float bellShake = sign(primarySwing) * pow(abs(primarySwing), 0.45f);
-				float wristFlick = cos(animationTime * 2f + phase * 3.1415927f - 1.5707963f) * (1f - abs(primarySwing)) * 0.16f;
+				float wristFlick = cos(animationTime * 2.0 + phase * 3.1415927f - 1.5707963f) * (1.0 - abs(primarySwing)) * 0.16f;
 				float roll = cos(animationTime * 1.5f + phase * 3.1415927f - 1.5707963f) * 0.13f;
 				float angle = radians(_RattleAngle);
 				float3 positionOS = RotateZ(RotateX(input.positionOS.xyz, (roll + wristFlick) * angle), (bellShake + wristFlick) * angle);
