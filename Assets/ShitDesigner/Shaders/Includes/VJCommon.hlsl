@@ -98,7 +98,9 @@ float2 VJAspectUV(float2 uv)
 {
     float width = max(abs(_SD_Resolution.x), 1.0);
     float height = max(abs(_SD_Resolution.y), 1.0);
-    float aspect = _VJAspect > 0.0 ? _VJAspect : width / height;
+    float aspect = width / height;
+    if (_VJAspect > 0.0)
+        aspect *= _VJAspect;
     float2 centered = uv - 0.5;
     centered.x *= aspect;
     return centered + 0.5;
