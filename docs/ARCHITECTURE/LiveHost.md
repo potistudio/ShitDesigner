@@ -152,7 +152,7 @@
 
 - `LiveGraphBootstrap` は任意数の `PatchDefinition` をシリアライズして保持する。
 - `PatchDefinition` はInspectorでProgram graphのノード、接続およびノードパラメーターをそれぞれ単純な可変長リストとして設定し、Unityの `Scene3DDefinition` もScene Nodesの単純なリストとして参照し、ライブUIへ公開するパラメーターを明示的に束ねる。Shaderパラメーターは必要なものだけを個別に追加し、未追加の値はManifestの既定値を使用する。これはUnityのSceneとは別の論理的なパッチである。
-- Inspectorでは各リストの要素を個別の行として表示し、ノードの詳細パラメーターだけをノード内で展開する。追加・削除は各リストの操作から行う。
+- Inspectorの可変長要素はUnity標準のリスト描画を使用し、各要素とその子要素を再帰的に表示する。追加・削除は各リストの標準操作から行う。
 - `PatchDefinition` のInspectorは生成済みShader Manifestとプロジェクト内の `Scene3DDefinition` を選択肢として表示する。ノード型、接続元/接続先、画像ポート、ShaderパラメーターおよびScene公開パラメーターのIDは、候補選択または定義からの自動生成を基本とし、手入力を要求しない。
 - `PatchDefinition` のShader graph node IDおよび公開パラメーターIDは、空欄の追加時にInspectorが一意な値を生成する。Scene3DDefinitionはScene Nodesリストから選択し、Scene Input IDは `scene` に固定し、Shader nodeのSource Portは `image` に固定する。
 - Program graphのLook調整は `PatchDefinition` Assetの変更として保存し、C#スクリプトのコンパイルを必要としない。
