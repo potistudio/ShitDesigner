@@ -82,9 +82,11 @@ Shader "ShitDesigner/Stage/Instanced Penlight"
 
 				float phase = UNITY_ACCESS_INSTANCED_PROP(PerInstance, _Phase);
 				float animationTime = _Time.y * _RattleSpeed + phase * 6.2831853f;
-				float primarySwing = sin(animationTime);
-				float rebound = sin(animationTime * 2.0 + phase * 3.1415927f) * 0.18f;
-				float rattle = (primarySwing + rebound) * 0.85f;
+				float cycle = frac(animationTime * 0.15915494f);
+				float downstrokeDuration = 0.16f;
+				float downstroke = smoothstep(0.0, 1.0, saturate(cycle / downstrokeDuration));
+				float recovery = smoothstep(0.0, 1.0, saturate((cycle - downstrokeDuration) / (1.0 - downstrokeDuration)));
+				float rattle = cycle < downstrokeDuration ? 1.0 - 2.0 * downstroke : -1.0 + 2.0 * recovery;
 				float directionX = sin(phase * 6.2831853f);
 				float directionZ = cos(phase * 6.2831853f);
 				float angle = radians(_RattleAngle);
@@ -92,7 +94,7 @@ Shader "ShitDesigner/Stage/Instanced Penlight"
 				positionOS.y += rattle * _WristBounce;
 				output.positionHCS = TransformObjectToHClip(positionOS);
 
-				half pulse = 0.82h + 0.18h * abs(primarySwing);
+				half pulse = 0.82h + 0.18h * abs(rattle);
 				output.color = UNITY_ACCESS_INSTANCED_PROP(PerInstance, _BaseColor).rgb * (_GlowStrength * pulse);
 				return output;
 			}
