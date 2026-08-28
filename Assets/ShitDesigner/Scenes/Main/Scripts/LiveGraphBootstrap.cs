@@ -10,21 +10,23 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace ShitDesigner.Main {
-	/// <summary>Holds the authored patches and their Unity scene nodes.</summary>
+	/// <summary>
+	/// Holds the authored patches and their Unity scene nodes.
+	/// </summary>
 	[DisallowMultipleComponent]
 	public sealed class LiveGraphBootstrap : MonoBehaviour {
-		private static readonly LiveProgramGraphDefinition ProgramGraph = new LiveProgramGraphDefinition(
+		private static readonly GraphDefinition ProgramGraph = new GraphDefinition(
 			"scene",
 			"composite",
 			new[] {
-				new LiveProgramGraphNodeDefinition("background", "shitdesigner.shader.generator.concentric-rings"),
-				new LiveProgramGraphNodeDefinition("echo", "shitdesigner.shader.temporal.echo"),
-				new LiveProgramGraphNodeDefinition("composite", "shitdesigner.shader.blend.premultiplied_over")
+				new NodeDefinition("background", "shitdesigner.shader.generator.concentric-rings"),
+				new NodeDefinition("echo", "shitdesigner.shader.temporal.echo"),
+				new NodeDefinition("composite", "shitdesigner.shader.blend.premultiplied_over")
 			},
 			new[] {
-				new LiveProgramGraphConnection("scene", "echo", "input"),
-				new LiveProgramGraphConnection("echo", "composite", "a"),
-				new LiveProgramGraphConnection("background", "composite", "b")
+				new NodeConnection("scene", "echo", "input"),
+				new NodeConnection("echo", "composite", "a"),
+				new NodeConnection("background", "composite", "b")
 			});
 
 		[SerializeField] private PatchDefinition[] _patches = Array.Empty<PatchDefinition>();
