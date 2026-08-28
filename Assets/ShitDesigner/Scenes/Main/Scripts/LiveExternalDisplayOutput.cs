@@ -118,7 +118,6 @@ namespace ShitDesigner.Main {
 			var camera = cameraObject.AddComponent<Camera>();
 			camera.clearFlags = CameraClearFlags.SolidColor;
 			camera.backgroundColor = Color.black;
-			camera.cullingMask = 0;
 			camera.enabled = false;
 			var displayTexture = new RenderTexture(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight, 0, RenderTextureFormat.ARGB32) {
 				name = "ShitDesigner.Main.ExternalDisplay." + displayNumber,
@@ -131,7 +130,7 @@ namespace ShitDesigner.Main {
 			}
 			ClearTexture(displayTexture);
 			var presenter = cameraObject.AddComponent<LiveProgramDisplayCamera>();
-			presenter.Source = displayTexture;
+			presenter.Initialize(camera, displayTexture);
 			return new DisplayOutput(camera, cameraObject.AddComponent<WindowsDisplayWindowController>(), displayTexture);
 		}
 
@@ -415,11 +414,67 @@ namespace ShitDesigner.Main {
 
 	[AddComponentMenu("")]
 	public sealed class LiveProgramDisplayCamera : MonoBehaviour {
-		public RenderTexture Source { private get; set; }
+		private const int DisplayLayer = 31;
+		private const string ShaderName = "Hidden/ShitDesigner/ProgramDisplay";
+		private static readonly int MainTextureId = Shader.PropertyToID("_MainTex");
 
-		private void OnRenderImage(RenderTexture source, RenderTexture destination) {
-			if (Source != null) Graphics.Blit(Source, destination);
-			else Graphics.Blit(source, destination);
+		private Camera _camera;
+		private GameObject _surface;
+		private Material _material;
+		private Mesh _mesh;
+
+		public void Initialize(Camera camera, RenderTexture source) {
+			if (camera == null) throw new ArgumentNullException(nameof(camera));
+			_camera = camera;
+			_camera.cullingMask = 1 << DisplayLayer;
+			_camera.orthographic = true;
+			_camera.orthographicSize = 1f;
+			_camera.nearClipPlane = 0.01f;
+			_camera.farClipPlane = 10f;
+
+			var shader = Resources.Load<Shader>("ProgramDisplay") ?? Shader.Find(ShaderName);
+			if (shader == null) throw new InvalidOperationException("Program display shader is not available.");
+			_material = new Material(shader) { name = "ShitDesigner.Main.ExternalProgramDisplay" };
+			_material.SetTexture(MainTextureId, source != null && source.IsCreated() ? source : Texture2D.blackTexture);
+			_mesh = CreateFullscreenMesh();
+			_surface = new GameObject("Live External Program Display Surface") { layer = DisplayLayer };
+			_surface.transform.SetParent(transform, false);
+			_surface.transform.localPosition = new Vector3(0f, 0f, 1f);
+			var filter = _surface.AddComponent<MeshFilter>();
+			filter.sharedMesh = _mesh;
+			var renderer = _surface.AddComponent<MeshRenderer>();
+			renderer.sharedMaterial = _material;
+			renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+			renderer.receiveShadows = false;
+		}
+
+		private void LateUpdate() {
+			if (_camera == null || _surface == null) return;
+			_surface.transform.localScale = new Vector3(_camera.aspect, 1f, 1f);
+		}
+
+		private void OnDestroy() {
+			ReleaseRuntimeObject(_material);
+			ReleaseRuntimeObject(_mesh);
+		}
+
+		private static Mesh CreateFullscreenMesh() {
+			var mesh = new Mesh { name = "ShitDesigner.Main.ExternalProgramDisplayMesh" };
+			mesh.vertices = new[] {
+				new Vector3(-1f, -1f, 0f), new Vector3(1f, -1f, 0f),
+				new Vector3(1f, 1f, 0f), new Vector3(-1f, 1f, 0f)
+			};
+			mesh.uv = new[] {
+				new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f)
+			};
+			mesh.triangles = new[] { 0, 1, 2, 0, 2, 3 };
+			mesh.UploadMeshData(true);
+			return mesh;
+		}
+
+		private static void ReleaseRuntimeObject(UnityEngine.Object instance) {
+			if (instance == null) return;
+			if (UnityEngine.Application.isPlaying) Destroy(instance); else DestroyImmediate(instance);
 		}
 	}
 }
