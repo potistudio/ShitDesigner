@@ -160,6 +160,7 @@ namespace ShitDesigner.Editor {
 		private const string ManifestAssetPath = "Assets/ShitDesigner/Scripts/Nodes/ShaderNodeManifest.asset";
 		private const float LineSpacing = 2f;
 		private static ShaderNodeManifestAsset _manifest;
+		private static readonly Dictionary<string, int> ParameterAddSelections = new Dictionary<string, int>(StringComparer.Ordinal);
 
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
 			EditorGUI.BeginProperty(position, label, property);
@@ -175,6 +176,8 @@ namespace ShitDesigner.Editor {
 				DrawTypeIdPopup(Line(position, ref y), typeId);
 				var parametersHeight = EditorGUI.GetPropertyHeight(parameters, new GUIContent("Parameters"), true);
 				EditorGUI.PropertyField(new Rect(position.x, y, position.width, parametersHeight), parameters, new GUIContent("Parameters"), true);
+				y += parametersHeight + LineSpacing;
+				DrawAddParameter(Line(position, ref y), property.propertyPath, typeId.stringValue, parameters);
 				EditorGUI.indentLevel = indent;
 			}
 			EditorGUI.EndProperty();
@@ -183,8 +186,69 @@ namespace ShitDesigner.Editor {
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
 			if (!property.isExpanded) return EditorGUIUtility.singleLineHeight;
 			var parameters = property.FindPropertyRelative("_parameters");
-			return EditorGUIUtility.singleLineHeight * 3f + LineSpacing * 3f
+			var height = EditorGUIUtility.singleLineHeight * 3f + LineSpacing * 3f
 				+ EditorGUI.GetPropertyHeight(parameters, new GUIContent("Parameters"), true);
+			return GetAddableParameters(property.FindPropertyRelative("_typeId").stringValue, parameters).Count == 0
+				? height
+				: height + EditorGUIUtility.singleLineHeight + LineSpacing;
+		}
+
+		private static void DrawAddParameter(Rect position, string key, string typeId, SerializedProperty parameters) {
+			var addable = GetAddableParameters(typeId, parameters);
+			if (addable.Count == 0) return;
+			if (!ParameterAddSelections.TryGetValue(key, out var selected)) selected = 0;
+			selected = Mathf.Clamp(selected, 0, addable.Count - 1);
+			var field = EditorGUI.PrefixLabel(position, new GUIContent("Add Parameter"));
+			const float buttonWidth = 48f;
+			var popup = new Rect(field.x, field.y, field.width - buttonWidth - LineSpacing, field.height);
+			var button = new Rect(popup.xMax + LineSpacing, field.y, buttonWidth, field.height);
+			selected = EditorGUI.Popup(popup, selected, addable.Select(FormatParameterLabel).ToArray());
+			ParameterAddSelections[key] = selected;
+			if (GUI.Button(button, "Add")) AddParameter(parameters, typeId, addable[selected].Id);
+		}
+
+		private static List<ShaderNodeManifestAssetParameter> GetAddableParameters(string typeId, SerializedProperty parameters) {
+			var entry = ResolveManifest()?.Find(typeId);
+			if (entry == null) return new List<ShaderNodeManifestAssetParameter>();
+			var existing = new HashSet<string>(StringComparer.Ordinal);
+			for (var index = 0; index < parameters.arraySize; index++)
+				existing.Add(parameters.GetArrayElementAtIndex(index).FindPropertyRelative("_id").stringValue);
+			return entry.Parameters
+				.Where(parameter => parameter != null && !parameter.IsHidden && !existing.Contains(parameter.Id))
+				.OrderBy(parameter => parameter.DisplayOrder)
+				.ThenBy(parameter => parameter.DisplayName, StringComparer.Ordinal)
+				.ToList();
+		}
+
+		private static void AddParameter(SerializedProperty parameters, string typeId, string parameterId) {
+			var runtimeDefinition = ResolveManifest()?.BuildRuntimeManifest().Find(typeId)?.Parameters
+				.FirstOrDefault(parameter => string.Equals(parameter.Id.Value, parameterId, StringComparison.Ordinal));
+			if (runtimeDefinition == null) return;
+			var index = parameters.arraySize;
+			parameters.arraySize++;
+			var parameter = parameters.GetArrayElementAtIndex(index);
+			parameter.FindPropertyRelative("_id").stringValue = runtimeDefinition.Id.Value;
+			SetParameterValue(parameter, runtimeDefinition.DefaultValue);
+		}
+
+		private static void SetParameterValue(SerializedProperty parameter, ParameterValue value) {
+			parameter.FindPropertyRelative("_type").enumValueIndex = (int)value.Type;
+			switch (value.Type) {
+				case ParameterType.Float: parameter.FindPropertyRelative("_floatValue").floatValue = value.AsFloat(); break;
+				case ParameterType.Int: parameter.FindPropertyRelative("_intValue").intValue = value.AsInt(); break;
+				case ParameterType.Bool: parameter.FindPropertyRelative("_boolValue").boolValue = value.AsBool(); break;
+				case ParameterType.Vector2:
+					var vector2 = value.AsVector2(); parameter.FindPropertyRelative("_vector2Value").vector2Value = new Vector2(vector2.X, vector2.Y); break;
+				case ParameterType.Vector3:
+					var vector3 = value.AsVector3(); parameter.FindPropertyRelative("_vector3Value").vector3Value = new Vector3(vector3.X, vector3.Y, vector3.Z); break;
+				case ParameterType.Vector4:
+					var vector4 = value.AsVector4(); parameter.FindPropertyRelative("_vector4Value").vector4Value = new Vector4(vector4.X, vector4.Y, vector4.Z, vector4.W); break;
+				case ParameterType.Color:
+					var color = value.AsColor(); parameter.FindPropertyRelative("_colorValue").colorValue = new Color(color.R, color.G, color.B, color.A); break;
+				case ParameterType.String:
+				case ParameterType.Enum:
+				case ParameterType.MediaAssetReference: parameter.FindPropertyRelative("_textValue").stringValue = value.AsString() ?? string.Empty; break;
+			}
 		}
 
 		private static void DrawTypeIdPopup(Rect position, SerializedProperty typeId) {
