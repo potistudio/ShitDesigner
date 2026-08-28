@@ -44,7 +44,6 @@ Shader "ShitDesigner/Stage/Instanced Penlight"
 
 			UNITY_INSTANCING_BUFFER_START(PerInstance)
 				UNITY_DEFINE_INSTANCED_PROP(float4, _BaseColor)
-				UNITY_DEFINE_INSTANCED_PROP(float, _Phase)
 			UNITY_INSTANCING_BUFFER_END(PerInstance)
 
 			struct Attributes
@@ -60,13 +59,6 @@ Shader "ShitDesigner/Stage/Instanced Penlight"
 				UNITY_VERTEX_OUTPUT_STEREO
 			};
 
-			float3 RotateX(float3 position, float angle)
-			{
-				float sine = sin(angle);
-				float cosine = cos(angle);
-				return float3(position.x, position.y * cosine - position.z * sine, position.y * sine + position.z * cosine);
-			}
-
 			float3 RotateZ(float3 position, float angle)
 			{
 				float sine = sin(angle);
@@ -80,17 +72,14 @@ Shader "ShitDesigner/Stage/Instanced Penlight"
 				UNITY_SETUP_INSTANCE_ID(input);
 				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
 
-				float phase = UNITY_ACCESS_INSTANCED_PROP(PerInstance, _Phase);
-				float animationTime = _BeatPosition * 6.2831853f + phase * 6.2831853f;
+				float animationTime = _BeatPosition * 6.2831853f;
 				float cycle = frac(animationTime * 0.15915494f);
 				float downstrokeDuration = 0.16f;
 				float downstroke = smoothstep(0.0, 1.0, saturate(cycle / downstrokeDuration));
 				float recovery = smoothstep(0.0, 1.0, saturate((cycle - downstrokeDuration) / (1.0 - downstrokeDuration)));
 				float rattle = cycle < downstrokeDuration ? 1.0 - 2.0 * downstroke : -1.0 + 2.0 * recovery;
-				float directionX = sin(phase * 6.2831853f);
-				float directionZ = cos(phase * 6.2831853f);
 				float angle = radians(_RattleAngle);
-				float3 positionOS = RotateZ(RotateX(input.positionOS.xyz, rattle * angle * directionX), rattle * angle * directionZ);
+				float3 positionOS = RotateZ(input.positionOS.xyz, rattle * angle);
 				positionOS.y += rattle * _WristBounce;
 				output.positionHCS = TransformObjectToHClip(positionOS);
 

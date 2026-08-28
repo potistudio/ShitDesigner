@@ -10,7 +10,6 @@ namespace ShitDesigner.Stage {
 		private const int MaximumInstancesPerBatch = 1023;
 		private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 		private static readonly int BeatPositionId = Shader.PropertyToID("_BeatPosition");
-		private static readonly int PhaseId = Shader.PropertyToID("_Phase");
 
 		[SerializeField] private Material _material;
 		[SerializeField, Range(30f, 300f)] private float _previewBpm = 145f;
@@ -96,7 +95,6 @@ namespace ShitDesigner.Stage {
 			for (var batchStart = 0; batchStart < count; batchStart += MaximumInstancesPerBatch) {
 				var batchCount = Mathf.Min(MaximumInstancesPerBatch, count - batchStart);
 				var matrices = new Matrix4x4[batchCount];
-				var phases = new float[batchCount];
 				var baseColors = new Vector4[batchCount];
 				for (var batchIndex = 0; batchIndex < batchCount; batchIndex++) {
 					var instanceIndex = batchStart + batchIndex;
@@ -107,12 +105,10 @@ namespace ShitDesigner.Stage {
 					var position = _center + new Vector3(x, Hash01(instanceIndex * 3 + 3) * 0.35f, z);
 					var scale = Mathf.Lerp(_minimumScale, Mathf.Max(_minimumScale, _maximumScale), Hash01(instanceIndex * 3 + 4));
 					matrices[batchIndex] = transform.localToWorldMatrix * Matrix4x4.TRS(position, Quaternion.identity, Vector3.one * scale);
-					phases[batchIndex] = Hash01(instanceIndex * 3 + 5);
 					baseColors[batchIndex] = colors[instanceIndex % colors.Length];
 				}
 
 				var properties = new MaterialPropertyBlock();
-				properties.SetFloatArray(PhaseId, phases);
 				properties.SetVectorArray(BaseColorId, baseColors);
 				_batches.Add(new Batch(matrices, properties));
 			}
