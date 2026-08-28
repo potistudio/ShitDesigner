@@ -52,11 +52,11 @@ namespace ShitDesigner.Main {
 	internal sealed class LiveGraph : IDisposable {
 		private readonly SceneIsolationManager _sceneManager;
 		private readonly RenderTexturePool _renderPool;
-		private readonly Func<Scene3DDefinition, PatchFlashDefinition, LiveProgramOutput> _createOutput;
+		private readonly Func<PatchDefinition, Scene3DDefinition, PatchFlashDefinition, LiveProgramOutput> _createOutput;
 		public IReadOnlyList<PatchDefinition> PatchDefinitions { get; }
 
 		public LiveGraph(SceneIsolationManager sceneManager, RenderTexturePool renderPool, IEnumerable<PatchDefinition> patchDefinitions,
-			Func<Scene3DDefinition, PatchFlashDefinition, LiveProgramOutput> createOutput) {
+			Func<PatchDefinition, Scene3DDefinition, PatchFlashDefinition, LiveProgramOutput> createOutput) {
 			_sceneManager = sceneManager ?? throw new ArgumentNullException(nameof(sceneManager));
 			_renderPool = renderPool ?? throw new ArgumentNullException(nameof(renderPool));
 			_createOutput = createOutput ?? throw new ArgumentNullException(nameof(createOutput));
@@ -64,7 +64,7 @@ namespace ShitDesigner.Main {
 			if (PatchDefinitions.Count == 0) throw new ArgumentException("A live graph requires patches.");
 		}
 
-		public LiveProgramOutput CreateOutput(Scene3DDefinition definition, PatchFlashDefinition flashPatch) => _createOutput(definition, flashPatch);
+		public LiveProgramOutput CreateOutput(PatchDefinition patch, Scene3DDefinition definition, PatchFlashDefinition flashPatch) => _createOutput(patch, definition, flashPatch);
 
 		public void Dispose() {
 			_sceneManager.Dispose();
@@ -126,21 +126,33 @@ namespace ShitDesigner.Main {
 		public NodeTypeId TypeId { get; }
 
 		public NodeDefinition(string id, string typeId) {
-			if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("A live Program graph node ID is required.", nameof(id));
+			if (string.IsNullOrWhiteSpace(id))
+				throw new ArgumentException("A live Program graph node ID is required.", nameof(id));
+
 			Id = id.Trim();
 			TypeId = new NodeTypeId(typeId);
 		}
 	}
 
 	internal sealed class NodeConnection {
-		public string SourceNodeId { get; }
-		public string TargetNodeId { get; }
-		public PortId TargetPortId { get; }
+		public string SourceNodeId { get; private set; }
+		public PortId SourcePortId { get; private set; }
+		public string TargetNodeId { get; private set; }
+		public PortId TargetPortId { get; private set; }
 
 		public NodeConnection(string sourceNodeId, string targetNodeId, string targetPortId) {
+			Initialize(sourceNodeId, PatchProgramGraph.ImagePortId, targetNodeId, targetPortId);
+		}
+
+		public NodeConnection(string sourceNodeId, string sourcePortId, string targetNodeId, string targetPortId) {
+			Initialize(sourceNodeId, sourcePortId, targetNodeId, targetPortId);
+		}
+
+		private void Initialize(string sourceNodeId, string sourcePortId, string targetNodeId, string targetPortId) {
 			if (string.IsNullOrWhiteSpace(sourceNodeId) || string.IsNullOrWhiteSpace(targetNodeId))
 				throw new ArgumentException("Live Program graph connection node IDs are required.");
 			SourceNodeId = sourceNodeId.Trim();
+			SourcePortId = new PortId(sourcePortId);
 			TargetNodeId = targetNodeId.Trim();
 			TargetPortId = new PortId(targetPortId);
 		}
@@ -414,12 +426,12 @@ namespace ShitDesigner.Main {
 		public PatchDefinition Definition { get; }
 		public IReadOnlyList<LiveProgramOutput> Outputs { get; }
 
-		public LivePatch(PatchDefinition definition, Func<Scene3DDefinition, PatchFlashDefinition, LiveProgramOutput> createOutput) {
+		public LivePatch(PatchDefinition definition, Func<PatchDefinition, Scene3DDefinition, PatchFlashDefinition, LiveProgramOutput> createOutput) {
 			Definition = definition ?? throw new ArgumentNullException(nameof(definition));
 			if (createOutput == null) throw new ArgumentNullException(nameof(createOutput));
 			var outputsByNodeId = new Dictionary<string, LiveProgramOutput>(StringComparer.Ordinal);
 			try {
-				foreach (var node in definition.Nodes) outputsByNodeId.Add(node.Id, createOutput(node, definition.Flash));
+				foreach (var node in definition.Nodes) outputsByNodeId.Add(node.Id, createOutput(definition, node, definition.Flash));
 				Outputs = outputsByNodeId.Values.ToArray();
 				_parameters = definition.Parameters.ToDictionary(parameter => parameter.Id, parameter => {
 					var output = outputsByNodeId[parameter.NodeId];

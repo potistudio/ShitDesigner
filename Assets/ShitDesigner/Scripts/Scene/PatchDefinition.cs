@@ -7,6 +7,202 @@ using UnityEngine;
 
 namespace ShitDesigner.Scene {
 	[Serializable]
+	public sealed class PatchGraphParameter {
+		[SerializeField] private string _id;
+		[SerializeField] private ParameterType _type;
+		[SerializeField] private float _floatValue;
+		[SerializeField] private int _intValue;
+		[SerializeField] private bool _boolValue;
+		[SerializeField] private Vector2 _vector2Value;
+		[SerializeField] private Vector3 _vector3Value;
+		[SerializeField] private Vector4 _vector4Value;
+		[SerializeField] private Color _colorValue = Color.white;
+		[SerializeField] private string _textValue;
+
+		public string Id => (_id ?? string.Empty).Trim();
+		public ParameterType Type => _type;
+		public ParameterValue Value => ToParameterValue();
+
+		public PatchGraphParameter() { }
+
+		public PatchGraphParameter(string id, ParameterValue value) {
+			_id = id;
+			SetValue(value);
+		}
+
+		public void SetValue(ParameterValue value) {
+			_type = value.Type;
+			_floatValue = value.Type == ParameterType.Float ? value.AsFloat() : 0f;
+			_intValue = value.Type == ParameterType.Int ? value.AsInt() : 0;
+			_boolValue = value.Type == ParameterType.Bool && value.AsBool();
+			_vector2Value = value.Type == ParameterType.Vector2 ? ToUnityVector2(value.AsVector2()) : Vector2.zero;
+			_vector3Value = value.Type == ParameterType.Vector3 ? ToUnityVector3(value.AsVector3()) : Vector3.zero;
+			_vector4Value = value.Type == ParameterType.Vector4 ? ToUnityVector4(value.AsVector4()) : Vector4.zero;
+			_colorValue = value.Type == ParameterType.Color ? ToUnityColor(value.AsColor()) : Color.white;
+			_textValue = value.Type == ParameterType.String || value.Type == ParameterType.Enum || value.Type == ParameterType.MediaAssetReference
+				? value.AsString() : string.Empty;
+		}
+
+		public bool TryGetValue(out ParameterValue value) {
+			try {
+				value = ToParameterValue();
+				return true;
+			}
+			catch {
+				value = default(ParameterValue);
+				return false;
+			}
+		}
+
+		private ParameterValue ToParameterValue() {
+			switch (_type) {
+				case ParameterType.Float: return ParameterValue.FromFloat(_floatValue);
+				case ParameterType.Int: return ParameterValue.FromInt(_intValue);
+				case ParameterType.Bool: return ParameterValue.FromBool(_boolValue);
+				case ParameterType.Vector2: return ParameterValue.FromVector2(new Vector2Value(_vector2Value.x, _vector2Value.y));
+				case ParameterType.Vector3: return ParameterValue.FromVector3(new Vector3Value(_vector3Value.x, _vector3Value.y, _vector3Value.z));
+				case ParameterType.Vector4: return ParameterValue.FromVector4(new Vector4Value(_vector4Value.x, _vector4Value.y, _vector4Value.z, _vector4Value.w));
+				case ParameterType.Color: return ParameterValue.FromColor(new ColorValue(_colorValue.r, _colorValue.g, _colorValue.b, _colorValue.a));
+				case ParameterType.String: return ParameterValue.FromString(_textValue ?? string.Empty);
+				case ParameterType.Enum: return ParameterValue.FromEnum(_textValue ?? string.Empty);
+				case ParameterType.MediaAssetReference:
+					return ParameterValue.FromMediaAsset(string.IsNullOrWhiteSpace(_textValue) ? (MediaAssetId?)null : new MediaAssetId(_textValue));
+				default: throw new ArgumentOutOfRangeException();
+			}
+		}
+
+		private static Vector2 ToUnityVector2(Vector2Value value) => new Vector2(value.X, value.Y);
+		private static Vector3 ToUnityVector3(Vector3Value value) => new Vector3(value.X, value.Y, value.Z);
+		private static Vector4 ToUnityVector4(Vector4Value value) => new Vector4(value.X, value.Y, value.Z, value.W);
+		private static Color ToUnityColor(ColorValue value) => new Color(value.R, value.G, value.B, value.A);
+	}
+
+	[Serializable]
+	public sealed class PatchGraphNode {
+		[SerializeField] private string _id;
+		[SerializeField] private string _typeId;
+		[SerializeField] private PatchGraphParameter[] _parameters = Array.Empty<PatchGraphParameter>();
+
+		public string Id => (_id ?? string.Empty).Trim();
+		public string TypeId => (_typeId ?? string.Empty).Trim();
+		public IReadOnlyList<PatchGraphParameter> Parameters => _parameters ?? Array.Empty<PatchGraphParameter>();
+
+		public PatchGraphNode() { }
+
+		public PatchGraphNode(string id, string typeId, IEnumerable<PatchGraphParameter> parameters = null) {
+			_id = id;
+			_typeId = typeId;
+			_parameters = (parameters ?? Enumerable.Empty<PatchGraphParameter>()).ToArray();
+		}
+
+		public PatchGraphParameter FindParameter(string id) => Parameters.FirstOrDefault(parameter => parameter != null && string.Equals(parameter.Id, id, StringComparison.Ordinal));
+	}
+
+	[Serializable]
+	public sealed class PatchGraphConnection {
+		[SerializeField] private string _sourceNodeId;
+		[SerializeField] private string _sourcePortId = PatchProgramGraph.ImagePortId;
+		[SerializeField] private string _targetNodeId;
+		[SerializeField] private string _targetPortId;
+
+		public string SourceNodeId => (_sourceNodeId ?? string.Empty).Trim();
+		public string SourcePortId => (_sourcePortId ?? string.Empty).Trim();
+		public string TargetNodeId => (_targetNodeId ?? string.Empty).Trim();
+		public string TargetPortId => (_targetPortId ?? string.Empty).Trim();
+
+		public PatchGraphConnection() { }
+
+		public PatchGraphConnection(string sourceNodeId, string targetNodeId, string targetPortId, string sourcePortId = PatchProgramGraph.ImagePortId) {
+			_sourceNodeId = sourceNodeId;
+			_sourcePortId = sourcePortId;
+			_targetNodeId = targetNodeId;
+			_targetPortId = targetPortId;
+		}
+	}
+
+	[Serializable]
+	public sealed class PatchProgramGraph {
+		public const string ImagePortId = "image";
+
+		[SerializeField] private string _sourceNodeId = "scene";
+		[SerializeField] private string _outputNodeId = "composite";
+		[SerializeField] private PatchGraphNode[] _nodes = Array.Empty<PatchGraphNode>();
+		[SerializeField] private PatchGraphConnection[] _connections = Array.Empty<PatchGraphConnection>();
+
+		public string SourceNodeId => (_sourceNodeId ?? string.Empty).Trim();
+		public string OutputNodeId => (_outputNodeId ?? string.Empty).Trim();
+		public IReadOnlyList<PatchGraphNode> Nodes => _nodes ?? Array.Empty<PatchGraphNode>();
+		public IReadOnlyList<PatchGraphConnection> Connections => _connections ?? Array.Empty<PatchGraphConnection>();
+
+		public PatchProgramGraph() { }
+
+		public PatchProgramGraph(string sourceNodeId, string outputNodeId, IEnumerable<PatchGraphNode> nodes, IEnumerable<PatchGraphConnection> connections) {
+			_sourceNodeId = sourceNodeId;
+			_outputNodeId = outputNodeId;
+			_nodes = (nodes ?? Enumerable.Empty<PatchGraphNode>()).ToArray();
+			_connections = (connections ?? Enumerable.Empty<PatchGraphConnection>()).ToArray();
+		}
+
+		public UnitResult<Diagnostic> Validate() {
+			if (string.IsNullOrWhiteSpace(SourceNodeId) || string.IsNullOrWhiteSpace(OutputNodeId))
+				return Failure("patch.definition.graph.endpoint", "A patch program graph requires source and output node IDs.");
+			if (Nodes.Count == 0) return Failure("patch.definition.graph.nodes", "A patch program graph requires at least one node.");
+			if (Nodes.Any(node => node == null || string.IsNullOrWhiteSpace(node.Id) || !NodeTypeId.TryParse(node.TypeId, out _)))
+				return Failure("patch.definition.graph.node", "Every patch graph node requires an ID and a valid node type ID.");
+			if (Nodes.GroupBy(node => node.Id, StringComparer.Ordinal).Any(group => group.Count() > 1))
+				return Failure("patch.definition.graph.node_duplicate", "Patch graph node IDs must be unique.");
+			if (Nodes.Any(node => string.Equals(node.Id, SourceNodeId, StringComparison.Ordinal)))
+				return Failure("patch.definition.graph.source_collision", "The patch graph source ID is reserved for the scene input.");
+			if (!Nodes.Any(node => string.Equals(node.Id, OutputNodeId, StringComparison.Ordinal)))
+				return Failure("patch.definition.graph.output_missing", "The patch graph output must reference a configured node.");
+			foreach (var node in Nodes) {
+				if (node.Parameters.Any(parameter => parameter == null || string.IsNullOrWhiteSpace(parameter.Id) || !ParameterId.TryParse(parameter.Id, out _) || !parameter.TryGetValue(out _)))
+					return Failure("patch.definition.graph.parameter", "Every patch graph parameter requires a valid ID and finite value.");
+				if (node.Parameters.GroupBy(parameter => parameter.Id, StringComparer.Ordinal).Any(group => group.Count() > 1))
+					return Failure("patch.definition.graph.parameter_duplicate", "Patch graph parameter IDs must be unique within a node.");
+			}
+			if (Connections.Any(connection => connection == null || string.IsNullOrWhiteSpace(connection.SourceNodeId)
+				|| string.IsNullOrWhiteSpace(connection.SourcePortId) || !PortId.TryParse(connection.SourcePortId, out _)
+				|| string.IsNullOrWhiteSpace(connection.TargetNodeId) || string.IsNullOrWhiteSpace(connection.TargetPortId)
+				|| !PortId.TryParse(connection.TargetPortId, out _)))
+				return Failure("patch.definition.graph.connection", "Every patch graph connection requires valid source and target ports.");
+			if (Connections.Any(connection => !string.Equals(connection.SourcePortId, ImagePortId, StringComparison.Ordinal)))
+				return Failure("patch.definition.graph.source_port", "Patch graph shader nodes expose the image output port only.");
+			if (Connections.Any(connection => !string.Equals(connection.SourceNodeId, SourceNodeId, StringComparison.Ordinal)
+				&& !Nodes.Any(node => string.Equals(node.Id, connection.SourceNodeId, StringComparison.Ordinal))))
+				return Failure("patch.definition.graph.connection_source", "A patch graph connection references an unknown source node.");
+			if (Connections.Any(connection => !Nodes.Any(node => string.Equals(node.Id, connection.TargetNodeId, StringComparison.Ordinal))))
+				return Failure("patch.definition.graph.connection_target", "A patch graph connection references an unknown target node.");
+			if (Connections.GroupBy(connection => new { connection.TargetNodeId, connection.TargetPortId }).Any(group => group.Count() > 1))
+				return Failure("patch.definition.graph.connection_duplicate", "A patch graph input port can have only one connection.");
+			if (HasCycle()) return Failure("patch.definition.graph.cycle", "Patch graph connections must be acyclic.");
+			return UnitResult.Success<Diagnostic>();
+		}
+
+		private bool HasCycle() {
+			var adjacency = Nodes.ToDictionary(node => node.Id, node => new List<string>(), StringComparer.Ordinal);
+			foreach (var connection in Connections)
+				if (!string.Equals(connection.SourceNodeId, SourceNodeId, StringComparison.Ordinal) && adjacency.ContainsKey(connection.SourceNodeId))
+					adjacency[connection.SourceNodeId].Add(connection.TargetNodeId);
+			var visiting = new HashSet<string>(StringComparer.Ordinal);
+			var visited = new HashSet<string>(StringComparer.Ordinal);
+			bool Visit(string nodeId) {
+				if (visiting.Contains(nodeId)) return true;
+				if (visited.Contains(nodeId)) return false;
+				visiting.Add(nodeId);
+				foreach (var next in adjacency[nodeId]) if (Visit(next)) return true;
+				visiting.Remove(nodeId);
+				visited.Add(nodeId);
+				return false;
+			}
+			return adjacency.Keys.Any(Visit);
+		}
+
+		private static UnitResult<Diagnostic> Failure(string code, string message)
+			=> UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "scene"));
+	}
+
+	[Serializable]
 	public sealed class PatchNodeGroup {
 		[SerializeField] private string _id;
 		[SerializeField] private string _displayName;
@@ -55,12 +251,14 @@ namespace ShitDesigner.Scene {
 		[SerializeField] private string _id;
 		[SerializeField] private string _displayName;
 		[SerializeField] private PatchFlashDefinition _flash;
+		[SerializeField] private PatchProgramGraph _programGraph = new PatchProgramGraph();
 		[SerializeField] private PatchNodeGroup[] _nodeGroups = Array.Empty<PatchNodeGroup>();
 		[SerializeField] private PatchParameter[] _parameters = Array.Empty<PatchParameter>();
 
 		public string Id => _id ?? string.Empty;
 		public string DisplayName => _displayName ?? string.Empty;
 		public PatchFlashDefinition Flash => _flash;
+		public PatchProgramGraph ProgramGraph => _programGraph;
 		public IReadOnlyList<PatchNodeGroup> NodeGroups => _nodeGroups ?? Array.Empty<PatchNodeGroup>();
 		public IReadOnlyList<PatchParameter> Parameters => _parameters ?? Array.Empty<PatchParameter>();
 		public IEnumerable<Scene3DDefinition> Nodes => NodeGroups.Where(group => group != null).SelectMany(group => group.Nodes);
@@ -68,6 +266,9 @@ namespace ShitDesigner.Scene {
 		public UnitResult<Diagnostic> Validate() {
 			if (string.IsNullOrWhiteSpace(Id)) return Failure("patch.definition.id", "A patch requires an ID.");
 			if (string.IsNullOrWhiteSpace(DisplayName)) return Failure("patch.definition.name", "A patch requires a display name.");
+			if (ProgramGraph == null) return Failure("patch.definition.graph", "A patch requires a program graph.");
+			var graphValidation = ProgramGraph.Validate();
+			if (graphValidation.IsFailure) return graphValidation;
 			if (NodeGroups.Count == 0 || NodeGroups.Any(group => group == null || string.IsNullOrWhiteSpace(group.Id) || string.IsNullOrWhiteSpace(group.DisplayName) || group.Nodes.Count == 0))
 				return Failure("patch.definition.group", "Every patch requires named node groups with nodes.");
 			if (NodeGroups.GroupBy(group => group.Id, StringComparer.Ordinal).Any(group => group.Count() > 1)) return Failure("patch.definition.group_duplicate", "Patch node group IDs must be unique.");

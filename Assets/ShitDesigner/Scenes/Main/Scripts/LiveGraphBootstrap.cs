@@ -15,20 +15,6 @@ namespace ShitDesigner.Main {
 	/// </summary>
 	[DisallowMultipleComponent]
 	public sealed class LiveGraphBootstrap : MonoBehaviour {
-		private static readonly GraphDefinition ProgramGraph = new GraphDefinition(
-			"scene",
-			"composite",
-			new[] {
-				new NodeDefinition("background", "shitdesigner.shader.generator.concentric-rings"),
-				new NodeDefinition("echo", "shitdesigner.shader.temporal.echo"),
-				new NodeDefinition("composite", "shitdesigner.shader.blend.premultiplied_over")
-			},
-			new[] {
-				new NodeConnection("scene", "echo", "input"),
-				new NodeConnection("echo", "composite", "a"),
-				new NodeConnection("background", "composite", "b")
-			});
-
 		[SerializeField] private PatchDefinition[] _patches = Array.Empty<PatchDefinition>();
 		[SerializeField] private ShaderNodeManifestAsset _shaderManifest;
 
@@ -47,7 +33,8 @@ namespace ShitDesigner.Main {
 		private LiveGraph BuildGraph() {
 			var definitions = Patches;
 			ValidateDefinitions(definitions);
-			var shaderDefinitions = BuildProgramShaderDefinitions();
+			var programGraphs = definitions.ToDictionary(definition => definition.Id, BuildProgramGraph, StringComparer.Ordinal);
+			var shaderDefinitions = BuildProgramShaderDefinitions(programGraphs.Values);
 			var flashShader = Resources.Load<Shader>("LiveProgramFlash");
 			if (flashShader == null) throw new InvalidOperationException("The live Program flash shader is missing from Resources.");
 			var sceneManager = new SceneIsolationManager(renderSource: new UnityCameraRenderSource());
@@ -55,8 +42,8 @@ namespace ShitDesigner.Main {
 			var nodeIndices = definitions.SelectMany(definition => definition.Nodes).Select((node, index) => new { node.Id, Index = index })
 				.ToDictionary(node => node.Id, node => node.Index, StringComparer.Ordinal);
 			try {
-				return new LiveGraph(sceneManager, renderPool, definitions, (node, flashPatch) =>
-					BuildOutput(sceneManager, renderPool, node, nodeIndices[node.Id], shaderDefinitions, flashShader, flashPatch));
+				return new LiveGraph(sceneManager, renderPool, definitions, (patch, node, flashPatch) =>
+					BuildOutput(sceneManager, renderPool, patch, node, nodeIndices[node.Id], programGraphs[patch.Id], shaderDefinitions, flashShader, flashPatch));
 			}
 			catch {
 				sceneManager.Dispose();
@@ -65,23 +52,26 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		private IReadOnlyDictionary<NodeTypeId, LiveProgramShaderDefinition> BuildProgramShaderDefinitions() {
+		private IReadOnlyDictionary<NodeTypeId, LiveProgramShaderDefinition> BuildProgramShaderDefinitions(IEnumerable<GraphDefinition> programGraphs) {
 			if (_shaderManifest == null) throw new InvalidOperationException("The live Program graph requires a ShaderNodeManifest.");
 			var manifest = _shaderManifest.BuildRuntimeManifest();
 			var definitions = new Dictionary<NodeTypeId, LiveProgramShaderDefinition>();
-			foreach (var node in ProgramGraph.Nodes) {
-				if (definitions.ContainsKey(node.TypeId)) continue;
-				var entry = manifest.Find(node.TypeId.Value);
-				var assetEntry = _shaderManifest.Find(node.TypeId.Value);
-				if (entry == null || assetEntry == null || assetEntry.Shader == null)
-					throw new InvalidOperationException("The live Program graph shader is missing a direct Shader reference: " + node.TypeId.Value + ".");
-				definitions.Add(node.TypeId, new LiveProgramShaderDefinition(entry, assetEntry.Shader));
+			foreach (var programGraph in programGraphs) {
+				foreach (var node in programGraph.Nodes) {
+					if (definitions.ContainsKey(node.TypeId)) continue;
+					var entry = manifest.Find(node.TypeId.Value);
+					var assetEntry = _shaderManifest.Find(node.TypeId.Value);
+					if (entry == null || assetEntry == null || assetEntry.Shader == null)
+						throw new InvalidOperationException("The live Program graph shader is missing a direct Shader reference: " + node.TypeId.Value + ".");
+					definitions.Add(node.TypeId, new LiveProgramShaderDefinition(entry, assetEntry.Shader));
+				}
 			}
 			return definitions;
 		}
 
 		private static LiveProgramOutput BuildOutput(SceneIsolationManager sceneManager, RenderTexturePool renderPool,
-			Scene3DDefinition definition, int index, IReadOnlyDictionary<NodeTypeId, LiveProgramShaderDefinition> shaderDefinitions,
+			PatchDefinition patch, Scene3DDefinition definition, int index, GraphDefinition programGraph,
+			IReadOnlyDictionary<NodeTypeId, LiveProgramShaderDefinition> shaderDefinitions,
 			Shader flashShader, PatchFlashDefinition flashPatch) {
 			var created = sceneManager.Create(new SceneCreateRequest(NodeInstanceId.New(), SceneNodeKind.ThreeD,
 				"ShitDesigner.Main.LiveScene." + index, 1, definition.Prefab, transparentBackground: true));
@@ -103,7 +93,7 @@ namespace ShitDesigner.Main {
 				var renderFormat = SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null ? RenderTextureFormat.ARGB32 : RenderTextureFormat.ARGBHalf;
 				renderTexture = CreateTexture("ShitDesigner.Main.ProgramRender." + index, 24, renderFormat);
 				shaderGraphTexture = CreateTexture("ShitDesigner.Main.ProgramGraphOutput." + index, 0, RenderTextureFormat.ARGBHalf);
-				shaderGraph = BuildProgramShaderGraph(renderPool, shaderDefinitions, definition.Id);
+				shaderGraph = BuildProgramShaderGraph(renderPool, shaderDefinitions, programGraph, patch.ProgramGraph, definition.Id);
 				flash = new LiveProgramFlash(flashShader);
 				return new LiveProgramOutput(definition, created.Value, root, programTexture, renderTexture, shaderGraphTexture, shaderGraph, flash, flashPatch);
 			}
@@ -118,13 +108,48 @@ namespace ShitDesigner.Main {
 			}
 		}
 
+		private static RuntimeParameterSnapshot[] BuildRuntimeParameters(ShaderNodeManifestEntry entry, PatchGraphNode authoredNode) {
+			if (authoredNode != null)
+				foreach (var configured in authoredNode.Parameters)
+					if (configured != null && entry.Parameters.All(parameter => !string.Equals(parameter.Id.Value, configured.Id, StringComparison.Ordinal)))
+						throw new InvalidOperationException("The patch graph parameter is not provided by the shader node: " + authoredNode.Id + "." + configured.Id + ".");
+
+			return entry.Parameters.Select(parameter => {
+				var configured = authoredNode?.FindParameter(parameter.Id.Value);
+				var value = parameter.DefaultValue;
+				if (configured != null) {
+					value = configured.Value;
+					if (value.Type != parameter.Type)
+						throw new InvalidOperationException("The patch graph parameter type does not match the shader node: " + authoredNode.Id + "." + parameter.Id.Value + ".");
+					if (parameter.Type == ParameterType.Enum && parameter.Definition.EnumOptions.Count > 0
+						&& !parameter.Definition.EnumOptions.Contains(value.AsString(), StringComparer.Ordinal))
+						throw new InvalidOperationException("The patch graph enum value is not defined by the shader node: " + authoredNode.Id + "." + parameter.Id.Value + ".");
+					if (parameter.Minimum.HasValue && parameter.Maximum.HasValue && ParameterValue.IsLogicalControlTargetType(parameter.Type)) {
+						var clamped = ParameterValue.Clamp(value, parameter.Minimum.Value, parameter.Maximum.Value);
+						if (clamped.IsFailure) throw new InvalidOperationException("The patch graph parameter range is invalid: " + authoredNode.Id + "." + parameter.Id.Value + ".");
+						value = clamped.Value;
+					}
+				}
+				return new RuntimeParameterSnapshot(parameter.Definition.Id, parameter.Definition.Type, value, parameter.Definition.RuntimeStateful);
+			}).ToArray();
+		}
+
+		private static GraphDefinition BuildProgramGraph(PatchDefinition definition) {
+			var authored = definition.ProgramGraph;
+			return new GraphDefinition(authored.SourceNodeId, authored.OutputNodeId,
+				authored.Nodes.Select(node => new NodeDefinition(node.Id, node.TypeId)),
+				authored.Connections.Select(connection => new NodeConnection(connection.SourceNodeId, connection.SourcePortId,
+					connection.TargetNodeId, connection.TargetPortId)));
+		}
+
 		private static LiveProgramShaderGraph BuildProgramShaderGraph(RenderTexturePool renderPool,
-			IReadOnlyDictionary<NodeTypeId, LiveProgramShaderDefinition> shaderDefinitions, string outputId) {
-			var connections = ProgramGraph.Connections.GroupBy(connection => connection.TargetNodeId)
+			IReadOnlyDictionary<NodeTypeId, LiveProgramShaderDefinition> shaderDefinitions, GraphDefinition programGraph,
+			PatchProgramGraph authoredGraph, string outputId) {
+			var connections = programGraph.Connections.GroupBy(connection => connection.TargetNodeId)
 				.ToDictionary(group => group.Key, group => (IReadOnlyDictionary<PortId, string>)group.ToDictionary(connection => connection.TargetPortId, connection => connection.SourceNodeId), StringComparer.Ordinal);
-			var nodes = new List<LiveProgramShaderGraphNode>(ProgramGraph.EvaluationOrder.Count);
+			var nodes = new List<LiveProgramShaderGraphNode>(programGraph.EvaluationOrder.Count);
 			try {
-				foreach (var node in ProgramGraph.EvaluationOrder) {
+				foreach (var node in programGraph.EvaluationOrder) {
 					if (!shaderDefinitions.TryGetValue(node.TypeId, out var shader))
 						throw new InvalidOperationException("The live Program graph shader is unavailable: " + node.TypeId.Value + ".");
 					ShaderPassGraphRuntimeNode runtime = null;
@@ -132,17 +157,13 @@ namespace ShitDesigner.Main {
 					try {
 						var binding = shader.Entry.ToShaderBinding();
 						var inputs = connections.TryGetValue(node.Id, out var mapped) ? mapped : new Dictionary<PortId, string>();
+						foreach (var input in inputs.Keys)
+							if (!binding.Inputs.Any(candidate => candidate.PortId == input))
+								throw new InvalidOperationException("The live Program graph references an unknown input: " + node.Id + "." + input.Value + ".");
 						foreach (var input in binding.Inputs.Where(input => input.Type == NodePortType.ImageFrame && input.Required && input.Role != ShaderInputRole.History))
 							if (!inputs.ContainsKey(input.PortId)) throw new InvalidOperationException("The live Program graph is missing a required input: " + node.Id + "." + input.PortId.Value + ".");
-						var parameters = shader.Entry.Parameters.Select(parameter => {
-							var value = parameter.Definition.DefaultValue;
-							if (node.TypeId.Value == "shitdesigner.shader.blend.premultiplied_over" &&
-								parameter.Definition.Id.Value == "amount")
-								value = ParameterValue.FromFloat(1f);
-
-							return new RuntimeParameterSnapshot(parameter.Definition.Id, parameter.Definition.Type, value,
-								parameter.Definition.RuntimeStateful);
-						}).ToArray();
+						var authoredNode = authoredGraph.Nodes.FirstOrDefault(candidate => string.Equals(candidate.Id, node.Id, StringComparison.Ordinal));
+						var parameters = BuildRuntimeParameters(shader.Entry, authoredNode);
 						var record = new RuntimeNodeCreateInfo(NodeInstanceId.New(), node.TypeId, shader.Entry.SchemaVersion,
 							shader.Entry.DisplayName, true, 0f, 0f, parameters);
 						runtime = new ShaderPassGraphRuntimeNode(record, 1UL,
@@ -157,7 +178,7 @@ namespace ShitDesigner.Main {
 						throw;
 					}
 				}
-				return new LiveProgramShaderGraph(ProgramGraph, nodes);
+				return new LiveProgramShaderGraph(programGraph, nodes);
 			}
 			catch {
 				for (var index = nodes.Count - 1; index >= 0; index--) nodes[index].Dispose();
