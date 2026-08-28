@@ -429,8 +429,6 @@ namespace ShitDesigner.Scene {
 		private static void ConfigureTransparentCamera(Camera camera) {
 			camera.clearFlags = CameraClearFlags.SolidColor;
 			camera.backgroundColor = Color.clear;
-			var additionalCameraData = camera.GetComponent<UniversalAdditionalCameraData>();
-			if (additionalCameraData != null) additionalCameraData.renderPostProcessing = false;
 		}
 
 		internal UnitResult<Diagnostic> SimulatePhysics(SceneNodeRuntime node, float stepSeconds) => _physicsStepper.Simulate(node, stepSeconds);
