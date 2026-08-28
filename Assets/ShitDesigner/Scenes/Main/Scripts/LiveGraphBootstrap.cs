@@ -15,6 +15,11 @@ namespace ShitDesigner.Main {
 	/// </summary>
 	[DisallowMultipleComponent]
 	public sealed class LiveGraphBootstrap : MonoBehaviour {
+		private const string VideoPlayerTypeId = "shitdesigner.video.player";
+		private const string PlayingParameterId = "transport.playing";
+		private const string PlayheadParameterId = "transport.playhead_seconds";
+		private const string SpeedParameterId = "transport.speed";
+		private const string LoopParameterId = "transport.loop";
 		[SerializeField] private PatchDefinition[] _patches = Array.Empty<PatchDefinition>();
 		[SerializeField] private ShaderNodeManifestAsset _shaderManifest;
 
@@ -58,6 +63,7 @@ namespace ShitDesigner.Main {
 			var definitions = new Dictionary<NodeTypeId, LiveProgramShaderDefinition>();
 			foreach (var programGraph in programGraphs) {
 				foreach (var node in programGraph.Nodes) {
+					if (node.TypeId.Value == VideoPlayerTypeId) continue;
 					if (definitions.ContainsKey(node.TypeId)) continue;
 					var entry = manifest.Find(node.TypeId.Value);
 					var assetEntry = _shaderManifest.Find(node.TypeId.Value);
@@ -147,29 +153,41 @@ namespace ShitDesigner.Main {
 			PatchProgramGraph authoredGraph, string outputId) {
 			var connections = programGraph.Connections.GroupBy(connection => connection.TargetNodeId)
 				.ToDictionary(group => group.Key, group => (IReadOnlyDictionary<PortId, string>)group.ToDictionary(connection => connection.TargetPortId, connection => connection.SourceNodeId), StringComparer.Ordinal);
-			var nodes = new List<LiveProgramShaderGraphNode>(programGraph.EvaluationOrder.Count);
+			var nodes = new List<ILiveProgramGraphNode>(programGraph.EvaluationOrder.Count);
 			try {
 				foreach (var node in programGraph.EvaluationOrder) {
-					if (!shaderDefinitions.TryGetValue(node.TypeId, out var shader))
-						throw new InvalidOperationException("The live Program graph shader is unavailable: " + node.TypeId.Value + ".");
+					var authoredNode = authoredGraph.Nodes.FirstOrDefault(candidate => string.Equals(candidate.Id, node.Id, StringComparison.Ordinal));
+					var inputs = connections.TryGetValue(node.Id, out var mapped) ? mapped : new Dictionary<PortId, string>();
 					ShaderPassGraphRuntimeNode runtime = null;
 					RenderTexture target = null;
 					try {
+						target = CreateTexture("ShitDesigner.Main.ProgramGraph." + outputId + "." + node.Id, 0, RenderTextureFormat.ARGBHalf);
+						if (node.TypeId.Value == VideoPlayerTypeId) {
+							if (authoredNode == null || authoredNode.VideoClip == null)
+								throw new InvalidOperationException("The live Program VideoPlayer node requires a Video Clip: " + node.Id + ".");
+							if (inputs.Count > 0)
+								throw new InvalidOperationException("The live Program VideoPlayer node does not accept image inputs: " + node.Id + ".");
+							nodes.Add(new LiveProgramVideoGraphNode(node.Id, target, authoredNode.VideoClip,
+								ReadBoolParameter(authoredNode, PlayingParameterId, false),
+								ReadFloatParameter(authoredNode, PlayheadParameterId, 0f),
+								ReadFloatParameter(authoredNode, SpeedParameterId, 1f),
+								ReadBoolParameter(authoredNode, LoopParameterId, true)));
+							continue;
+						}
+						if (!shaderDefinitions.TryGetValue(node.TypeId, out var shader))
+							throw new InvalidOperationException("The live Program graph shader is unavailable: " + node.TypeId.Value + ".");
 						var binding = shader.Entry.ToShaderBinding();
-						var inputs = connections.TryGetValue(node.Id, out var mapped) ? mapped : new Dictionary<PortId, string>();
 						foreach (var input in inputs.Keys)
 							if (!binding.Inputs.Any(candidate => candidate.PortId == input))
 								throw new InvalidOperationException("The live Program graph references an unknown input: " + node.Id + "." + input.Value + ".");
 						foreach (var input in binding.Inputs.Where(input => input.Type == NodePortType.ImageFrame && input.Required && input.Role != ShaderInputRole.History))
 							if (!inputs.ContainsKey(input.PortId)) throw new InvalidOperationException("The live Program graph is missing a required input: " + node.Id + "." + input.PortId.Value + ".");
-						var authoredNode = authoredGraph.Nodes.FirstOrDefault(candidate => string.Equals(candidate.Id, node.Id, StringComparison.Ordinal));
 						var parameters = BuildRuntimeParameters(shader.Entry, authoredNode);
 						var record = new RuntimeNodeCreateInfo(NodeInstanceId.New(), node.TypeId, shader.Entry.SchemaVersion,
 							shader.Entry.DisplayName, true, 0f, 0f, parameters);
 						runtime = new ShaderPassGraphRuntimeNode(record, 1UL,
 							new ShaderMaterialBinding(binding.ShaderKey, shader.Shader, outputPass: binding.OutputPass, descriptor: binding), renderPool,
 							"shitdesigner.main." + outputId + "." + node.Id, binding.Family == ShaderNodeFamily.Generator, binding.Family == ShaderNodeFamily.Composite);
-						target = CreateTexture("ShitDesigner.Main.ProgramGraph." + outputId + "." + node.Id, 0, RenderTextureFormat.ARGBHalf);
 						nodes.Add(new LiveProgramShaderGraphNode(node.Id, runtime, target, inputs));
 					}
 					catch {
@@ -184,6 +202,18 @@ namespace ShitDesigner.Main {
 				for (var index = nodes.Count - 1; index >= 0; index--) nodes[index].Dispose();
 				throw;
 			}
+		}
+
+		private static bool ReadBoolParameter(PatchGraphNode node, string parameterId, bool fallback) {
+			var parameter = node?.FindParameter(parameterId);
+			if (parameter == null || parameter.Type != ParameterType.Bool) return fallback;
+			return parameter.Value.AsBool();
+		}
+
+		private static float ReadFloatParameter(PatchGraphNode node, string parameterId, float fallback) {
+			var parameter = node?.FindParameter(parameterId);
+			if (parameter == null || parameter.Type != ParameterType.Float) return fallback;
+			return parameter.Value.AsFloat();
 		}
 
 		private static void ValidateDefinitions(IReadOnlyList<PatchDefinition> definitions) {
