@@ -4,8 +4,9 @@ Shader "ShitDesigner/Stage/Instanced Penlight"
 	{
 		[HDR] _BaseColor ("Base Color", Color) = (0.1, 0.8, 1, 1)
 		_GlowStrength ("Glow Strength", Range(0, 10)) = 3
-		_SwingAngle ("Swing Angle", Range(0, 90)) = 24
-		_SwingSpeed ("Swing Speed", Range(0, 10)) = 2.2
+		_RattleAngle ("Rattle Angle", Range(0, 90)) = 38
+		_RattleSpeed ("Rattle Speed", Range(0, 24)) = 16
+		_WristBounce ("Wrist Bounce", Range(0, 0.5)) = 0.08
 	}
 
 	SubShader
@@ -36,8 +37,9 @@ Shader "ShitDesigner/Stage/Instanced Penlight"
 
 			CBUFFER_START(UnityPerMaterial)
 			half _GlowStrength;
-			half _SwingAngle;
-			half _SwingSpeed;
+			half _RattleAngle;
+			half _RattleSpeed;
+			half _WristBounce;
 			CBUFFER_END
 
 			UNITY_INSTANCING_BUFFER_START(PerInstance)
@@ -79,12 +81,17 @@ Shader "ShitDesigner/Stage/Instanced Penlight"
 				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
 
 				float phase = UNITY_ACCESS_INSTANCED_PROP(PerInstance, _Phase);
-				float animationTime = _Time.y * _SwingSpeed + phase * TWO_PI;
-				float angle = radians(_SwingAngle);
-				float3 positionOS = RotateZ(RotateX(input.positionOS.xyz, sin(animationTime * 1.17) * angle), cos(animationTime) * angle);
+				float animationTime = _Time.y * _RattleSpeed + phase * 6.2831853f;
+				float primarySwing = sin(animationTime);
+				float bellShake = sign(primarySwing) * pow(abs(primarySwing), 0.45f);
+				float wristFlick = sin(animationTime * 2f + phase * PI) * (1f - abs(primarySwing)) * 0.16f;
+				float roll = sin(animationTime * 1.5f + phase * PI) * 0.13f;
+				float angle = radians(_RattleAngle);
+				float3 positionOS = RotateZ(RotateX(input.positionOS.xyz, (roll + wristFlick) * angle), (bellShake + wristFlick) * angle);
+				positionOS.y += abs(primarySwing) * _WristBounce;
 				output.positionHCS = TransformObjectToHClip(positionOS);
 
-				half pulse = 0.72h + 0.28h * sin(animationTime * 1.73h);
+				half pulse = 0.82h + 0.18h * abs(primarySwing);
 				output.color = UNITY_ACCESS_INSTANCED_PROP(PerInstance, _BaseColor).rgb * (_GlowStrength * pulse);
 				return output;
 			}
