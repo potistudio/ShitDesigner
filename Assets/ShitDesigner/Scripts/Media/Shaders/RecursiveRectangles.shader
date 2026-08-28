@@ -9,6 +9,7 @@ Shader "Hidden/ShitDesigner/RecursiveRectangles"
 		_RatioMin ("Ratio Min", Range(0, 1)) = 0.25
 		_RatioMax ("Ratio Max", Range(0, 1)) = 0.75
 		_StructureSeed ("Seed", Int) = 1
+		_BeatSync ("Beat Sync", Float) = 1
 		_RevealProgress ("Reveal Progress", Range(0, 1)) = 1
 		_SplitDuration ("Split Duration", Float) = 0.15
 		_SplitStagger ("Split Stagger", Float) = 0.04
@@ -17,6 +18,8 @@ Shader "Hidden/ShitDesigner/RecursiveRectangles"
 		_ColorB ("Color B", Vector) = (0.95, 0.32, 0.14, 1)
 		_Gutter ("Gutter", Range(0, 0.1)) = 0.004
 		_LineColor ("Line Color", Vector) = (0.01, 0.01, 0.01, 1)
+		_SD_BeatPhase ("Beat Phase", Float) = 0
+		_SD_HasBeatClock ("Has Beat Clock", Float) = 0
 	}
 	SubShader
 	{
@@ -37,6 +40,7 @@ Shader "Hidden/ShitDesigner/RecursiveRectangles"
 			float _RatioMin;
 			float _RatioMax;
 			int _StructureSeed;
+			float _BeatSync;
 			float _RevealProgress;
 			float _SplitDuration;
 			float _SplitStagger;
@@ -45,6 +49,8 @@ Shader "Hidden/ShitDesigner/RecursiveRectangles"
 			float4 _ColorB;
 			float _Gutter;
 			float4 _LineColor;
+			float _SD_BeatPhase;
+			float _SD_HasBeatClock;
 
 			struct appdata
 			{
@@ -115,7 +121,10 @@ Shader "Hidden/ShitDesigner/RecursiveRectangles"
 				float timeline = maxDepth > 0
 					? duration + (maxDepth - 1) * (duration + stagger)
 					: duration;
-				float progress = saturate(_RevealProgress) * timeline;
+				float revealProgress = _BeatSync > 0.5 && _SD_HasBeatClock > 0.5
+					? saturate(_SD_BeatPhase)
+					: saturate(_RevealProgress);
+				float progress = revealProgress * timeline;
 				uint seed = (uint)_StructureSeed;
 				uint path = 1u;
 				float2 boundsMin = float2(0.0, 0.0);

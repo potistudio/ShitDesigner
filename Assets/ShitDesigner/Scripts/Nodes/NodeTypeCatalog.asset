@@ -408,6 +408,7 @@ MonoBehaviour:
     - ratio_min
     - ratio_max
     - seed
+    - beat_sync
     - reveal_progress
     - split_duration
     - split_stagger
@@ -543,6 +544,23 @@ MonoBehaviour:
       enumOptions: []
       group: Structure
       displayOrder: 6
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: beat_sync
+      displayName: Beat Sync
+      type: 2
+      defaultValue: bool:true
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      group: Animation
+      displayOrder: 9
       description: 
       unit: 
       step: 0
@@ -741,6 +759,11 @@ MonoBehaviour:
     - parameterId: seed
       property: _StructureSeed
       type: 1
+      enumKeys: []
+      enumValues: 
+    - parameterId: beat_sync
+      property: _BeatSync
+      type: 2
       enumKeys: []
       enumValues: 
     - parameterId: reveal_progress
