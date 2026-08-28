@@ -151,7 +151,9 @@
 ### 2026-08-26: パッチ数はInspectorで設定し、1件だけ事前ロードする
 
 - `LiveGraphBootstrap` は任意数の `PatchDefinition` をシリアライズして保持する。
-- `PatchDefinition` はInspectorでProgram graphのノード、接続およびノードパラメーターを設定し、Unityの `Scene3DDefinition` をノードグループとして参照し、ライブUIへ公開するパラメーターを明示的に束ねる。これはUnityのSceneとは別の論理的なパッチである。
+- `PatchDefinition` はInspectorでProgram graphのノード、接続およびノードパラメーターを設定し、Unityの `Scene3DDefinition` をノードグループとして参照し、ライブUIへ公開するパラメーターを明示的に束ねる。Shaderパラメーターは必要なものだけを個別に追加し、未追加の値はManifestの既定値を使用する。これはUnityのSceneとは別の論理的なパッチである。
+- `PatchDefinition` のInspectorは生成済みShader Manifestとプロジェクト内の `Scene3DDefinition` を選択肢として表示する。ノード型、接続元/接続先、画像ポート、ShaderパラメーターおよびScene公開パラメーターのIDは、候補選択または定義からの自動生成を基本とし、手入力を要求しない。
+- `PatchDefinition` のScene Node Group ID、Shader graph node IDおよび公開パラメーターIDは、空欄の追加時にInspectorが一意な値を生成する。Scene Input IDは `scene` に固定し、Shader nodeのSource Portは `image` に固定する。
 - Program graphのLook調整は `PatchDefinition` Assetの変更として保存し、C#スクリプトのコンパイルを必要としない。
 - `PatchDefinition` は任意の `PatchFlashDefinition` を持ち、発火時に表示する画像と表示時間をパッチ単位で定義する。未設定のパッチは画像フラッシュを行わず、共通の白フラッシュだけを行う。
 - Bootは最初のパッチだけを事前ロードする。
