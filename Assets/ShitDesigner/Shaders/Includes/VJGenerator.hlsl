@@ -96,7 +96,7 @@ float4 VJGeneratorEvaluate(float2 inputUv, int variant)
             break;
         case 7: // Concentric Rings
             value = frac(length(coord - (_VJCenter.xy * 2.0 - 1.0)) * frequency + time * 0.08);
-            color = VJGeneratorGradient(value);
+            color = lerp(_VJColorB.rgb, _VJColorA.rgb, step(saturate(_VJMix), value));
             break;
         case 8: // Plasma
             value = sin(coord.x * frequency + time) + sin(coord.y * frequency * 1.31 - time * 0.7);
