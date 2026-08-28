@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ShitDesigner.Scene {
@@ -6,23 +7,38 @@ namespace ShitDesigner.Scene {
 	[DisallowMultipleComponent]
 	public sealed class ShowerMonochromeApplicator : MonoBehaviour {
 		public const uint RenderingLayerMask = 1u << 8;
+		private readonly Dictionary<Renderer, uint> _originalRenderingLayerMasks = new Dictionary<Renderer, uint>();
+		private bool _monochromeEnabled = true;
 
 		private void OnEnable() {
-			Apply();
+			SetMonochromeEnabled(true);
 		}
 
 		private void OnTransformChildrenChanged() {
-			Apply();
+			ApplyState();
 		}
 
 		private void OnValidate() {
-			Apply();
+			ApplyState();
 		}
 
 		[ContextMenu("Apply Shower Monochrome")]
-		public void Apply() {
-			foreach (var renderer in GetComponentsInChildren<Renderer>(true))
-				renderer.renderingLayerMask = RenderingLayerMask;
+		public void Apply() => SetMonochromeEnabled(true);
+
+		public void SetMonochromeEnabled(bool enabled) {
+			_monochromeEnabled = enabled;
+			ApplyState();
+		}
+
+		private void ApplyState() {
+			foreach (var renderer in GetComponentsInChildren<Renderer>(true)) {
+				if (!_originalRenderingLayerMasks.TryGetValue(renderer, out var originalRenderingLayerMask)) {
+					originalRenderingLayerMask = renderer.renderingLayerMask;
+					_originalRenderingLayerMasks.Add(renderer, originalRenderingLayerMask);
+				}
+
+				renderer.renderingLayerMask = _monochromeEnabled ? RenderingLayerMask : originalRenderingLayerMask;
+			}
 		}
 	}
 }
