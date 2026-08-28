@@ -178,7 +178,18 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.FallingObjectShower
   objectPrefabs:
-  - {fileID: 8881035224376983129, guid: 2408cf317cda8ef4591abe9c0b7122fe, type: 3}
+  - {fileID: 8565074058527269259, guid: 36d427c25049afa4b9408d2629f696db, type: 3}
+  - {fileID: 8565074058527269259, guid: ed7db0f0df64cca44880042a64731d5f, type: 3}
+  - {fileID: 8565074058527269259, guid: 29394b60b10a7fd47928358f46136cfd, type: 3}
+  - {fileID: 8565074058527269259, guid: f45add4923d35e04aac2b0f076ceaa2e, type: 3}
+  - {fileID: 8565074058527269259, guid: 0c3621279def7e1408b95260277684f4, type: 3}
+  - {fileID: 8565074058527269259, guid: 780ac3fd357ed724aa39d3ace9468c80, type: 3}
+  - {fileID: 8565074058527269259, guid: 20ac8da3c6220924d8d00b18c330b430, type: 3}
+  - {fileID: 8565074058527269259, guid: 4ea265fa7649dc2489858a7bf0ed2686, type: 3}
+  - {fileID: 8565074058527269259, guid: 07286432eb1228647a2edb70c7eb4953, type: 3}
+  - {fileID: 8565074058527269259, guid: bb8419f9573d1e74e8f5399c7270a6e7, type: 3}
+  - {fileID: 8565074058527269259, guid: d0ac80ba267e2dd459b7447ee395854a, type: 3}
+  - {fileID: 8565074058527269259, guid: 22d9daa1c365660418e52808428d64c2, type: 3}
   objectCount: 180
   objectScaleRange: {x: 0.65, y: 1.15}
   randomSeed: 2718
