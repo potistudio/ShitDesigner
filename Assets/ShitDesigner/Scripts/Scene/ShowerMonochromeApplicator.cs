@@ -8,10 +8,10 @@ namespace ShitDesigner.Scene {
 	public sealed class ShowerMonochromeApplicator : MonoBehaviour {
 		public const uint RenderingLayerMask = 1u << 8;
 		private readonly Dictionary<Renderer, uint> _originalRenderingLayerMasks = new Dictionary<Renderer, uint>();
-		private bool _monochromeEnabled = true;
+		private bool _monochromeEnabled;
 
 		private void OnEnable() {
-			SetMonochromeEnabled(true);
+			ApplyState();
 		}
 
 		private void OnTransformChildrenChanged() {
