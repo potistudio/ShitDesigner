@@ -81,18 +81,18 @@ namespace ShitDesigner.Scene {
 	public sealed class PatchGraphNode {
 		[SerializeField] private string _id;
 		[SerializeField] private string _typeId;
-		[SerializeField] private PatchGraphParameter[] _parameters = Array.Empty<PatchGraphParameter>();
+		[SerializeField] private List<PatchGraphParameter> _parameters = new List<PatchGraphParameter>();
 
 		public string Id => (_id ?? string.Empty).Trim();
 		public string TypeId => (_typeId ?? string.Empty).Trim();
-		public IReadOnlyList<PatchGraphParameter> Parameters => _parameters ?? Array.Empty<PatchGraphParameter>();
+		public IReadOnlyList<PatchGraphParameter> Parameters => _parameters ?? (IReadOnlyList<PatchGraphParameter>)Array.Empty<PatchGraphParameter>();
 
 		public PatchGraphNode() { }
 
 		public PatchGraphNode(string id, string typeId, IEnumerable<PatchGraphParameter> parameters = null) {
 			_id = id;
 			_typeId = typeId;
-			_parameters = (parameters ?? Enumerable.Empty<PatchGraphParameter>()).ToArray();
+			_parameters = new List<PatchGraphParameter>(parameters ?? Enumerable.Empty<PatchGraphParameter>());
 		}
 
 		public PatchGraphParameter FindParameter(string id) => Parameters.FirstOrDefault(parameter => parameter != null && string.Equals(parameter.Id, id, StringComparison.Ordinal));
@@ -127,21 +127,21 @@ namespace ShitDesigner.Scene {
 
 		[SerializeField] private string _sourceNodeId = SceneInputNodeId;
 		[SerializeField] private string _outputNodeId = "composite";
-		[SerializeField] private PatchGraphNode[] _nodes = Array.Empty<PatchGraphNode>();
-		[SerializeField] private PatchGraphConnection[] _connections = Array.Empty<PatchGraphConnection>();
+		[SerializeField] private List<PatchGraphNode> _nodes = new List<PatchGraphNode>();
+		[SerializeField] private List<PatchGraphConnection> _connections = new List<PatchGraphConnection>();
 
 		public string SourceNodeId => (_sourceNodeId ?? string.Empty).Trim();
 		public string OutputNodeId => (_outputNodeId ?? string.Empty).Trim();
-		public IReadOnlyList<PatchGraphNode> Nodes => _nodes ?? Array.Empty<PatchGraphNode>();
-		public IReadOnlyList<PatchGraphConnection> Connections => _connections ?? Array.Empty<PatchGraphConnection>();
+		public IReadOnlyList<PatchGraphNode> Nodes => _nodes ?? (IReadOnlyList<PatchGraphNode>)Array.Empty<PatchGraphNode>();
+		public IReadOnlyList<PatchGraphConnection> Connections => _connections ?? (IReadOnlyList<PatchGraphConnection>)Array.Empty<PatchGraphConnection>();
 
 		public PatchProgramGraph() { }
 
 		public PatchProgramGraph(string sourceNodeId, string outputNodeId, IEnumerable<PatchGraphNode> nodes, IEnumerable<PatchGraphConnection> connections) {
 			_sourceNodeId = sourceNodeId;
 			_outputNodeId = outputNodeId;
-			_nodes = (nodes ?? Enumerable.Empty<PatchGraphNode>()).ToArray();
-			_connections = (connections ?? Enumerable.Empty<PatchGraphConnection>()).ToArray();
+			_nodes = new List<PatchGraphNode>(nodes ?? Enumerable.Empty<PatchGraphNode>());
+			_connections = new List<PatchGraphConnection>(connections ?? Enumerable.Empty<PatchGraphConnection>());
 		}
 
 		public UnitResult<Diagnostic> Validate() {
