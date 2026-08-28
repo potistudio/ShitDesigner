@@ -62,6 +62,16 @@ namespace ShitDesigner.Stage {
 			Rebuild();
 		}
 
+		private void OnDrawGizmosSelected() {
+			var previousMatrix = Gizmos.matrix;
+			var previousColor = Gizmos.color;
+			Gizmos.matrix = transform.localToWorldMatrix;
+			Gizmos.color = new Color(0.1f, 0.8f, 1f, 0.9f);
+			Gizmos.DrawWireCube(_center, new Vector3(_width, 0.05f, _depth));
+			Gizmos.matrix = previousMatrix;
+			Gizmos.color = previousColor;
+		}
+
 		public void SetBpmClock(BpmClockState clock) {
 			if (double.IsNaN(clock.TotalBeats) || double.IsInfinity(clock.TotalBeats)) return;
 
