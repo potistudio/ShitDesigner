@@ -306,6 +306,9 @@ namespace ShitDesigner.Editor {
 				? entry.DisplayName + " (" + entry.TypeId + ")"
 				: entry.Category + "/" + entry.DisplayName + " (" + entry.TypeId + ")";
 
+		private static string FormatParameterLabel(ShaderNodeManifestAssetParameter parameter)
+			=> string.IsNullOrWhiteSpace(parameter.DisplayName) ? parameter.Id : parameter.DisplayName + " (" + parameter.Id + ")";
+
 		private static Rect Line(Rect position, ref float y) {
 			var line = new Rect(position.x, y, position.width, EditorGUIUtility.singleLineHeight);
 			y += EditorGUIUtility.singleLineHeight + LineSpacing;
