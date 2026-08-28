@@ -11,6 +11,7 @@ namespace ShitDesigner.Main {
 		[SerializeField] private string _id = ParameterId;
 		[SerializeField] private string _displayName = "Shower Sequence";
 		[SerializeField] private FallingObjectShower _shower;
+		[SerializeField] private Color _monochromeColor = Color.white;
 		[SerializeField] private float _value;
 
 		private SequencePhase _phase;
@@ -34,7 +35,12 @@ namespace ShitDesigner.Main {
 			}
 
 			SetMonochromeEnabled(false);
+			ShowerMonochromeColor.SetRuntimeColor(_monochromeColor);
 			_initialized = true;
+		}
+
+		private void OnValidate() {
+			ShowerMonochromeColor.SetRuntimeColor(_monochromeColor);
 		}
 
 		public override bool TrySetValue(float value, out string rejectionReason) {

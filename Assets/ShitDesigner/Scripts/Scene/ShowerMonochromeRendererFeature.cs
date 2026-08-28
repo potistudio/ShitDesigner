@@ -65,7 +65,7 @@ namespace ShitDesigner.Scene {
 					_material = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
 				}
 
-				_material.SetColor("_BaseColor", settings.color);
+				_material.SetColor("_BaseColor", ShowerMonochromeColor.Resolve(settings.color));
 			}
 
 			public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData) {
