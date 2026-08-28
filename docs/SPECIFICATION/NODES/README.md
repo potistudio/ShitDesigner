@@ -1,5 +1,9 @@
 # Nodes設計インデックス
 
+## 提案中のノード
+
+- [再帰的矩形分割画像ノード](RecursiveRectangleSubdivision.md)
+
 ## 状態
 
 `docs/SPECIFICATION/REQUIREMENTS.md` を満たす初期版ノード設計は確定。本文書は個別仕様への索引であり、競合時は各個別仕様の具体的な規則を優先する。
