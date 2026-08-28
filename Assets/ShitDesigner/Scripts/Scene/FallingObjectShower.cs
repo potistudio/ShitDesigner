@@ -6,8 +6,15 @@ namespace ShitDesigner.Scene {
 	/// <summary>Maintains a randomized field of objects that continuously falls through the scene.</summary>
 	[DisallowMultipleComponent]
 	public sealed class FallingObjectShower : MonoBehaviour, ISceneGraphClockReceiver {
+		private static readonly PrimitiveType[] PrimitiveTypes = {
+			PrimitiveType.Cube,
+			PrimitiveType.Sphere,
+			PrimitiveType.Capsule,
+			PrimitiveType.Cylinder
+		};
+
 		[Header("Object")]
-		[SerializeField] private GameObject objectPrefab;
+		[SerializeField] private GameObject[] objectPrefabs = Array.Empty<GameObject>();
 		[SerializeField, Min(1)] private int objectCount = 180;
 		[SerializeField] private Vector2 objectScaleRange = new Vector2(0.65f, 1.15f);
 		[SerializeField] private int randomSeed = 2718;
@@ -60,18 +67,53 @@ namespace ShitDesigner.Scene {
 
 		private void CreateObjects() {
 			ReleaseObjects();
-			if (objectPrefab == null)
-				return;
 
 			_random = new System.Random(randomSeed);
 			for (var index = 0; index < objectCount; index++) {
-				var item = Instantiate(objectPrefab, transform);
+				var item = CreateObject();
 				item.name = $"Falling Object {index + 1:000}";
 				SetLayerRecursively(item, gameObject.layer);
 				var fallingObject = new FallingObject(item.transform, NextFloat(fallSpeedRange.x, fallSpeedRange.y));
 				ResetPosition(fallingObject, true);
 				_objects.Add(fallingObject);
 			}
+		}
+
+		private GameObject CreateObject() {
+			var prefabCount = GetPrefabCount();
+			var choice = _random.Next(prefabCount + PrimitiveTypes.Length);
+			if (choice < prefabCount)
+				return Instantiate(GetPrefab(choice), transform);
+
+			var item = GameObject.CreatePrimitive(PrimitiveTypes[choice - prefabCount]);
+			item.transform.SetParent(transform, false);
+			var collider = item.GetComponent<Collider>();
+			if (collider != null)
+				DestroyOwnedObject(collider);
+			return item;
+		}
+
+		private int GetPrefabCount() {
+			if (objectPrefabs == null)
+				return 0;
+
+			var count = 0;
+			foreach (var prefab in objectPrefabs)
+				if (prefab != null)
+					count++;
+			return count;
+		}
+
+		private GameObject GetPrefab(int index) {
+			var found = 0;
+			foreach (var prefab in objectPrefabs) {
+				if (prefab == null)
+					continue;
+				if (found == index)
+					return prefab;
+				found++;
+			}
+			return null;
 		}
 
 		private void MoveObjects(float deltaTime) {
