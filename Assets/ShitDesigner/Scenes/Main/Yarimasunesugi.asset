@@ -17,6 +17,43 @@ MonoBehaviour:
   _flash:
     _image: {fileID: 2800000, guid: 7811e043fc896e74592668a1a45cd6bc, type: 3}
     _durationSeconds: 0.25
+  _programGraph:
+    _sourceNodeId: scene
+    _outputNodeId: composite
+    _nodes:
+    - _id: background
+      _typeId: shitdesigner.shader.generator.concentric-rings
+      _parameters:
+      - _id: color_a
+        _type: 5
+        _vector4Value: {x: 1, y: 0, z: 0, w: 1}
+      - _id: color_b
+        _type: 5
+        _vector4Value: {x: 0, y: 0, z: 1, w: 1}
+      - _id: color_c
+        _type: 5
+        _vector4Value: {x: 0, y: 1, z: 0, w: 1}
+      - _id: amount
+        _type: 0
+        _floatValue: 0
+    - _id: composite
+      _typeId: shitdesigner.shader.blend.premultiplied_over
+      _parameters:
+      - _id: amount
+        _type: 0
+        _floatValue: 1
+      - _id: external_mask
+        _type: 0
+        _floatValue: 0
+    _connections:
+    - _sourceNodeId: scene
+      _sourcePortId: image
+      _targetNodeId: composite
+      _targetPortId: a
+    - _sourceNodeId: background
+      _sourcePortId: image
+      _targetNodeId: composite
+      _targetPortId: b
   _nodeGroups:
   - _id: source
     _displayName: Source

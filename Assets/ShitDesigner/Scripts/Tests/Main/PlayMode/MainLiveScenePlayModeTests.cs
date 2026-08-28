@@ -10,7 +10,7 @@ using UnityEngine.TestTools;
 namespace ShitDesigner.Main.Tests {
 	public sealed class MainLiveScenePlayModeTests {
 		[UnityTest]
-		public IEnumerator MainBootsRendersAndSwitchesItsFixedLiveGraph() {
+		public IEnumerator MainBootsRendersAndSwitchesItsAuthoredLiveGraph() {
 			SceneManager.LoadScene("Main", LoadSceneMode.Single);
 			yield return null;
 

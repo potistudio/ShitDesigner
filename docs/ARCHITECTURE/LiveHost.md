@@ -21,8 +21,8 @@
 
 ### 2026-08-26: ライブ用ノードグラフは専用スクリプトで生成する
 
-- ノードグラフは専用スクリプトが生成する。
-- ライブ用ノードグラフの構成はそのスクリプト内部にハードコードする。
+- ノードグラフは専用スクリプトが `PatchDefinition` の設定から生成する。
+- ライブ用ノードグラフのノード、接続および初期パラメーターは `PatchDefinition` に保持する。
 - 3Dシーンの構成はライブ用ノードグラフに含める。
 
 ### 2026-08-26: 操作UIは専用オブジェクトが描画する
@@ -64,7 +64,7 @@
 
 - 専用UIはシーン選択と公開パラメーターの変更だけを要求できる。
 - 専用UIからライブ用ノードグラフのノード構成、接続および有効状態は変更できない。
-- ライブ用ノードグラフは専用スクリプト内のハードコードした構成を実行中に維持する。
+- ライブ用ノードグラフは `PatchDefinition` に保存された構成を実行中に維持する。
 
 ### 2026-08-26: 固定ライブグラフの `ProgramOutput` をProgram映像の正本にする
 
@@ -142,16 +142,17 @@
 
 ### 2026-08-26: 専用グラフは `LiveGraphBootstrap` と `LiveGraphRuntime` に分ける
 
-- `LiveGraphBootstrap` はTickを持たないMonoBehaviourとし、`Scene3DDefinition` などのAsset参照をシリアライズして保持する。
+- `LiveGraphBootstrap` はTickを持たないMonoBehaviourとし、`PatchDefinition` とShader ManifestなどのAsset参照をシリアライズして保持する。
 - `LiveGraphBootstrap.CreateRuntime()` は通常のC#クラスである `LiveGraphRuntime` を作成する。
-- `LiveGraphRuntime` は固定ノードグラフ、3DシーンRuntimeおよびProgram Textureを所有し、`Evaluate`、`SceneUpdate`、`Render` および `Dispose` を提供する。
+- `LiveGraphRuntime` は `PatchDefinition` から生成したノードグラフ、3DシーンRuntimeおよびProgram Textureを所有し、`Evaluate`、`SceneUpdate`、`Render` および `Dispose` を提供する。
 - `ApplicationLiveHost` はBootでRuntimeを作成し、ライブ実行Tickで各処理を定義した順序で呼び、ShutdownでRuntimeを破棄する。
-- コードへハードコードするのはノード構成、接続および公開パラメーター対応だけとする。Prefab、`Scene3DDefinition`、ShaderなどのAsset参照をGUIDまたはパスとしてコードへ埋め込まない。
+- ノード構成、接続およびShaderノードの初期パラメーターは `PatchDefinition` のInspectorで設定する。Prefab、`Scene3DDefinition`、ShaderなどのAsset参照をGUIDまたはパスとしてコードへ埋め込まない。
 
 ### 2026-08-26: パッチ数はInspectorで設定し、1件だけ事前ロードする
 
 - `LiveGraphBootstrap` は任意数の `PatchDefinition` をシリアライズして保持する。
-- `PatchDefinition` はUnityの `Scene3DDefinition` をノードグループとして参照し、ライブUIへ公開するパラメーターを明示的に束ねる。これはUnityのSceneとは別の論理的なパッチである。
+- `PatchDefinition` はInspectorでProgram graphのノード、接続およびノードパラメーターを設定し、Unityの `Scene3DDefinition` をノードグループとして参照し、ライブUIへ公開するパラメーターを明示的に束ねる。これはUnityのSceneとは別の論理的なパッチである。
+- Program graphのLook調整は `PatchDefinition` Assetの変更として保存し、C#スクリプトのコンパイルを必要としない。
 - `PatchDefinition` は任意の `PatchFlashDefinition` を持ち、発火時に表示する画像と表示時間をパッチ単位で定義する。未設定のパッチは画像フラッシュを行わず、共通の白フラッシュだけを行う。
 - Bootは最初のパッチだけを事前ロードする。
 - パッチの事前ロード時に対象のUnityシーンノードRuntimeと描画リソースを生成する。
@@ -220,7 +221,7 @@
 
 ### 2026-08-26: ライブ用Assetは使用する専用スクリプトが明示参照する
 
-- `LiveGraphBootstrap` はInspectorで設定する `Scene3DDefinition[]` を保持する。各Definitionは対象Prefabとその依存Assetを参照する。
+- `LiveGraphBootstrap` はInspectorで設定する `PatchDefinition[]` を保持する。各DefinitionはProgram graphと `Scene3DDefinition`、その依存Assetを参照する。
 - 外部Display専用スクリプトは、HDRのProgram TextureをDisplay向けLDRへ変換する `DisplayTransform.shader` を保持する。
 - `LiveUiController` または `UIDocument` は、専用UXML、必要なUSSおよびPanelSettingsを保持する。
 - `BootstrapAssets` 全体はMainへ移さない。固定ライブグラフがShaderまたはVideoノードを使用する場合だけ、そのノードに必要なShader、MaterialまたはPrefabを `LiveGraphBootstrap` へ追加する。
