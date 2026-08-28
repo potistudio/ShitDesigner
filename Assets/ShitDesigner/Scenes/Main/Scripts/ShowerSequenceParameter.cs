@@ -19,7 +19,7 @@ namespace ShitDesigner.Main {
 		public override LiveParameterDefinition Definition => new LiveParameterDefinition(_id, _displayName, 0f, 1f, _value);
 
 		private void Update() {
-			if (Application.isPlaying && !_graphClockDriven)
+			if (UnityEngine.Application.isPlaying && !_graphClockDriven)
 				AdvanceFrame();
 		}
 

@@ -14,7 +14,8 @@
     "ShitDesigner.Application",
     "ShitDesigner.Input",
     "ShitDesigner.Presentation",
-    "ShitDesigner.Bootstrap"
+    "ShitDesigner.Bootstrap",
+    "ShitDesigner.Main"
   ],
   "includePlatforms": [
     "Editor"
