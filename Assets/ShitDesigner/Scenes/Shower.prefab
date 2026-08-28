@@ -84,6 +84,7 @@ MonoBehaviour:
   m_MovementSpeed: 0.12
   m_TeleportDistance: 2
   m_RandomSeed: 2718
+  m_FieldOfViewRange: {x: 45, y: 75}
 --- !u!1 &1504417746781492947
 GameObject:
   m_ObjectHideFlags: 0

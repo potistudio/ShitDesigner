@@ -3,7 +3,7 @@ using ShitDesigner.Main;
 using UnityEngine;
 
 namespace ShitDesigner.Scene {
-	/// <summary>Moves the Shower camera through smooth noise while keeping it aimed at a target.</summary>
+	/// <summary>Moves the Shower camera through smooth noise, changing its field of view on trigger while keeping it aimed at a target.</summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
 	public sealed class ShowerRandomCamera : MonoBehaviour, ISceneGraphClockReceiver, ILiveParameterTriggerReceiver {
@@ -16,6 +16,7 @@ namespace ShitDesigner.Scene {
 		[Min(0f)][SerializeField] private float m_MovementSpeed = 0.12f;
 		[Min(0.01f)][SerializeField] private float m_TeleportDistance = 2f;
 		[SerializeField] private int m_RandomSeed = 2718;
+		[SerializeField] private Vector2 m_FieldOfViewRange = new Vector2(45f, 75f);
 
 		private bool m_GraphClockDriven;
 		private bool m_Initialized;
@@ -44,6 +45,8 @@ namespace ShitDesigner.Scene {
 			m_MovementRange.z = Mathf.Max(0f, m_MovementRange.z);
 			m_MovementSpeed = Mathf.Max(0f, m_MovementSpeed);
 			m_TeleportDistance = Mathf.Max(0.01f, m_TeleportDistance);
+			m_FieldOfViewRange.x = Mathf.Clamp(m_FieldOfViewRange.x, 1f, 179f);
+			m_FieldOfViewRange.y = Mathf.Clamp(m_FieldOfViewRange.y, m_FieldOfViewRange.x, 179f);
 			m_Initialized = false;
 		}
 
@@ -66,6 +69,7 @@ namespace ShitDesigner.Scene {
 				return;
 
 			m_Random ??= new System.Random(m_RandomSeed);
+			m_Camera.fieldOfView = Mathf.Lerp(m_FieldOfViewRange.x, m_FieldOfViewRange.y, (float)m_Random.NextDouble());
 			m_Camera.transform.position = m_Target.position + NextRandomDirection() * m_TeleportDistance;
 			m_NoiseTime = 0f;
 			m_BaseLocalPosition = m_Camera.transform.localPosition - Vector3.Scale(GetNoiseOffset(), m_MovementRange);
