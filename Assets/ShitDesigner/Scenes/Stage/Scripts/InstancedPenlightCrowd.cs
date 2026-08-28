@@ -10,6 +10,8 @@ namespace ShitDesigner.Stage {
 		private const int MaximumInstancesPerBatch = 1023;
 		private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 		private static readonly int BeatPositionId = Shader.PropertyToID("_BeatPosition");
+		private static readonly int DirectionId = Shader.PropertyToID("_Direction");
+		private static readonly int PhaseId = Shader.PropertyToID("_Phase");
 
 		[SerializeField] private Material _material;
 		[SerializeField, Range(30f, 300f)] private float _previewBpm = 145f;
@@ -19,6 +21,8 @@ namespace ShitDesigner.Stage {
 		[SerializeField, Min(0.1f)] private float _depth = 16f;
 		[SerializeField, Min(0.01f)] private float _minimumScale = 0.65f;
 		[SerializeField, Min(0.01f)] private float _maximumScale = 1.15f;
+		[SerializeField, Range(0f, 1f)] private float _phaseSpread;
+		[SerializeField, Range(0f, 1f)] private float _directionSpread = 1f;
 		[SerializeField] private Color[] _colors = {
 			new(0.1f, 0.8f, 1f),
 			new(1f, 0.15f, 0.7f),
@@ -57,6 +61,8 @@ namespace ShitDesigner.Stage {
 
 		private void OnValidate() {
 			_previewBpm = Mathf.Clamp(_previewBpm, 30f, 300f);
+			_phaseSpread = Mathf.Clamp01(_phaseSpread);
+			_directionSpread = Mathf.Clamp01(_directionSpread);
 			if (!isActiveAndEnabled) return;
 			Rebuild();
 		}
@@ -96,6 +102,8 @@ namespace ShitDesigner.Stage {
 				var batchCount = Mathf.Min(MaximumInstancesPerBatch, count - batchStart);
 				var matrices = new Matrix4x4[batchCount];
 				var baseColors = new Vector4[batchCount];
+				var directions = new float[batchCount];
+				var phases = new float[batchCount];
 				for (var batchIndex = 0; batchIndex < batchCount; batchIndex++) {
 					var instanceIndex = batchStart + batchIndex;
 					var column = instanceIndex % columns;
@@ -104,12 +112,17 @@ namespace ShitDesigner.Stage {
 					var z = ((row + Hash01(instanceIndex * 3 + 2)) / rows - 0.5f) * _depth;
 					var position = _center + new Vector3(x, Hash01(instanceIndex * 3 + 3) * 0.35f, z);
 					var scale = Mathf.Lerp(_minimumScale, Mathf.Max(_minimumScale, _maximumScale), Hash01(instanceIndex * 3 + 4));
+					var motionSeed = Hash01(instanceIndex * 3 + 5);
 					matrices[batchIndex] = transform.localToWorldMatrix * Matrix4x4.TRS(position, Quaternion.identity, Vector3.one * scale);
 					baseColors[batchIndex] = colors[instanceIndex % colors.Length];
+					directions[batchIndex] = motionSeed * _directionSpread;
+					phases[batchIndex] = motionSeed * _phaseSpread;
 				}
 
 				var properties = new MaterialPropertyBlock();
 				properties.SetVectorArray(BaseColorId, baseColors);
+				properties.SetFloatArray(DirectionId, directions);
+				properties.SetFloatArray(PhaseId, phases);
 				_batches.Add(new Batch(matrices, properties));
 			}
 		}
