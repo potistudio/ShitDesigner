@@ -134,13 +134,16 @@ namespace ShitDesigner.Scene {
 		public SceneNodeKind Kind { get; }
 		public string Name { get; }
 		public GameObject Prefab { get; }
-		public SceneCreateRequest(NodeInstanceId nodeId, SceneNodeKind kind, string name = null, ulong generationId = 1, GameObject prefab = null) {
+		public bool TransparentBackground { get; }
+		public SceneCreateRequest(NodeInstanceId nodeId, SceneNodeKind kind, string name = null, ulong generationId = 1,
+			GameObject prefab = null, bool transparentBackground = false) {
 			if (nodeId.IsEmpty || generationId == 0) throw new ArgumentException("Scene node identity is required.", nameof(nodeId));
 			NodeId = nodeId;
 			GenerationId = generationId;
 			Kind = kind;
 			Name = string.IsNullOrWhiteSpace(name) ? "ShitDesigner.Node." + nodeId.Value : name.Trim();
 			Prefab = prefab;
+			TransparentBackground = transparentBackground;
 		}
 	}
 
@@ -379,6 +382,7 @@ namespace ShitDesigner.Scene {
 					additionalCameraData.renderType = CameraRenderType.Base;
 					ConfigureRuntimeCamera(camera);
 				}
+				if (request.TransparentBackground) ConfigureTransparentCamera(camera);
 				runtime = new SceneNodeRuntime(this, request, layer.Value) { Scene = createdScene, Root = root, Camera = camera, State = SceneLifecycleState.Ready };
 				_nodes.Add(request.NodeId, runtime);
 				return Result.Success<SceneNodeRuntime, Diagnostic>(runtime);
@@ -420,6 +424,13 @@ namespace ShitDesigner.Scene {
 			// additive Scene; keep the camera eligible to draw that runtime
 			// Scene while the layer mask still isolates the node's objects.
 			camera.overrideSceneCullingMask = ulong.MaxValue;
+		}
+
+		private static void ConfigureTransparentCamera(Camera camera) {
+			camera.clearFlags = CameraClearFlags.SolidColor;
+			camera.backgroundColor = Color.clear;
+			var additionalCameraData = camera.GetComponent<UniversalAdditionalCameraData>();
+			if (additionalCameraData != null) additionalCameraData.renderPostProcessing = false;
 		}
 
 		internal UnitResult<Diagnostic> SimulatePhysics(SceneNodeRuntime node, float stepSeconds) => _physicsStepper.Simulate(node, stepSeconds);
