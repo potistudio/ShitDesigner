@@ -6,19 +6,20 @@ using UnityEngine;
 namespace ShitDesigner.Stage {
 	/// <summary>
 	/// Synchronizes the selected Animator controller with the shared BPM clock and
-	/// optionally evaluates it at a fixed animation-time frame rate.
+	/// optionally advances it at beat-aligned samples.
 	/// </summary>
 	[DisallowMultipleComponent]
 	public sealed class BpmAnimatorSpeedController : MonoBehaviour, IBpmClockReceiver, ISceneGraphClockReceiver {
 		private const float DefaultReferenceBpm = 145f;
+		private const int DefaultPosterizeFramesPerBeat = 1;
 
 		[SerializeField] private RuntimeAnimatorController m_Animator;
 		[SerializeField, Min(1.0f)] private float m_ReferenceBpm = DefaultReferenceBpm;
-		[SerializeField, Min(0.0f)] private float m_PosterizeFrameRate;
+		[SerializeField, Min(1)] private int m_PosterizeFramesPerBeat = DefaultPosterizeFramesPerBeat;
 
 		private readonly List<Animator> m_Animators = new List<Animator>();
 		private float m_AnimatorSpeed = 1f;
-		private double m_PosterizeAccumulator;
+		private double m_LastProcessedBeatIndex = double.NaN;
 		private bool m_GraphClockDriven;
 
 		private void Awake() {
@@ -27,40 +28,51 @@ namespace ShitDesigner.Stage {
 
 		private void OnEnable() {
 			m_GraphClockDriven = false;
-			m_PosterizeAccumulator = 0d;
+			m_LastProcessedBeatIndex = double.NaN;
 			FindAnimators();
 			SetAnimatorSpeed(1f);
 		}
 
 		public void SetBpmClock(BpmClockState clock) {
 			SetAnimatorSpeed(clock.BeatsPerMinute / m_ReferenceBpm);
+			AdvanceToBeat(clock);
 		}
 
 		public void SetGraphClockDriven(bool graphClockDriven) {
 			m_GraphClockDriven = graphClockDriven && IsPosterizeTimeEnabled;
-			m_PosterizeAccumulator = 0d;
+			m_LastProcessedBeatIndex = double.NaN;
 			ApplyAnimatorSpeed();
 		}
 
 		public void AdvanceGraphClock(double deltaSeconds) {
-			if (!m_GraphClockDriven || !IsPosterizeTimeEnabled || m_AnimatorSpeed <= 0f
-				|| float.IsNaN(m_AnimatorSpeed) || float.IsInfinity(m_AnimatorSpeed)
-				|| deltaSeconds <= 0d || double.IsNaN(deltaSeconds) || double.IsInfinity(deltaSeconds))
+			// Beat-quantized animation is advanced from the absolute BPM clock in SetBpmClock.
+		}
+
+		private void AdvanceToBeat(BpmClockState clock) {
+			if (!m_GraphClockDriven || !IsPosterizeTimeEnabled || clock.BeatsPerMinute <= 0f
+				|| float.IsNaN(clock.BeatsPerMinute) || float.IsInfinity(clock.BeatsPerMinute)
+				|| double.IsNaN(clock.TotalBeats) || double.IsInfinity(clock.TotalBeats))
 				return;
 
-			var frameDuration = 1d / m_PosterizeFrameRate;
-			m_PosterizeAccumulator += deltaSeconds * m_AnimatorSpeed;
-			if (double.IsNaN(m_PosterizeAccumulator) || double.IsInfinity(m_PosterizeAccumulator)) {
-				m_PosterizeAccumulator = 0d;
+			var beatPosition = clock.TotalBeats * m_PosterizeFramesPerBeat;
+			if (double.IsNaN(beatPosition) || double.IsInfinity(beatPosition))
+				return;
+
+			var beatIndex = Math.Floor(beatPosition + 1e-9d);
+			if (double.IsNaN(m_LastProcessedBeatIndex))
+				m_LastProcessedBeatIndex = 0d;
+			if (beatIndex < m_LastProcessedBeatIndex) {
+				m_LastProcessedBeatIndex = beatIndex;
 				return;
 			}
 
-			var frameCount = Math.Floor(m_PosterizeAccumulator / frameDuration);
+			var frameCount = beatIndex - m_LastProcessedBeatIndex;
 			if (frameCount < 1d)
 				return;
 
-			m_PosterizeAccumulator -= frameCount * frameDuration;
-			var updateSeconds = (float)Math.Min(frameCount * frameDuration, float.MaxValue);
+			m_LastProcessedBeatIndex = beatIndex;
+			var secondsPerFrame = 60d / (clock.BeatsPerMinute * m_PosterizeFramesPerBeat);
+			var updateSeconds = (float)Math.Min(frameCount * secondsPerFrame, float.MaxValue);
 			foreach (var animator in m_Animators) {
 				if (animator == null)
 					continue;
@@ -95,7 +107,6 @@ namespace ShitDesigner.Stage {
 				if (animator != null) animator.speed = speed;
 		}
 
-		private bool IsPosterizeTimeEnabled => m_PosterizeFrameRate > 0f
-			&& !float.IsNaN(m_PosterizeFrameRate) && !float.IsInfinity(m_PosterizeFrameRate);
+		private bool IsPosterizeTimeEnabled => m_PosterizeFramesPerBeat > 0;
 	}
 }
