@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using ShitDesigner.Core;
-using ShitDesigner.Nodes;
 using ShitDesigner.Scene;
 using UnityEditor;
 using UnityEngine;
@@ -12,22 +10,12 @@ namespace ShitDesigner.Editor {
 	[CustomEditor(typeof(PatchDefinition))]
 	[CanEditMultipleObjects]
 	public sealed class PatchDefinitionEditor : UnityEditor.Editor {
-		private const string ManifestAssetPath = "Assets/ShitDesigner/Scripts/Nodes/ShaderNodeManifest.asset";
-
 		private SerializedProperty _id;
 		private SerializedProperty _displayName;
 		private SerializedProperty _programGraph;
 		private SerializedProperty _nodes;
 		private SerializedProperty _parameters;
 		private SerializedProperty _flash;
-		private ShaderNodeManifestAsset _manifest;
-		private ShaderNodeManifest _runtimeManifest;
-		private string _manifestFingerprint = string.Empty;
-		private string _manifestError = string.Empty;
-		private Scene3DDefinition[] _sceneDefinitions = Array.Empty<Scene3DDefinition>();
-		private readonly Dictionary<string, int> _parameterAddSelections = new Dictionary<string, int>(StringComparer.Ordinal);
-		private readonly Dictionary<string, bool> _graphNodeFoldouts = new Dictionary<string, bool>(StringComparer.Ordinal);
-		private int _nodeAddSelection = -1;
 
 		private void OnEnable() {
 			_id = serializedObject.FindProperty("_id");
@@ -36,15 +24,10 @@ namespace ShitDesigner.Editor {
 			_nodes = serializedObject.FindProperty("_nodes");
 			_parameters = serializedObject.FindProperty("_parameters");
 			_flash = serializedObject.FindProperty("_flash");
-			RefreshManifest(true);
-			RefreshSceneDefinitions();
 		}
 
 		public override void OnInspectorGUI() {
 			serializedObject.Update();
-			RefreshManifest(false);
-			if (Event.current.type == EventType.Layout) RefreshSceneDefinitions();
-
 			if (string.IsNullOrWhiteSpace(_id.stringValue) && !string.IsNullOrWhiteSpace(_displayName.stringValue))
 				_id.stringValue = Slug(_displayName.stringValue);
 
@@ -56,13 +39,12 @@ namespace ShitDesigner.Editor {
 			DrawProgramGraph();
 
 			EditorGUILayout.Space(6f);
-			DrawSceneNodes();
+			EditorGUILayout.PropertyField(_nodes, new GUIContent("Scene Nodes"), true);
 
 			EditorGUILayout.Space(6f);
-			DrawPublishedParameters();
+			EditorGUILayout.PropertyField(_parameters, new GUIContent("Published Parameters"), true);
 
 			EditorGUILayout.Space(6f);
-			EditorGUILayout.LabelField("Flash", EditorStyles.boldLabel);
 			EditorGUILayout.PropertyField(_flash, new GUIContent("Flash"));
 
 			serializedObject.ApplyModifiedProperties();
@@ -87,338 +69,12 @@ namespace ShitDesigner.Editor {
 			EditorGUILayout.TextField(new GUIContent("Scene Input", "The rendered Scene3DDefinition is exposed to the shader graph with this fixed ID."), PatchProgramGraph.SceneInputNodeId);
 			EditorGUI.EndDisabledGroup();
 
+			EditorGUILayout.PropertyField(nodes, new GUIContent("Nodes"), true);
 			EnsureGraphNodeIds(nodes);
 			var nodeIds = GetGraphNodeIds(nodes, out var nodeLabels);
 			if (nodeIds.Count > 0) DrawPopup("Output Node", outputNodeId, nodeIds, nodeLabels);
 			else EditorGUILayout.HelpBox("Add a graph node to choose the program output.", MessageType.Info);
-			EditorGUILayout.LabelField("Output Node selects a node already listed in Nodes.", EditorStyles.miniLabel);
-
-			DrawGraphNodes(nodes);
-			DrawGraphConnections(connections, nodes);
-			if (!string.IsNullOrWhiteSpace(_manifestError)) EditorGUILayout.HelpBox(_manifestError, MessageType.Warning);
-		}
-
-		private void DrawGraphNodes(SerializedProperty nodes) {
-			EditorGUILayout.LabelField("Nodes", EditorStyles.miniBoldLabel);
-			for (var index = 0; index < nodes.arraySize; index++) {
-				var node = nodes.GetArrayElementAtIndex(index);
-				var nodeId = node.FindPropertyRelative("_id");
-				var typeId = node.FindPropertyRelative("_typeId");
-				var entry = FindRuntimeEntry(typeId.stringValue);
-				var foldoutKey = node.propertyPath;
-				if (!_graphNodeFoldouts.TryGetValue(foldoutKey, out var expanded)) expanded = true;
-
-				EditorGUILayout.BeginVertical("box");
-				EditorGUILayout.BeginHorizontal();
-				_graphNodeFoldouts[foldoutKey] = EditorGUILayout.Foldout(expanded, "Node " + (index + 1), true, EditorStyles.boldLabel);
-				var typeChanged = DrawNodeTypeSelector(typeId, GUIContent.none);
-				if (GUILayout.Button("Remove", GUILayout.Width(70f))) {
-					RemoveGraphNode(nodes, index, nodeId.stringValue);
-					EditorGUILayout.EndHorizontal();
-					EditorGUILayout.EndVertical();
-					break;
-				}
-				EditorGUILayout.EndHorizontal();
-
-				if (typeChanged) {
-					entry = FindRuntimeEntry(typeId.stringValue);
-					SyncGraphNodeParameters(node, entry);
-				}
-				if (_graphNodeFoldouts[foldoutKey]) {
-					if (entry != null) DrawGraphParameters(node, entry);
-					else {
-						EditorGUILayout.PropertyField(node.FindPropertyRelative("_parameters"), new GUIContent("Parameters"), true);
-						EditorGUILayout.HelpBox("The selected node type is not available in the generated Shader Manifest.", MessageType.Warning);
-					}
-				}
-				EditorGUILayout.EndVertical();
-			}
-
-			var addable = GetManifestEntries().Where(entry => entry.UserAddable).ToList();
-			if (addable.Count == 0) {
-				if (GUILayout.Button("Add Node")) AddGraphNode(nodes, null);
-				return;
-			}
-
-			if (_nodeAddSelection < 0) {
-				_nodeAddSelection = addable.FindIndex(entry => string.Equals(entry.TypeId, "shitdesigner.shader.generator.solid-color", StringComparison.Ordinal));
-				if (_nodeAddSelection < 0) _nodeAddSelection = 0;
-			}
-			_nodeAddSelection = Mathf.Clamp(_nodeAddSelection, 0, addable.Count - 1);
-			EditorGUILayout.BeginHorizontal();
-			_nodeAddSelection = EditorGUILayout.Popup(new GUIContent("New Node Type", "Choose the node type before adding it to the graph."), _nodeAddSelection, addable.Select(FormatNodeLabel).ToArray());
-			if (GUILayout.Button("Add Node", GUILayout.Width(85f))) AddGraphNode(nodes, addable[_nodeAddSelection]);
-			EditorGUILayout.EndHorizontal();
-		}
-
-		private bool DrawNodeTypeSelector(SerializedProperty typeId, GUIContent label = null) {
-			var entries = GetManifestEntries().ToList();
-			if (entries.Count == 0) {
-				EditorGUILayout.PropertyField(typeId, label ?? new GUIContent("Type ID"));
-				return false;
-			}
-
-			var values = entries.Select(entry => entry.TypeId).ToList();
-			var labels = entries.Select(FormatNodeLabel).ToList();
-			var current = typeId.stringValue ?? string.Empty;
-			if (string.IsNullOrWhiteSpace(current)) {
-				current = values[0];
-				typeId.stringValue = current;
-			}
-			if (!values.Contains(current, StringComparer.Ordinal)) {
-				values.Insert(0, current);
-				labels.Insert(0, "Missing: " + current);
-			}
-
-			var selected = values.IndexOf(current);
-			var next = EditorGUILayout.Popup(label ?? new GUIContent("Node Type", "Select a generated shader node; the Type ID is stored automatically."), selected, labels.ToArray(), GUILayout.MinWidth(120f));
-			if (next == selected) return false;
-			typeId.stringValue = values[next];
-			return true;
-		}
-
-		private void DrawGraphParameters(SerializedProperty node, ShaderNodeManifestEntry entry) {
-			var parameters = node.FindPropertyRelative("_parameters");
-			EditorGUILayout.LabelField("Parameters", EditorStyles.miniBoldLabel);
-			for (var index = 0; index < parameters.arraySize; index++) {
-				var parameter = parameters.GetArrayElementAtIndex(index);
-				var id = parameter.FindPropertyRelative("_id");
-				var definition = entry.Parameters.FirstOrDefault(candidate => candidate != null && string.Equals(candidate.Id.Value, id.stringValue, StringComparison.Ordinal));
-
-				EditorGUILayout.BeginHorizontal();
-				EditorGUILayout.LabelField((index + 1) + ".", GUILayout.Width(22f));
-				DrawParameterSelector(parameter, entry, GUIContent.none);
-				if (GUILayout.Button("Remove", GUILayout.Width(70f))) {
-					parameters.DeleteArrayElementAtIndex(index);
-					EditorGUILayout.EndHorizontal();
-					break;
-				}
-				EditorGUILayout.EndHorizontal();
-
-				definition = entry.Parameters.FirstOrDefault(candidate => candidate != null && string.Equals(candidate.Id.Value, id.stringValue, StringComparison.Ordinal));
-				if (definition != null) {
-					SetParameterType(parameter, definition.Type);
-					EditorGUI.BeginDisabledGroup(definition.Definition.IsReadOnly);
-					DrawParameterValue(parameter, definition);
-					EditorGUI.EndDisabledGroup();
-				}
-				else {
-					EditorGUILayout.PropertyField(parameter.FindPropertyRelative("_id"), new GUIContent("Parameter ID"));
-					EditorGUILayout.PropertyField(parameter.FindPropertyRelative("_type"), new GUIContent("Type"));
-					EditorGUILayout.HelpBox("This parameter is not provided by the selected node type.", MessageType.Warning);
-				}
-			}
-
-			var addable = entry.Parameters.Where(parameter => parameter != null && !parameter.Definition.IsHidden
-				&& Enumerable.Range(0, parameters.arraySize).All(index => !string.Equals(parameters.GetArrayElementAtIndex(index).FindPropertyRelative("_id").stringValue, parameter.Id.Value, StringComparison.Ordinal))).ToList();
-			if (addable.Count == 0) return;
-			var key = node.propertyPath;
-			if (!_parameterAddSelections.TryGetValue(key, out var selected)) selected = 0;
-			selected = Mathf.Clamp(selected, 0, addable.Count - 1);
-			EditorGUILayout.BeginHorizontal();
-			selected = EditorGUILayout.Popup(new GUIContent("Add Parameter"), selected, addable.Select(FormatParameterLabel).ToArray());
-			_parameterAddSelections[key] = selected;
-			if (GUILayout.Button("Add", GUILayout.Width(55f))) AddGraphParameter(parameters, addable[selected]);
-			EditorGUILayout.EndHorizontal();
-			EditorGUILayout.LabelField("Parameters not added here use the manifest defaults.", EditorStyles.miniLabel);
-		}
-
-		private void DrawParameterSelector(SerializedProperty parameter, ShaderNodeManifestEntry entry, GUIContent label = null) {
-			var id = parameter.FindPropertyRelative("_id");
-			var candidates = entry.Parameters.Where(candidate => candidate != null).ToList();
-			if (candidates.Count == 0) return;
-			var values = candidates.Select(candidate => candidate.Id.Value).ToList();
-			var labels = candidates.Select(FormatParameterLabel).ToList();
-			var current = id.stringValue ?? string.Empty;
-			if (string.IsNullOrWhiteSpace(current)) {
-				current = values[0];
-				id.stringValue = current;
-			}
-			if (!values.Contains(current, StringComparer.Ordinal)) {
-				values.Insert(0, current);
-				labels.Insert(0, "Missing: " + current);
-			}
-
-			var selected = values.IndexOf(current);
-			var next = EditorGUILayout.Popup(label ?? new GUIContent("Parameter", "Select a manifest parameter; its type and default value are derived automatically."), selected, labels.ToArray());
-			if (next == selected) return;
-			id.stringValue = values[next];
-			var definition = candidates.FirstOrDefault(candidate => string.Equals(candidate.Id.Value, id.stringValue, StringComparison.Ordinal));
-			if (definition != null) SetParameterValue(parameter, definition.DefaultValue);
-		}
-
-		private void DrawParameterValue(SerializedProperty parameter, ShaderNodeManifestParameter definition) {
-			var type = definition.Type;
-			var valueLabel = string.IsNullOrWhiteSpace(definition.DisplayName) ? "Value" : definition.DisplayName;
-			var value = ValueProperty(parameter, type);
-			if (value == null) return;
-			switch (type) {
-				case ParameterType.Float:
-					if (definition.Minimum.HasValue && definition.Maximum.HasValue) value.floatValue = EditorGUILayout.Slider(valueLabel, value.floatValue, definition.Minimum.Value.AsFloat(), definition.Maximum.Value.AsFloat());
-					else EditorGUILayout.PropertyField(value, new GUIContent(valueLabel));
-					break;
-				case ParameterType.Int:
-					if (definition.Minimum.HasValue && definition.Maximum.HasValue) value.intValue = EditorGUILayout.IntSlider(valueLabel, value.intValue, definition.Minimum.Value.AsInt(), definition.Maximum.Value.AsInt());
-					else EditorGUILayout.PropertyField(value, new GUIContent(valueLabel));
-					break;
-				case ParameterType.Bool:
-					value.boolValue = EditorGUILayout.Toggle(valueLabel, value.boolValue);
-					break;
-				case ParameterType.Enum:
-					DrawEnumValue(value, valueLabel, definition.Definition.EnumOptions);
-					break;
-				default:
-					EditorGUILayout.PropertyField(value, new GUIContent(valueLabel));
-					break;
-			}
-		}
-
-		private static void DrawEnumValue(SerializedProperty value, string label, IReadOnlyList<string> options) {
-			var values = (options ?? Array.Empty<string>()).Where(option => !string.IsNullOrWhiteSpace(option)).ToList();
-			if (values.Count == 0) {
-				EditorGUILayout.PropertyField(value, new GUIContent(label));
-				return;
-			}
-			var current = value.stringValue ?? string.Empty;
-			if (!values.Contains(current, StringComparer.Ordinal)) values.Insert(0, current);
-			var labels = values.Select(option => string.IsNullOrWhiteSpace(option) ? "<None>" : option).ToArray();
-			var selected = values.IndexOf(current);
-			var next = EditorGUILayout.Popup(label, selected, labels);
-			if (next != selected) value.stringValue = values[next];
-		}
-
-		private void DrawGraphConnections(SerializedProperty connections, SerializedProperty nodes) {
-			EditorGUILayout.LabelField("Connections", EditorStyles.miniBoldLabel);
-			var sourceIds = GetSourceNodeIds(nodes, out var sourceLabels);
-			for (var index = 0; index < connections.arraySize; index++) {
-				var connection = connections.GetArrayElementAtIndex(index);
-				var sourceNodeId = connection.FindPropertyRelative("_sourceNodeId");
-				var sourcePortId = connection.FindPropertyRelative("_sourcePortId");
-				var targetNodeId = connection.FindPropertyRelative("_targetNodeId");
-				var targetPortId = connection.FindPropertyRelative("_targetPortId");
-				if (sourcePortId != null) sourcePortId.stringValue = PatchProgramGraph.ImagePortId;
-
-				EditorGUILayout.BeginHorizontal("box");
-				EditorGUILayout.LabelField((index + 1) + ".", GUILayout.Width(22f));
-				if (sourceIds.Count > 0) DrawPopup("From", sourceNodeId, sourceIds, sourceLabels);
-				else EditorGUILayout.LabelField("From: Scene Input");
-
-				var targetIds = GetGraphNodeIds(nodes, out var targetLabels);
-				var ports = new List<string>();
-				var portLabels = new List<string>();
-				if (targetIds.Count > 0) {
-					var targetChanged = DrawPopup("To", targetNodeId, targetIds, targetLabels);
-					var targetEntry = FindRuntimeEntryForGraphNode(nodes, targetNodeId.stringValue);
-					ports = GetImageInputPorts(targetEntry, out portLabels);
-					if (targetChanged && ports.Count > 0) targetPortId.stringValue = ports[0];
-					if (ports.Count > 0) DrawPopup("Port", targetPortId, ports, portLabels);
-					else targetPortId.stringValue = string.Empty;
-				}
-				if (GUILayout.Button("Remove", GUILayout.Width(70f))) {
-					connections.DeleteArrayElementAtIndex(index);
-					EditorGUILayout.EndHorizontal();
-					break;
-				}
-				EditorGUILayout.EndHorizontal();
-
-				if (targetIds.Count == 0) EditorGUILayout.HelpBox("Add a graph node before creating a connection.", MessageType.Info);
-				else if (ports.Count == 0) EditorGUILayout.HelpBox("The target node has no image input ports.", MessageType.Warning);
-			}
-
-			if (GUILayout.Button("Add Connection")) AddGraphConnection(connections, nodes);
-		}
-
-		private void DrawSceneNodes() {
-			EditorGUILayout.LabelField("Scene Nodes", EditorStyles.boldLabel);
-			EditorGUILayout.HelpBox("Select the Scene3DDefinition assets used by this patch. Shader graph nodes are configured under Program Graph.", MessageType.None);
-			for (var nodeIndex = 0; nodeIndex < _nodes.arraySize; nodeIndex++) {
-				var node = _nodes.GetArrayElementAtIndex(nodeIndex);
-				EditorGUILayout.BeginHorizontal("box");
-				EditorGUILayout.LabelField((nodeIndex + 1) + ".", GUILayout.Width(22f));
-				DrawSceneDefinitionSelector(node, GUIContent.none);
-				if (GUILayout.Button("Remove", GUILayout.Width(70f))) {
-					node.objectReferenceValue = null;
-					_nodes.DeleteArrayElementAtIndex(nodeIndex);
-					EditorGUILayout.EndHorizontal();
-					break;
-				}
-				EditorGUILayout.EndHorizontal();
-			}
-			if (GUILayout.Button("Add Scene Node")) _nodes.arraySize++;
-		}
-
-		private void DrawPublishedParameters() {
-			EditorGUILayout.LabelField("Published Parameters", EditorStyles.boldLabel);
-			var sceneNodes = GetConfiguredSceneNodes();
-			for (var index = 0; index < _parameters.arraySize; index++) {
-				var parameter = _parameters.GetArrayElementAtIndex(index);
-				var id = parameter.FindPropertyRelative("_id");
-				var displayName = parameter.FindPropertyRelative("_displayName");
-				var nodeId = parameter.FindPropertyRelative("_nodeId");
-				var parameterId = parameter.FindPropertyRelative("_parameterId");
-				var nodeOptions = sceneNodes.ToList();
-				var nodeValues = nodeOptions.Select(node => node.Id).ToList();
-				var nodeLabels = nodeOptions.Select(node => node.Label).ToList();
-				var selectedNode = sceneNodes.FirstOrDefault(node => string.Equals(node.Id, nodeId.stringValue, StringComparison.Ordinal));
-				var parameterOptions = new List<SceneParameterOption>();
-				var parameterValues = new List<string>();
-
-				EditorGUILayout.BeginHorizontal("box");
-				EditorGUILayout.LabelField((index + 1) + ".", GUILayout.Width(22f));
-				if (nodeValues.Count > 0) {
-					var nodeChanged = DrawPopup("Node", nodeId, nodeValues, nodeLabels);
-					selectedNode = sceneNodes.FirstOrDefault(node => string.Equals(node.Id, nodeId.stringValue, StringComparison.Ordinal));
-					parameterOptions = GetSceneParameterOptions(selectedNode == null ? null : selectedNode.Definition);
-					parameterValues = parameterOptions.Select(option => option.Id).ToList();
-					var parameterLabels = parameterOptions.Select(option => option.Label).ToList();
-					if (nodeChanged && parameterValues.Count > 0) parameterId.stringValue = parameterValues[0];
-					if (parameterValues.Count > 0) DrawPopup("Parameter", parameterId, parameterValues, parameterLabels);
-					else EditorGUILayout.LabelField("No exposed parameter", EditorStyles.miniLabel);
-				}
-				else EditorGUILayout.LabelField("No Scene Node", EditorStyles.miniLabel);
-				if (GUILayout.Button("Remove", GUILayout.Width(70f))) {
-					_parameters.DeleteArrayElementAtIndex(index);
-					EditorGUILayout.EndHorizontal();
-					break;
-				}
-				EditorGUILayout.EndHorizontal();
-
-				if (nodeValues.Count == 0) {
-					EditorGUILayout.HelpBox("Add a Scene3DDefinition to the Scene Nodes list before publishing a parameter.", MessageType.Info);
-					EditorGUILayout.PropertyField(nodeId, new GUIContent("Scene Node ID"));
-					EditorGUILayout.PropertyField(parameterId, new GUIContent("Parameter ID"));
-				}
-				else if (parameterValues.Count == 0) {
-					EditorGUILayout.HelpBox("The selected prefab does not expose discoverable live parameters. The ID field is retained as a fallback.", MessageType.Info);
-					EditorGUILayout.PropertyField(parameterId, new GUIContent("Parameter ID"));
-				}
-				else {
-					if (string.IsNullOrWhiteSpace(id.stringValue)) id.stringValue = CreatePublishedParameterId(parameterId.stringValue, index);
-					if (string.IsNullOrWhiteSpace(displayName.stringValue)) displayName.stringValue = GetSelectedLabel(parameterOptions, parameterId.stringValue, parameterId.stringValue);
-				}
-				EditorGUILayout.PropertyField(displayName, new GUIContent("Display Name"));
-			}
-
-			if (sceneNodes.Count > 0 && GUILayout.Button("Add Published Parameter")) AddPublishedParameter(sceneNodes);
-			else if (sceneNodes.Count == 0) EditorGUILayout.HelpBox("Published parameter choices become available after a Scene3DDefinition is assigned to the list.", MessageType.Info);
-		}
-
-		private void DrawSceneDefinitionSelector(SerializedProperty property, GUIContent label) {
-			if (_sceneDefinitions.Length == 0) {
-				EditorGUILayout.PropertyField(property, label);
-				return;
-			}
-			var values = _sceneDefinitions.ToList();
-			var labels = values.Select(FormatSceneDefinitionLabel).ToList();
-			var current = property.objectReferenceValue as Scene3DDefinition;
-			if (current != null && !values.Contains(current)) {
-				values.Insert(0, current);
-				labels.Insert(0, "Missing: " + FormatSceneDefinitionLabel(current));
-			}
-			var selected = current == null ? -1 : values.IndexOf(current);
-			var next = EditorGUILayout.Popup(label, selected + 1, new[] { "<None>" }.Concat(labels).ToArray()) - 1;
-			if (next >= 0 && next < values.Count) property.objectReferenceValue = values[next];
-			else if (next < 0) property.objectReferenceValue = null;
+			EditorGUILayout.PropertyField(connections, new GUIContent("Connections"), true);
 		}
 
 		private void DrawValidationMessage() {
@@ -426,97 +82,6 @@ namespace ShitDesigner.Editor {
 			if (definition == null) return;
 			var validation = definition.Validate();
 			if (validation.IsFailure) EditorGUILayout.HelpBox(validation.Error.Message, MessageType.Error);
-		}
-
-		private void RefreshManifest(bool force) {
-			var resolved = ResolveManifest();
-			var fingerprint = resolved == null ? string.Empty : resolved.SourceFingerprint;
-			if (!force && ReferenceEquals(resolved, _manifest) && string.Equals(fingerprint, _manifestFingerprint, StringComparison.Ordinal)) return;
-			_manifest = resolved;
-			_manifestFingerprint = fingerprint;
-			_runtimeManifest = null;
-			_manifestError = string.Empty;
-			if (_manifest == null) return;
-			try { _runtimeManifest = _manifest.BuildRuntimeManifest(); }
-			catch (Exception exception) { _manifestError = "Shader Manifest could not be read: " + exception.Message; }
-		}
-
-		private static ShaderNodeManifestAsset ResolveManifest() {
-			var direct = AssetDatabase.LoadAssetAtPath<ShaderNodeManifestAsset>(ManifestAssetPath);
-			if (direct != null) return direct;
-			foreach (var guid in AssetDatabase.FindAssets("t:ShaderNodeManifestAsset").OrderBy(value => value, StringComparer.Ordinal)) {
-				var asset = AssetDatabase.LoadAssetAtPath<ShaderNodeManifestAsset>(AssetDatabase.GUIDToAssetPath(guid));
-				if (asset != null) return asset;
-			}
-			foreach (var guid in AssetDatabase.FindAssets("t:NodeTypeCatalog").OrderBy(value => value, StringComparer.Ordinal)) {
-				var catalog = AssetDatabase.LoadAssetAtPath<NodeTypeCatalog>(AssetDatabase.GUIDToAssetPath(guid));
-				if (catalog != null && catalog.ShaderManifest != null) return catalog.ShaderManifest;
-			}
-			return null;
-		}
-
-		private void RefreshSceneDefinitions() {
-			var definitions = new List<Scene3DDefinition>();
-			foreach (var guid in AssetDatabase.FindAssets("t:Scene3DDefinition").OrderBy(value => value, StringComparer.Ordinal)) {
-				var definition = AssetDatabase.LoadAssetAtPath<Scene3DDefinition>(AssetDatabase.GUIDToAssetPath(guid));
-				if (definition != null) definitions.Add(definition);
-			}
-			_sceneDefinitions = definitions.OrderBy(definition => definition.name, StringComparer.Ordinal).ThenBy(definition => definition.Id, StringComparer.Ordinal).ToArray();
-		}
-
-		private IEnumerable<ShaderNodeManifestAssetEntry> GetManifestEntries() {
-			return (_manifest == null ? Array.Empty<ShaderNodeManifestAssetEntry>() : _manifest.Entries)
-				.Where(entry => entry != null && !string.IsNullOrWhiteSpace(entry.TypeId))
-				.OrderBy(entry => entry.Category ?? string.Empty, StringComparer.Ordinal)
-				.ThenBy(entry => entry.DisplayName ?? string.Empty, StringComparer.Ordinal)
-				.ThenBy(entry => entry.TypeId, StringComparer.Ordinal);
-		}
-
-		private ShaderNodeManifestEntry FindRuntimeEntry(string typeId) => _runtimeManifest == null ? null : _runtimeManifest.Find(typeId);
-
-		private ShaderNodeManifestEntry FindRuntimeEntryForGraphNode(SerializedProperty nodes, string nodeId) {
-			for (var index = 0; index < nodes.arraySize; index++) {
-				var node = nodes.GetArrayElementAtIndex(index);
-				if (string.Equals(node.FindPropertyRelative("_id").stringValue, nodeId, StringComparison.Ordinal))
-					return FindRuntimeEntry(node.FindPropertyRelative("_typeId").stringValue);
-			}
-			return null;
-		}
-
-		private static List<string> GetGraphNodeIds(SerializedProperty nodes, out List<string> labels) {
-			var ids = new List<string>();
-			labels = new List<string>();
-			for (var index = 0; index < nodes.arraySize; index++) {
-				var node = nodes.GetArrayElementAtIndex(index);
-				var id = node.FindPropertyRelative("_id").stringValue;
-				if (string.IsNullOrWhiteSpace(id)) continue;
-				ids.Add(id);
-				labels.Add(id + " · " + node.FindPropertyRelative("_typeId").stringValue);
-			}
-			return ids;
-		}
-
-		private static List<string> GetSourceNodeIds(SerializedProperty nodes, out List<string> labels) {
-			var ids = new List<string> { PatchProgramGraph.SceneInputNodeId };
-			labels = new List<string> { "Scene Input" };
-			var graphIds = GetGraphNodeIds(nodes, out var graphLabels);
-			for (var index = 0; index < graphIds.Count; index++) {
-				if (ids.Contains(graphIds[index], StringComparer.Ordinal)) continue;
-				ids.Add(graphIds[index]);
-				labels.Add(graphLabels[index]);
-			}
-			return ids;
-		}
-
-		private static List<string> GetImageInputPorts(ShaderNodeManifestEntry entry, out List<string> labels) {
-			var ports = new List<string>();
-			labels = new List<string>();
-			if (entry == null) return ports;
-			foreach (var input in entry.Inputs.Where(input => input != null && input.Type == NodePortType.ImageFrame)) {
-				ports.Add(input.Id.Value);
-				labels.Add(input.Id.Value + " · " + input.DisplayName);
-			}
-			return ports;
 		}
 
 		private static bool DrawPopup(string label, SerializedProperty property, IReadOnlyList<string> values, IReadOnlyList<string> labels) {
@@ -539,7 +104,20 @@ namespace ShitDesigner.Editor {
 			return true;
 		}
 
-		private void EnsureGraphNodeIds(SerializedProperty nodes) {
+		private static List<string> GetGraphNodeIds(SerializedProperty nodes, out List<string> labels) {
+			var ids = new List<string>();
+			labels = new List<string>();
+			for (var index = 0; index < nodes.arraySize; index++) {
+				var node = nodes.GetArrayElementAtIndex(index);
+				var id = node.FindPropertyRelative("_id").stringValue;
+				if (string.IsNullOrWhiteSpace(id)) continue;
+				ids.Add(id);
+				labels.Add(id + " · " + node.FindPropertyRelative("_typeId").stringValue);
+			}
+			return ids;
+		}
+
+		private static void EnsureGraphNodeIds(SerializedProperty nodes) {
 			var used = new HashSet<string>(StringComparer.Ordinal);
 			for (var index = 0; index < nodes.arraySize; index++) {
 				var node = nodes.GetArrayElementAtIndex(index);
@@ -548,174 +126,9 @@ namespace ShitDesigner.Editor {
 					used.Add(id.stringValue);
 					continue;
 				}
-				var typeId = node.FindPropertyRelative("_typeId").stringValue;
-				var entry = GetManifestEntries().FirstOrDefault(candidate => string.Equals(candidate.TypeId, typeId, StringComparison.Ordinal));
-				id.stringValue = CreateUniqueId(Slug(entry == null ? "node" : entry.DisplayName), used);
+				id.stringValue = CreateUniqueId(Slug(node.FindPropertyRelative("_typeId").stringValue), used);
 				used.Add(id.stringValue);
 			}
-		}
-
-		private void AddGraphNode(SerializedProperty nodes, ShaderNodeManifestAssetEntry entry) {
-			var index = nodes.arraySize;
-			nodes.arraySize++;
-			var node = nodes.GetArrayElementAtIndex(index);
-			var used = Enumerable.Range(0, index).Select(value => nodes.GetArrayElementAtIndex(value).FindPropertyRelative("_id").stringValue);
-			var nodeId = CreateUniqueId(Slug(entry == null ? "node" : entry.DisplayName), used);
-			node.FindPropertyRelative("_id").stringValue = nodeId;
-			node.FindPropertyRelative("_typeId").stringValue = entry == null ? string.Empty : entry.TypeId;
-			node.FindPropertyRelative("_parameters").arraySize = 0;
-			var outputNodeId = _programGraph.FindPropertyRelative("_outputNodeId");
-			var hasOutput = Enumerable.Range(0, nodes.arraySize)
-				.Any(value => string.Equals(nodes.GetArrayElementAtIndex(value).FindPropertyRelative("_id").stringValue, outputNodeId.stringValue, StringComparison.Ordinal));
-			if (string.IsNullOrWhiteSpace(outputNodeId.stringValue) || !hasOutput) outputNodeId.stringValue = nodeId;
-		}
-
-		private void RemoveGraphNode(SerializedProperty nodes, int index, string nodeId) {
-			var output = _programGraph.FindPropertyRelative("_outputNodeId");
-			var connections = _programGraph.FindPropertyRelative("_connections");
-			if (string.Equals(output.stringValue, nodeId, StringComparison.Ordinal))
-				output.stringValue = index > 0 ? nodes.GetArrayElementAtIndex(index - 1).FindPropertyRelative("_id").stringValue : string.Empty;
-			for (var connectionIndex = connections.arraySize - 1; connectionIndex >= 0; connectionIndex--) {
-				var connection = connections.GetArrayElementAtIndex(connectionIndex);
-				var source = connection.FindPropertyRelative("_sourceNodeId").stringValue;
-				var target = connection.FindPropertyRelative("_targetNodeId").stringValue;
-				if (string.Equals(source, nodeId, StringComparison.Ordinal) || string.Equals(target, nodeId, StringComparison.Ordinal)) connections.DeleteArrayElementAtIndex(connectionIndex);
-			}
-			nodes.DeleteArrayElementAtIndex(index);
-		}
-
-		private static void SyncGraphNodeParameters(SerializedProperty node, ShaderNodeManifestEntry entry) {
-			var parameters = node.FindPropertyRelative("_parameters");
-			if (entry == null) return;
-			for (var index = parameters.arraySize - 1; index >= 0; index--) {
-				var id = parameters.GetArrayElementAtIndex(index).FindPropertyRelative("_id").stringValue;
-				if (entry.Parameters.All(parameter => parameter == null || !string.Equals(parameter.Id.Value, id, StringComparison.Ordinal))) parameters.DeleteArrayElementAtIndex(index);
-			}
-			for (var index = 0; index < parameters.arraySize; index++) {
-				var parameter = parameters.GetArrayElementAtIndex(index);
-				var definition = entry.Parameters.FirstOrDefault(candidate => candidate != null && string.Equals(candidate.Id.Value, parameter.FindPropertyRelative("_id").stringValue, StringComparison.Ordinal));
-				if (definition != null) SetParameterType(parameter, definition.Type);
-			}
-		}
-
-		private static void AddGraphParameter(SerializedProperty parameters, ShaderNodeManifestParameter definition) {
-			var index = parameters.arraySize;
-			parameters.arraySize++;
-			var parameter = parameters.GetArrayElementAtIndex(index);
-			parameter.FindPropertyRelative("_id").stringValue = definition.Id.Value;
-			SetParameterValue(parameter, definition.DefaultValue);
-		}
-
-		private void AddGraphConnection(SerializedProperty connections, SerializedProperty nodes) {
-			var index = connections.arraySize;
-			connections.arraySize++;
-			var connection = connections.GetArrayElementAtIndex(index);
-			connection.FindPropertyRelative("_sourceNodeId").stringValue = PatchProgramGraph.SceneInputNodeId;
-			connection.FindPropertyRelative("_sourcePortId").stringValue = PatchProgramGraph.ImagePortId;
-			var targetIds = GetGraphNodeIds(nodes, out _);
-			var targetNodeId = targetIds.Count == 0 ? string.Empty : targetIds[0];
-			connection.FindPropertyRelative("_targetNodeId").stringValue = targetNodeId;
-			var entry = FindRuntimeEntryForGraphNode(nodes, targetNodeId);
-			var ports = GetImageInputPorts(entry, out _);
-			connection.FindPropertyRelative("_targetPortId").stringValue = ports.Count == 0 ? string.Empty : ports[0];
-		}
-
-		private void AddPublishedParameter(IReadOnlyList<SceneNodeOption> sceneNodes) {
-			var index = _parameters.arraySize;
-			_parameters.arraySize++;
-			var parameter = _parameters.GetArrayElementAtIndex(index);
-			var node = sceneNodes[0];
-			var options = GetSceneParameterOptions(node.Definition);
-			var selected = options.FirstOrDefault();
-			parameter.FindPropertyRelative("_nodeId").stringValue = node.Id;
-			parameter.FindPropertyRelative("_parameterId").stringValue = selected == null ? string.Empty : selected.Id;
-			parameter.FindPropertyRelative("_id").stringValue = CreatePublishedParameterId(selected == null ? string.Empty : selected.Id, index);
-			parameter.FindPropertyRelative("_displayName").stringValue = selected == null ? string.Empty : selected.Label;
-		}
-
-		private List<SceneNodeOption> GetConfiguredSceneNodes() {
-			var result = new List<SceneNodeOption>();
-			var used = new HashSet<string>(StringComparer.Ordinal);
-			for (var nodeIndex = 0; nodeIndex < _nodes.arraySize; nodeIndex++) {
-				var definition = _nodes.GetArrayElementAtIndex(nodeIndex).objectReferenceValue as Scene3DDefinition;
-				if (definition == null || string.IsNullOrWhiteSpace(definition.Id) || !used.Add(definition.Id)) continue;
-				result.Add(new SceneNodeOption(definition.Id, FormatSceneDefinitionLabel(definition), definition));
-			}
-			return result;
-		}
-
-		private static List<SceneParameterOption> GetSceneParameterOptions(Scene3DDefinition definition) {
-			var result = new List<SceneParameterOption>();
-			if (definition == null || definition.Prefab == null) return result;
-			var seen = new HashSet<string>(StringComparer.Ordinal);
-			foreach (var component in definition.Prefab.GetComponentsInChildren<MonoBehaviour>(true)) {
-				if (component == null) continue;
-				var definitionProperty = component.GetType().GetProperty("Definition", BindingFlags.Instance | BindingFlags.Public);
-				if (definitionProperty == null || definitionProperty.GetIndexParameters().Length != 0) continue;
-				object parameterDefinition;
-				try { parameterDefinition = definitionProperty.GetValue(component, null); }
-				catch { continue; }
-				if (parameterDefinition == null) continue;
-				var id = ReadStringProperty(parameterDefinition, "Id");
-				if (string.IsNullOrWhiteSpace(id) || !seen.Add(id)) continue;
-				var displayName = ReadStringProperty(parameterDefinition, "DisplayName");
-				result.Add(new SceneParameterOption(id, string.IsNullOrWhiteSpace(displayName) ? id : displayName));
-			}
-			return result.OrderBy(option => option.Label, StringComparer.Ordinal).ThenBy(option => option.Id, StringComparer.Ordinal).ToList();
-		}
-
-		private static string ReadStringProperty(object value, string propertyName) {
-			var property = value.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
-			if (property == null || property.PropertyType != typeof(string)) return string.Empty;
-			try { return property.GetValue(value, null) as string ?? string.Empty; }
-			catch { return string.Empty; }
-		}
-
-		private static SerializedProperty ValueProperty(SerializedProperty parameter, ParameterType type) {
-			switch (type) {
-				case ParameterType.Float: return parameter.FindPropertyRelative("_floatValue");
-				case ParameterType.Int: return parameter.FindPropertyRelative("_intValue");
-				case ParameterType.Bool: return parameter.FindPropertyRelative("_boolValue");
-				case ParameterType.Vector2: return parameter.FindPropertyRelative("_vector2Value");
-				case ParameterType.Vector3: return parameter.FindPropertyRelative("_vector3Value");
-				case ParameterType.Vector4: return parameter.FindPropertyRelative("_vector4Value");
-				case ParameterType.Color: return parameter.FindPropertyRelative("_colorValue");
-				case ParameterType.String:
-				case ParameterType.Enum:
-				case ParameterType.MediaAssetReference: return parameter.FindPropertyRelative("_textValue");
-				default: return null;
-			}
-		}
-
-		private static void SetParameterType(SerializedProperty parameter, ParameterType type) {
-			parameter.FindPropertyRelative("_type").enumValueIndex = (int)type;
-		}
-
-		private static void SetParameterValue(SerializedProperty parameter, ParameterValue value) {
-			SetParameterType(parameter, value.Type);
-			switch (value.Type) {
-				case ParameterType.Float: parameter.FindPropertyRelative("_floatValue").floatValue = value.AsFloat(); break;
-				case ParameterType.Int: parameter.FindPropertyRelative("_intValue").intValue = value.AsInt(); break;
-				case ParameterType.Bool: parameter.FindPropertyRelative("_boolValue").boolValue = value.AsBool(); break;
-				case ParameterType.Vector2:
-					var vector2 = value.AsVector2(); parameter.FindPropertyRelative("_vector2Value").vector2Value = new Vector2(vector2.X, vector2.Y); break;
-				case ParameterType.Vector3:
-					var vector3 = value.AsVector3(); parameter.FindPropertyRelative("_vector3Value").vector3Value = new Vector3(vector3.X, vector3.Y, vector3.Z); break;
-				case ParameterType.Vector4:
-					var vector4 = value.AsVector4(); parameter.FindPropertyRelative("_vector4Value").vector4Value = new Vector4(vector4.X, vector4.Y, vector4.Z, vector4.W); break;
-				case ParameterType.Color:
-					var color = value.AsColor(); parameter.FindPropertyRelative("_colorValue").colorValue = new Color(color.R, color.G, color.B, color.A); break;
-				case ParameterType.String:
-				case ParameterType.Enum:
-				case ParameterType.MediaAssetReference: parameter.FindPropertyRelative("_textValue").stringValue = value.AsString() ?? string.Empty; break;
-			}
-		}
-
-		private string CreatePublishedParameterId(string parameterId, int currentIndex) {
-			var used = Enumerable.Range(0, _parameters.arraySize).Where(index => index != currentIndex)
-				.Select(index => _parameters.GetArrayElementAtIndex(index).FindPropertyRelative("_id").stringValue);
-			var preferred = string.IsNullOrWhiteSpace(parameterId) ? "parameter" : parameterId;
-			return CreateUniqueId(Slug(preferred), used);
 		}
 
 		private static string CreateUniqueId(string preferred, IEnumerable<string> existing) {
@@ -738,33 +151,6 @@ namespace ShitDesigner.Editor {
 			if (result.Length == 0) return "item";
 			if (char.IsDigit(result[0])) result.Insert(0, "item_");
 			return result.ToString();
-		}
-
-		private static string FormatNodeLabel(ShaderNodeManifestAssetEntry entry) {
-			var name = string.IsNullOrWhiteSpace(entry.DisplayName) ? entry.TypeId : entry.DisplayName;
-			return name + " · " + entry.Category + " (" + entry.TypeId + ")";
-		}
-
-		private static string FormatParameterLabel(ShaderNodeManifestParameter parameter)
-			=> string.IsNullOrWhiteSpace(parameter.DisplayName) ? parameter.Id.Value : parameter.DisplayName + " (" + parameter.Id.Value + ")";
-
-		private static string FormatSceneDefinitionLabel(Scene3DDefinition definition)
-			=> string.IsNullOrWhiteSpace(definition.name) ? definition.Id : definition.name + " (" + definition.Id + ")";
-
-		private static string GetSelectedLabel(IReadOnlyList<SceneParameterOption> options, string id, string fallback)
-			=> options.FirstOrDefault(option => string.Equals(option.Id, id, StringComparison.Ordinal))?.Label ?? fallback;
-
-		private sealed class SceneNodeOption {
-			public string Id { get; }
-			public string Label { get; }
-			public Scene3DDefinition Definition { get; }
-			public SceneNodeOption(string id, string label, Scene3DDefinition definition) { Id = id; Label = label; Definition = definition; }
-		}
-
-		private sealed class SceneParameterOption {
-			public string Id { get; }
-			public string Label { get; }
-			public SceneParameterOption(string id, string label) { Id = id; Label = label; }
 		}
 	}
 
