@@ -84,9 +84,8 @@ namespace ShitDesigner.Main {
 			Scene3DDefinition definition, int index, IReadOnlyDictionary<NodeTypeId, LiveProgramShaderDefinition> shaderDefinitions,
 			Shader flashShader, PatchFlashDefinition flashPatch) {
 			var created = sceneManager.Create(new SceneCreateRequest(NodeInstanceId.New(), SceneNodeKind.ThreeD,
-				"ShitDesigner.Main.LiveScene." + index, 1, definition.Prefab));
+				"ShitDesigner.Main.LiveScene." + index, 1, definition.Prefab, transparentBackground: true));
 			if (created.IsFailure) throw new InvalidOperationException(created.Error.Message);
-			ConfigureGeneratedBackgroundCamera(created.Value.Camera);
 			var root = created.Value.Root.GetComponent<LiveSceneRoot>();
 			if (root == null) {
 				created.Value.Dispose();
@@ -164,12 +163,6 @@ namespace ShitDesigner.Main {
 				for (var index = nodes.Count - 1; index >= 0; index--) nodes[index].Dispose();
 				throw;
 			}
-		}
-
-		private static void ConfigureGeneratedBackgroundCamera(Camera camera) {
-			if (camera == null) throw new ArgumentNullException(nameof(camera));
-			camera.clearFlags = CameraClearFlags.SolidColor;
-			camera.backgroundColor = Color.clear;
 		}
 
 		private static void ValidateDefinitions(IReadOnlyList<PatchDefinition> definitions) {
