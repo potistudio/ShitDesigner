@@ -54,11 +54,8 @@ MonoBehaviour:
       _sourcePortId: image
       _targetNodeId: composite
       _targetPortId: b
-  _nodeGroups:
-  - _id: source
-    _displayName: Source
-    _nodes:
-    - {fileID: 11400000, guid: 4cdd3c05b6948ca4e9c6154f4cd236fc, type: 2}
+  _nodes:
+  - {fileID: 11400000, guid: 4cdd3c05b6948ca4e9c6154f4cd236fc, type: 2}
   _parameters:
   - _id: motion
     _displayName: Motion

@@ -17,7 +17,7 @@ namespace ShitDesigner.Editor {
 		private SerializedProperty _id;
 		private SerializedProperty _displayName;
 		private SerializedProperty _programGraph;
-		private SerializedProperty _nodeGroups;
+		private SerializedProperty _nodes;
 		private SerializedProperty _parameters;
 		private SerializedProperty _flash;
 		private ShaderNodeManifestAsset _manifest;
@@ -32,7 +32,7 @@ namespace ShitDesigner.Editor {
 			_id = serializedObject.FindProperty("_id");
 			_displayName = serializedObject.FindProperty("_displayName");
 			_programGraph = serializedObject.FindProperty("_programGraph");
-			_nodeGroups = serializedObject.FindProperty("_nodeGroups");
+			_nodes = serializedObject.FindProperty("_nodes");
 			_parameters = serializedObject.FindProperty("_parameters");
 			_flash = serializedObject.FindProperty("_flash");
 			RefreshManifest(true);
@@ -55,7 +55,7 @@ namespace ShitDesigner.Editor {
 			DrawProgramGraph();
 
 			EditorGUILayout.Space(6f);
-			DrawSceneNodeGroups();
+			DrawSceneNodes();
 
 			EditorGUILayout.Space(6f);
 			DrawPublishedParameters();
@@ -336,47 +336,22 @@ namespace ShitDesigner.Editor {
 			if (GUILayout.Button("Add Connection")) AddGraphConnection(connections, nodes);
 		}
 
-		private void DrawSceneNodeGroups() {
-			EditorGUILayout.LabelField("Scene Node Groups", EditorStyles.boldLabel);
-			EditorGUILayout.HelpBox("Groups organize Scene3DDefinition assets. Shader graph nodes are configured under Program Graph.", MessageType.None);
-			for (var groupIndex = 0; groupIndex < _nodeGroups.arraySize; groupIndex++) {
-				var group = _nodeGroups.GetArrayElementAtIndex(groupIndex);
-				var id = group.FindPropertyRelative("_id");
-				var displayName = group.FindPropertyRelative("_displayName");
-				if (string.IsNullOrWhiteSpace(id.stringValue)) id.stringValue = CreateGroupId(displayName.stringValue, groupIndex);
-				var nodes = group.FindPropertyRelative("_nodes");
-
-				EditorGUILayout.BeginVertical("box");
+		private void DrawSceneNodes() {
+			EditorGUILayout.LabelField("Scene Nodes", EditorStyles.boldLabel);
+			EditorGUILayout.HelpBox("Select the Scene3DDefinition assets used by this patch. Shader graph nodes are configured under Program Graph.", MessageType.None);
+			for (var nodeIndex = 0; nodeIndex < _nodes.arraySize; nodeIndex++) {
+				var node = _nodes.GetArrayElementAtIndex(nodeIndex);
 				EditorGUILayout.BeginHorizontal();
-				EditorGUILayout.LabelField("Group " + (groupIndex + 1), EditorStyles.boldLabel);
+				DrawSceneDefinitionSelector(node, new GUIContent("Scene Node " + (nodeIndex + 1)));
 				if (GUILayout.Button("Remove", GUILayout.Width(70f))) {
-					_nodeGroups.DeleteArrayElementAtIndex(groupIndex);
+					node.objectReferenceValue = null;
+					_nodes.DeleteArrayElementAtIndex(nodeIndex);
 					EditorGUILayout.EndHorizontal();
-					EditorGUILayout.EndVertical();
 					break;
 				}
 				EditorGUILayout.EndHorizontal();
-				EditorGUILayout.PropertyField(displayName, new GUIContent("Display Name"));
-				EditorGUI.BeginDisabledGroup(true);
-				EditorGUILayout.TextField(new GUIContent("Generated ID", "Group IDs are generated because they are only used for stable validation."), id.stringValue);
-				EditorGUI.EndDisabledGroup();
-
-				for (var nodeIndex = 0; nodeIndex < nodes.arraySize; nodeIndex++) {
-					var node = nodes.GetArrayElementAtIndex(nodeIndex);
-					EditorGUILayout.BeginHorizontal();
-					DrawSceneDefinitionSelector(node, new GUIContent("Scene Node " + (nodeIndex + 1)));
-					if (GUILayout.Button("Remove", GUILayout.Width(70f))) {
-						node.objectReferenceValue = null;
-						nodes.DeleteArrayElementAtIndex(nodeIndex);
-						EditorGUILayout.EndHorizontal();
-						break;
-					}
-					EditorGUILayout.EndHorizontal();
-				}
-				if (GUILayout.Button("Add Scene Node")) nodes.arraySize++;
-				EditorGUILayout.EndVertical();
 			}
-			if (GUILayout.Button("Add Scene Node Group")) AddSceneNodeGroup();
+			if (GUILayout.Button("Add Scene Node")) _nodes.arraySize++;
 		}
 
 		private void DrawPublishedParameters() {
@@ -420,7 +395,7 @@ namespace ShitDesigner.Editor {
 					if (string.IsNullOrWhiteSpace(displayName.stringValue)) displayName.stringValue = GetSelectedLabel(parameterOptions, parameterId.stringValue, parameterId.stringValue);
 				}
 				else {
-					EditorGUILayout.HelpBox("Add a Scene3DDefinition to a Scene Node Group before publishing a parameter.", MessageType.Info);
+					EditorGUILayout.HelpBox("Add a Scene3DDefinition to the Scene Nodes list before publishing a parameter.", MessageType.Info);
 					EditorGUILayout.PropertyField(nodeId, new GUIContent("Scene Node ID"));
 					EditorGUILayout.PropertyField(parameterId, new GUIContent("Parameter ID"));
 				}
@@ -432,7 +407,7 @@ namespace ShitDesigner.Editor {
 			}
 
 			if (sceneNodes.Count > 0 && GUILayout.Button("Add Published Parameter")) AddPublishedParameter(sceneNodes);
-		else if (sceneNodes.Count == 0) EditorGUILayout.HelpBox("Published parameter choices become available after a Scene3DDefinition is assigned to a group.", MessageType.Info);
+			else if (sceneNodes.Count == 0) EditorGUILayout.HelpBox("Published parameter choices become available after a Scene3DDefinition is assigned to the list.", MessageType.Info);
 		}
 
 		private void DrawSceneDefinitionSelector(SerializedProperty property, GUIContent label) {
@@ -652,14 +627,6 @@ namespace ShitDesigner.Editor {
 			connection.FindPropertyRelative("_targetPortId").stringValue = ports.Count == 0 ? string.Empty : ports[0];
 		}
 
-		private void AddSceneNodeGroup() {
-			var index = _nodeGroups.arraySize;
-			_nodeGroups.arraySize++;
-			var group = _nodeGroups.GetArrayElementAtIndex(index);
-			group.FindPropertyRelative("_id").stringValue = CreateGroupId("group", index);
-			group.FindPropertyRelative("_displayName").stringValue = "Group " + (index + 1);
-		}
-
 		private void AddPublishedParameter(IReadOnlyList<SceneNodeOption> sceneNodes) {
 			var index = _parameters.arraySize;
 			_parameters.arraySize++;
@@ -676,13 +643,10 @@ namespace ShitDesigner.Editor {
 		private List<SceneNodeOption> GetConfiguredSceneNodes() {
 			var result = new List<SceneNodeOption>();
 			var used = new HashSet<string>(StringComparer.Ordinal);
-			for (var groupIndex = 0; groupIndex < _nodeGroups.arraySize; groupIndex++) {
-				var nodes = _nodeGroups.GetArrayElementAtIndex(groupIndex).FindPropertyRelative("_nodes");
-				for (var nodeIndex = 0; nodeIndex < nodes.arraySize; nodeIndex++) {
-					var definition = nodes.GetArrayElementAtIndex(nodeIndex).objectReferenceValue as Scene3DDefinition;
-					if (definition == null || string.IsNullOrWhiteSpace(definition.Id) || !used.Add(definition.Id)) continue;
-					result.Add(new SceneNodeOption(definition.Id, FormatSceneDefinitionLabel(definition), definition));
-				}
+			for (var nodeIndex = 0; nodeIndex < _nodes.arraySize; nodeIndex++) {
+				var definition = _nodes.GetArrayElementAtIndex(nodeIndex).objectReferenceValue as Scene3DDefinition;
+				if (definition == null || string.IsNullOrWhiteSpace(definition.Id) || !used.Add(definition.Id)) continue;
+				result.Add(new SceneNodeOption(definition.Id, FormatSceneDefinitionLabel(definition), definition));
 			}
 			return result;
 		}
@@ -752,12 +716,6 @@ namespace ShitDesigner.Editor {
 				case ParameterType.Enum:
 				case ParameterType.MediaAssetReference: parameter.FindPropertyRelative("_textValue").stringValue = value.AsString() ?? string.Empty; break;
 			}
-		}
-
-		private string CreateGroupId(string preferred, int currentIndex) {
-			var used = Enumerable.Range(0, _nodeGroups.arraySize).Where(index => index != currentIndex)
-				.Select(index => _nodeGroups.GetArrayElementAtIndex(index).FindPropertyRelative("_id").stringValue);
-			return CreateUniqueId(Slug(string.IsNullOrWhiteSpace(preferred) ? "group" : preferred), used);
 		}
 
 		private string CreatePublishedParameterId(string parameterId, int currentIndex) {
