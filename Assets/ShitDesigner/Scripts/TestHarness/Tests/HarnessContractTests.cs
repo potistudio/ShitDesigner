@@ -863,7 +863,7 @@ namespace ShitDesigner.TestHarness.Tests
 			Assert.That(ids, Does.Contain(VideoPlayerContract.PlayingParameterId));
 			Assert.That(ids, Does.Contain(VideoPlayerContract.LoopParameterId));
 			Assert.That(video.Parameters.Single(x => x.Id.Value == VideoPlayerContract.MediaAssetParameterId).Type, Is.EqualTo(ParameterType.MediaAssetReference));
-			Assert.That(video.Parameters.Single(x => x.Id.Value == VideoPlayerContract.PlayingParameterId).DefaultValue.AsBool(), Is.False);
+			Assert.That(video.Parameters.Single(x => x.Id.Value == VideoPlayerContract.PlayingParameterId).DefaultValue.AsBool(), Is.True);
 			Assert.That(video.Parameters.Single(x => x.Id.Value == VideoPlayerContract.LoopParameterId).DefaultValue.AsBool(), Is.True);
 			Assert.That(HarnessVideoTransportContract.RequiredParameterIds, Is.EquivalentTo(new[]
 			{

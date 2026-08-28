@@ -68,6 +68,7 @@ namespace ShitDesigner.Nodes.Tests {
 			Assert.That(playhead.DefaultValue.AsFloat(), Is.EqualTo(0f));
 			Assert.That(speed.Minimum.Value.AsFloat(), Is.EqualTo(0f));
 			Assert.That(speed.Maximum.Value.AsFloat(), Is.EqualTo(4f));
+			Assert.That(video.Parameters.Single(x => x.Id.Value == "transport.playing").DefaultValue.AsBool(), Is.True);
 			Assert.That(video.Parameters.Single(x => x.Id.Value == "transport.loop").DefaultValue.AsBool(), Is.True);
 		}
 
