@@ -50,7 +50,7 @@ namespace ShitDesigner.Editor {
 			EditorGUILayout.PropertyField(_parameters, new GUIContent("Published Parameters"), true);
 
 			EditorGUILayout.Space(6f);
-			EditorGUILayout.PropertyField(m_KeyboardInputs, new GUIContent("Keyboard Inputs", "Maps keyboard keys to published parameters while this patch is loaded. Pressed is 1 and released is 0."), true);
+			EditorGUILayout.PropertyField(m_KeyboardInputs, new GUIContent("Keyboard Inputs", "Maps key presses to published parameters while this patch is loaded. A press sends 1.0; release sends no request."), true);
 
 			EditorGUILayout.Space(6f);
 			EditorGUILayout.PropertyField(m_MidiInputs, new GUIContent("MIDI Inputs", "Maps MIDI controls to published parameters while this patch is loaded."), true);

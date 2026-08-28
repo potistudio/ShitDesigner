@@ -156,7 +156,7 @@
 - `PatchDefinition` のInspectorは生成済みShader Manifestとプロジェクト内の `Scene3DDefinition` を選択肢として表示する。ノード型、接続元/接続先、画像ポート、ShaderパラメーターおよびScene公開パラメーターのIDは、候補選択または定義からの自動生成を基本とし、手入力を要求しない。
 - `PatchDefinition` のShader graph node IDおよび公開パラメーターIDは、空欄の追加時にInspectorが一意な値を生成する。Scene3DDefinitionはScene Nodesリストから選択し、Scene Input IDは `scene` に固定し、Shader nodeのSource Portは `image` に固定する。
 - `PatchDefinition` はMIDI入力一覧を持ち、MIDIのメッセージ種別、チャンネル、番号、生値範囲、反転および対象となる公開パラメーターIDを設定する。`ApplicationLiveHost` はロード中パッチの設定だけを `LiveParameterQueue` の `SetParameter` 要求へ変換する。
-- `PatchDefinition` はKeyboard入力一覧を持ち、Input SystemのKeyおよび対象となる公開パラメーターIDを設定する。押下時は1.0、離上時は0.0として、`ApplicationLiveHost` はロード中パッチの設定だけを `LiveParameterQueue` の `SetParameter` 要求へ変換する。
+- `PatchDefinition` はKeyboard入力一覧を持ち、Input SystemのKeyおよび対象となる公開パラメーターIDを設定する。押下時だけ1.0を送り、離上時は要求を生成しない。`ApplicationLiveHost` はロード中パッチの設定だけを `LiveParameterQueue` の `SetParameter` 要求へ変換する。
 - Program graphのLook調整は `PatchDefinition` Assetの変更として保存し、C#スクリプトのコンパイルを必要としない。
 - `PatchDefinition` は任意の `PatchFlashDefinition` を持ち、発火時に表示する画像と表示時間をパッチ単位で定義する。未設定のパッチは画像フラッシュを行わず、共通の白フラッシュだけを行う。
 - Bootは最初のパッチだけを事前ロードする。
@@ -182,7 +182,7 @@
 
 - 左右矢印はパッチカタログの選択を移動し、Enterは選択パッチを先頭の空きスロットへQueueする。`1`から`4`は対応するパッチスロットをPlayし、`Shift + 1`から`4`は対応スロットをClearする。
 - SpaceはUIのTAPボタンと同じBPM Tap入力とする。Fは現在のパッチにFlashを発火する。
-- `PatchDefinition` のKeyboard Inputsは、キー押下を1.0、離上を0.0として、ロード中パッチの公開パラメーターへ送る。キーボードの全体操作はこの設定とは別に固定される。
+- `PatchDefinition` のKeyboard Inputsは、キー押下時だけ1.0をロード中パッチの公開パラメーターへ送る。離上では要求を生成せず、キーボードの全体操作はこの設定とは別に固定される。
 - Motion、Scaleなどの連続値はMIDI入力またはUIの操作面から要求する。
 
 ### 2026-08-26: 各3Dシーンのルートが公開パラメーターAPIを提供する
