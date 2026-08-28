@@ -1219,7 +1219,7 @@ namespace ShitDesigner.Bootstrap {
 	/// the production boundary; this driver does not add a second scheduler
 	/// or accumulate a backlog.</summary>
 	public sealed class ApplicationLoopDriverCore {
-		public const int ProgramFramesPerSecond = 30;
+		public const int ProgramFramesPerSecond = 60;
 		// Application and Program use the same requested desktop pacing. The
 		// value remains a Unity target request, not a promise about the host's
 		// actual refresh cadence.

@@ -6,6 +6,7 @@ namespace ShitDesigner.Main {
 	[DisallowMultipleComponent]
 	public sealed class ShowerSequenceParameter : LiveSceneParameter, ISceneGraphClockReceiver {
 		public const string ParameterId = "shower_sequence";
+		private const float SequenceFrameDuration = 1f / 30f;
 
 		[SerializeField] private string _id = ParameterId;
 		[SerializeField] private string _displayName = "Shower Sequence";
@@ -13,6 +14,7 @@ namespace ShitDesigner.Main {
 		[SerializeField] private float _value;
 
 		private SequencePhase _phase;
+		private float _remainingSeconds;
 		private bool _initialized;
 		private bool _graphClockDriven;
 
@@ -20,7 +22,7 @@ namespace ShitDesigner.Main {
 
 		private void Update() {
 			if (UnityEngine.Application.isPlaying && !_graphClockDriven)
-				AdvanceFrame();
+				Advance(Time.unscaledDeltaTime);
 		}
 
 		public override void InitializeParameter() {
@@ -64,30 +66,41 @@ namespace ShitDesigner.Main {
 		}
 
 		public void AdvanceGraphClock(double deltaSeconds) {
-			if (!_graphClockDriven)
+			if (!_graphClockDriven || deltaSeconds <= 0d)
 				return;
 
-			AdvanceFrame();
+			Advance((float)System.Math.Min(deltaSeconds, float.MaxValue));
 		}
 
 		private void StartSequence() {
 			SetMonochromeEnabled(true);
 			_phase = SequencePhase.Monochrome;
+			_remainingSeconds = SequenceFrameDuration;
 		}
 
-		private void AdvanceFrame() {
-			switch (_phase) {
-				case SequencePhase.Monochrome:
-					_shower.Rearrange();
-					_phase = SequencePhase.Rearranging;
-					break;
-				case SequencePhase.Rearranging:
-					SetMonochromeEnabled(false);
-					_phase = SequencePhase.Released;
-					break;
-				case SequencePhase.Released:
-					_phase = SequencePhase.Idle;
-					break;
+		private void Advance(float deltaSeconds) {
+			while (deltaSeconds > 0f && _phase != SequencePhase.Idle) {
+				var elapsed = Mathf.Min(deltaSeconds, _remainingSeconds);
+				deltaSeconds -= elapsed;
+				_remainingSeconds -= elapsed;
+				if (_remainingSeconds > 0f)
+					return;
+
+				switch (_phase) {
+					case SequencePhase.Monochrome:
+						_shower.Rearrange();
+						_phase = SequencePhase.Rearranging;
+						_remainingSeconds = SequenceFrameDuration;
+						break;
+					case SequencePhase.Rearranging:
+						SetMonochromeEnabled(false);
+						_phase = SequencePhase.Released;
+						_remainingSeconds = SequenceFrameDuration;
+						break;
+					default:
+						_phase = SequencePhase.Idle;
+						break;
+				}
 			}
 		}
 
