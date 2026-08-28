@@ -80,10 +80,25 @@ namespace ShitDesigner.Stage {
 				animator.speed = 1f;
 				try {
 					animator.Update(updateSeconds);
+					LoopAnimatorStates(animator);
 				}
 				finally {
 					animator.speed = 0f;
 				}
+			}
+		}
+
+		private static void LoopAnimatorStates(Animator animator) {
+			for (var layer = 0; layer < animator.layerCount; layer++) {
+				if (animator.IsInTransition(layer))
+					continue;
+
+				var state = animator.GetCurrentAnimatorStateInfo(layer);
+				if (state.loop || state.normalizedTime < 1f || state.fullPathHash == 0)
+					continue;
+
+				animator.Play(state.fullPathHash, layer, Mathf.Repeat(state.normalizedTime, 1f));
+				animator.Update(0f);
 			}
 		}
 
