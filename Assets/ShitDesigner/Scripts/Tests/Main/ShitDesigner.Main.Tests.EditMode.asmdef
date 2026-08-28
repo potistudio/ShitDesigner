@@ -9,7 +9,8 @@
     "ShitDesigner.Input",
     "ShitDesigner.Rendering",
     "ShitDesigner.Runtime",
-    "ShitDesigner.Scene"
+    "ShitDesigner.Scene",
+    "Unity.InputSystem"
   ],
   "includePlatforms": [
     "Editor"

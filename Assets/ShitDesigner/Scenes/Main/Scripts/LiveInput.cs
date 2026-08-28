@@ -9,20 +9,29 @@ using UnityEngine.InputSystem;
 namespace ShitDesigner.Main {
 	/// <summary>Maps live keyboard controls to live requests without owning a PlayerLoop.</summary>
 	public sealed class LiveKeyboardInput {
-		private readonly LiveParameterQueue _queue;
-		private readonly Action<int> _launchPatchSlot;
-		private readonly Action<int> _clearPatchSlot;
-		private readonly Action<int> _moveCatalogSelection;
-		private readonly Action _queueSelectedPatch;
-		private readonly Action<double> _tapBpm;
+		private readonly LiveParameterQueue m_Queue;
+		private readonly IReadOnlyDictionary<string, PatchDefinition> m_PatchesById;
+		private readonly Action<int> m_LaunchPatchSlot;
+		private readonly Action<int> m_ClearPatchSlot;
+		private readonly Action<int> m_MoveCatalogSelection;
+		private readonly Action m_QueueSelectedPatch;
+		private readonly Action<double> m_TapBpm;
 
-		public LiveKeyboardInput(LiveParameterQueue queue, Action<int> launchPatchSlot, Action<int> clearPatchSlot, Action<int> moveCatalogSelection, Action queueSelectedPatch, Action<double> tapBpm) {
-			_queue = queue ?? throw new ArgumentNullException(nameof(queue));
-			_launchPatchSlot = launchPatchSlot ?? throw new ArgumentNullException(nameof(launchPatchSlot));
-			_clearPatchSlot = clearPatchSlot ?? throw new ArgumentNullException(nameof(clearPatchSlot));
-			_moveCatalogSelection = moveCatalogSelection ?? throw new ArgumentNullException(nameof(moveCatalogSelection));
-			_queueSelectedPatch = queueSelectedPatch ?? throw new ArgumentNullException(nameof(queueSelectedPatch));
-			_tapBpm = tapBpm ?? throw new ArgumentNullException(nameof(tapBpm));
+		public LiveKeyboardInput(LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches, Action<int> launchPatchSlot, Action<int> clearPatchSlot, Action<int> moveCatalogSelection, Action queueSelectedPatch, Action<double> tapBpm) {
+			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
+			if (patches == null) throw new ArgumentNullException(nameof(patches));
+
+			var patchesById = new Dictionary<string, PatchDefinition>(StringComparer.Ordinal);
+			foreach (var patch in patches) {
+				if (patch == null || string.IsNullOrWhiteSpace(patch.Id)) throw new ArgumentException("Every live patch requires an ID.", nameof(patches));
+				if (!patchesById.TryAdd(patch.Id, patch)) throw new ArgumentException("Live patch IDs must be unique.", nameof(patches));
+			}
+			m_PatchesById = patchesById;
+			m_LaunchPatchSlot = launchPatchSlot ?? throw new ArgumentNullException(nameof(launchPatchSlot));
+			m_ClearPatchSlot = clearPatchSlot ?? throw new ArgumentNullException(nameof(clearPatchSlot));
+			m_MoveCatalogSelection = moveCatalogSelection ?? throw new ArgumentNullException(nameof(moveCatalogSelection));
+			m_QueueSelectedPatch = queueSelectedPatch ?? throw new ArgumentNullException(nameof(queueSelectedPatch));
+			m_TapBpm = tapBpm ?? throw new ArgumentNullException(nameof(tapBpm));
 		}
 
 		public void Poll(string loadedPatchId) {
@@ -34,16 +43,32 @@ namespace ShitDesigner.Main {
 			if (keyboard.digit2Key.wasPressedThisFrame) HandleSlotKey(1, clearSlot);
 			if (keyboard.digit3Key.wasPressedThisFrame) HandleSlotKey(2, clearSlot);
 			if (keyboard.digit4Key.wasPressedThisFrame) HandleSlotKey(3, clearSlot);
-			if (keyboard.leftArrowKey.wasPressedThisFrame) _moveCatalogSelection(-1);
-			if (keyboard.rightArrowKey.wasPressedThisFrame) _moveCatalogSelection(1);
-			if (keyboard.enterKey.wasPressedThisFrame) _queueSelectedPatch();
-			if (keyboard.spaceKey.wasPressedThisFrame) _tapBpm(Time.unscaledTimeAsDouble);
-			if (keyboard.fKey.wasPressedThisFrame) _queue.EnqueueTriggerFlash(loadedPatchId);
+			if (keyboard.leftArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(-1);
+			if (keyboard.rightArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(1);
+			if (keyboard.enterKey.wasPressedThisFrame) m_QueueSelectedPatch();
+			if (keyboard.spaceKey.wasPressedThisFrame) m_TapBpm(Time.unscaledTimeAsDouble);
+			if (keyboard.fKey.wasPressedThisFrame) m_Queue.EnqueueTriggerFlash(loadedPatchId);
+			QueuePatchKeyboardInputs(keyboard, loadedPatchId);
 		}
 
 		private void HandleSlotKey(int slotIndex, bool clearSlot) {
-			if (clearSlot) _clearPatchSlot(slotIndex);
-			else _launchPatchSlot(slotIndex);
+			if (clearSlot) m_ClearPatchSlot(slotIndex);
+			else m_LaunchPatchSlot(slotIndex);
+		}
+
+		private void QueuePatchKeyboardInputs(Keyboard keyboard, string loadedPatchId) {
+			if (!m_PatchesById.TryGetValue(loadedPatchId, out var patch)) return;
+
+			foreach (var key in keyboard.allKeys) {
+				var pressed = key.wasPressedThisFrame;
+				var released = key.wasReleasedThisFrame;
+				if (!pressed && !released) continue;
+				foreach (var binding in patch.KeyboardInputs) {
+					if (binding == null || !binding.Matches(key.keyCode)) continue;
+					if (pressed) m_Queue.EnqueueSetParameter(loadedPatchId, binding.ParameterId, binding.Value(true));
+					if (released) m_Queue.EnqueueSetParameter(loadedPatchId, binding.ParameterId, binding.Value(false));
+				}
+			}
 		}
 
 	}
