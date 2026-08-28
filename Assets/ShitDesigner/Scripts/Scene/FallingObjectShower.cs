@@ -18,6 +18,7 @@ namespace ShitDesigner.Scene {
 
 		[Header("Motion")]
 		[SerializeField] private Vector2 fallSpeedRange = new Vector2(0.35f, 0.75f);
+		[SerializeField] private Vector2 rotationSpeedRange = new Vector2(15f, 50f);
 
 		private readonly List<FallingObject> _objects = new List<FallingObject>();
 		private System.Random _random;
@@ -56,6 +57,8 @@ namespace ShitDesigner.Scene {
 			spawnExtents.z = Mathf.Max(0f, spawnExtents.z);
 			fallSpeedRange.x = Mathf.Max(0f, fallSpeedRange.x);
 			fallSpeedRange.y = Mathf.Max(fallSpeedRange.x, fallSpeedRange.y);
+			rotationSpeedRange.x = Mathf.Max(0f, rotationSpeedRange.x);
+			rotationSpeedRange.y = Mathf.Max(rotationSpeedRange.x, rotationSpeedRange.y);
 		}
 
 		private void CreateObjects() {
@@ -110,6 +113,8 @@ namespace ShitDesigner.Scene {
 				var position = fallingObject.Transform.localPosition;
 				position.y -= fallingObject.Speed * deltaTime;
 				fallingObject.Transform.localPosition = position;
+				fallingObject.Transform.localRotation = Quaternion.Euler(fallingObject.RotationSpeed * deltaTime)
+					* fallingObject.Transform.localRotation;
 				if (position.y < bottom)
 					ResetPosition(fallingObject, false);
 			}
@@ -123,9 +128,13 @@ namespace ShitDesigner.Scene {
 				: spawnExtents.y;
 			position.z += NextFloat(-spawnExtents.z, spawnExtents.z);
 			fallingObject.Transform.localPosition = position;
-			fallingObject.Transform.localRotation = Quaternion.Euler(0f, NextFloat(0f, 360f), 0f);
+			fallingObject.Transform.localRotation = Quaternion.Euler(
+				NextFloat(0f, 360f),
+				NextFloat(0f, 360f),
+				NextFloat(0f, 360f));
 			fallingObject.Transform.localScale = Vector3.one * NextFloat(objectScaleRange.x, objectScaleRange.y);
 			fallingObject.Speed = NextFloat(fallSpeedRange.x, fallSpeedRange.y);
+			fallingObject.RotationSpeed = GetRotationSpeed();
 		}
 
 		private void ReleaseObjects() {
@@ -137,6 +146,13 @@ namespace ShitDesigner.Scene {
 
 		private float NextFloat(float minimum, float maximum) {
 			return Mathf.Lerp(minimum, maximum, (float)_random.NextDouble());
+		}
+
+		private Vector3 GetRotationSpeed() {
+			var axis = new Vector3(NextFloat(-1f, 1f), NextFloat(-1f, 1f), NextFloat(-1f, 1f));
+			if (axis.sqrMagnitude < 0.0001f)
+				axis = Vector3.up;
+			return axis.normalized * NextFloat(rotationSpeedRange.x, rotationSpeedRange.y);
 		}
 
 		private static void SetLayerRecursively(GameObject root, int layer) {
@@ -159,6 +175,7 @@ namespace ShitDesigner.Scene {
 
 			public Transform Transform { get; }
 			public float Speed { get; set; }
+			public Vector3 RotationSpeed { get; set; }
 		}
 	}
 }
