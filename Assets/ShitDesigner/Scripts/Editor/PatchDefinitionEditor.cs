@@ -714,9 +714,10 @@ namespace ShitDesigner.Editor {
 				var options = new List<ParameterOption>();
 				for (var parameterIndex = 0; parameterIndex < parameters.arraySize; parameterIndex++) {
 					var parameter = parameters.GetArrayElementAtIndex(parameterIndex);
-					if ((ParameterType)parameter.FindPropertyRelative("_type").enumValueIndex != ParameterType.Float) continue;
+					var type = (ParameterType)parameter.FindPropertyRelative("_type").enumValueIndex;
+					if (!PatchGraphParameter.IsLiveControllable(type)) continue;
 					var id = parameter.FindPropertyRelative("_id").stringValue;
-					if (!string.IsNullOrWhiteSpace(id)) options.Add(new ParameterOption(id, id));
+					if (!string.IsNullOrWhiteSpace(id)) options.Add(new ParameterOption(id, id + " (" + type + ")"));
 				}
 				return options;
 			}

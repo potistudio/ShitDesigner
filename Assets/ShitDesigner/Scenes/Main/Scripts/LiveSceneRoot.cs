@@ -1,12 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ShitDesigner.Core;
 using UnityEngine;
 
 namespace ShitDesigner.Main {
 	public readonly struct LiveParameterDefinition {
 		public string Id { get; }
 		public string DisplayName { get; }
+		public ParameterType Type { get; }
+		public ParameterValue TypedValue { get; }
+		public bool HasRange { get; }
 		public float Minimum { get; }
 		public float Maximum { get; }
 		public float Value { get; }
@@ -14,9 +18,23 @@ namespace ShitDesigner.Main {
 		public LiveParameterDefinition(string id, string displayName, float minimum, float maximum, float value) {
 			Id = id;
 			DisplayName = displayName;
+			Type = ParameterType.Float;
+			TypedValue = ParameterValue.FromFloat(value);
+			HasRange = true;
 			Minimum = minimum;
 			Maximum = maximum;
 			Value = value;
+		}
+
+		public LiveParameterDefinition(string id, string displayName, ParameterValue value) {
+			Id = id;
+			DisplayName = displayName;
+			Type = value.Type;
+			TypedValue = value;
+			HasRange = false;
+			Minimum = 0f;
+			Maximum = 0f;
+			Value = value.Type == ParameterType.Float ? value.AsFloat() : 0f;
 		}
 	}
 

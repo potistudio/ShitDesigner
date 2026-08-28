@@ -90,9 +90,29 @@ namespace ShitDesigner.Rendering {
 				rejectionReason = "The Program graph parameter type does not match.";
 				return false;
 			}
+			if (!IsLiveControllable(value.Type)) {
+				rejectionReason = "The Program graph parameter type is not supported by the live renderer.";
+				return false;
+			}
 			_directParameters[parameterId] = value;
 			rejectionReason = string.Empty;
 			return true;
+		}
+
+		private static bool IsLiveControllable(ParameterType type) {
+			switch (type) {
+				case ParameterType.Float:
+				case ParameterType.Int:
+				case ParameterType.Bool:
+				case ParameterType.Vector2:
+				case ParameterType.Vector3:
+				case ParameterType.Vector4:
+				case ParameterType.Color:
+				case ParameterType.Enum:
+					return true;
+				default:
+					return false;
+			}
 		}
 
 		public void Evaluate(NodeExecutionContext context, NodeOutputWriter outputs) {

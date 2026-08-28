@@ -25,6 +25,22 @@ namespace ShitDesigner.Scene {
 		public ParameterType Type => _type;
 		public ParameterValue Value => ToParameterValue();
 
+		public static bool IsLiveControllable(ParameterType type) {
+			switch (type) {
+				case ParameterType.Float:
+				case ParameterType.Int:
+				case ParameterType.Bool:
+				case ParameterType.Vector2:
+				case ParameterType.Vector3:
+				case ParameterType.Vector4:
+				case ParameterType.Color:
+				case ParameterType.Enum:
+					return true;
+				default:
+					return false;
+			}
+		}
+
 		public PatchGraphParameter() { }
 
 		public PatchGraphParameter(string id, ParameterValue value) {
@@ -384,8 +400,8 @@ namespace ShitDesigner.Scene {
 					return Failure("patch.definition.parameter_source", "A published patch parameter has an unknown source.");
 				var graphNode = ProgramGraph.Nodes.FirstOrDefault(node => string.Equals(node.Id, parameter.NodeId, StringComparison.Ordinal));
 				var graphParameter = graphNode?.FindParameter(parameter.ParameterId);
-				if (graphParameter == null || graphParameter.Type != ParameterType.Float)
-					return Failure("patch.definition.parameter_graph", "A published graph parameter must reference a configured float parameter.");
+				if (graphParameter == null || !PatchGraphParameter.IsLiveControllable(graphParameter.Type))
+					return Failure("patch.definition.parameter_graph", "A published graph parameter must reference a configured parameter supported by the live renderer.");
 			}
 			if (KeyboardInputs.Any(binding => binding == null || binding.Validate().IsFailure)) return Failure("patch.definition.keyboard_input", "Every patch keyboard input must be valid.");
 			if (KeyboardInputs.Any(binding => !Parameters.Any(parameter => parameter != null && string.Equals(parameter.Id, binding.ParameterId, StringComparison.Ordinal))))
