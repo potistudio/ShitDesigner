@@ -13,7 +13,7 @@
 - MIDI Learnはデバイス名、メッセージ種別、チャンネルおよび番号を保存する。Note／Control Changeは0～127、Pitch Bendは0～16383を0～1へ正規化する。
 - Windows MIDI入力デバイス0を既定で開き、ネイティブコールバックの入力をメインスレッドのフレーム先頭で処理する。
 - シーン上の `MidiInputManager` はInspectorでDevice IDとBinding一覧を保持し、各Bindingを実行中のLive Controlへ直接入力できる。Bindingがない入力はProjectのMIDI Learn／ControlMappingへ渡す。
-- `PatchDefinition` のKeyboard Inputsは、Unity Input SystemのKeyをパッチの公開パラメーターへ割り当てる。押下時を1.0、離上時を0.0とし、ロード中パッチの一致する入力だけを `SetParameter` 要求へ変換する。
+- `PatchDefinition` のKeyboard Inputsは、Unity Input SystemのKeyをパッチの公開パラメーターへ割り当てる。押下時だけ1.0を送り、離上時は要求を生成せず、ロード中パッチの一致する入力だけを `SetParameter` 要求へ変換する。
 - `PatchDefinition` のMIDI Inputsは、Note／Control Change／Pitch Bendをパッチの公開パラメーターへ割り当てる。メッセージ種別、チャンネル、番号、Raw Minimum、Raw Maximum、Invertおよび公開パラメーターIDをパッチごとに設定し、ロード中パッチの一致する入力だけを `SetParameter` 要求へ変換する。
 - 物理入力識別子、Control Path、RawMin、RawMax、InvertをControlMappingへ保存する。
 - 接続中デバイスが見つからないMappingはBrokenとして保持し、論理コントロール定義を削除しない。

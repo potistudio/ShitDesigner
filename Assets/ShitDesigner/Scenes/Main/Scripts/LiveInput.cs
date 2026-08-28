@@ -60,13 +60,10 @@ namespace ShitDesigner.Main {
 			if (!m_PatchesById.TryGetValue(loadedPatchId, out var patch)) return;
 
 			foreach (var key in keyboard.allKeys) {
-				var pressed = key.wasPressedThisFrame;
-				var released = key.wasReleasedThisFrame;
-				if (!pressed && !released) continue;
+				if (!key.wasPressedThisFrame) continue;
 				foreach (var binding in patch.KeyboardInputs) {
 					if (binding == null || !binding.Matches(key.keyCode)) continue;
-					if (pressed) m_Queue.EnqueueSetParameter(loadedPatchId, binding.ParameterId, binding.Value(true));
-					if (released) m_Queue.EnqueueSetParameter(loadedPatchId, binding.ParameterId, binding.Value(false));
+					m_Queue.EnqueueSetParameter(loadedPatchId, binding.ParameterId, binding.Value());
 				}
 			}
 		}

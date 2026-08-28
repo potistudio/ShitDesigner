@@ -13,7 +13,7 @@ namespace ShitDesigner.Main.Tests {
 	[TestFixture]
 	public sealed class LiveInputTests {
 		[Test]
-		public void KeyboardMappingQueuesPressedAndReleasedParameterRequestsForLoadedPatch() {
+		public void KeyboardMappingQueuesPressedParameterRequestAndIgnoresReleaseForLoadedPatch() {
 			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.A));
 			Keyboard keyboard = null;
 			try {
@@ -31,12 +31,10 @@ namespace ShitDesigner.Main.Tests {
 
 				var requests = new List<LiveParameterRequest>();
 				queue.Drain(requests);
-				Assert.That(requests, Has.Count.EqualTo(2));
+				Assert.That(requests, Has.Count.EqualTo(1));
 				Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.SetParameter));
 				Assert.That(requests[0].ParameterId, Is.EqualTo("motion"));
 				Assert.That(requests[0].Value, Is.EqualTo(1f));
-				Assert.That(requests[1].ParameterId, Is.EqualTo("motion"));
-				Assert.That(requests[1].Value, Is.EqualTo(0f));
 			}
 			finally {
 				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
