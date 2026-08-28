@@ -177,7 +177,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c6225685848c4fa8ba76ca47eaab9082, type: 3}
   m_Name:
   m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.FallingObjectShower
-  objectPrefab: {fileID: 8881035224376983129, guid: 2408cf317cda8ef4591abe9c0b7122fe, type: 3}
+  objectPrefabs:
+  - {fileID: 8881035224376983129, guid: 2408cf317cda8ef4591abe9c0b7122fe, type: 3}
   objectCount: 180
   objectScaleRange: {x: 0.65, y: 1.15}
   randomSeed: 2718
