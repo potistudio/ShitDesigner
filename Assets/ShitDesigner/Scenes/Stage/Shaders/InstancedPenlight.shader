@@ -5,8 +5,8 @@ Shader "ShitDesigner/Stage/Instanced Penlight"
 		[HDR] _BaseColor ("Base Color", Color) = (0.1, 0.8, 1, 1)
 		_GlowStrength ("Glow Strength", Range(0, 10)) = 3
 		_RattleAngle ("Rattle Angle", Range(0, 30)) = 9
-		_RattleSpeed ("Rattle Speed", Range(0, 24)) = 12
 		_WristBounce ("Wrist Bounce", Range(0, 0.5)) = 0.06
+		[HideInInspector] _BeatPosition ("Beat Position", Float) = 0
 	}
 
 	SubShader
@@ -38,8 +38,8 @@ Shader "ShitDesigner/Stage/Instanced Penlight"
 			CBUFFER_START(UnityPerMaterial)
 			half _GlowStrength;
 			half _RattleAngle;
-			half _RattleSpeed;
 			half _WristBounce;
+			float _BeatPosition;
 			CBUFFER_END
 
 			UNITY_INSTANCING_BUFFER_START(PerInstance)
@@ -81,7 +81,7 @@ Shader "ShitDesigner/Stage/Instanced Penlight"
 				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
 
 				float phase = UNITY_ACCESS_INSTANCED_PROP(PerInstance, _Phase);
-				float animationTime = _Time.y * _RattleSpeed + phase * 6.2831853f;
+				float animationTime = _BeatPosition * 6.2831853f + phase * 6.2831853f;
 				float cycle = frac(animationTime * 0.15915494f);
 				float downstrokeDuration = 0.16f;
 				float downstroke = smoothstep(0.0, 1.0, saturate(cycle / downstrokeDuration));
