@@ -37,7 +37,7 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(document.visualTreeAsset, Is.Not.Null);
 				Assert.That(document.panelSettings, Is.Not.Null);
 				Assert.That(graph.Patches.Length, Is.EqualTo(5));
-				Assert.That(graph.Patches.All(definition => definition != null && !string.IsNullOrWhiteSpace(definition.Id) && definition.NodeGroups.Count > 0), Is.True);
+				Assert.That(graph.Patches.All(definition => definition != null && !string.IsNullOrWhiteSpace(definition.Id) && definition.Nodes.Count > 0), Is.True);
 				Assert.That(graph.Patches.All(definition => definition.ProgramGraph.Nodes.Count > 0 && definition.ProgramGraph.Connections.Count > 0), Is.True);
 				Assert.That(graph.Patches.Select(definition => definition.Id).Distinct().Count(), Is.EqualTo(5));
 				Assert.That(graph.Patches.SelectMany(definition => definition.Nodes).All(node => node.Prefab.GetComponent<LiveSceneRoot>() != null), Is.True);
