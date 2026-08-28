@@ -12,6 +12,11 @@ namespace ShitDesigner.Main {
 		float TimeScale { get; }
 	}
 
+	/// <summary>Receives a one-shot action from a live scene parameter.</summary>
+	public interface ILiveParameterTriggerReceiver {
+		void OnLiveParameterTriggered();
+	}
+
 	/// <summary>Base component for authored live-scene controls.</summary>
 	public abstract class LiveSceneParameter : MonoBehaviour, ILiveSceneParameter {
 		public abstract LiveParameterDefinition Definition { get; }
