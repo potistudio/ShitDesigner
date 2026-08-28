@@ -6,13 +6,6 @@ namespace ShitDesigner.Scene {
 	/// <summary>Maintains a randomized field of objects that continuously falls through the scene.</summary>
 	[DisallowMultipleComponent]
 	public sealed class FallingObjectShower : MonoBehaviour, ISceneGraphClockReceiver {
-		private static readonly PrimitiveType[] PrimitiveTypes = {
-			PrimitiveType.Cube,
-			PrimitiveType.Sphere,
-			PrimitiveType.Capsule,
-			PrimitiveType.Cylinder
-		};
-
 		[Header("Object")]
 		[SerializeField] private GameObject[] objectPrefabs = Array.Empty<GameObject>();
 		[SerializeField, Min(1)] private int objectCount = 180;
@@ -67,30 +60,19 @@ namespace ShitDesigner.Scene {
 
 		private void CreateObjects() {
 			ReleaseObjects();
+			var prefabCount = GetPrefabCount();
+			if (prefabCount == 0)
+				return;
 
 			_random = new System.Random(randomSeed);
 			for (var index = 0; index < objectCount; index++) {
-				var item = CreateObject();
+				var item = Instantiate(GetPrefab(_random.Next(prefabCount)), transform);
 				item.name = $"Falling Object {index + 1:000}";
 				SetLayerRecursively(item, gameObject.layer);
 				var fallingObject = new FallingObject(item.transform, NextFloat(fallSpeedRange.x, fallSpeedRange.y));
 				ResetPosition(fallingObject, true);
 				_objects.Add(fallingObject);
 			}
-		}
-
-		private GameObject CreateObject() {
-			var prefabCount = GetPrefabCount();
-			var choice = _random.Next(prefabCount + PrimitiveTypes.Length);
-			if (choice < prefabCount)
-				return Instantiate(GetPrefab(choice), transform);
-
-			var item = GameObject.CreatePrimitive(PrimitiveTypes[choice - prefabCount]);
-			item.transform.SetParent(transform, false);
-			var collider = item.GetComponent<Collider>();
-			if (collider != null)
-				DestroyOwnedObject(collider);
-			return item;
 		}
 
 		private int GetPrefabCount() {
