@@ -22,6 +22,7 @@ namespace ShitDesigner.Rendering {
 		private readonly ShaderMaterialBinding _binding;
 		private readonly RenderTexturePool _pool;
 		private readonly Material _material;
+		private readonly Dictionary<string, ParameterValue> _directParameters;
 		private readonly bool _generator;
 		private readonly bool _blend;
 		private readonly string _historyKey;
@@ -66,6 +67,7 @@ namespace ShitDesigner.Rendering {
 			_generator = generator || binding.Family == ShaderNodeFamily.Generator;
 			_blend = blend || binding.Family == ShaderNodeFamily.Composite;
 			_material = new Material(binding.Shader) { name = "ShitDesigner.PassGraphMaterial." + record.Id.Value };
+			_directParameters = record.Parameters.ToDictionary(parameter => parameter.Id.Value, parameter => parameter.Value, StringComparer.Ordinal);
 			_owner = new ResourceOwnerKey(sessionId, ResourceOwnerKind.RuntimeNode, record.Id.Value,
 				generationId, "pass-graph", LeaseRole.Output);
 			_historyKey = record.Id.Value + "." + record.TypeId.Value;
@@ -77,6 +79,20 @@ namespace ShitDesigner.Rendering {
 				_lastClock = context.Snapshot.GraphClockTime;
 				_hasClock = true;
 			}
+		}
+
+		public bool TrySetDirectParameter(string parameterId, ParameterValue value, out string rejectionReason) {
+			if (string.IsNullOrWhiteSpace(parameterId) || !_directParameters.TryGetValue(parameterId, out var current)) {
+				rejectionReason = "The Program graph parameter is not available.";
+				return false;
+			}
+			if (current.Type != value.Type) {
+				rejectionReason = "The Program graph parameter type does not match.";
+				return false;
+			}
+			_directParameters[parameterId] = value;
+			rejectionReason = string.Empty;
+			return true;
 		}
 
 		public void Evaluate(NodeExecutionContext context, NodeOutputWriter outputs) {
@@ -404,7 +420,7 @@ namespace ShitDesigner.Rendering {
 		private void ApplyDirectParameters() {
 			foreach (var parameter in _record.Parameters) {
 				var binding = _binding.Parameters.FirstOrDefault(candidate => candidate.ParameterId == parameter.Id);
-				if (binding != null) ApplyTypedParameter(binding.Property, binding, parameter.Value);
+				if (binding != null && _directParameters.TryGetValue(parameter.Id.Value, out var value)) ApplyTypedParameter(binding.Property, binding, value);
 			}
 		}
 

@@ -211,14 +211,22 @@ namespace ShitDesigner.Scene {
 	}
 
 	[Serializable]
+	public enum PatchParameterSource {
+		SceneNode,
+		ProgramGraphNode
+	}
+
+	[Serializable]
 	public sealed class PatchParameter {
 		[SerializeField] private string _id;
 		[SerializeField] private string _displayName;
+		[SerializeField] private PatchParameterSource _source;
 		[SerializeField] private string _nodeId;
 		[SerializeField] private string _parameterId;
 
 		public string Id => _id ?? string.Empty;
 		public string DisplayName => _displayName ?? string.Empty;
+		public PatchParameterSource Source => _source;
 		public string NodeId => _nodeId ?? string.Empty;
 		public string ParameterId => _parameterId ?? string.Empty;
 	}
@@ -366,7 +374,19 @@ namespace ShitDesigner.Scene {
 			if (Parameters.Any(parameter => parameter == null || string.IsNullOrWhiteSpace(parameter.Id) || string.IsNullOrWhiteSpace(parameter.DisplayName) || string.IsNullOrWhiteSpace(parameter.NodeId) || string.IsNullOrWhiteSpace(parameter.ParameterId)))
 				return Failure("patch.definition.parameter", "Published patch parameters require IDs, names, nodes, and source parameters.");
 			if (Parameters.GroupBy(parameter => parameter.Id, StringComparer.Ordinal).Any(group => group.Count() > 1)) return Failure("patch.definition.parameter_duplicate", "Published patch parameter IDs must be unique.");
-			if (Parameters.Any(parameter => !nodes.Any(node => string.Equals(node.Id, parameter.NodeId, StringComparison.Ordinal)))) return Failure("patch.definition.parameter_node", "A published patch parameter references an unknown scene node.");
+			foreach (var parameter in Parameters) {
+				if (parameter.Source == PatchParameterSource.SceneNode) {
+					if (!nodes.Any(node => string.Equals(node.Id, parameter.NodeId, StringComparison.Ordinal)))
+						return Failure("patch.definition.parameter_node", "A published patch parameter references an unknown scene node.");
+					continue;
+				}
+				if (parameter.Source != PatchParameterSource.ProgramGraphNode)
+					return Failure("patch.definition.parameter_source", "A published patch parameter has an unknown source.");
+				var graphNode = ProgramGraph.Nodes.FirstOrDefault(node => string.Equals(node.Id, parameter.NodeId, StringComparison.Ordinal));
+				var graphParameter = graphNode?.FindParameter(parameter.ParameterId);
+				if (graphParameter == null || graphParameter.Type != ParameterType.Float)
+					return Failure("patch.definition.parameter_graph", "A published graph parameter must reference a configured float parameter.");
+			}
 			if (KeyboardInputs.Any(binding => binding == null || binding.Validate().IsFailure)) return Failure("patch.definition.keyboard_input", "Every patch keyboard input must be valid.");
 			if (KeyboardInputs.Any(binding => !Parameters.Any(parameter => parameter != null && string.Equals(parameter.Id, binding.ParameterId, StringComparison.Ordinal))))
 				return Failure("patch.definition.keyboard_input_parameter", "A patch keyboard input references an unknown published parameter.");

@@ -592,6 +592,7 @@ namespace ShitDesigner.Editor {
 			EditorGUI.BeginProperty(position, label, property);
 			var id = property.FindPropertyRelative("_id");
 			var displayName = property.FindPropertyRelative("_displayName");
+			var source = property.FindPropertyRelative("_source");
 			var nodeId = property.FindPropertyRelative("_nodeId");
 			var parameterId = property.FindPropertyRelative("_parameterId");
 			var y = position.y;
@@ -601,10 +602,20 @@ namespace ShitDesigner.Editor {
 				EditorGUI.indentLevel++;
 				EditorGUI.PropertyField(Line(position, ref y), id, new GUIContent("ID"));
 				EditorGUI.PropertyField(Line(position, ref y), displayName, new GUIContent("Display Name"));
+				EditorGUI.BeginChangeCheck();
+				EditorGUI.PropertyField(Line(position, ref y), source, new GUIContent("Source"));
+				if (EditorGUI.EndChangeCheck()) {
+					nodeId.stringValue = string.Empty;
+					parameterId.stringValue = string.Empty;
+				}
+				var isGraphNode = (PatchParameterSource)source.enumValueIndex == PatchParameterSource.ProgramGraphNode;
 				var nodes = GetSceneNodes(property.serializedObject.FindProperty("_nodes"));
-				var nodeChanged = DrawNodePopup(Line(position, ref y), nodeId, nodes);
+				var graphNodes = property.serializedObject.FindProperty("_programGraph").FindPropertyRelative("_nodes");
+				var nodeChanged = isGraphNode
+					? DrawGraphNodePopup(Line(position, ref y), nodeId, graphNodes)
+					: DrawNodePopup(Line(position, ref y), nodeId, nodes);
 				var selectedNode = nodes.FirstOrDefault(node => string.Equals(node.Id, nodeId.stringValue, StringComparison.Ordinal));
-				var parameters = GetSceneParameters(selectedNode?.Definition);
+				var parameters = isGraphNode ? GetGraphParameters(graphNodes, nodeId.stringValue) : GetSceneParameters(selectedNode?.Definition);
 				if (nodeChanged && parameters.Count > 0) parameterId.stringValue = parameters[0].Id;
 				DrawParameterPopup(Line(position, ref y), parameterId, parameters);
 				EditorGUI.indentLevel = indent;
@@ -614,7 +625,7 @@ namespace ShitDesigner.Editor {
 
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
 			=> property.isExpanded
-				? EditorGUIUtility.singleLineHeight * 5f + LineSpacing * 4f
+				? EditorGUIUtility.singleLineHeight * 6f + LineSpacing * 5f
 				: EditorGUIUtility.singleLineHeight;
 
 		private static bool DrawNodePopup(Rect position, SerializedProperty nodeId, List<SceneNodeOption> nodes) {
@@ -625,7 +636,24 @@ namespace ShitDesigner.Editor {
 			return DrawPopup(position, "Scene Node", nodeId, nodes.Select(node => node.Id).ToList(), nodes.Select(node => node.Label).ToList());
 		}
 
-		private static void DrawParameterPopup(Rect position, SerializedProperty parameterId, List<SceneParameterOption> parameters) {
+		private static bool DrawGraphNodePopup(Rect position, SerializedProperty nodeId, SerializedProperty nodes) {
+			var values = new List<string>();
+			var labels = new List<string>();
+			for (var index = 0; index < nodes.arraySize; index++) {
+				var node = nodes.GetArrayElementAtIndex(index);
+				var id = node.FindPropertyRelative("_id").stringValue;
+				if (string.IsNullOrWhiteSpace(id)) continue;
+				values.Add(id);
+				labels.Add(id + " (" + node.FindPropertyRelative("_typeId").stringValue + ")");
+			}
+			if (values.Count == 0) {
+				EditorGUI.PropertyField(position, nodeId, new GUIContent("Graph Node"));
+				return false;
+			}
+			return DrawPopup(position, "Graph Node", nodeId, values, labels);
+		}
+
+		private static void DrawParameterPopup(Rect position, SerializedProperty parameterId, List<ParameterOption> parameters) {
 			if (parameters.Count == 0) {
 				EditorGUI.PropertyField(position, parameterId, new GUIContent("Parameter"));
 				return;
@@ -659,8 +687,8 @@ namespace ShitDesigner.Editor {
 			return options;
 		}
 
-		private static List<SceneParameterOption> GetSceneParameters(Scene3DDefinition definition) {
-			var options = new List<SceneParameterOption>();
+		private static List<ParameterOption> GetSceneParameters(Scene3DDefinition definition) {
+			var options = new List<ParameterOption>();
 			if (definition == null || definition.Prefab == null) return options;
 			var seen = new HashSet<string>(StringComparer.Ordinal);
 			foreach (var component in definition.Prefab.GetComponentsInChildren<MonoBehaviour>(true)) {
@@ -673,9 +701,26 @@ namespace ShitDesigner.Editor {
 				var id = ReadStringProperty(parameter, "Id");
 				if (string.IsNullOrWhiteSpace(id) || !seen.Add(id)) continue;
 				var displayName = ReadStringProperty(parameter, "DisplayName");
-				options.Add(new SceneParameterOption(id, string.IsNullOrWhiteSpace(displayName) ? id : displayName + " (" + id + ")"));
+				options.Add(new ParameterOption(id, string.IsNullOrWhiteSpace(displayName) ? id : displayName + " (" + id + ")"));
 			}
 			return options.OrderBy(option => option.Label, StringComparer.Ordinal).ToList();
+		}
+
+		private static List<ParameterOption> GetGraphParameters(SerializedProperty nodes, string nodeId) {
+			for (var index = 0; index < nodes.arraySize; index++) {
+				var node = nodes.GetArrayElementAtIndex(index);
+				if (!string.Equals(node.FindPropertyRelative("_id").stringValue, nodeId, StringComparison.Ordinal)) continue;
+				var parameters = node.FindPropertyRelative("_parameters");
+				var options = new List<ParameterOption>();
+				for (var parameterIndex = 0; parameterIndex < parameters.arraySize; parameterIndex++) {
+					var parameter = parameters.GetArrayElementAtIndex(parameterIndex);
+					if ((ParameterType)parameter.FindPropertyRelative("_type").enumValueIndex != ParameterType.Float) continue;
+					var id = parameter.FindPropertyRelative("_id").stringValue;
+					if (!string.IsNullOrWhiteSpace(id)) options.Add(new ParameterOption(id, id));
+				}
+				return options;
+			}
+			return new List<ParameterOption>();
 		}
 
 		private static string ReadStringProperty(object value, string propertyName) {
@@ -699,10 +744,10 @@ namespace ShitDesigner.Editor {
 			public SceneNodeOption(string id, string label, Scene3DDefinition definition) { Id = id; Label = label; Definition = definition; }
 		}
 
-		private sealed class SceneParameterOption {
+		private sealed class ParameterOption {
 			public string Id { get; }
 			public string Label { get; }
-			public SceneParameterOption(string id, string label) { Id = id; Label = label; }
+			public ParameterOption(string id, string label) { Id = id; Label = label; }
 		}
 	}
 
