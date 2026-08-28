@@ -135,9 +135,17 @@ namespace ShitDesigner.Main {
 						var inputs = connections.TryGetValue(node.Id, out var mapped) ? mapped : new Dictionary<PortId, string>();
 						foreach (var input in binding.Inputs.Where(input => input.Type == NodePortType.ImageFrame && input.Required && input.Role != ShaderInputRole.History))
 							if (!inputs.ContainsKey(input.PortId)) throw new InvalidOperationException("The live Program graph is missing a required input: " + node.Id + "." + input.PortId.Value + ".");
+						var parameters = shader.Entry.Parameters.Select(parameter => {
+							var value = parameter.Definition.DefaultValue;
+							if (node.TypeId.Value == "shitdesigner.shader.blend.premultiplied_over" &&
+								parameter.Definition.Id.Value == "amount")
+								value = ParameterValue.FromFloat(1f);
+
+							return new RuntimeParameterSnapshot(parameter.Definition.Id, parameter.Definition.Type, value,
+								parameter.Definition.RuntimeStateful);
+						}).ToArray();
 						var record = new RuntimeNodeCreateInfo(NodeInstanceId.New(), node.TypeId, shader.Entry.SchemaVersion,
-							shader.Entry.DisplayName, true, 0f, 0f, shader.Entry.Parameters.Select(parameter =>
-								new RuntimeParameterSnapshot(parameter.Definition.Id, parameter.Definition.Type, parameter.Definition.DefaultValue, parameter.Definition.RuntimeStateful)));
+							shader.Entry.DisplayName, true, 0f, 0f, parameters);
 						runtime = new ShaderPassGraphRuntimeNode(record, 1UL,
 							new ShaderMaterialBinding(binding.ShaderKey, shader.Shader, outputPass: binding.OutputPass, descriptor: binding), renderPool,
 							"shitdesigner.main." + outputId + "." + node.Id, binding.Family == ShaderNodeFamily.Generator, binding.Family == ShaderNodeFamily.Composite);
