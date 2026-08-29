@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using ShitDesigner.Scene;
 
 namespace ShitDesigner.Main.Tests {
 	[TestFixture]
