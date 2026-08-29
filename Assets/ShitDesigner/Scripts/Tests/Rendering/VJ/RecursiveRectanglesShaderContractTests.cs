@@ -116,6 +116,34 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 		}
 
 		[UnityTest]
+		public IEnumerator RecursiveRectangles_ChildrenRevealInTheSameDirection() {
+			RequireGraphicsDevice();
+			var material = CreateMaterial();
+			try {
+				Configure(material);
+				material.SetInt("_MaxDepth", 1);
+				material.SetInt("_AxisMode", 2);
+				material.SetFloat("_RatioMin", .5f);
+				material.SetFloat("_RatioMax", .5f);
+				material.SetFloat("_Gutter", 0f);
+				material.SetFloat("_RevealProgress", 0f);
+				Color32[] root = null;
+				yield return Render(material, 64, 8, result => root = result);
+
+				material.SetFloat("_RevealProgress", .5f);
+				Color32[] halfway = null;
+				yield return Render(material, 64, 8, result => halfway = result);
+
+				var row = 4 * 64;
+				Assert.That(halfway[row + 24], Is.EqualTo(root[row + 24]));
+				Assert.That(halfway[row + 56], Is.EqualTo(root[row + 56]));
+				Assert.That(halfway[row + 8], Is.Not.EqualTo(root[row + 8]));
+				Assert.That(halfway[row + 40], Is.Not.EqualTo(root[row + 40]));
+			}
+			finally { UnityEngine.Object.DestroyImmediate(material); }
+		}
+
+		[UnityTest]
 		public IEnumerator RecursiveRectangles_BeatIndexChangesOnlySynchronizedStructure() {
 			RequireGraphicsDevice();
 			var material = CreateMaterial();
