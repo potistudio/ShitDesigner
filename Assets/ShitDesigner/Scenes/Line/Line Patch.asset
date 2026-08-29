@@ -15,7 +15,7 @@ MonoBehaviour:
   _id: line
   _displayName: Line
   _flash:
-    _image: {fileID: 2800000, guid: 0d1251ac3c6f56e4886b64816e11de9f, type: 3}
+    _image: {fileID: 926347267049172456, guid: 7923732e0c5622c4a9f726ef31392170, type: 2}
     _durationSeconds: 0.25
   _programGraph:
     _outputNodeId: item
@@ -23,9 +23,12 @@ MonoBehaviour:
     - _id: line
       _typeId: shitdesigner.scene.3d
       m_SceneDefinition: {fileID: 11400000, guid: ce699c8a2eb921846a9d4953091de0cb, type: 2}
+      m_VideoPath: 
+      m_VideoClip: {fileID: 0}
       _parameters: []
     - _id: item
       _typeId: shitdesigner.shader.blend.add
+      m_SceneDefinition: {fileID: 0}
       m_VideoPath: 
       m_VideoClip: {fileID: 0}
       _parameters:

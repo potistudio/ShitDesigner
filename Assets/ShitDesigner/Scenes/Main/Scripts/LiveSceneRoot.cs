@@ -38,15 +38,17 @@ namespace ShitDesigner.Main {
 		}
 	}
 
-	/// <summary>Discovers and dispatches the public parameters authored on one live-scene prefab.</summary>
+	/// <summary>
+	/// Discovers and dispatches the public parameters authored on one live-scene prefab.
+	/// </summary>
 	[DisallowMultipleComponent]
 	public sealed class LiveSceneRoot : MonoBehaviour {
 		private readonly Dictionary<string, ILiveSceneParameter> _parameters = new Dictionary<string, ILiveSceneParameter>(StringComparer.Ordinal);
-		private string _sceneId = string.Empty;
+		private string m_SceneId = string.Empty;
 		private ILiveSceneTimeScaleProvider _timeScaleProvider;
-		private bool _parametersCollected;
+		private bool m_ParametersCollected;
 
-		public string SceneId => _sceneId;
+		public string SceneId => m_SceneId;
 		public float TimeScale => _timeScaleProvider == null ? 1f : _timeScaleProvider.TimeScale;
 		public IReadOnlyList<string> PublicParameterIds {
 			get {
@@ -56,8 +58,10 @@ namespace ShitDesigner.Main {
 		}
 
 		public void Initialize(string sceneId) {
-			if (string.IsNullOrWhiteSpace(sceneId)) throw new ArgumentException("A scene ID is required.", nameof(sceneId));
-			_sceneId = sceneId;
+			if (string.IsNullOrWhiteSpace(sceneId))
+				throw new ArgumentException("A scene ID is required.", nameof(sceneId));
+
+			m_SceneId = sceneId;
 			CollectParameters();
 		}
 
@@ -85,11 +89,14 @@ namespace ShitDesigner.Main {
 		}
 
 		private void CollectParameters() {
-			if (_parametersCollected) return;
-			var parameters = GetComponents<MonoBehaviour>().OfType<ILiveSceneParameter>().ToArray();
-			foreach (var parameter in parameters) {
+			if (m_ParametersCollected)
+				return;
+
+			var attachedParameters = GetComponents<MonoBehaviour>().OfType<ILiveSceneParameter>().ToArray();
+			foreach (var parameter in attachedParameters) {
 				var definition = parameter.Definition;
 				ValidateDefinition(definition, parameter);
+
 				if (!_parameters.TryAdd(definition.Id, parameter))
 					throw new InvalidOperationException("Live scene parameter IDs must be unique: " + definition.Id + ".");
 				if (parameter is ILiveSceneTimeScaleProvider timeScaleProvider) {
@@ -97,8 +104,8 @@ namespace ShitDesigner.Main {
 					_timeScaleProvider = timeScaleProvider;
 				}
 			}
-			foreach (var parameter in parameters.OfType<LiveSceneParameter>()) parameter.InitializeParameter();
-			_parametersCollected = true;
+			foreach (var parameter in attachedParameters.OfType<LiveSceneParameter>()) parameter.InitializeParameter();
+			m_ParametersCollected = true;
 		}
 
 		private static void ValidateDefinition(LiveParameterDefinition definition, ILiveSceneParameter parameter) {
