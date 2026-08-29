@@ -172,7 +172,7 @@ namespace ShitDesigner.Rendering {
 			// The availability property is an explicit opt-in so publishing the
 			// live tempo does not change existing shader-family behavior.
 			var usesBeatClock = material.HasProperty(ShaderFrameUniformNames.HasBeatClock);
-			var beat = usesBeatClock ? ShaderBeatClock.Current : default(ShaderBeatClockFrame);
+			var beat = usesBeatClock ? ShaderBeatClock.Current : default(BeatClockFrame);
 			material.SetFloat(ShaderFrameUniformNames.BeatPhase, beat.BeatPhase);
 			material.SetFloat(ShaderFrameUniformNames.BeatPulse, beat.BeatPulse);
 			material.SetFloat(ShaderFrameUniformNames.BarPhase, beat.BarPhase);

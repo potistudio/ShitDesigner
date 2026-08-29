@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ShitDesigner.Core;
 using ShitDesigner.Scene;
 using UnityEngine;
 
@@ -33,9 +34,9 @@ namespace ShitDesigner.Stage {
 			SetAnimatorSpeed(1f);
 		}
 
-		public void SetBpmClock(BpmClockState clock) {
-			SetAnimatorSpeed(clock.BeatsPerMinute / m_ReferenceBpm);
-			AdvanceToBeat(clock);
+		public void SetBpmClock(BeatClockFrame frame) {
+			SetAnimatorSpeed(frame.Bpm / m_ReferenceBpm);
+			AdvanceToBeat(frame);
 		}
 
 		public void SetGraphClockDriven(bool graphClockDriven) {
@@ -48,13 +49,13 @@ namespace ShitDesigner.Stage {
 			// Beat-quantized animation is advanced from the absolute BPM clock in SetBpmClock.
 		}
 
-		private void AdvanceToBeat(BpmClockState clock) {
-			if (!m_GraphClockDriven || !IsPosterizeTimeEnabled || clock.BeatsPerMinute <= 0f
-				|| float.IsNaN(clock.BeatsPerMinute) || float.IsInfinity(clock.BeatsPerMinute)
-				|| double.IsNaN(clock.TotalBeats) || double.IsInfinity(clock.TotalBeats))
+		private void AdvanceToBeat(BeatClockFrame frame) {
+			if (!m_GraphClockDriven || !IsPosterizeTimeEnabled || frame.Bpm <= 0f
+				|| float.IsNaN(frame.Bpm) || float.IsInfinity(frame.Bpm)
+				|| double.IsNaN(frame.TotalBeats) || double.IsInfinity(frame.TotalBeats))
 				return;
 
-			var beatPosition = clock.TotalBeats * m_PosterizeFramesPerBeat;
+			var beatPosition = frame.TotalBeats * m_PosterizeFramesPerBeat;
 			if (double.IsNaN(beatPosition) || double.IsInfinity(beatPosition))
 				return;
 
@@ -71,7 +72,7 @@ namespace ShitDesigner.Stage {
 				return;
 
 			m_LastProcessedBeatIndex = beatIndex;
-			var secondsPerFrame = 60d / (clock.BeatsPerMinute * m_PosterizeFramesPerBeat);
+			var secondsPerFrame = 60d / (frame.Bpm * m_PosterizeFramesPerBeat);
 			var updateSeconds = (float)Math.Min(frameCount * secondsPerFrame, float.MaxValue);
 			foreach (var animator in m_Animators) {
 				if (animator == null)

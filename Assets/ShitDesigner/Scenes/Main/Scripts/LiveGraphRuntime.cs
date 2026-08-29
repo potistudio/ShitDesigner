@@ -485,10 +485,11 @@ namespace ShitDesigner.Main {
 			_lastDeltaSeconds = Math.Max(0d, deltaSeconds);
 			_graphTime += _lastDeltaSeconds;
 			_bpmClock.Advance(_lastDeltaSeconds);
+			_loadedPatch.ApplyResolvedParameters(_bpmClock.Frame);
 			foreach (var scene in _loadedPatch.Outputs) {
 				var result = scene.Runtime.AdvanceGraphClock(_lastDeltaSeconds * scene.Root.TimeScale);
 				if (result.IsFailure) throw new InvalidOperationException(result.Error.Message);
-				var bpmResult = scene.Runtime.ApplyBpmClock(_bpmClock.State);
+				var bpmResult = scene.Runtime.ApplyBpmClock(_bpmClock.Frame);
 				if (bpmResult.IsFailure) throw new InvalidOperationException(bpmResult.Error.Message);
 			}
 		}
@@ -524,6 +525,7 @@ namespace ShitDesigner.Main {
 
 		private LivePatch CreatePatch(PatchDefinition definition) {
 			var patch = new LivePatch(definition, _graph.CreateOutput);
+			patch.ApplyResolvedParameters(_bpmClock.Frame);
 			_createdPatches.Add(patch);
 			return patch;
 		}
@@ -590,6 +592,12 @@ namespace ShitDesigner.Main {
 			return parameter.TrySetParameter(value, out rejectionReason);
 		}
 
+		public void ApplyResolvedParameters(BeatClockFrame frame) {
+			foreach (var parameter in _parameters.Values)
+				if (!parameter.TryApplyResolvedValue(frame, out var rejectionReason))
+					throw new InvalidOperationException("The resolved patch parameter could not be applied: " + rejectionReason);
+		}
+
 		public void TriggerFlash(double graphTime) {
 			foreach (var output in Outputs) output.TriggerFlash(graphTime);
 		}
@@ -602,10 +610,12 @@ namespace ShitDesigner.Main {
 	internal interface ILivePublishedParameter {
 		LiveParameterDefinition ToDefinition();
 		bool TrySetParameter(ParameterValue value, out string rejectionReason);
+		bool TryApplyResolvedValue(BeatClockFrame frame, out string rejectionReason);
 	}
 
 	internal sealed class LivePublishedParameter : ILivePublishedParameter {
 		private readonly PatchParameter _definition;
+		private float _baseValue;
 		public LiveSceneRoot Root { get; }
 		public LiveParameterDefinition Source { get; }
 
@@ -613,11 +623,11 @@ namespace ShitDesigner.Main {
 			_definition = definition ?? throw new ArgumentNullException(nameof(definition));
 			Root = root ?? throw new ArgumentNullException(nameof(root));
 			Source = source;
+			_baseValue = source.Value;
 		}
 
 		public LiveParameterDefinition ToDefinition() {
-			var current = Root.GetParameterDefinitions().Single(parameter => parameter.Id == Source.Id);
-			return new LiveParameterDefinition(_definition.Id, _definition.DisplayName, Source.Minimum, Source.Maximum, current.Value);
+			return new LiveParameterDefinition(_definition.Id, _definition.DisplayName, Source.Minimum, Source.Maximum, _baseValue);
 		}
 
 		public bool TrySetParameter(ParameterValue value, out string rejectionReason) {
@@ -625,32 +635,50 @@ namespace ShitDesigner.Main {
 				rejectionReason = "The published scene parameter requires a float value.";
 				return false;
 			}
-			return Root.TrySetParameter(Source.Id, value.AsFloat(), out rejectionReason);
+			_baseValue = value.AsFloat();
+			rejectionReason = string.Empty;
+			return true;
 		}
+
+		public bool TryApplyResolvedValue(BeatClockFrame frame, out string rejectionReason)
+			=> Root.TrySetParameter(Source.Id, _definition.BeatModulation?.Resolve(_baseValue, frame) ?? _baseValue, out rejectionReason);
 	}
 
 	internal sealed class LivePublishedGraphParameter : ILivePublishedParameter {
 		private readonly PatchParameter _definition;
 		private readonly IReadOnlyCollection<LiveProgramOutput> _outputs;
-		private ParameterValue _value;
+		private ParameterValue _baseValue;
 
 		public LivePublishedGraphParameter(PatchParameter definition, IReadOnlyCollection<LiveProgramOutput> outputs, ParameterValue value) {
 			_definition = definition ?? throw new ArgumentNullException(nameof(definition));
 			_outputs = outputs ?? throw new ArgumentNullException(nameof(outputs));
-			_value = value;
+			_baseValue = value;
 		}
 
 		public LiveParameterDefinition ToDefinition()
-			=> new LiveParameterDefinition(_definition.Id, _definition.DisplayName, _value);
+			=> new LiveParameterDefinition(_definition.Id, _definition.DisplayName, _baseValue);
 
 		public bool TrySetParameter(ParameterValue value, out string rejectionReason) {
-			if (value.Type != _value.Type) {
+			if (value.Type != _baseValue.Type) {
 				rejectionReason = "The published graph parameter type does not match.";
 				return false;
 			}
+			_baseValue = value;
+			rejectionReason = string.Empty;
+			return true;
+		}
+
+		public bool TryApplyResolvedValue(BeatClockFrame frame, out string rejectionReason) {
+			var resolved = _baseValue;
+			if (_definition.BeatModulation != null && _definition.BeatModulation.IsEnabled) {
+				if (resolved.Type != ParameterType.Float) {
+					rejectionReason = "Beat-modulated graph parameters require a float value.";
+					return false;
+				}
+				resolved = ParameterValue.FromFloat(_definition.BeatModulation.Resolve(resolved.AsFloat(), frame));
+			}
 			foreach (var output in _outputs)
-				if (!output.TrySetGraphParameter(_definition.NodeId, _definition.ParameterId, value, out rejectionReason)) return false;
-			_value = value;
+				if (!output.TrySetGraphParameter(_definition.NodeId, _definition.ParameterId, resolved, out rejectionReason)) return false;
 			rejectionReason = string.Empty;
 			return true;
 		}
