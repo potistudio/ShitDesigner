@@ -14,6 +14,9 @@ namespace ShitDesigner.Scene {
 		[Min(0.01f)][SerializeField] private float m_VisualSize = 1.6f;
 		[Range(1, 32)][SerializeField] private int m_InstanceCount = 1;
 
+		[Header("Additional Sources")]
+		[SerializeField] private VisualSource[] m_AdditionalSources = Array.Empty<VisualSource>();
+
 		[Header("Video")]
 		[Min(0f)][SerializeField] private float m_VideoPlaybackSpeed = 1f;
 
@@ -57,12 +60,13 @@ namespace ShitDesigner.Scene {
 			m_InstanceCount = Mathf.Clamp(m_InstanceCount, 1, 32);
 			m_VideoPlaybackSpeed = Mathf.Max(0f, m_VideoPlaybackSpeed);
 			m_Speed = Mathf.Max(0.01f, m_Speed);
+			m_AdditionalSources ??= Array.Empty<VisualSource>();
 			if (m_InitialDirection.sqrMagnitude < 0.0001f)
 				m_InitialDirection = new Vector2(1f, 0.63f);
 
 			for (var index = 0; index < m_Visuals.Count; index++) {
 				var visual = m_Visuals[index];
-				visual.Object.transform.localScale = ToScale(GetVisualSize());
+				visual.Object.transform.localScale = ToScale(GetVisualSize(visual.Source));
 				ApplyImage(visual);
 				if (visual.VideoPlayer != null)
 					visual.VideoPlayer.playbackSpeed = m_VideoPlaybackSpeed;
@@ -83,11 +87,12 @@ namespace ShitDesigner.Scene {
 		}
 
 		private BouncingVisual CreateVisual(int index) {
+			var source = GetSource(index);
 			var visualObject = GameObject.CreatePrimitive(PrimitiveType.Quad);
 			visualObject.name = $"Bouncing Visual {index + 1:00}";
 			visualObject.layer = gameObject.layer;
 			visualObject.transform.SetParent(transform, false);
-			visualObject.transform.localScale = ToScale(GetVisualSize());
+			visualObject.transform.localScale = ToScale(GetVisualSize(source));
 			var collider = visualObject.GetComponent<Collider>();
 			if (collider != null)
 				Destroy(collider);
@@ -100,7 +105,7 @@ namespace ShitDesigner.Scene {
 			renderer.allowOcclusionWhenDynamic = false;
 			renderer.sortingOrder = 1;
 
-			var visual = new BouncingVisual(visualObject, renderer, material);
+			var visual = new BouncingVisual(visualObject, renderer, material, source);
 			ApplyImage(visual);
 			ConfigureVideo(visual);
 			return visual;
@@ -122,12 +127,12 @@ namespace ShitDesigner.Scene {
 		}
 
 		private void ConfigureVideo(BouncingVisual visual) {
-			if (m_Video == null)
+			if (visual.Source.Video == null)
 				return;
 
 			var player = visual.Object.AddComponent<VideoPlayer>();
 			player.source = VideoSource.VideoClip;
-			player.clip = m_Video;
+			player.clip = visual.Source.Video;
 			player.renderMode = VideoRenderMode.MaterialOverride;
 			player.targetMaterialRenderer = visual.Renderer;
 			player.targetMaterialProperty = GetTexturePropertyName(visual.Material);
@@ -139,25 +144,34 @@ namespace ShitDesigner.Scene {
 		}
 
 		private void ApplyImage(BouncingVisual visual) {
-			if (m_Video != null)
+			if (visual.Source.Video != null)
 				return;
 
-			visual.Material.SetTexture(GetTexturePropertyName(visual.Material), m_Image == null ? Texture2D.whiteTexture : m_Image);
+			visual.Material.SetTexture(GetTexturePropertyName(visual.Material), visual.Source.Image == null ? Texture2D.whiteTexture : visual.Source.Image);
 		}
 
-		private Vector2 GetVisualSize() {
+		private VisualSource GetSource(int index) {
+			var sourceCount = m_AdditionalSources == null ? 0 : m_AdditionalSources.Length;
+			var sourceIndex = index % (sourceCount + 1);
+			if (sourceIndex == 0)
+				return new VisualSource(m_Image, m_Video);
+
+			return m_AdditionalSources[sourceIndex - 1] ?? new VisualSource();
+		}
+
+		private Vector2 GetVisualSize(VisualSource source) {
 			var size = Mathf.Max(0.01f, m_VisualSize);
-			var aspectRatio = GetSourceAspectRatio();
+			var aspectRatio = GetSourceAspectRatio(source);
 			return aspectRatio >= 1f
 				? new Vector2(size, size / aspectRatio)
 				: new Vector2(size * aspectRatio, size);
 		}
 
-		private float GetSourceAspectRatio() {
-			if (m_Video != null && m_Video.width > 0 && m_Video.height > 0)
-				return (float)m_Video.width / m_Video.height;
-			if (m_Image != null && m_Image.width > 0 && m_Image.height > 0)
-				return (float)m_Image.width / m_Image.height;
+		private static float GetSourceAspectRatio(VisualSource source) {
+			if (source.Video != null && source.Video.width > 0 && source.Video.height > 0)
+				return (float)source.Video.width / source.Video.height;
+			if (source.Image != null && source.Image.width > 0 && source.Image.height > 0)
+				return (float)source.Image.width / source.Image.height;
 			return 16f / 9f;
 		}
 
@@ -245,13 +259,31 @@ namespace ShitDesigner.Scene {
 			public GameObject Object { get; }
 			public MeshRenderer Renderer { get; }
 			public Material Material { get; }
+			public VisualSource Source { get; }
 			public VideoPlayer VideoPlayer { get; set; }
 			public Vector2 Velocity { get; set; }
 
-			public BouncingVisual(GameObject visualObject, MeshRenderer renderer, Material material) {
+			public BouncingVisual(GameObject visualObject, MeshRenderer renderer, Material material, VisualSource source) {
 				Object = visualObject;
 				Renderer = renderer;
 				Material = material;
+				Source = source;
+			}
+		}
+
+		[Serializable]
+		private sealed class VisualSource {
+			[SerializeField] private Texture2D m_Image;
+			[SerializeField] private VideoClip m_Video;
+
+			public Texture2D Image => m_Image;
+			public VideoClip Video => m_Video;
+
+			public VisualSource() { }
+
+			public VisualSource(Texture2D image, VideoClip video) {
+				m_Image = image;
+				m_Video = video;
 			}
 		}
 
