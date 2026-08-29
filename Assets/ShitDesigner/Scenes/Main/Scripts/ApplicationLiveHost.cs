@@ -34,9 +34,13 @@ namespace ShitDesigner.Main {
 		private LiveMidiInput _midi;
 		private string[] _patchIds = Array.Empty<string>();
 		private LivePatchReadModel[] _patches = Array.Empty<LivePatchReadModel>();
+		private string[] m_MainPatchIds = Array.Empty<string>();
+		private string[] m_OverlayPatchIds = Array.Empty<string>();
 		private ulong _tickFrameNumber;
 		private int _selectedPatchSlotIndex;
-		private int _selectedCatalogPatchIndex;
+		private LivePatchRole m_SelectedPatchRole;
+		private int m_SelectedMainPatchIndex;
+		private int m_SelectedOverlayPatchIndex;
 
 		public ApplicationLiveHostState State { get; private set; } = ApplicationLiveHostState.Cold;
 		public LiveUiReadModel ReadModel { get; private set; }
@@ -63,6 +67,11 @@ namespace ShitDesigner.Main {
 				var mainPatchIds = new HashSet<string>(_graphBootstrap.MainPatches.Where(patch => patch != null).Select(patch => patch.Id), StringComparer.Ordinal);
 				_patches = _runtime.Patches.Select(patch => new LivePatchReadModel(patch.Id, patch.DisplayName,
 					mainPatchIds.Contains(patch.Id) ? LivePatchRole.Main : LivePatchRole.Overlay)).ToArray();
+				m_MainPatchIds = _patches.Where(patch => patch.Role == LivePatchRole.Main).Select(patch => patch.Id).ToArray();
+				m_OverlayPatchIds = _patches.Where(patch => patch.Role == LivePatchRole.Overlay).Select(patch => patch.Id).ToArray();
+				m_SelectedPatchRole = m_MainPatchIds.Length > 0 ? LivePatchRole.Main : LivePatchRole.Overlay;
+				m_SelectedMainPatchIndex = 0;
+				m_SelectedOverlayPatchIndex = 0;
 				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, slotIndex => { LaunchPatchSlot(slotIndex); }, slotIndex => { ClearPatchSlot(slotIndex); }, MoveCatalogSelection, () => { QueueSelectedCatalogPatch(); }, TapBpm);
 				_midiInputManager.InitializeForHostPolling();
 				_shutdown.Add(_midiInputManager.Shutdown);
@@ -120,7 +129,7 @@ namespace ShitDesigner.Main {
 
 		public LivePatchSlotOperationResult QueuePatch(string patchId) {
 			if (!IsKnownPatch(patchId)) return LivePatchSlotOperationResult.Reject("The requested patch does not exist.");
-			_selectedCatalogPatchIndex = Array.IndexOf(_patchIds, patchId);
+			SelectCatalogPatch(patchId);
 			var result = _patchSlots.Queue(patchId);
 			if (result.Accepted) _selectedPatchSlotIndex = result.SlotIndex;
 			return result;
@@ -162,26 +171,27 @@ namespace ShitDesigner.Main {
 
 		public void MoveCatalogSelection(int horizontalDirection, int verticalDirection) {
 			if (_patches.Length == 0 || (horizontalDirection == 0 && verticalDirection == 0)) return;
-			_selectedCatalogPatchIndex = Mathf.Clamp(_selectedCatalogPatchIndex, 0, _patches.Length - 1);
-			var selectedPatch = _patches[_selectedCatalogPatchIndex];
-			var sourceRow = _patches.Where(patch => patch.Role == selectedPatch.Role).ToArray();
-			var column = Array.FindIndex(sourceRow, patch => patch.Id == selectedPatch.Id);
-			if (column < 0) column = 0;
+			if (verticalDirection < 0 && m_MainPatchIds.Length > 0) {
+				m_SelectedPatchRole = LivePatchRole.Main;
+				return;
+			}
+			if (verticalDirection > 0 && m_OverlayPatchIds.Length > 0) {
+				m_SelectedPatchRole = LivePatchRole.Overlay;
+				return;
+			}
+			if (horizontalDirection == 0) return;
 
-			var targetRole = verticalDirection < 0 ? LivePatchRole.Main
-				: verticalDirection > 0 ? LivePatchRole.Overlay
-				: selectedPatch.Role;
-			var targetRow = _patches.Where(patch => patch.Role == targetRole).ToArray();
-			if (targetRow.Length == 0) return;
-			if (verticalDirection == 0) column += Math.Sign(horizontalDirection);
-			var targetPatch = targetRow[Mathf.Clamp(column, 0, targetRow.Length - 1)];
-			_selectedCatalogPatchIndex = Array.IndexOf(_patchIds, targetPatch.Id);
+			if (m_SelectedPatchRole == LivePatchRole.Main)
+				m_SelectedMainPatchIndex = MoveWithinRow(m_SelectedMainPatchIndex, horizontalDirection, m_MainPatchIds.Length);
+			else
+				m_SelectedOverlayPatchIndex = MoveWithinRow(m_SelectedOverlayPatchIndex, horizontalDirection, m_OverlayPatchIds.Length);
 		}
 
 		public LivePatchSlotOperationResult QueueSelectedCatalogPatch() {
-			return _patchIds.Length == 0
+			var patchId = SelectedCatalogPatchId;
+			return string.IsNullOrEmpty(patchId)
 				? LivePatchSlotOperationResult.Reject("The patch catalog is empty.")
-				: QueuePatch(_patchIds[_selectedCatalogPatchIndex]);
+				: QueuePatch(patchId);
 		}
 
 		public void TapBpm(double time) {
@@ -208,7 +218,33 @@ namespace ShitDesigner.Main {
 		}
 
 		private bool IsKnownPatch(string patchId) => !string.IsNullOrWhiteSpace(patchId) && _patchIds.Contains(patchId);
-		private string SelectedCatalogPatchId => _selectedCatalogPatchIndex >= 0 && _selectedCatalogPatchIndex < _patchIds.Length ? _patchIds[_selectedCatalogPatchIndex] : string.Empty;
+
+		private string SelectedCatalogPatchId {
+			get {
+				var patchIds = m_SelectedPatchRole == LivePatchRole.Main ? m_MainPatchIds : m_OverlayPatchIds;
+				var selectedIndex = m_SelectedPatchRole == LivePatchRole.Main ? m_SelectedMainPatchIndex : m_SelectedOverlayPatchIndex;
+				return selectedIndex >= 0 && selectedIndex < patchIds.Length ? patchIds[selectedIndex] : string.Empty;
+			}
+		}
+
+		private void SelectCatalogPatch(string patchId) {
+			var mainIndex = Array.IndexOf(m_MainPatchIds, patchId);
+			if (mainIndex >= 0) {
+				m_SelectedPatchRole = LivePatchRole.Main;
+				m_SelectedMainPatchIndex = mainIndex;
+				return;
+			}
+
+			var overlayIndex = Array.IndexOf(m_OverlayPatchIds, patchId);
+			if (overlayIndex < 0) return;
+			m_SelectedPatchRole = LivePatchRole.Overlay;
+			m_SelectedOverlayPatchIndex = overlayIndex;
+		}
+
+		private static int MoveWithinRow(int selectedIndex, int direction, int patchCount) {
+			if (patchCount <= 0) return 0;
+			return Mathf.Clamp(selectedIndex + Math.Sign(direction), 0, patchCount - 1);
+		}
 
 		private void ShutdownStartedComponents() {
 			for (var index = _shutdown.Count - 1; index >= 0; index--) {
