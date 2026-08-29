@@ -20,7 +20,7 @@ namespace ShitDesigner.Main {
 		[SerializeField] private MidiInputManager _midiInputManager;
 		[SerializeField] private LiveCapabilityMonitor _capabilityMonitor;
 		[SerializeField] private LiveExternalDisplayOutput _externalDisplay;
-		[SerializeField] private PanelRenderer m_PanelRenderer;
+		[SerializeField] private LiveUiController _uiController;
 		[SerializeField] private bool _bootOnAwake = true;
 
 		private readonly LiveParameterQueue _parameterQueue = new LiveParameterQueue();
@@ -64,7 +64,7 @@ namespace ShitDesigner.Main {
 			_shutdown.Clear();
 			LastDiagnostic = string.Empty;
 			try {
-				if (_graphBootstrap == null || _midiInputManager == null || _capabilityMonitor == null || _externalDisplay == null || m_PanelRenderer == null)
+				if (_graphBootstrap == null || _midiInputManager == null || _capabilityMonitor == null || _externalDisplay == null || _uiController == null)
 					throw new InvalidOperationException("ApplicationLiveHost requires graph, MIDI, capability, Display, and UI components.");
 
 				_runtime = _graphBootstrap.CreateRuntime();
@@ -88,8 +88,8 @@ namespace ShitDesigner.Main {
 				_shutdown.Add(_externalDisplay.Shutdown);
 				_capabilityMonitor.Initialize(_midiInputManager, _externalDisplay);
 				_shutdown.Add(_capabilityMonitor.Shutdown);
-				m_PanelRenderer.Initialize(this, _externalDisplay);
-				_shutdown.Add(m_PanelRenderer.Shutdown);
+				_uiController.Initialize(this, _externalDisplay);
+				_shutdown.Add(_uiController.Shutdown);
 				PublishReadModel(string.Empty);
 				State = ApplicationLiveHostState.Running;
 				return true;

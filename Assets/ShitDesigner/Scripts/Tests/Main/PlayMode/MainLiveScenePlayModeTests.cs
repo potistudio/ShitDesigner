@@ -54,7 +54,15 @@ namespace ShitDesigner.Main.Tests {
 			for (var frame = 0; frame < 60 && !host.ReadModel.RequestResults.Any(result => result.SequenceNumber == parameter.SequenceNumber); frame++) yield return null;
 			Assert.That(host.ReadModel.RequestResults.Any(result => result.SequenceNumber == parameter.SequenceNumber && result.Applied), Is.True);
 			Assert.That(host.ReadModel.Parameters.Single(item => item.Id == "scale").Value, Is.EqualTo(1f));
-			var ui = host.GetComponent<UIDocument>().rootVisualElement;
+			var panelRenderer = host.GetComponent<PanelRenderer>();
+			VisualElement ui = null;
+			panelRenderer.RegisterUIReloadCallback((_, root) => ui = root);
+			var visualTreeAsset = panelRenderer.visualTreeAsset;
+			panelRenderer.visualTreeAsset = null;
+			panelRenderer.visualTreeAsset = visualTreeAsset;
+			for (var frame = 0; frame < 60 && ui == null; frame++) yield return null;
+			Assert.That(ui, Is.Not.Null);
+			yield return null;
 			Assert.That(ui.Q<VisualElement>("parameter-channel-scale"), Is.Not.Null);
 			Assert.That(ui.Q<Slider>("parameter-scale").direction, Is.EqualTo(SliderDirection.Vertical));
 			Assert.That(ui.Q<Label>("parameter-value-scale").text, Is.EqualTo("1.00"));
