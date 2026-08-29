@@ -92,22 +92,28 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 		}
 
 		[UnityTest]
-		public IEnumerator RecursiveRectangles_UsesOneFillColorAndTransparentVariation() {
+		public IEnumerator RecursiveRectangles_UsesSpecifiedFillColorOrTransparency() {
 			RequireGraphicsDevice();
 			var material = CreateMaterial();
 			try {
 				Configure(material);
-				material.SetVector("_ColorA", new Vector4(1f, 0f, 0f, 1f));
+				material.SetVector("_ColorA", new Vector4(.8f, .4f, .2f, .5f));
 				material.SetFloat("_Gutter", 0f);
 
 				Color32[] pixels = null;
 				yield return Render(material, 48, 32, result => pixels = result);
 
-				Assert.That(pixels.Select(pixel => pixel.a).Distinct().Count(), Is.GreaterThan(1));
+				Assert.That(pixels.Any(pixel => pixel.a == 0), Is.True);
+				Assert.That(pixels.Any(pixel => pixel.a > 0), Is.True);
 				foreach (var pixel in pixels) {
-					Assert.That(pixel.r, Is.EqualTo(pixel.a).Within(1));
-					Assert.That(pixel.g, Is.EqualTo(0));
-					Assert.That(pixel.b, Is.EqualTo(0));
+					if (pixel.a == 0) {
+						Assert.That(pixel, Is.EqualTo(new Color32(0, 0, 0, 0)));
+						continue;
+					}
+					Assert.That(pixel.r, Is.EqualTo(102).Within(1));
+					Assert.That(pixel.g, Is.EqualTo(51).Within(1));
+					Assert.That(pixel.b, Is.EqualTo(26).Within(1));
+					Assert.That(pixel.a, Is.EqualTo(128).Within(1));
 				}
 			}
 			finally { UnityEngine.Object.DestroyImmediate(material); }
@@ -142,6 +148,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 			var material = CreateMaterial();
 			try {
 				Configure(material);
+				material.SetInt("_StructureSeed", 5);
 				material.SetInt("_MaxDepth", 1);
 				material.SetInt("_AxisMode", 2);
 				material.SetFloat("_RatioMin", .5f);
