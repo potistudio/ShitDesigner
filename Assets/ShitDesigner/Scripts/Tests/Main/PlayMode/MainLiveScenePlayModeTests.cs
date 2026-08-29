@@ -66,10 +66,17 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(outputButton.parent.parent, Is.SameAs(topBar));
 			Assert.That(identifyButton.parent.parent, Is.SameAs(topBar));
 			var patchRoleLabels = ui.Q<VisualElement>("patch-role-labels");
+			var patchControls = ui.Q<VisualElement>("patch-controls");
+			var mainPatchControls = ui.Q<ScrollView>("main-patch-controls");
+			var overlayPatchControls = ui.Q<ScrollView>("overlay-patch-controls");
 			Assert.That(patchRoleLabels, Is.Not.Null);
+			Assert.That(mainPatchControls, Is.Not.Null);
+			Assert.That(overlayPatchControls, Is.Not.Null);
+			Assert.That(patchRoleLabels.parent, Is.SameAs(patchControls));
+			Assert.That(mainPatchControls, Is.Not.SameAs(overlayPatchControls));
 			Assert.That(patchRoleLabels.Query<Label>().ToList().Select(label => label.text), Is.EqualTo(new[] { "MAIN", "OVERLAY" }));
-			Assert.That(ui.Query<Button>(className: "patch-main-button").ToList().Count, Is.EqualTo(host.ReadModel.Patches.Count(patch => patch.Role == LivePatchRole.Main)));
-			Assert.That(ui.Query<Button>(className: "patch-overlay-button").ToList().Count, Is.EqualTo(host.ReadModel.Patches.Count(patch => patch.Role == LivePatchRole.Overlay)));
+			Assert.That(mainPatchControls.Query<Button>().ToList().Count, Is.EqualTo(host.ReadModel.Patches.Count(patch => patch.Role == LivePatchRole.Main)));
+			Assert.That(overlayPatchControls.Query<Button>().ToList().Count, Is.EqualTo(host.ReadModel.Patches.Count(patch => patch.Role == LivePatchRole.Overlay)));
 			Assert.That(ui.Q<Button>("patch-" + nextPatch.Id).ClassListContains("is-loaded"), Is.True);
 
 			var midi = (Component)typeof(ApplicationLiveHost).GetField("_midiInputManager", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(host);
