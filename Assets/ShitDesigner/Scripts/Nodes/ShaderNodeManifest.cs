@@ -329,7 +329,7 @@ namespace ShitDesigner.Nodes {
 			var parameters = new[]
 			{
 				Parameter("max_depth", "Max Depth", ParameterType.Int, ParameterValue.FromInt(5), "_MaxDepth", ParameterValue.FromInt(0), ParameterValue.FromInt(8), group: "Structure", order: 0),
-				Parameter("min_leaf_size", "Min Leaf Size", ParameterType.Float, ParameterValue.FromFloat(.08f), "_MinLeafSize", ParameterValue.FromFloat(.001f), ParameterValue.FromFloat(.5f), group: "Structure", order: 1),
+				Parameter("min_leaf_size", "Min Leaf Size", ParameterType.Float, ParameterValue.FromFloat(.001f), "_MinLeafSize", ParameterValue.FromFloat(.001f), ParameterValue.FromFloat(.5f), group: "Structure", order: 1),
 				Parameter("split_probability", "Split Probability", ParameterType.Float, ParameterValue.FromFloat(.9f), "_SplitProbability", ParameterValue.FromFloat(0f), ParameterValue.FromFloat(1f), group: "Structure", order: 2),
 				EnumParameter("axis_mode", "Axis Mode", "_AxisMode", "longer_side", new[] { "longer_side", "horizontal", "vertical", "random" }, "Structure", 3),
 				Parameter("ratio_min", "Ratio Min", ParameterType.Float, ParameterValue.FromFloat(.25f), "_RatioMin", ParameterValue.FromFloat(0f), ParameterValue.FromFloat(1f), group: "Structure", order: 4),

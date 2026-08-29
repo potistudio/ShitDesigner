@@ -3,7 +3,7 @@ Shader "Hidden/ShitDesigner/RecursiveRectangles"
 	Properties
 	{
 		_MaxDepth ("Max Depth", Int) = 5
-		_MinLeafSize ("Min Leaf Size", Float) = 0.08
+		_MinLeafSize ("Min Leaf Size", Float) = 0.001
 		_SplitProbability ("Split Probability", Range(0, 1)) = 0.9
 		_AxisMode ("Axis Mode", Int) = 0
 		_RatioMin ("Ratio Min", Range(0, 1)) = 0.25

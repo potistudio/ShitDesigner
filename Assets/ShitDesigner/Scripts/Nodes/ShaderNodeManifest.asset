@@ -201,7 +201,7 @@ MonoBehaviour:
       displayName: Min Leaf Size
       property: _MinLeafSize
       type: 0
-      defaultValue: float:0.08
+      defaultValue: float:0.001
       hasMinimum: 1
       minimumValue: float:0.001
       hasMaximum: 1
