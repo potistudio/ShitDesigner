@@ -135,7 +135,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1b3b3c44f21142d2a316ce22c223f66a, type: 3}
   m_Name:
-  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.DvdBounceScene
+  m_EditorClassIdentifier: DvdBounce::ShitDesigner.Scene.DvdBounceScene
   m_Image: {fileID: 0}
   m_Video: {fileID: 0}
   m_VisualSize: {x: 2.8, y: 1.6}
