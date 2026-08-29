@@ -20,20 +20,12 @@ namespace ShitDesigner.Scene {
 		[SerializeField] private Vector2 m_InitialDirection = new Vector2(1f, 0.63f);
 		[SerializeField] private Vector2 m_InitialPosition = Vector2.zero;
 
-		[Header("Appearance")]
-		[ColorUsage(false, true)][SerializeField] private Color[] m_Colors = {
-			new Color(1f, 0.22f, 0.36f, 1f), new Color(0.2f, 0.9f, 1f, 1f),
-			new Color(1f, 0.78f, 0.16f, 1f), new Color(0.5f, 1f, 0.35f, 1f),
-			new Color(0.82f, 0.36f, 1f, 1f)
-		};
-
 		private Camera m_Camera;
 		private GameObject m_VisualObject;
 		private Material m_Material;
 		private MeshRenderer m_Renderer;
 		private VideoPlayer m_VideoPlayer;
 		private Vector2 m_Velocity;
-		private int m_ColorIndex;
 
 		private void Awake() {
 			m_Camera = Camera.main;
@@ -45,7 +37,6 @@ namespace ShitDesigner.Scene {
 		private void Start() {
 			transform.position = new Vector3(m_InitialPosition.x, m_InitialPosition.y, 0f);
 			m_Velocity = GetInitialVelocity();
-			ApplyColor();
 			KeepWithinBounds();
 			if (m_VideoPlayer != null)
 				m_VideoPlayer.Play();
@@ -57,10 +48,8 @@ namespace ShitDesigner.Scene {
 
 			var position = (Vector2)transform.position + m_Velocity * Time.unscaledDeltaTime;
 			var bounds = GetMovementBounds();
-			var impacted = ReflectWithinBounds(ref position, ref m_Velocity, bounds);
+			ReflectWithinBounds(ref position, ref m_Velocity, bounds);
 			transform.position = new Vector3(position.x, position.y, 0f);
-			if (impacted)
-				AdvanceColor();
 		}
 
 		private void OnDestroy() {
@@ -76,7 +65,6 @@ namespace ShitDesigner.Scene {
 			if (m_VisualObject != null) {
 				m_VisualObject.transform.localScale = ToScale(GetVisualSize());
 				ApplyImage();
-				ApplyColor();
 			}
 			if (m_VideoPlayer != null)
 				m_VideoPlayer.playbackSpeed = m_VideoPlaybackSpeed;
@@ -169,35 +157,15 @@ namespace ShitDesigner.Scene {
 			transform.position = new Vector3(position.x, position.y, 0f);
 		}
 
-		private static bool ReflectWithinBounds(ref Vector2 position, ref Vector2 velocity, Bounds2D bounds) {
-			var impacted = false;
+		private static void ReflectWithinBounds(ref Vector2 position, ref Vector2 velocity, Bounds2D bounds) {
 			if (position.x < bounds.Minimum.x || position.x > bounds.Maximum.x) {
 				position.x = Mathf.Clamp(position.x, bounds.Minimum.x, bounds.Maximum.x);
 				velocity.x = -velocity.x;
-				impacted = true;
 			}
 			if (position.y < bounds.Minimum.y || position.y > bounds.Maximum.y) {
 				position.y = Mathf.Clamp(position.y, bounds.Minimum.y, bounds.Maximum.y);
 				velocity.y = -velocity.y;
-				impacted = true;
 			}
-			return impacted;
-		}
-
-		private void AdvanceColor() {
-			if (m_Colors == null || m_Colors.Length == 0)
-				return;
-
-			m_ColorIndex = (m_ColorIndex + 1) % m_Colors.Length;
-			ApplyColor();
-		}
-
-		private void ApplyColor() {
-			if (m_Material == null || m_Colors == null || m_Colors.Length == 0)
-				return;
-
-			m_ColorIndex = Mathf.Clamp(m_ColorIndex, 0, m_Colors.Length - 1);
-			SetMaterialColor(m_Material, m_Colors[m_ColorIndex]);
 		}
 
 		private void ReleaseVisual() {
@@ -234,13 +202,6 @@ namespace ShitDesigner.Scene {
 
 		private static string GetTexturePropertyName(Material material) {
 			return material.HasProperty("_BaseMap") ? "_BaseMap" : "_MainTex";
-		}
-
-		private static void SetMaterialColor(Material material, Color color) {
-			if (material.HasProperty("_BaseColor"))
-				material.SetColor("_BaseColor", color);
-			if (material.HasProperty("_Color"))
-				material.SetColor("_Color", color);
 		}
 
 		private readonly struct Bounds2D {
