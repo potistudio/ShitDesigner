@@ -616,6 +616,8 @@ namespace ShitDesigner.Main {
 	internal sealed class LivePublishedParameter : ILivePublishedParameter {
 		private readonly PatchParameter _definition;
 		private float _baseValue;
+		private bool _hasResolvedValue;
+		private float _lastResolvedValue;
 		public LiveSceneRoot Root { get; }
 		public LiveParameterDefinition Source { get; }
 
@@ -624,6 +626,8 @@ namespace ShitDesigner.Main {
 			Root = root ?? throw new ArgumentNullException(nameof(root));
 			Source = source;
 			_baseValue = source.Value;
+			_lastResolvedValue = source.Value;
+			_hasResolvedValue = true;
 		}
 
 		public LiveParameterDefinition ToDefinition() {
@@ -640,19 +644,33 @@ namespace ShitDesigner.Main {
 			return true;
 		}
 
-		public bool TryApplyResolvedValue(BeatClockFrame frame, out string rejectionReason)
-			=> Root.TrySetParameter(Source.Id, _definition.BeatModulation?.Resolve(_baseValue, frame) ?? _baseValue, out rejectionReason);
+		public bool TryApplyResolvedValue(BeatClockFrame frame, out string rejectionReason) {
+			var resolvedValue = _definition.BeatModulation?.Resolve(_baseValue, frame) ?? _baseValue;
+			// A Scene parameter can represent a one-shot action, so equal frame values must not be dispatched again.
+			if (_hasResolvedValue && Mathf.Approximately(_lastResolvedValue, resolvedValue)) {
+				rejectionReason = string.Empty;
+				return true;
+			}
+			if (!Root.TrySetParameter(Source.Id, resolvedValue, out rejectionReason)) return false;
+			_lastResolvedValue = resolvedValue;
+			_hasResolvedValue = true;
+			return true;
+		}
 	}
 
 	internal sealed class LivePublishedGraphParameter : ILivePublishedParameter {
 		private readonly PatchParameter _definition;
 		private readonly IReadOnlyCollection<LiveProgramOutput> _outputs;
 		private ParameterValue _baseValue;
+		private bool _hasResolvedValue;
+		private ParameterValue _lastResolvedValue;
 
 		public LivePublishedGraphParameter(PatchParameter definition, IReadOnlyCollection<LiveProgramOutput> outputs, ParameterValue value) {
 			_definition = definition ?? throw new ArgumentNullException(nameof(definition));
 			_outputs = outputs ?? throw new ArgumentNullException(nameof(outputs));
 			_baseValue = value;
+			_lastResolvedValue = value;
+			_hasResolvedValue = true;
 		}
 
 		public LiveParameterDefinition ToDefinition()
@@ -677,8 +695,14 @@ namespace ShitDesigner.Main {
 				}
 				resolved = ParameterValue.FromFloat(_definition.BeatModulation.Resolve(resolved.AsFloat(), frame));
 			}
+			if (_hasResolvedValue && _lastResolvedValue == resolved) {
+				rejectionReason = string.Empty;
+				return true;
+			}
 			foreach (var output in _outputs)
 				if (!output.TrySetGraphParameter(_definition.NodeId, _definition.ParameterId, resolved, out rejectionReason)) return false;
+			_lastResolvedValue = resolved;
+			_hasResolvedValue = true;
 			rejectionReason = string.Empty;
 			return true;
 		}
