@@ -183,8 +183,6 @@ namespace ShitDesigner.Scene {
 			if (!Nodes.Any(node => string.Equals(node.Id, OutputNodeId, StringComparison.Ordinal)))
 				return Failure("patch.definition.graph.output_missing", "The patch graph output must reference a configured node.");
 			var sceneNodes = Nodes.Where(node => node.IsSceneNode).ToArray();
-			if (sceneNodes.Length == 0)
-				return Failure("patch.definition.graph.scene_missing", "A patch program graph requires at least one 3D scene node.");
 			if (sceneNodes.Any(node => node.SceneDefinition == null || string.IsNullOrWhiteSpace(node.SceneDefinition.Id)
 				|| node.SceneDefinition.Validate().IsFailure))
 				return Failure("patch.definition.graph.scene", "Every 3D scene node requires a valid Scene3DDefinition.");
