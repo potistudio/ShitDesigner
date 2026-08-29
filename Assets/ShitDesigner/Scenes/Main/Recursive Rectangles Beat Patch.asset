@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36a7c9fd8af84f24a8db20cf4457e4ca, type: 3}
+  m_Name: Recursive Rectangles Beat Patch
+  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
+  _id: recursive-rectangles-beat
+  _displayName: Recursive Rectangles Beat
+  _flash:
+    _image: {fileID: 2800000, guid: 7811e043fc896e74592668a1a45cd6bc, type: 3}
+    _durationSeconds: 0.25
+  _programGraph:
+    _outputNodeId: composite
+    _nodes:
+    - _id: scene
+      _typeId: shitdesigner.scene.3d
+      m_SceneDefinition: {fileID: 11400000, guid: d4bdff6ba4854394acc490d905b97d92, type: 2}
+      _parameters: []
+    - _id: recursive-rectangles
+      _typeId: shitdesigner.shader.generator.recursive-rectangles
+      _parameters:
+      - _id: beat_sync
+        _type: 2
+        _boolValue: 1
+    - _id: composite
+      _typeId: shitdesigner.shader.blend.premultiplied_over
+      _parameters:
+      - _id: amount
+        _type: 0
+        _floatValue: 1
+      - _id: external_mask
+        _type: 0
+        _floatValue: 0
+    _connections:
+    - _sourceNodeId: recursive-rectangles
+      _sourcePortId: image
+      _targetNodeId: composite
+      _targetPortId: a
+    - _sourceNodeId: scene
+      _sourcePortId: image
+      _targetNodeId: composite
+      _targetPortId: b
+  _parameters: []
+  m_KeyboardInputs: []
+  m_MidiInputs: []
