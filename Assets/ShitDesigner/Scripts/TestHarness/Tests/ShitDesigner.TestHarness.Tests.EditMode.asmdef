@@ -25,5 +25,5 @@
   "defineConstraints": ["SHITDESIGNER_TEST_HARNESS", "UNITY_INCLUDE_TESTS"],
   "versionDefines": [],
   "noEngineReferences": false,
-  "optionalUnityReferences": ["TestAssemblies"]
+  "optionalUnityReferences": []
 }
