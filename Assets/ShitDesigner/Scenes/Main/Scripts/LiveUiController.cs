@@ -58,6 +58,11 @@ namespace ShitDesigner.Main {
 			_programMonitor = Required<VisualElement>(root, "program-monitor");
 			m_Output2Preview = Required<VisualElement>(root, "output-2-preview");
 			_patchSlotControls = Required<VisualElement>(root, "patch-slot-controls");
+			for (var slotIndex = 0; slotIndex < LivePatchSlots.Capacity; slotIndex++) {
+				var button = Required<Button>(root, "patch-slot-" + slotIndex);
+				button.userData = slotIndex;
+			}
+			_patchSlotControls.RegisterCallback<ClickEvent>(OnPatchSlotClicked);
 			_patchControls = Required<ScrollView>(root, "patch-controls");
 			_cuePatchButton = Required<Button>(root, "cue-patch-slot");
 			_launchPatchButton = Required<Button>(root, "launch-patch-slot");
@@ -96,6 +101,7 @@ namespace ShitDesigner.Main {
 		}
 
 		public void Shutdown() {
+			if (_patchSlotControls != null) _patchSlotControls.UnregisterCallback<ClickEvent>(OnPatchSlotClicked);
 			if (_patchControls != null) _patchControls.UnregisterCallback<WheelEvent>(OnPatchSelectionWheel, TrickleDown.TrickleDown);
 			if (_cuePatchButton != null) _cuePatchButton.clicked -= CueSelectedPatchSlot;
 			if (_launchPatchButton != null) _launchPatchButton.clicked -= LaunchSelectedPatchSlot;
@@ -300,11 +306,9 @@ namespace ShitDesigner.Main {
 		}
 
 		private void RefreshPatchSlotControls(LiveUiReadModel model) {
-			if (_patchSlotControls.childCount != model.PatchSlots.Count) RebuildPatchSlotControls(model.PatchSlots.Count);
 			foreach (var slot in model.PatchSlots) {
 				var button = _patchSlotControls.Q<Button>("patch-slot-" + slot.Index);
 				if (button == null) continue;
-				button.text = (slot.Index + 1).ToString(CultureInfo.InvariantCulture);
 				button.tooltip = FormatPatchSlot(slot, model.Patches);
 				button.EnableInClassList("is-selected", slot.Index == model.SelectedPatchSlotIndex);
 				button.EnableInClassList("is-cued", !slot.IsEmpty && slot.PatchId == model.PreloadedPatchId);
@@ -317,18 +321,9 @@ namespace ShitDesigner.Main {
 			_clearPatchSlotButton.SetEnabled(hasSelectedPatch);
 		}
 
-		private void RebuildPatchSlotControls(int slotCount) {
-			_patchSlotControls.Clear();
-			for (var slotIndex = 0; slotIndex < slotCount; slotIndex++) {
-				var index = slotIndex;
-				var button = new Button(() => SelectPatchSlot(index)) {
-					name = "patch-slot-" + index,
-					text = (index + 1).ToString(CultureInfo.InvariantCulture),
-					userData = index
-				};
-				button.AddToClassList("patch-slot-button");
-				_patchSlotControls.Add(button);
-			}
+		private void OnPatchSlotClicked(ClickEvent change) {
+			if (!(change.target is Button button) || !(button.userData is int slotIndex)) return;
+			SelectPatchSlot(slotIndex);
 		}
 
 		private void SelectPatchSlot(int slotIndex) {

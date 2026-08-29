@@ -11,7 +11,16 @@
                         <ui:VisualElement name="output-2-preview" class="output-preview output-preview-2">
                             <ui:Label text="Output 2" class="output-preview-label"/>
                         </ui:VisualElement>
-                        <ui:VisualElement name="patch-slot-controls" class="patch-slot-controls"/>
+                        <ui:VisualElement name="patch-slot-controls" class="patch-slot-controls">
+                            <ui:Button name="patch-slot-0" text="1" class="patch-slot-button"/>
+                            <ui:Button name="patch-slot-1" text="2" class="patch-slot-button"/>
+                            <ui:Button name="patch-slot-2" text="3" class="patch-slot-button"/>
+                            <ui:Button name="patch-slot-3" text="4" class="patch-slot-button"/>
+                            <ui:Button name="patch-slot-4" text="5" class="patch-slot-button"/>
+                            <ui:Button name="patch-slot-5" text="6" class="patch-slot-button"/>
+                            <ui:Button name="patch-slot-6" text="7" class="patch-slot-button"/>
+                            <ui:Button name="patch-slot-7" text="8" class="patch-slot-button"/>
+                        </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:VisualElement>
                 <ui:VisualElement class="live-fader-panel">
