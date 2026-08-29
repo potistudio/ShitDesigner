@@ -11,19 +11,14 @@ namespace ShitDesigner.Main {
 		public const float MinimumBpm = 30f;
 		public const float MaximumBpm = 300f;
 		public const float DefaultBpm = 138f;
-		public const float MinimumBeatAlignmentMilliseconds = -1000f;
-		public const float MaximumBeatAlignmentMilliseconds = 1000f;
 
 		private float _beatsPerMinute;
-		private float m_BeatAlignmentMilliseconds;
 		private double m_BeatAlignmentBeats;
 		private double _totalBeats;
 
 		public float BeatsPerMinute => _beatsPerMinute;
-		public float BeatAlignmentMilliseconds => m_BeatAlignmentMilliseconds;
 		public double TotalBeats => _totalBeats;
 		public LiveParameterDefinition Definition => new LiveParameterDefinition("bpm", "BPM", MinimumBpm, MaximumBpm, _beatsPerMinute);
-		public LiveParameterDefinition BeatAlignmentDefinition => new LiveParameterDefinition("beat-alignment-ms", "Beat Alignment (ms)", MinimumBeatAlignmentMilliseconds, MaximumBeatAlignmentMilliseconds, BeatAlignmentMilliseconds);
 		public BeatClockFrame Frame => new BeatClockFrame(_beatsPerMinute, _totalBeats, m_BeatAlignmentBeats);
 
 		public LiveBpmClock(float beatsPerMinute = DefaultBpm) {
@@ -41,14 +36,14 @@ namespace ShitDesigner.Main {
 			return true;
 		}
 
-		public bool TrySetBeatAlignmentMilliseconds(float milliseconds, out string rejectionReason) {
-			if (float.IsNaN(milliseconds) || float.IsInfinity(milliseconds)) {
-				rejectionReason = "Beat alignment must be finite.";
+		public bool TryAlignToNearestBeat(out string rejectionReason) {
+			var adjustedTotalBeats = Frame.AdjustedTotalBeats;
+			if (double.IsNaN(adjustedTotalBeats) || double.IsInfinity(adjustedTotalBeats)) {
+				rejectionReason = "Beat alignment requires finite clock values.";
 				return false;
 			}
-			var clampedMilliseconds = Math.Min(MaximumBeatAlignmentMilliseconds, Math.Max(MinimumBeatAlignmentMilliseconds, milliseconds));
-			m_BeatAlignmentMilliseconds = clampedMilliseconds;
-			m_BeatAlignmentBeats = clampedMilliseconds * _beatsPerMinute / 60000d;
+			var nearestBeat = Math.Round(adjustedTotalBeats, MidpointRounding.AwayFromZero);
+			m_BeatAlignmentBeats += adjustedTotalBeats - nearestBeat;
 			rejectionReason = string.Empty;
 			return true;
 		}

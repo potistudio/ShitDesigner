@@ -87,18 +87,18 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void SetBeatAlignmentQueuesAGlobalRequestWithoutAPatchId() {
+		public void AlignBeatQueuesAGlobalRequestWithoutAPatchId() {
 			var queue = new LiveParameterQueue();
 
-			var result = queue.EnqueueSetBeatAlignment(-12.5f);
+			var result = queue.EnqueueAlignBeat();
 
 			var requests = new List<LiveParameterRequest>();
 			queue.Drain(requests);
 			Assert.That(result.Accepted, Is.True);
 			Assert.That(requests, Has.Count.EqualTo(1));
-			Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.SetBeatAlignment));
+			Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.AlignBeat));
 			Assert.That(requests[0].PatchId, Is.Empty);
-			Assert.That(requests[0].Value, Is.EqualTo(-12.5f));
+			Assert.That(requests[0].Value, Is.Zero);
 		}
 
 		[Test]
