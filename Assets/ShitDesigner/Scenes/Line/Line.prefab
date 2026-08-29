@@ -254,6 +254,7 @@ GameObject:
   - component: {fileID: 5839499716430379336}
   - component: {fileID: 1156056593415298499}
   - component: {fileID: 912345678901234567}
+  - component: {fileID: 912345678901234568}
   m_Layer: 0
   m_Name: Line
   m_TagString: Untagged
@@ -304,8 +305,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e7c8e53bfe44f56a713e8af0f7fc6f1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PerlinNoiseLineClockController
-  m_ClockSpeedMultiplier: 1
-  m_BeatPulseAmount: 1
+--- !u!114 &912345678901234568
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4701735318796059785}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d6f0c6c8d8574f699ad8819029e17f1a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.PerlinNoiseLineSpeedParameter
+  m_Id: line_speed
+  m_DisplayName: Line Speed
+  m_Controller: {fileID: 912345678901234567}
+  m_Value: 1
 --- !u!1 &5621820584538546032
 GameObject:
   m_ObjectHideFlags: 0
