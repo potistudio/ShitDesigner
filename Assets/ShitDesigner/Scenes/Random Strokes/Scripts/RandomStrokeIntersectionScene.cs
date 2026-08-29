@@ -42,9 +42,9 @@ namespace ShitDesigner.Scene {
 		private Mesh m_RegionMesh;
 		private GameObject m_RegionObject;
 		private readonly List<LineRenderer> m_StrokeRenderers = new List<LineRenderer>();
+		private List<StrokePath> m_CurrentPaths;
 		private List<PolygonFace> m_CurrentRegions;
 		private List<StrokePath> m_TransitionTargetPaths;
-		private List<PolygonFace> m_TransitionTargetRegions;
 		private readonly List<Vector3> m_RegionVertices = new List<Vector3>();
 		private readonly List<int> m_RegionTriangles = new List<int>();
 		private double m_TransitionStartBeat;
@@ -80,7 +80,7 @@ namespace ShitDesigner.Scene {
 			}
 
 			ApplyTransition(m_AdjustedTotalBeats);
-			ApplyGeneratedRotation();
+			ApplyAnimatedGeometry();
 		}
 
 		private void OnDisable() {
@@ -116,7 +116,7 @@ namespace ShitDesigner.Scene {
 			var beatDelta = Math.Max(0d, m_AdjustedTotalBeats - previousBeatPosition);
 			AdvanceContinuousRotation(beatDelta * 60d / frame.Bpm);
 			ApplyTransition(m_AdjustedTotalBeats);
-			ApplyGeneratedRotation();
+			ApplyAnimatedGeometry();
 		}
 
 		[ContextMenu("Generate Random Strokes")]
@@ -158,8 +158,8 @@ namespace ShitDesigner.Scene {
 			ReleaseGeneratedContent();
 
 			var layout = BuildLayout(seed);
+			m_CurrentPaths = layout.Paths;
 			m_TransitionTargetPaths = null;
-			m_TransitionTargetRegions = null;
 
 			m_StrokeRoot = CreateGeneratedRoot("Random Strokes");
 			m_RegionRoot = CreateGeneratedRoot("Filled Regions");
@@ -168,12 +168,8 @@ namespace ShitDesigner.Scene {
 			SetMaterialColor(m_StrokeMaterial, Color.white);
 			SetMaterialColor(m_RegionMaterial, m_RegionFillColor);
 
-			CreateStrokeRenderers(layout.Paths);
-
-			m_CurrentRegions = SelectFilledRegions(layout.Regions);
-			if (m_CurrentRegions.Count > 0)
-				CreateRegionRenderer(m_CurrentRegions, m_CurrentRegions.Count);
-			ApplyGeneratedRotation();
+			CreateStrokeRenderers(BuildRotatedPaths(m_CurrentPaths, GetAnimationRotationDegrees()));
+			ApplyAnimatedGeometry();
 		}
 
 		private StrokeLayout BuildLayout(int seed) {
@@ -203,22 +199,17 @@ namespace ShitDesigner.Scene {
 			}
 
 			m_TransitionTargetPaths = layout.Paths;
-			m_TransitionTargetRegions = SelectFilledRegions(layout.Regions);
 			m_TransitionStartBeat = beat;
 			m_TransitionRegenerated = false;
 		}
 
 		private void ApplyTransition(double beatPosition) {
-			if (m_TransitionTargetPaths == null || m_TransitionTargetRegions == null)
+			if (m_TransitionTargetPaths == null)
 				return;
 
 			var phase = Mathf.Clamp01((float)(beatPosition - m_TransitionStartBeat));
 			if (phase >= 0.5f && !m_TransitionRegenerated) {
-				for (var strokeIndex = 0; strokeIndex < m_StrokeRenderers.Count; strokeIndex++)
-					m_StrokeRenderers[strokeIndex].SetPositions(ToVector3Array(m_TransitionTargetPaths[strokeIndex].RenderPoints));
-
-				m_CurrentRegions = m_TransitionTargetRegions;
-				UpdateRegionRenderer(m_CurrentRegions);
+				m_CurrentPaths = m_TransitionTargetPaths;
 				m_TransitionRegenerated = true;
 			}
 
@@ -226,7 +217,6 @@ namespace ShitDesigner.Scene {
 				return;
 
 			m_TransitionTargetPaths = null;
-			m_TransitionTargetRegions = null;
 			m_TransitionRegenerated = false;
 		}
 
@@ -236,17 +226,30 @@ namespace ShitDesigner.Scene {
 			m_ContinuousRotationDegrees += (float)(deltaSeconds * m_ContinuousRotationDegreesPerSecond);
 		}
 
-		private void ApplyGeneratedRotation() {
-			var rotationDegrees = m_ContinuousRotationDegrees;
+		private void ApplyAnimatedGeometry() {
+			if (m_CurrentPaths == null || m_StrokeRenderers.Count != m_CurrentPaths.Count)
+				return;
+
+			var animatedPaths = BuildRotatedPaths(m_CurrentPaths, GetAnimationRotationDegrees());
+			ApplyStrokePaths(animatedPaths);
+			m_CurrentRegions = SelectFilledRegions(FindRegions(animatedPaths));
+			UpdateRegionRenderer(m_CurrentRegions);
+		}
+
+		private void ApplyStrokePaths(List<StrokePath> paths) {
+			if (paths == null || paths.Count != m_StrokeRenderers.Count)
+				return;
+
+			for (var index = 0; index < paths.Count; index++)
+				m_StrokeRenderers[index].SetPositions(ToVector3Array(paths[index].RenderPoints));
+		}
+
+		private float GetAnimationRotationDegrees() {
 			var beatStart = Math.Floor(m_AdjustedTotalBeats + 1e-9d);
 			var beatPhase = Mathf.Clamp01((float)(m_AdjustedTotalBeats - beatStart));
-			rotationDegrees += (float)(beatStart * m_BeatRotationDegrees) + GetBeatRotationDegrees(beatPhase);
-
-			var rotation = Quaternion.Euler(0f, 0f, rotationDegrees);
-			if (m_StrokeRoot != null)
-				m_StrokeRoot.localRotation = rotation;
-			if (m_RegionRoot != null)
-				m_RegionRoot.localRotation = rotation;
+			return m_ContinuousRotationDegrees
+				+ (float)(beatStart * m_BeatRotationDegrees)
+				+ GetBeatRotationDegrees(beatPhase);
 		}
 
 		private float GetBeatRotationDegrees(float phase) {
@@ -284,7 +287,7 @@ namespace ShitDesigner.Scene {
 
 				var colorProgress = m_StrokeCount <= 1 ? 0f : strokeIndex / (float)(m_StrokeCount - 1);
 				var color = Color.Lerp(m_StrokeColorA, m_StrokeColorB, colorProgress);
-				paths.Add(new StrokePath(new[] { start, end }, BuildRenderPoints(start, end), color));
+				paths.Add(new StrokePath(position, direction, new[] { start, end }, BuildRenderPoints(start, end), color));
 			}
 
 			return paths;
@@ -297,6 +300,39 @@ namespace ShitDesigner.Scene {
 				start - direction * extension,
 				end + direction * extension
 			};
+		}
+
+		private List<StrokePath> BuildRotatedPaths(List<StrokePath> paths, float rotationDegrees) {
+			var rotatedPaths = new List<StrokePath>(paths == null ? 0 : paths.Count);
+			if (paths == null)
+				return rotatedPaths;
+
+			var halfWidth = m_CanvasSize.x * 0.5f;
+			var halfHeight = m_CanvasSize.y * 0.5f;
+			for (var index = 0; index < paths.Count; index++) {
+				var path = paths[index];
+				var direction = RotateVector(path.Direction, rotationDegrees);
+				if (!TryClipLineToCanvas(path.Position, direction, halfWidth, halfHeight, out var start, out var end))
+					continue;
+
+				rotatedPaths.Add(new StrokePath(
+					path.Position,
+					direction,
+					new[] { start, end },
+					BuildRenderPoints(start, end),
+					path.Color));
+			}
+
+			return rotatedPaths;
+		}
+
+		private static Vector2 RotateVector(Vector2 vector, float degrees) {
+			var radians = degrees * Mathf.Deg2Rad;
+			var sine = Mathf.Sin(radians);
+			var cosine = Mathf.Cos(radians);
+			return new Vector2(
+				vector.x * cosine - vector.y * sine,
+				vector.x * sine + vector.y * cosine);
 		}
 
 		private static bool TryClipLineToCanvas(
@@ -544,18 +580,26 @@ namespace ShitDesigner.Scene {
 
 		private void UpdateRegionRenderer(List<PolygonFace> regions) {
 			var fillCount = Mathf.Min(m_FilledRegionCount, regions == null ? 0 : regions.Count);
-			if (fillCount <= 0)
+			if (fillCount <= 0) {
+				if (m_RegionObject != null)
+					m_RegionObject.SetActive(false);
 				return;
+			}
 
 			if (m_RegionMesh == null) {
 				CreateRegionRenderer(regions, fillCount);
 				return;
 			}
 
-			if (!TryPopulateRegionMesh(m_RegionMesh, regions, fillCount))
+			if (!TryPopulateRegionMesh(m_RegionMesh, regions, fillCount)) {
+				if (m_RegionObject != null)
+					m_RegionObject.SetActive(false);
 				return;
+			}
 			if (m_RegionObject == null)
 				CreateRegionObject();
+			else
+				m_RegionObject.SetActive(true);
 		}
 
 		private void CreateRegionRenderer(List<PolygonFace> regions, int count) {
@@ -749,8 +793,8 @@ namespace ShitDesigner.Scene {
 			m_StrokeMaterial = null;
 			m_RegionMaterial = null;
 			m_StrokeRenderers.Clear();
+			m_CurrentPaths = null;
 			m_TransitionTargetPaths = null;
-			m_TransitionTargetRegions = null;
 			m_CurrentRegions = null;
 			m_TransitionRegenerated = false;
 			m_RegionVertices.Clear();
@@ -849,11 +893,15 @@ namespace ShitDesigner.Scene {
 		}
 
 		private readonly struct StrokePath {
+			public readonly Vector2 Position;
+			public readonly Vector2 Direction;
 			public readonly Vector2[] CanvasPoints;
 			public readonly Vector2[] RenderPoints;
 			public readonly Color Color;
 
-			public StrokePath(Vector2[] canvasPoints, Vector2[] renderPoints, Color color) {
+			public StrokePath(Vector2 position, Vector2 direction, Vector2[] canvasPoints, Vector2[] renderPoints, Color color) {
+				Position = position;
+				Direction = direction;
 				CanvasPoints = canvasPoints;
 				RenderPoints = renderPoints;
 				Color = color;
