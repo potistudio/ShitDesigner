@@ -103,6 +103,9 @@ namespace ShitDesigner.Main.Tests {
 			var buttons = controls.Query<Button>().ToList();
 			Assert.That(buttons, Has.Count.EqualTo(LivePatchSlots.Capacity));
 			Assert.That(buttons.Select(button => button.name).ToArray(), Is.EqualTo(Enumerable.Range(0, LivePatchSlots.Capacity).Select(index => "patch-slot-" + index).ToArray()));
+			Assert.That(root.Q<Button>("cue-patch-slot"), Is.Null);
+			Assert.That(root.Q<Button>("launch-patch-slot"), Is.Null);
+			Assert.That(root.Q<Button>("clear-patch-slot"), Is.Null);
 		}
 
 		[Test]

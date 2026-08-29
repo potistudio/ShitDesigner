@@ -148,12 +148,6 @@ namespace ShitDesigner.Main {
 			return selection.Accepted ? ClearSelectedPatchSlot() : selection;
 		}
 
-		public LiveParameterEnqueueResult CueSelectedPatchSlot() {
-			return _patchSlots.TryGetPatchId(_selectedPatchSlotIndex, out var patchId)
-				? _parameterQueue.EnqueuePreloadPatch(patchId)
-				: LiveParameterEnqueueResult.Reject("The selected patch slot is empty.");
-		}
-
 		public LiveParameterEnqueueResult LaunchSelectedPatchSlot() {
 			if (!_patchSlots.TryGetPatchId(_selectedPatchSlotIndex, out var patchId))
 				return LiveParameterEnqueueResult.Reject("The selected patch slot is empty.");
