@@ -108,36 +108,40 @@
 .patch-controls {
     flex-grow: 1;
     min-width: 0;
+    flex-direction: row;
 }
 
-.patch-controls .unity-scroll-view__content-container {
+.patch-scroll-rows {
+    flex-grow: 1;
+    min-width: 0;
+    flex-direction: column;
+}
+
+.patch-row-controls {
+    height: 32px;
+    min-height: 32px;
+    max-height: 32px;
+    flex-grow: 0;
+    min-width: 0;
+}
+
+.patch-row-controls .unity-scroll-view__content-container {
     flex-direction: row;
     padding-left: 50%;
     padding-right: 50%;
-}
-
-.patch-column {
-    width: 160px;
-    min-width: 160px;
-    max-width: 160px;
-    flex-direction: column;
-    flex-shrink: 0;
 }
 
 .patch-role-labels {
     width: 56px;
     min-width: 56px;
     max-width: 56px;
-}
-
-.patch-role-label,
-.patch-cell-spacer {
-    height: 32px;
-    min-height: 32px;
     flex-shrink: 0;
 }
 
 .patch-role-label {
+    height: 32px;
+    min-height: 32px;
+    flex-shrink: 0;
     padding-top: 0;
     padding-right: 0;
     padding-bottom: 0;

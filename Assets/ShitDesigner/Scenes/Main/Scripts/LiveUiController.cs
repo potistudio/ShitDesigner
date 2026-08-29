@@ -19,7 +19,9 @@ namespace ShitDesigner.Main {
 		private VisualElement m_Output2Preview;
 		private VisualElement _patchSlotControls;
 		private readonly RenderTexture[] m_PatchSlotPreviewTextures = new RenderTexture[LivePatchSlots.Capacity];
-		private ScrollView _patchControls;
+		private VisualElement _patchControls;
+		private ScrollView m_MainPatchControls;
+		private ScrollView m_OverlayPatchControls;
 		private Button _cuePatchButton;
 		private Button _launchPatchButton;
 		private Button _clearPatchSlotButton;
@@ -64,7 +66,9 @@ namespace ShitDesigner.Main {
 				button.userData = slotIndex;
 			}
 			_patchSlotControls.RegisterCallback<ClickEvent>(OnPatchSlotClicked);
-			_patchControls = Required<ScrollView>(root, "patch-controls");
+			_patchControls = Required<VisualElement>(root, "patch-controls");
+			m_MainPatchControls = Required<ScrollView>(root, "main-patch-controls");
+			m_OverlayPatchControls = Required<ScrollView>(root, "overlay-patch-controls");
 			_cuePatchButton = Required<Button>(root, "cue-patch-slot");
 			_launchPatchButton = Required<Button>(root, "launch-patch-slot");
 			_clearPatchSlotButton = Required<Button>(root, "clear-patch-slot");
@@ -83,7 +87,8 @@ namespace ShitDesigner.Main {
 			_confirmationTitle = Required<Label>(root, "output-confirm-title");
 			_confirmationMessage = Required<Label>(root, "output-confirm-message");
 			_confirmationOverlay = Required<VisualElement>(root, "output-confirm-overlay");
-			_patchControls.RegisterCallback<WheelEvent>(OnPatchSelectionWheel, TrickleDown.TrickleDown);
+			m_MainPatchControls.RegisterCallback<WheelEvent>(OnMainPatchSelectionWheel, TrickleDown.TrickleDown);
+			m_OverlayPatchControls.RegisterCallback<WheelEvent>(OnOverlayPatchSelectionWheel, TrickleDown.TrickleDown);
 			_cuePatchButton.clicked += CueSelectedPatchSlot;
 			_launchPatchButton.clicked += LaunchSelectedPatchSlot;
 			_clearPatchSlotButton.clicked += ClearSelectedPatchSlot;
@@ -102,7 +107,8 @@ namespace ShitDesigner.Main {
 
 		public void Shutdown() {
 			if (_patchSlotControls != null) _patchSlotControls.UnregisterCallback<ClickEvent>(OnPatchSlotClicked);
-			if (_patchControls != null) _patchControls.UnregisterCallback<WheelEvent>(OnPatchSelectionWheel, TrickleDown.TrickleDown);
+			if (m_MainPatchControls != null) m_MainPatchControls.UnregisterCallback<WheelEvent>(OnMainPatchSelectionWheel, TrickleDown.TrickleDown);
+			if (m_OverlayPatchControls != null) m_OverlayPatchControls.UnregisterCallback<WheelEvent>(OnOverlayPatchSelectionWheel, TrickleDown.TrickleDown);
 			if (_cuePatchButton != null) _cuePatchButton.clicked -= CueSelectedPatchSlot;
 			if (_launchPatchButton != null) _launchPatchButton.clicked -= LaunchSelectedPatchSlot;
 			if (_clearPatchSlotButton != null) _clearPatchSlotButton.clicked -= ClearSelectedPatchSlot;
@@ -290,52 +296,25 @@ namespace ShitDesigner.Main {
 		}
 
 		private void RebuildPatchControls(LiveUiReadModel model) {
-			_patchControls.Clear();
-			var mainPatches = model.Patches.Where(patch => patch.Role == LivePatchRole.Main).ToArray();
-			var overlayPatches = model.Patches.Where(patch => patch.Role == LivePatchRole.Overlay).ToArray();
-			AddPatchRoleLabels();
-			for (var columnIndex = 0; columnIndex < Math.Max(mainPatches.Length, overlayPatches.Length); columnIndex++) {
-				var column = new VisualElement { name = "patch-column-" + columnIndex };
-				column.AddToClassList("patch-column");
-				AddPatchCell(column, columnIndex < mainPatches.Length ? mainPatches[columnIndex] : default(LivePatchReadModel));
-				AddPatchCell(column, columnIndex < overlayPatches.Length ? overlayPatches[columnIndex] : default(LivePatchReadModel));
-				_patchControls.Add(column);
-			}
+			m_MainPatchControls.Clear();
+			m_OverlayPatchControls.Clear();
+			AddPatchButtons(m_MainPatchControls, model.Patches.Where(patch => patch.Role == LivePatchRole.Main));
+			AddPatchButtons(m_OverlayPatchControls, model.Patches.Where(patch => patch.Role == LivePatchRole.Overlay));
 			m_RenderedPatchCount = model.Patches.Count;
 		}
 
-		private void AddPatchRoleLabels() {
-			var labels = new VisualElement { name = "patch-role-labels" };
-			labels.AddToClassList("patch-column");
-			labels.AddToClassList("patch-role-labels");
-			labels.Add(PatchRoleLabel("MAIN"));
-			labels.Add(PatchRoleLabel("OVERLAY"));
-			_patchControls.Add(labels);
-		}
-
-		private static Label PatchRoleLabel(string text) {
-			var label = new Label(text);
-			label.AddToClassList("patch-role-label");
-			return label;
-		}
-
-		private void AddPatchCell(VisualElement column, LivePatchReadModel patch) {
-			if (string.IsNullOrEmpty(patch.Id)) {
-				var spacer = new VisualElement();
-				spacer.AddToClassList("patch-cell-spacer");
-				column.Add(spacer);
-				return;
+		private void AddPatchButtons(ScrollView controls, IEnumerable<LivePatchReadModel> patches) {
+			foreach (var patch in patches) {
+				var patchId = patch.Id;
+				var button = new Button(() => QueuePatch(patchId)) {
+					name = "patch-" + patchId,
+					text = patch.Name,
+					userData = patchId
+				};
+				button.AddToClassList("patch-button");
+				button.AddToClassList(patch.Role == LivePatchRole.Main ? "patch-main-button" : "patch-overlay-button");
+				controls.Add(button);
 			}
-
-			var patchId = patch.Id;
-			var button = new Button(() => QueuePatch(patchId)) {
-				name = "patch-" + patchId,
-				text = patch.Name,
-				userData = patchId
-			};
-			button.AddToClassList("patch-button");
-			button.AddToClassList(patch.Role == LivePatchRole.Main ? "patch-main-button" : "patch-overlay-button");
-			column.Add(button);
 		}
 
 		private void RefreshPatchSlotControls(LiveUiReadModel model) {
@@ -393,12 +372,16 @@ namespace ShitDesigner.Main {
 			return "SLOT " + (slot.Index + 1) + " · " + patchName;
 		}
 
-		private void OnPatchSelectionWheel(WheelEvent change) {
-			var viewportWidth = _patchControls.contentViewport.layout.width;
-			var maximum = Mathf.Max(0f, _patchControls.contentContainer.layout.width - viewportWidth);
+		private void OnMainPatchSelectionWheel(WheelEvent change) => ScrollPatchRow(m_MainPatchControls, change);
+
+		private void OnOverlayPatchSelectionWheel(WheelEvent change) => ScrollPatchRow(m_OverlayPatchControls, change);
+
+		private static void ScrollPatchRow(ScrollView controls, WheelEvent change) {
+			var viewportWidth = controls.contentViewport.layout.width;
+			var maximum = Mathf.Max(0f, controls.contentContainer.layout.width - viewportWidth);
 			if (maximum <= 0f) return;
 			var delta = Mathf.Abs(change.delta.x) > Mathf.Epsilon ? change.delta.x : change.delta.y;
-			_patchControls.scrollOffset = new Vector2(Mathf.Clamp(_patchControls.scrollOffset.x + delta * PatchScrollWheelUnits, 0f, maximum), 0f);
+			controls.scrollOffset = new Vector2(Mathf.Clamp(controls.scrollOffset.x + delta * PatchScrollWheelUnits, 0f, maximum), 0f);
 			change.StopPropagation();
 		}
 
@@ -407,13 +390,14 @@ namespace ShitDesigner.Main {
 			_patchControls.schedule.Execute(() => {
 				var selected = _patchControls.Q<Button>("patch-" + patchId);
 				if (selected == null) return;
-				var viewportWidth = _patchControls.contentViewport.layout.width;
+				var controls = selected.ClassListContains("patch-main-button") ? m_MainPatchControls : m_OverlayPatchControls;
+				var viewportWidth = controls.contentViewport.layout.width;
 				if (viewportWidth <= 0f) return;
-				var selectedCenter = selected.ChangeCoordinatesTo(_patchControls.contentContainer,
+				var selectedCenter = selected.ChangeCoordinatesTo(controls.contentContainer,
 					new Vector2(selected.layout.width * 0.5f, selected.layout.height * 0.5f));
 				var offset = selectedCenter.x - viewportWidth * 0.5f;
-				var maximum = Mathf.Max(0f, _patchControls.contentContainer.layout.width - viewportWidth);
-				_patchControls.scrollOffset = new Vector2(Mathf.Clamp(offset, 0f, maximum), _patchControls.scrollOffset.y);
+				var maximum = Mathf.Max(0f, controls.contentContainer.layout.width - viewportWidth);
+				controls.scrollOffset = new Vector2(Mathf.Clamp(offset, 0f, maximum), controls.scrollOffset.y);
 			}).StartingIn(0);
 		}
 
