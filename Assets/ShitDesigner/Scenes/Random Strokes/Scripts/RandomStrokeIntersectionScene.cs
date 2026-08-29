@@ -22,6 +22,10 @@ namespace ShitDesigner.Scene {
 		[Header("Beat")]
 		[Range(30f, 300f)][SerializeField] private float m_PreviewBpm = 120f;
 
+		[Header("Motion")]
+		[Min(0f)][SerializeField] private float m_ContinuousRotationDegreesPerSecond = 2f;
+		[Min(0f)][SerializeField] private float m_BeatRotationDegrees = 8f;
+
 		[Header("Randomness")]
 		[SerializeField] private bool m_RandomizeOnPlay = true;
 		[SerializeField] private int m_Seed = 8127;
@@ -48,13 +52,17 @@ namespace ShitDesigner.Scene {
 		private readonly List<int> m_RegionTriangles = new List<int>();
 		private double m_TransitionStartBeat;
 		private double m_AdjustedTotalBeats;
+		private double m_LastRotationBeat = double.NaN;
 		private long m_LastGeneratedBeat = long.MinValue;
 		private int m_GenerationSeed;
+		private float m_ContinuousRotationDegrees;
 		private bool m_UsesExternalClock;
 
 		private void OnEnable() {
 			m_AdjustedTotalBeats = 0d;
+			m_LastRotationBeat = double.NaN;
 			m_LastGeneratedBeat = long.MinValue;
+			m_ContinuousRotationDegrees = 0f;
 			m_UsesExternalClock = false;
 			m_GenerationSeed = GetGenerationSeed();
 			if (!Application.isPlaying)
@@ -73,7 +81,9 @@ namespace ShitDesigner.Scene {
 				ProcessBeatPosition(m_AdjustedTotalBeats);
 			}
 
+			AdvanceContinuousRotation(m_AdjustedTotalBeats, m_PreviewBpm);
 			ApplyTransition(m_AdjustedTotalBeats);
+			ApplyGeneratedRotation();
 		}
 
 		private void OnDisable() {
@@ -91,6 +101,8 @@ namespace ShitDesigner.Scene {
 			m_StrokeWidth = Mathf.Max(0.005f, m_StrokeWidth);
 			m_FilledRegionCount = Mathf.Clamp(m_FilledRegionCount, 0, 128);
 			m_PreviewBpm = Mathf.Clamp(m_PreviewBpm, 30f, 300f);
+			m_ContinuousRotationDegreesPerSecond = Mathf.Max(0f, m_ContinuousRotationDegreesPerSecond);
+			m_BeatRotationDegrees = Mathf.Max(0f, m_BeatRotationDegrees);
 
 			if (!Application.isPlaying && isActiveAndEnabled)
 				Generate();
@@ -103,7 +115,9 @@ namespace ShitDesigner.Scene {
 			m_UsesExternalClock = true;
 			m_AdjustedTotalBeats = frame.AdjustedTotalBeats;
 			ProcessBeatPosition(m_AdjustedTotalBeats);
+			AdvanceContinuousRotation(m_AdjustedTotalBeats, frame.Bpm);
 			ApplyTransition(m_AdjustedTotalBeats);
+			ApplyGeneratedRotation();
 		}
 
 		[ContextMenu("Generate Random Strokes")]
@@ -161,6 +175,7 @@ namespace ShitDesigner.Scene {
 			m_CurrentRegions = SelectFilledRegions(layout.Regions);
 			if (m_CurrentRegions.Count > 0)
 				CreateRegionRenderer(m_CurrentRegions, m_CurrentRegions.Count);
+			ApplyGeneratedRotation();
 		}
 
 		private StrokeLayout BuildLayout(int seed) {
@@ -218,7 +233,8 @@ namespace ShitDesigner.Scene {
 				return;
 
 			var phase = Mathf.Clamp01((float)(beatPosition - m_TransitionStartBeat));
-			var easedPhase = 1f - Mathf.Pow(1f - phase, 3f);
+			var regenerationPhase = phase < 0.5f ? 0f : (phase - 0.5f) * 2f;
+			var easedPhase = 1f - Mathf.Pow(1f - regenerationPhase, 3f);
 			for (var strokeIndex = 0; strokeIndex < m_StrokeRenderers.Count; strokeIndex++) {
 				var renderer = m_StrokeRenderers[strokeIndex];
 				var startPoints = m_TransitionStartPaths[strokeIndex].Points;
@@ -245,6 +261,41 @@ namespace ShitDesigner.Scene {
 			m_TransitionTargetRegions = null;
 			m_CurrentRegions = targetRegions;
 			UpdateRegionRenderer(m_CurrentRegions);
+		}
+
+		private void AdvanceContinuousRotation(double beatPosition, float bpm) {
+			if (double.IsNaN(beatPosition) || double.IsInfinity(beatPosition) || float.IsNaN(bpm) || float.IsInfinity(bpm) || bpm <= 0f)
+				return;
+			if (!double.IsNaN(m_LastRotationBeat)) {
+				var beatDelta = Math.Max(0d, beatPosition - m_LastRotationBeat);
+				m_ContinuousRotationDegrees += (float)(beatDelta * 60d / bpm * m_ContinuousRotationDegreesPerSecond);
+			}
+			m_LastRotationBeat = beatPosition;
+		}
+
+		private void ApplyGeneratedRotation() {
+			var rotationDegrees = m_ContinuousRotationDegrees;
+			if (m_TransitionTargetPaths != null) {
+				var phase = Mathf.Clamp01((float)(m_AdjustedTotalBeats - m_TransitionStartBeat));
+				rotationDegrees += GetBeatRotationDegrees(phase);
+			}
+
+			var rotation = Quaternion.Euler(0f, 0f, rotationDegrees);
+			if (m_StrokeRoot != null)
+				m_StrokeRoot.localRotation = rotation;
+			if (m_RegionRoot != null)
+				m_RegionRoot.localRotation = rotation;
+		}
+
+		private float GetBeatRotationDegrees(float phase) {
+			if (phase < 0.5f) {
+				var upPhase = phase * 2f;
+				return m_BeatRotationDegrees * upPhase * upPhase * upPhase;
+			}
+
+			var downPhase = (phase - 0.5f) * 2f;
+			var easedDownPhase = 1f - Mathf.Pow(1f - downPhase, 3f);
+			return m_BeatRotationDegrees * (1f - easedDownPhase);
 		}
 
 		private List<PolygonFace> SelectFilledRegions(List<PolygonFace> regions) {
