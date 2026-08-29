@@ -13,10 +13,7 @@ namespace ShitDesigner.Scene {
 
 		[Header("Strokes")]
 		[Range(2, 64)][SerializeField] private int m_StrokeCount = 8;
-		[Range(2, 64)][SerializeField] private int m_PointsPerStroke = 11;
 		[Min(0.005f)][SerializeField] private float m_StrokeWidth = 0.08f;
-		[Min(0f)][SerializeField] private float m_Wobble = 0.35f;
-		[Range(0f, 1f)][SerializeField] private float m_PointJitter = 0.1f;
 
 		[Header("Regions")]
 		[Range(0, 128)][SerializeField] private int m_FilledRegionCount = 8;
@@ -57,10 +54,7 @@ namespace ShitDesigner.Scene {
 			m_CanvasSize.x = Mathf.Max(1f, m_CanvasSize.x);
 			m_CanvasSize.y = Mathf.Max(1f, m_CanvasSize.y);
 			m_StrokeCount = Mathf.Clamp(m_StrokeCount, 2, 64);
-			m_PointsPerStroke = Mathf.Clamp(m_PointsPerStroke, 2, 64);
 			m_StrokeWidth = Mathf.Max(0.005f, m_StrokeWidth);
-			m_Wobble = Mathf.Max(0f, m_Wobble);
-			m_PointJitter = Mathf.Clamp01(m_PointJitter);
 			m_FilledRegionCount = Mathf.Clamp(m_FilledRegionCount, 0, 128);
 
 			if (!Application.isPlaying && isActiveAndEnabled)
@@ -76,7 +70,7 @@ namespace ShitDesigner.Scene {
 			List<PolygonFace> regions = null;
 			for (var attempt = 0; attempt < 4; attempt++) {
 				var pathRandom = new System.Random(unchecked(seed + attempt * 7919));
-				paths = BuildPaths(pathRandom, Mathf.Pow(0.65f, attempt));
+				paths = BuildPaths(pathRandom);
 				regions = FindRegions(paths);
 				if (regions.Count > 0)
 					break;
@@ -84,7 +78,7 @@ namespace ShitDesigner.Scene {
 
 			if (regions == null || regions.Count == 0) {
 				var fallbackRandom = new System.Random(seed);
-				paths = BuildPaths(fallbackRandom, 0f);
+				paths = BuildPaths(fallbackRandom);
 				regions = FindRegions(paths);
 			}
 
@@ -103,48 +97,64 @@ namespace ShitDesigner.Scene {
 				CreateRegionRenderer(regions, fillCount);
 		}
 
-		private List<StrokePath> BuildPaths(System.Random random, float variationScale) {
-			var horizontalCount = Mathf.Clamp(m_StrokeCount / 2, 1, m_StrokeCount - 1);
-			var orientations = new List<bool>(m_StrokeCount);
-			for (var index = 0; index < horizontalCount; index++)
-				orientations.Add(true);
-			for (var index = horizontalCount; index < m_StrokeCount; index++)
-				orientations.Add(false);
-			Shuffle(orientations, random);
-
+		private List<StrokePath> BuildPaths(System.Random random) {
 			var paths = new List<StrokePath>(m_StrokeCount);
 			var halfWidth = m_CanvasSize.x * 0.5f;
 			var halfHeight = m_CanvasSize.y * 0.5f;
-			var edgeMargin = Mathf.Min(0.3f, Mathf.Min(halfWidth, halfHeight) * 0.75f);
 
 			for (var strokeIndex = 0; strokeIndex < m_StrokeCount; strokeIndex++) {
-				var horizontal = orientations[strokeIndex];
-				var start = horizontal
-					? new Vector2(-halfWidth, NextFloat(random, -halfHeight + edgeMargin, halfHeight - edgeMargin))
-					: new Vector2(NextFloat(random, -halfWidth + edgeMargin, halfWidth - edgeMargin), -halfHeight);
-				var end = horizontal
-					? new Vector2(halfWidth, NextFloat(random, -halfHeight + edgeMargin, halfHeight - edgeMargin))
-					: new Vector2(NextFloat(random, -halfWidth + edgeMargin, halfWidth - edgeMargin), halfHeight);
-
-				var points = new Vector2[m_PointsPerStroke];
-				var phase = NextFloat(random, 0f, Mathf.PI * 2f);
-				var amplitude = NextFloat(random, 0.75f, 1.25f) * m_Wobble * variationScale;
-				var normal = horizontal ? Vector2.up : Vector2.right;
-				for (var pointIndex = 0; pointIndex < points.Length; pointIndex++) {
-					var normalized = pointIndex / (float)(points.Length - 1);
-					var center = Vector2.Lerp(start, end, normalized);
-					var envelope = Mathf.Sin(normalized * Mathf.PI);
-					var wave = Mathf.Sin(normalized * Mathf.PI * 2f + phase) * amplitude * envelope;
-					var jitter = NextFloat(random, -m_PointJitter, m_PointJitter) * variationScale * envelope;
-					points[pointIndex] = center + normal * (wave + jitter);
-				}
+				var angle = NextFloat(random, 0f, Mathf.PI);
+				var direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+				var position = new Vector2(
+					NextFloat(random, -halfWidth, halfWidth),
+					NextFloat(random, -halfHeight, halfHeight));
+				if (!TryClipLineToCanvas(position, direction, halfWidth, halfHeight, out var start, out var end))
+					continue;
 
 				var colorProgress = m_StrokeCount <= 1 ? 0f : strokeIndex / (float)(m_StrokeCount - 1);
 				var color = Color.Lerp(m_StrokeColorA, m_StrokeColorB, colorProgress);
-				paths.Add(new StrokePath(points, color));
+				paths.Add(new StrokePath(new[] { start, end }, color));
 			}
 
 			return paths;
+		}
+
+		private static bool TryClipLineToCanvas(
+			Vector2 position, Vector2 direction, float halfWidth, float halfHeight,
+			out Vector2 start, out Vector2 end) {
+			var minimumProgress = float.NegativeInfinity;
+			var maximumProgress = float.PositiveInfinity;
+			if (Mathf.Abs(direction.x) > 0.00001f) {
+				var firstProgress = (-halfWidth - position.x) / direction.x;
+				var secondProgress = (halfWidth - position.x) / direction.x;
+				minimumProgress = Mathf.Max(minimumProgress, Mathf.Min(firstProgress, secondProgress));
+				maximumProgress = Mathf.Min(maximumProgress, Mathf.Max(firstProgress, secondProgress));
+			} else if (Mathf.Abs(position.x) > halfWidth) {
+				start = default;
+				end = default;
+				return false;
+			}
+
+			if (Mathf.Abs(direction.y) > 0.00001f) {
+				var firstProgress = (-halfHeight - position.y) / direction.y;
+				var secondProgress = (halfHeight - position.y) / direction.y;
+				minimumProgress = Mathf.Max(minimumProgress, Mathf.Min(firstProgress, secondProgress));
+				maximumProgress = Mathf.Min(maximumProgress, Mathf.Max(firstProgress, secondProgress));
+			} else if (Mathf.Abs(position.y) > halfHeight) {
+				start = default;
+				end = default;
+				return false;
+			}
+
+			if (minimumProgress >= maximumProgress) {
+				start = default;
+				end = default;
+				return false;
+			}
+
+			start = position + direction * minimumProgress;
+			end = position + direction * maximumProgress;
+			return true;
 		}
 
 		private List<PolygonFace> FindRegions(List<StrokePath> paths) {
