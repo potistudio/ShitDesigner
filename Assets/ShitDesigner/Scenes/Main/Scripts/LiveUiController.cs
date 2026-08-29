@@ -291,28 +291,51 @@ namespace ShitDesigner.Main {
 
 		private void RebuildPatchControls(LiveUiReadModel model) {
 			_patchControls.Clear();
-			AddPatchRow("patch-main-row", "MAIN", model.Patches.Where(patch => patch.Role == LivePatchRole.Main));
-			AddPatchRow("patch-overlay-row", "OVERLAY", model.Patches.Where(patch => patch.Role == LivePatchRole.Overlay));
+			var mainPatches = model.Patches.Where(patch => patch.Role == LivePatchRole.Main).ToArray();
+			var overlayPatches = model.Patches.Where(patch => patch.Role == LivePatchRole.Overlay).ToArray();
+			AddPatchRoleLabels();
+			for (var columnIndex = 0; columnIndex < Math.Max(mainPatches.Length, overlayPatches.Length); columnIndex++) {
+				var column = new VisualElement { name = "patch-column-" + columnIndex };
+				column.AddToClassList("patch-column");
+				AddPatchCell(column, columnIndex < mainPatches.Length ? mainPatches[columnIndex] : default(LivePatchReadModel));
+				AddPatchCell(column, columnIndex < overlayPatches.Length ? overlayPatches[columnIndex] : default(LivePatchReadModel));
+				_patchControls.Add(column);
+			}
 			m_RenderedPatchCount = model.Patches.Count;
 		}
 
-		private void AddPatchRow(string name, string label, IEnumerable<LivePatchReadModel> patches) {
-			var row = new VisualElement { name = name };
-			row.AddToClassList("patch-row");
-			var rowLabel = new Label(label);
-			rowLabel.AddToClassList("patch-row-label");
-			row.Add(rowLabel);
-			foreach (var patch in patches) {
-				var patchId = patch.Id;
-				var button = new Button(() => QueuePatch(patchId)) {
-					name = "patch-" + patchId,
-					text = patch.Name,
-					userData = patchId
-				};
-				button.AddToClassList("patch-button");
-				row.Add(button);
+		private void AddPatchRoleLabels() {
+			var labels = new VisualElement { name = "patch-role-labels" };
+			labels.AddToClassList("patch-column");
+			labels.AddToClassList("patch-role-labels");
+			labels.Add(PatchRoleLabel("MAIN"));
+			labels.Add(PatchRoleLabel("OVERLAY"));
+			_patchControls.Add(labels);
+		}
+
+		private static Label PatchRoleLabel(string text) {
+			var label = new Label(text);
+			label.AddToClassList("patch-role-label");
+			return label;
+		}
+
+		private void AddPatchCell(VisualElement column, LivePatchReadModel patch) {
+			if (string.IsNullOrEmpty(patch.Id)) {
+				var spacer = new VisualElement();
+				spacer.AddToClassList("patch-cell-spacer");
+				column.Add(spacer);
+				return;
 			}
-			_patchControls.Add(row);
+
+			var patchId = patch.Id;
+			var button = new Button(() => QueuePatch(patchId)) {
+				name = "patch-" + patchId,
+				text = patch.Name,
+				userData = patchId
+			};
+			button.AddToClassList("patch-button");
+			button.AddToClassList(patch.Role == LivePatchRole.Main ? "patch-main-button" : "patch-overlay-button");
+			column.Add(button);
 		}
 
 		private void RefreshPatchSlotControls(LiveUiReadModel model) {
