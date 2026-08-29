@@ -1,7 +1,10 @@
 {
   "name": "ShitDesigner.VJDocumentation.Tests.EditMode",
   "rootNamespace": "ShitDesigner.Documentation.Tests",
-  "references": [],
+  "references": [
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
   "includePlatforms": [
     "Editor"
   ],

@@ -3,7 +3,9 @@
   "rootNamespace": "ShitDesigner.Presentation.Tests.EditMode",
   "references": [
     "ShitDesigner.Presentation",
-    "ShitDesigner.Core"
+    "ShitDesigner.Core",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
   ],
   "includePlatforms": ["Editor"],
   "excludePlatforms": [],
