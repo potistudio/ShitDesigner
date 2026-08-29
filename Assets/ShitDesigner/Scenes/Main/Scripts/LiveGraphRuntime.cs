@@ -437,7 +437,6 @@ namespace ShitDesigner.Main {
 		public LiveProgramFrame CurrentFrame { get; private set; }
 		public LiveProgramFrames CurrentFrames { get; private set; }
 		public LiveParameterDefinition BpmDefinition => _bpmClock.Definition;
-		public LiveParameterDefinition BeatAlignmentDefinition => _bpmClock.BeatAlignmentDefinition;
 
 		internal LiveGraphRuntime(LiveGraph graph) {
 			_graph = graph ?? throw new ArgumentNullException(nameof(graph));
@@ -451,8 +450,8 @@ namespace ShitDesigner.Main {
 		public LiveParameterApplicationResult Apply(LiveParameterRequest request) {
 			if (request.Kind == LiveParameterRequestKind.SetBpm)
 				return _bpmClock.TrySetBpm(request.Value, out var bpmRejection) ? Accept(request) : Reject(request, bpmRejection);
-			if (request.Kind == LiveParameterRequestKind.SetBeatAlignment)
-				return _bpmClock.TrySetBeatAlignmentMilliseconds(request.Value, out var alignmentRejection) ? Accept(request) : Reject(request, alignmentRejection);
+			if (request.Kind == LiveParameterRequestKind.AlignBeat)
+				return _bpmClock.TryAlignToNearestBeat(out var alignmentRejection) ? Accept(request) : Reject(request, alignmentRejection);
 			if (!_patchDefinitionsById.TryGetValue(request.PatchId, out var definition)) return Reject(request, "The requested patch does not exist.");
 			if (request.Kind == LiveParameterRequestKind.PreloadPatch) {
 				if (_preloadedPatch?.Definition == definition) return Accept(request);

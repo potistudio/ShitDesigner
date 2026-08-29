@@ -28,10 +28,7 @@
                         <ui:TextField name="bpm-field" class="tempo-bpm-input" is-delayed="true"/>
                         <ui:Button name="bpm-tap" text="TAP" class="tempo-tap-button"/>
                     </ui:VisualElement>
-                    <ui:VisualElement class="tempo-alignment-row">
-                        <ui:Label text="ALIGN MS" class="tempo-alignment-label"/>
-                        <ui:TextField name="beat-alignment-field" class="tempo-alignment-input" is-delayed="true"/>
-                    </ui:VisualElement>
+                    <ui:Button name="beat-alignment-button" text="ALIGN BEAT" class="tempo-alignment-button"/>
                 </ui:VisualElement>
                 <ui:Label name="capability-status" class="status-label"/>
                 <ui:Label name="diagnostic-status" class="diagnostic-label"/>
