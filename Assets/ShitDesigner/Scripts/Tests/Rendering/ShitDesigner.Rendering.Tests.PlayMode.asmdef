@@ -7,8 +7,7 @@
     "ShitDesigner.Core",
     "ShitDesigner.Graph",
     "ShitDesigner.Project",
-    "ShitDesigner.Tests.Shared",
-    "UnityEngine.TestRunner"
+    "ShitDesigner.Tests.Shared"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

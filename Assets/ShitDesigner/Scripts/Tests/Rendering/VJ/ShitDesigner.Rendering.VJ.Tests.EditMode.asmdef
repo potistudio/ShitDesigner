@@ -5,8 +5,7 @@
     "ShitDesigner.Rendering",
     "ShitDesigner.Nodes",
     "ShitDesigner.Core",
-    "ShitDesigner.Runtime",
-    "UnityEngine.TestRunner"
+    "ShitDesigner.Runtime"
   ],
   "includePlatforms": [
     "Editor"
