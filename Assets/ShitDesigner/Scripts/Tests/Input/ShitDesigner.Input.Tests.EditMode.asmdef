@@ -5,9 +5,7 @@
     "ShitDesigner.Input",
     "Unity.InputSystem",
     "ShitDesigner.Application",
-    "ShitDesigner.Core",
-    "UnityEngine.TestRunner",
-    "UnityEditor.TestRunner"
+    "ShitDesigner.Core"
   ],
   "includePlatforms": ["Editor"],
   "excludePlatforms": [],

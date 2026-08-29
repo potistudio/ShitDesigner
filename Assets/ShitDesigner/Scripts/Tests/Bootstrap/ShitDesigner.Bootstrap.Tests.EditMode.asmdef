@@ -12,9 +12,7 @@
     "ShitDesigner.Presentation",
     "ShitDesigner.Project",
     "ShitDesigner.Graph",
-    "ShitDesigner.Core",
-    "UnityEngine.TestRunner",
-    "UnityEditor.TestRunner"
+    "ShitDesigner.Core"
   ],
   "includePlatforms": ["Editor"],
   "excludePlatforms": [],

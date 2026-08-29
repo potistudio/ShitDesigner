@@ -1,7 +1,7 @@
 {
   "name": "ShitDesigner.Project.Tests.EditMode",
   "rootNamespace": "ShitDesigner.Tests.Project",
-  "references": ["ShitDesigner.Core", "ShitDesigner.Project", "UnityEngine.TestRunner", "UnityEditor.TestRunner"],
+  "references": ["ShitDesigner.Core", "ShitDesigner.Project"],
   "includePlatforms": ["Editor"],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
