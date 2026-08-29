@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
+using ShitDesigner.Core;
 using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace ShitDesigner.Scene {
-	/// <summary>Generates a stylized field of candy sticks, cuts their decorated ends, and drops the split fragments.</summary>
+	/// <summary>Generates a stylized field of candy sticks, cuts their decorated ends on the beat, and drops the tip fragments.</summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
-	public sealed class ChitoseCandyCutScene : MonoBehaviour {
+	public sealed class ChitoseCandyCutScene : MonoBehaviour, IBpmClockReceiver {
 		private enum PatternType {
 			Dot,
 			Star,
@@ -22,21 +23,19 @@ namespace ShitDesigner.Scene {
 			public Transform FrontSegment { get; }
 			public Transform RearCutFace { get; }
 			public Transform FrontCutFace { get; }
-			public Rigidbody RearBody { get; }
 			public Rigidbody FrontBody { get; }
 			public float RearBasePosition { get; }
 			public float FrontBasePosition { get; }
 			public Vector3 FrontImpulse { get; }
-			public bool PhysicsActivated { get; set; }
+			public bool IsCut { get; set; }
 
 			public Candy(Transform rearSegment, Transform frontSegment, Transform rearCutFace, Transform frontCutFace,
-				Rigidbody rearBody, Rigidbody frontBody, float rearBasePosition, float frontBasePosition,
+				Rigidbody frontBody, float rearBasePosition, float frontBasePosition,
 				Vector3 frontImpulse) {
 				RearSegment = rearSegment;
 				FrontSegment = frontSegment;
 				RearCutFace = rearCutFace;
 				FrontCutFace = frontCutFace;
-				RearBody = rearBody;
 				FrontBody = frontBody;
 				RearBasePosition = rearBasePosition;
 				FrontBasePosition = frontBasePosition;
@@ -61,6 +60,7 @@ namespace ShitDesigner.Scene {
 		};
 
 		[Header("Cut")]
+		[Range(30f, 300f)] [SerializeField] private float m_PreviewBpm = 138f;
 		[Min(0.1f)] [SerializeField] private float m_CutPieceLength = 1.75f;
 		[Min(0f)] [SerializeField] private float m_SplitGap = 0.55f;
 		[Min(0f)] [SerializeField] private float m_HorizontalImpulse = 0.9f;
@@ -80,16 +80,36 @@ namespace ShitDesigner.Scene {
 		private float m_RearPieceLength;
 		private float m_FrontPieceLength;
 		private bool m_RebuildRequested = true;
+		private double m_AdjustedTotalBeats;
+		private long m_LastProcessedBeat = long.MinValue;
+		private int m_NextCandyIndex;
+		private bool m_UsesExternalClock;
 
 		private void OnEnable() {
+			m_AdjustedTotalBeats = 0d;
+			m_LastProcessedBeat = long.MinValue;
+			m_NextCandyIndex = 0;
+			m_UsesExternalClock = false;
 			Rebuild();
 		}
 
 		private void Update() {
-			if (m_RebuildRequested)
+			if (m_RebuildRequested) {
 				Rebuild();
-			else if (Application.isPlaying)
-				ApplyCutState();
+				return;
+			}
+			if (Application.isPlaying && !m_UsesExternalClock) {
+				m_AdjustedTotalBeats += Time.unscaledDeltaTime * m_PreviewBpm / 60d;
+				ProcessBeatPosition(m_AdjustedTotalBeats);
+			}
+		}
+
+		public void SetBpmClock(BeatClockFrame frame) {
+			if (!frame.IsAvailable || double.IsNaN(frame.AdjustedTotalBeats) || double.IsInfinity(frame.AdjustedTotalBeats))
+				return;
+
+			m_UsesExternalClock = true;
+			ProcessBeatPosition(frame.AdjustedTotalBeats);
 		}
 
 		private void OnDisable() {
@@ -108,6 +128,7 @@ namespace ShitDesigner.Scene {
 			m_FieldSize.y = Mathf.Max(0.1f, m_FieldSize.y);
 			if (m_CandyAxis.sqrMagnitude < 0.0001f)
 				m_CandyAxis = new Vector3(0.57f, -0.37f, -0.73f);
+			m_PreviewBpm = Mathf.Clamp(m_PreviewBpm, 30f, 300f);
 			m_CutPieceLength = Mathf.Clamp(m_CutPieceLength, 0.1f, m_CandyLength - 0.1f);
 			m_SplitGap = Mathf.Max(0f, m_SplitGap);
 			m_HorizontalImpulse = Mathf.Max(0f, m_HorizontalImpulse);
@@ -117,6 +138,8 @@ namespace ShitDesigner.Scene {
 		[ContextMenu("Rebuild Chitose Candy")]
 		public void Rebuild() {
 			m_RebuildRequested = false;
+			m_LastProcessedBeat = long.MinValue;
+			m_NextCandyIndex = 0;
 			ReleaseGeneratedContent();
 
 			m_GeneratedRoot = new GameObject("Generated Chitose Candy").transform;
@@ -136,7 +159,6 @@ namespace ShitDesigner.Scene {
 			m_PatternMeshes = BuildPatternMeshes();
 			CreateMaterials();
 			CreateCandies();
-			ApplyCutState();
 		}
 
 		private void CreateMaterials() {
@@ -188,7 +210,7 @@ namespace ShitDesigner.Scene {
 			rearSegment.localPosition = Vector3.up * rearBasePosition;
 			CreateMeshObject("Rear Candy", rearSegment, m_RearBodyMesh,
 				m_BodyMaterials[index % m_BodyMaterials.Length], Vector3.one);
-			var rearBody = AddPhysicsBody(rearSegment, m_RearPieceLength);
+			AddPhysicsBody(rearSegment, m_RearPieceLength);
 
 			var frontSegment = new GameObject("Front Segment").transform;
 			frontSegment.gameObject.hideFlags = HideFlags.DontSave;
@@ -223,7 +245,7 @@ namespace ShitDesigner.Scene {
 				Vector3.one * (m_CandyRadius * 0.34f));
 			pattern.localPosition = Vector3.up * 0.064f;
 
-			return new Candy(rearSegment, frontSegment, rearCutFace, frontCutFace, rearBody, frontBody,
+			return new Candy(rearSegment, frontSegment, rearCutFace, frontCutFace, frontBody,
 				rearBasePosition, frontBasePosition, CreateHorizontalImpulse(random));
 		}
 
@@ -247,30 +269,45 @@ namespace ShitDesigner.Scene {
 			return new Vector3(direction * magnitude, 0f, 0f);
 		}
 
-		private void ApplyCutState() {
-			var splitOffset = m_SplitGap * 0.5f;
-			for (var index = 0; index < m_Candies.Count; index++) {
-				var candy = m_Candies[index];
-				if (!candy.PhysicsActivated) {
-					candy.RearSegment.localPosition = Vector3.up * (candy.RearBasePosition - splitOffset);
-					candy.FrontSegment.localPosition = Vector3.up * (candy.FrontBasePosition + splitOffset);
-					if (Application.isPlaying)
-						ActivatePhysics(candy);
-				}
-				if (!candy.RearCutFace.gameObject.activeSelf)
-					candy.RearCutFace.gameObject.SetActive(true);
-				if (!candy.FrontCutFace.gameObject.activeSelf)
-					candy.FrontCutFace.gameObject.SetActive(true);
-			}
-		}
-
-		private void ActivatePhysics(Candy candy) {
-			if (candy.PhysicsActivated)
+		private void ProcessBeatPosition(double beatPosition) {
+			if (double.IsNaN(beatPosition) || double.IsInfinity(beatPosition))
 				return;
 
-			candy.PhysicsActivated = true;
-			Physics.SyncTransforms();
-			ActivatePhysics(candy.FrontBody, candy.FrontImpulse);
+			var beatIndex = (long)Math.Floor(beatPosition + 1e-9d);
+			if (m_LastProcessedBeat == long.MinValue) {
+				m_LastProcessedBeat = beatIndex;
+				return;
+			}
+			if (beatIndex < m_LastProcessedBeat) {
+				Rebuild();
+				m_LastProcessedBeat = beatIndex;
+				return;
+			}
+
+			var crossedBeats = beatIndex - m_LastProcessedBeat;
+			for (var index = 0L; index < crossedBeats; index++)
+				CutNextCandy();
+			m_LastProcessedBeat = beatIndex;
+		}
+
+		private void CutNextCandy() {
+			if (m_NextCandyIndex >= m_Candies.Count)
+				return;
+
+			var candy = m_Candies[m_NextCandyIndex++];
+			if (candy.IsCut)
+				return;
+
+			candy.IsCut = true;
+			var splitOffset = m_SplitGap * 0.5f;
+			candy.RearSegment.localPosition = Vector3.up * (candy.RearBasePosition - splitOffset);
+			candy.FrontSegment.localPosition = Vector3.up * (candy.FrontBasePosition + splitOffset);
+			candy.RearCutFace.gameObject.SetActive(true);
+			candy.FrontCutFace.gameObject.SetActive(true);
+			if (Application.isPlaying) {
+				Physics.SyncTransforms();
+				ActivatePhysics(candy.FrontBody, candy.FrontImpulse);
+			}
 		}
 
 		private static void ActivatePhysics(Rigidbody rigidbody, Vector3 horizontalImpulse) {
