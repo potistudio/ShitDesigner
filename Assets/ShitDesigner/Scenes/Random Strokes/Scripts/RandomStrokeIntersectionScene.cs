@@ -36,6 +36,12 @@ namespace ShitDesigner.Scene {
 		private Material m_StrokeMaterial;
 		private Material m_RegionMaterial;
 		private Mesh m_RegionMesh;
+		private GameObject m_RegionObject;
+		private readonly List<LineRenderer> m_StrokeRenderers = new List<LineRenderer>();
+		private List<StrokePath> m_TransitionStartPaths;
+		private List<StrokePath> m_TransitionTargetPaths;
+		private List<PolygonFace> m_TransitionTargetRegions;
+		private double m_TransitionStartBeat;
 		private double m_AdjustedTotalBeats;
 		private long m_LastGeneratedBeat = long.MinValue;
 		private int m_GenerationSeed;
@@ -61,6 +67,8 @@ namespace ShitDesigner.Scene {
 				m_AdjustedTotalBeats += Time.unscaledDeltaTime * m_PreviewBpm / 60d;
 				ProcessBeatPosition(m_AdjustedTotalBeats);
 			}
+
+			ApplyTransition(m_AdjustedTotalBeats);
 		}
 
 		private void OnDisable() {
@@ -90,6 +98,7 @@ namespace ShitDesigner.Scene {
 			m_UsesExternalClock = true;
 			m_AdjustedTotalBeats = frame.AdjustedTotalBeats;
 			ProcessBeatPosition(m_AdjustedTotalBeats);
+			ApplyTransition(m_AdjustedTotalBeats);
 		}
 
 		[ContextMenu("Generate Random Strokes")]
@@ -106,8 +115,13 @@ namespace ShitDesigner.Scene {
 			if (beatIndex == m_LastGeneratedBeat)
 				return;
 
+			var isInitialGeneration = m_LastGeneratedBeat == long.MinValue || m_StrokeRenderers.Count == 0;
 			m_LastGeneratedBeat = beatIndex;
-			GenerateWithSeed(GetBeatSeed(beatIndex));
+			var seed = GetBeatSeed(beatIndex);
+			if (isInitialGeneration)
+				GenerateWithSeed(seed);
+			else
+				BeginTransition(beatIndex, seed);
 		}
 
 		private int GetBeatSeed(long beat) {
@@ -117,6 +131,26 @@ namespace ShitDesigner.Scene {
 		private void GenerateWithSeed(int seed) {
 			ReleaseGeneratedContent();
 
+			var layout = BuildLayout(seed);
+			m_TransitionStartPaths = null;
+			m_TransitionTargetPaths = null;
+			m_TransitionTargetRegions = null;
+
+			m_StrokeRoot = CreateGeneratedRoot("Random Strokes");
+			m_RegionRoot = CreateGeneratedRoot("Filled Regions");
+			m_StrokeMaterial = CreateMaterial("Random Stroke Material");
+			m_RegionMaterial = CreateMaterial("Random Region Material");
+			SetMaterialColor(m_StrokeMaterial, Color.white);
+			SetMaterialColor(m_RegionMaterial, m_RegionFillColor);
+
+			CreateStrokeRenderers(layout.Paths);
+
+			var fillCount = Mathf.Min(m_FilledRegionCount, layout.Regions.Count);
+			if (fillCount > 0)
+				CreateRegionRenderer(layout.Regions, fillCount);
+		}
+
+		private StrokeLayout BuildLayout(int seed) {
 			List<StrokePath> paths = null;
 			List<PolygonFace> regions = null;
 			for (var attempt = 0; attempt < 4; attempt++) {
@@ -133,19 +167,63 @@ namespace ShitDesigner.Scene {
 				regions = FindRegions(paths);
 			}
 
-			m_StrokeRoot = CreateGeneratedRoot("Random Strokes");
-			m_RegionRoot = CreateGeneratedRoot("Filled Regions");
-			m_StrokeMaterial = CreateMaterial("Random Stroke Material");
-			m_RegionMaterial = CreateMaterial("Random Region Material");
-			SetMaterialColor(m_StrokeMaterial, Color.white);
-			SetMaterialColor(m_RegionMaterial, m_RegionFillColor);
-
-			CreateStrokeRenderers(paths);
-
 			Shuffle(regions, new System.Random(unchecked(seed ^ 0x5F3759DF)));
-			var fillCount = Mathf.Min(m_FilledRegionCount, regions.Count);
-			if (fillCount > 0)
-				CreateRegionRenderer(regions, fillCount);
+			return new StrokeLayout(paths, regions);
+		}
+
+		private void BeginTransition(long beat, int seed) {
+			var layout = BuildLayout(seed);
+			if (layout.Paths.Count != m_StrokeRenderers.Count) {
+				GenerateWithSeed(seed);
+				return;
+			}
+
+			m_TransitionStartPaths = CaptureCurrentPaths();
+			m_TransitionTargetPaths = layout.Paths;
+			m_TransitionTargetRegions = layout.Regions;
+			m_TransitionStartBeat = beat;
+		}
+
+		private List<StrokePath> CaptureCurrentPaths() {
+			var paths = new List<StrokePath>(m_StrokeRenderers.Count);
+			for (var strokeIndex = 0; strokeIndex < m_StrokeRenderers.Count; strokeIndex++) {
+				var renderer = m_StrokeRenderers[strokeIndex];
+				var points = new Vector2[renderer.positionCount];
+				for (var pointIndex = 0; pointIndex < renderer.positionCount; pointIndex++) {
+					var point = renderer.GetPosition(pointIndex);
+					points[pointIndex] = new Vector2(point.x, point.y);
+				}
+
+				paths.Add(new StrokePath(points, renderer.startColor));
+			}
+
+			return paths;
+		}
+
+		private void ApplyTransition(double beatPosition) {
+			if (m_TransitionStartPaths == null || m_TransitionTargetPaths == null)
+				return;
+
+			var phase = Mathf.Clamp01((float)(beatPosition - m_TransitionStartBeat));
+			var easedPhase = 1f - Mathf.Pow(1f - phase, 3f);
+			for (var strokeIndex = 0; strokeIndex < m_StrokeRenderers.Count; strokeIndex++) {
+				var renderer = m_StrokeRenderers[strokeIndex];
+				var startPoints = m_TransitionStartPaths[strokeIndex].Points;
+				var targetPoints = m_TransitionTargetPaths[strokeIndex].Points;
+				for (var pointIndex = 0; pointIndex < startPoints.Length; pointIndex++) {
+					var point = Vector2.Lerp(startPoints[pointIndex], targetPoints[pointIndex], easedPhase);
+					renderer.SetPosition(pointIndex, new Vector3(point.x, point.y, 0f));
+				}
+			}
+
+			if (phase < 1f)
+				return;
+
+			var targetRegions = m_TransitionTargetRegions;
+			m_TransitionStartPaths = null;
+			m_TransitionTargetPaths = null;
+			m_TransitionTargetRegions = null;
+			ReplaceRegionRenderer(targetRegions);
 		}
 
 		private List<StrokePath> BuildPaths(System.Random random) {
@@ -385,6 +463,7 @@ namespace ShitDesigner.Scene {
 		}
 
 		private void CreateStrokeRenderers(List<StrokePath> paths) {
+			m_StrokeRenderers.Clear();
 			for (var index = 0; index < paths.Count; index++) {
 				var strokeObject = new GameObject($"Stroke {index + 1:00}") {
 					layer = gameObject.layer,
@@ -408,7 +487,21 @@ namespace ShitDesigner.Scene {
 				line.sortingOrder = 1;
 				line.positionCount = paths[index].Points.Length;
 				line.SetPositions(ToVector3Array(paths[index].Points));
+				m_StrokeRenderers.Add(line);
 			}
+		}
+
+		private void ReplaceRegionRenderer(List<PolygonFace> regions) {
+			if (m_RegionObject != null)
+				DestroyOwnedObject(m_RegionObject);
+			m_RegionObject = null;
+			if (m_RegionMesh != null)
+				DestroyOwnedObject(m_RegionMesh);
+			m_RegionMesh = null;
+
+			var fillCount = Mathf.Min(m_FilledRegionCount, regions == null ? 0 : regions.Count);
+			if (fillCount > 0)
+				CreateRegionRenderer(regions, fillCount);
 		}
 
 		private void CreateRegionRenderer(List<PolygonFace> regions, int count) {
@@ -421,6 +514,7 @@ namespace ShitDesigner.Scene {
 				hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSave
 			};
 			fillObject.transform.SetParent(m_RegionRoot, false);
+			m_RegionObject = fillObject;
 
 			var filter = fillObject.AddComponent<MeshFilter>();
 			filter.sharedMesh = m_RegionMesh;
@@ -583,9 +677,14 @@ namespace ShitDesigner.Scene {
 
 			m_StrokeRoot = null;
 			m_RegionRoot = null;
+			m_RegionObject = null;
 			m_RegionMesh = null;
 			m_StrokeMaterial = null;
 			m_RegionMaterial = null;
+			m_StrokeRenderers.Clear();
+			m_TransitionStartPaths = null;
+			m_TransitionTargetPaths = null;
+			m_TransitionTargetRegions = null;
 		}
 
 		private int GetGenerationSeed() {
@@ -666,6 +765,16 @@ namespace ShitDesigner.Scene {
 
 			public PolygonFace(List<Vector2> points) {
 				Points = points;
+			}
+		}
+
+		private readonly struct StrokeLayout {
+			public readonly List<StrokePath> Paths;
+			public readonly List<PolygonFace> Regions;
+
+			public StrokeLayout(List<StrokePath> paths, List<PolygonFace> regions) {
+				Paths = paths;
+				Regions = regions;
 			}
 		}
 

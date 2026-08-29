@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using ShitDesigner.Core;
 using UnityEngine;
@@ -65,6 +66,7 @@ namespace ShitDesigner.Scene {
 
 		[Header("Cut")]
 		[Range(30f, 300f)] [SerializeField] private float m_PreviewBpm = 138f;
+		[Min(0f)] [SerializeField] private float m_CutPushDelaySeconds = 0.08f;
 		[Min(0f)] [SerializeField] private float m_SplitGap = 0.55f;
 		[Min(0f)] [SerializeField] private float m_HorizontalImpulse = 0.9f;
 
@@ -130,6 +132,7 @@ namespace ShitDesigner.Scene {
 			if (m_CandyAxis.sqrMagnitude < 0.0001f)
 				m_CandyAxis = new Vector3(0.57f, -0.37f, -0.73f);
 			m_PreviewBpm = Mathf.Clamp(m_PreviewBpm, 30f, 300f);
+			m_CutPushDelaySeconds = Mathf.Max(0f, m_CutPushDelaySeconds);
 			m_SplitGap = Mathf.Max(0f, m_SplitGap);
 			m_HorizontalImpulse = Mathf.Max(0f, m_HorizontalImpulse);
 			m_RebuildRequested = true;
@@ -137,6 +140,7 @@ namespace ShitDesigner.Scene {
 
 		[ContextMenu("Rebuild Chitose Candy")]
 		public void Rebuild() {
+			StopAllCoroutines();
 			m_RebuildRequested = false;
 			m_LastProcessedBeat = long.MinValue;
 			m_CutLayerIndex = 0;
@@ -296,14 +300,32 @@ namespace ShitDesigner.Scene {
 				return;
 
 			var layerIndex = m_CutLayerIndex++;
+			for (var index = 0; index < m_Candies.Count; index++) {
+				var candy = m_Candies[index];
+				var fragment = candy.Fragments[layerIndex];
+				fragment.RearCutFace.gameObject.SetActive(true);
+				if (layerIndex + 1 < candy.Fragments.Length)
+					candy.Fragments[layerIndex + 1].FrontCutFace.gameObject.SetActive(true);
+			}
+			if (!Application.isPlaying)
+				PushCutLayer(layerIndex);
+			else if (m_CutPushDelaySeconds <= 0f)
+				PushCutLayer(layerIndex);
+			else
+				StartCoroutine(PushCutLayerAfterDelay(layerIndex));
+		}
+
+		private IEnumerator PushCutLayerAfterDelay(int layerIndex) {
+			yield return new WaitForSecondsRealtime(m_CutPushDelaySeconds);
+			PushCutLayer(layerIndex);
+		}
+
+		private void PushCutLayer(int layerIndex) {
 			var splitOffset = m_SplitGap;
 			for (var index = 0; index < m_Candies.Count; index++) {
 				var candy = m_Candies[index];
 				var fragment = candy.Fragments[layerIndex];
 				fragment.Segment.localPosition = Vector3.up * (fragment.BasePosition + splitOffset);
-				fragment.RearCutFace.gameObject.SetActive(true);
-				if (layerIndex + 1 < candy.Fragments.Length)
-					candy.Fragments[layerIndex + 1].FrontCutFace.gameObject.SetActive(true);
 			}
 			if (!Application.isPlaying)
 				return;
