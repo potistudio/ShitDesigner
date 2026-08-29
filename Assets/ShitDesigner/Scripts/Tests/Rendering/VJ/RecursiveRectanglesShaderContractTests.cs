@@ -255,6 +255,28 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 		}
 
 		[UnityTest]
+		public IEnumerator RecursiveRectangles_MinimumLeafSizeAllowsMaximumDepth() {
+			RequireGraphicsDevice();
+			var material = CreateMaterial();
+			try {
+				Configure(material);
+				material.SetFloat("_MinLeafSize", .001f);
+				material.SetFloat("_SplitProbability", 1f);
+				material.SetFloat("_Gutter", 0f);
+				material.SetInt("_MaxDepth", 3);
+				Color32[] shallow = null;
+				yield return Render(material, 64, 64, result => shallow = result);
+
+				material.SetInt("_MaxDepth", 8);
+				Color32[] deep = null;
+				yield return Render(material, 64, 64, result => deep = result);
+
+				Assert.That(deep, Is.Not.EqualTo(shallow));
+			}
+			finally { UnityEngine.Object.DestroyImmediate(material); }
+		}
+
+		[UnityTest]
 		public IEnumerator RecursiveRectangles_BeatIndexChangesOnlySynchronizedStructure() {
 			RequireGraphicsDevice();
 			var material = CreateMaterial();

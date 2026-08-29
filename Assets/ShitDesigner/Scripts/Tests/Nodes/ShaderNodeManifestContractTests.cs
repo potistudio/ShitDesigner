@@ -28,6 +28,7 @@ namespace ShitDesigner.Nodes.Tests {
 				"reveal_progress", "split_duration", "split_stagger", "easing", "color_a", "gutter", "line_color"
 			}));
 			Assert.That(recursive.Parameters.Single(x => x.Id.Value == "axis_mode").EnumMapping["random"], Is.EqualTo(3));
+			Assert.That(recursive.Parameters.Single(x => x.Id.Value == "min_leaf_size").DefaultValue.AsFloat(), Is.EqualTo(.001f));
 			Assert.That(recursive.Parameters.Single(x => x.Id.Value == "easing").EnumMapping["ease_in_out"], Is.EqualTo(4));
 		}
 
