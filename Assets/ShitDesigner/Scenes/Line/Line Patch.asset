@@ -18,9 +18,12 @@ MonoBehaviour:
     _image: {fileID: 2800000, guid: 0d1251ac3c6f56e4886b64816e11de9f, type: 3}
     _durationSeconds: 0.25
   _programGraph:
-    _sourceNodeId: scene
     _outputNodeId: item
     _nodes:
+    - _id: line
+      _typeId: shitdesigner.scene.3d
+      m_SceneDefinition: {fileID: 11400000, guid: ce699c8a2eb921846a9d4953091de0cb, type: 2}
+      _parameters: []
     - _id: item
       _typeId: shitdesigner.shader.blend.add
       m_VideoPath: 
@@ -37,16 +40,13 @@ MonoBehaviour:
         _colorValue: {r: 0, g: 0, b: 0, a: 0}
         _textValue: 
     _connections:
-    - _sourceNodeId: scene
+    - _sourceNodeId: line
       _sourcePortId: image
       _targetNodeId: item
       _targetPortId: a
-  _nodes:
-  - {fileID: 11400000, guid: ce699c8a2eb921846a9d4953091de0cb, type: 2}
   _parameters:
   - _id: line_speed
     _displayName: Line Speed
-    _source: 0
     _nodeId: line
     _parameterId: line_speed
     m_BeatModulation:

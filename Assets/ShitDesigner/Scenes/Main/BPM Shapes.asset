@@ -18,35 +18,80 @@ MonoBehaviour:
     _image: {fileID: 2800000, guid: 7811e043fc896e74592668a1a45cd6bc, type: 3}
     _durationSeconds: 0.25
   _programGraph:
-    _sourceNodeId: scene
     _outputNodeId: composite
     _nodes:
+    - _id: bpm-shapes
+      _typeId: shitdesigner.scene.3d
+      m_SceneDefinition: {fileID: 11400000, guid: d4bdff6ba4854394acc490d905b97d92, type: 2}
+      _parameters: []
     - _id: background
       _typeId: shitdesigner.shader.generator.concentric-rings
       _parameters:
       - _id: color_a
         _type: 5
+        _floatValue: 0
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
         _vector4Value: {x: 1, y: 0, z: 0, w: 1}
+        _colorValue: {r: 1, g: 1, b: 1, a: 1}
+        _textValue: 
       - _id: color_b
         _type: 5
+        _floatValue: 0
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
         _vector4Value: {x: 0, y: 0, z: 1, w: 1}
+        _colorValue: {r: 1, g: 1, b: 1, a: 1}
+        _textValue: 
       - _id: color_c
         _type: 5
+        _floatValue: 0
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
         _vector4Value: {x: 0, y: 1, z: 0, w: 1}
+        _colorValue: {r: 1, g: 1, b: 1, a: 1}
+        _textValue: 
       - _id: amount
         _type: 0
         _floatValue: 0
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 1, g: 1, b: 1, a: 1}
+        _textValue: 
     - _id: composite
       _typeId: shitdesigner.shader.blend.premultiplied_over
       _parameters:
       - _id: amount
         _type: 0
         _floatValue: 1
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 1, g: 1, b: 1, a: 1}
+        _textValue: 
       - _id: external_mask
         _type: 0
         _floatValue: 0
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 1, g: 1, b: 1, a: 1}
+        _textValue: 
     _connections:
-    - _sourceNodeId: scene
+    - _sourceNodeId: bpm-shapes
       _sourcePortId: image
       _targetNodeId: composite
       _targetPortId: a
@@ -54,11 +99,6 @@ MonoBehaviour:
       _sourcePortId: image
       _targetNodeId: composite
       _targetPortId: b
-  _nodeGroups:
-  - _id: source
-    _displayName: Source
-    _nodes:
-    - {fileID: 11400000, guid: d4bdff6ba4854394acc490d905b97d92, type: 2}
   _parameters:
   - _id: motion
     _displayName: Motion

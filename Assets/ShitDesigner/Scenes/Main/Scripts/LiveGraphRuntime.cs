@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using ShitDesigner.Core;
+using ShitDesigner.Media;
 using ShitDesigner.Nodes;
 using ShitDesigner.Rendering;
 using ShitDesigner.Runtime;
@@ -39,6 +41,18 @@ namespace ShitDesigner.Main {
 		public IReadOnlyList<LiveProgramFrame> Frames => _frames ?? (IReadOnlyList<LiveProgramFrame>)Array.Empty<LiveProgramFrame>();
 	}
 
+	internal readonly struct LiveRenderSize {
+		public int Width { get; }
+		public int Height { get; }
+
+		public LiveRenderSize(int width, int height) {
+			if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
+			if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
+			Width = width;
+			Height = height;
+		}
+	}
+
 	public readonly struct LiveParameterApplicationResult {
 		public ulong SequenceNumber { get; }
 		public bool Applied { get; }
@@ -54,11 +68,11 @@ namespace ShitDesigner.Main {
 	internal sealed class LiveGraph : IDisposable {
 		private readonly SceneIsolationManager _sceneManager;
 		private readonly RenderTexturePool _renderPool;
-		private readonly Func<PatchDefinition, Scene3DDefinition, PatchFlashDefinition, LiveProgramOutput> _createOutput;
+		private readonly Func<PatchDefinition, PatchFlashDefinition, LiveRenderSize, LiveProgramOutput> _createOutput;
 		public IReadOnlyList<PatchDefinition> PatchDefinitions { get; }
 
 		public LiveGraph(SceneIsolationManager sceneManager, RenderTexturePool renderPool, IEnumerable<PatchDefinition> patchDefinitions,
-			Func<PatchDefinition, Scene3DDefinition, PatchFlashDefinition, LiveProgramOutput> createOutput) {
+			Func<PatchDefinition, PatchFlashDefinition, LiveRenderSize, LiveProgramOutput> createOutput) {
 			_sceneManager = sceneManager ?? throw new ArgumentNullException(nameof(sceneManager));
 			_renderPool = renderPool ?? throw new ArgumentNullException(nameof(renderPool));
 			_createOutput = createOutput ?? throw new ArgumentNullException(nameof(createOutput));
@@ -66,7 +80,8 @@ namespace ShitDesigner.Main {
 			if (PatchDefinitions.Count == 0) throw new ArgumentException("A live graph requires patches.");
 		}
 
-		public LiveProgramOutput CreateOutput(PatchDefinition patch, Scene3DDefinition definition, PatchFlashDefinition flashPatch) => _createOutput(patch, definition, flashPatch);
+		public LiveProgramOutput CreateOutput(PatchDefinition patch, PatchFlashDefinition flashPatch, LiveRenderSize renderSize)
+			=> _createOutput(patch, flashPatch, renderSize);
 
 		public void Dispose() {
 			_sceneManager.Dispose();
@@ -75,27 +90,24 @@ namespace ShitDesigner.Main {
 	}
 
 	internal sealed class GraphDefinition {
-		public string SourceNodeId { get; }
 		public string OutputNodeId { get; }
 		public IReadOnlyList<NodeDefinition> Nodes { get; }
 		public IReadOnlyList<NodeConnection> Connections { get; }
 		public IReadOnlyList<NodeDefinition> EvaluationOrder { get; }
 
-		public GraphDefinition(string sourceNodeId, string outputNodeId,
+		public GraphDefinition(string outputNodeId,
 			IEnumerable<NodeDefinition> nodes, IEnumerable<NodeConnection> connections) {
-			SourceNodeId = RequireId(sourceNodeId, nameof(sourceNodeId));
 			OutputNodeId = RequireId(outputNodeId, nameof(outputNodeId));
 			Nodes = (nodes ?? throw new ArgumentNullException(nameof(nodes))).ToArray();
 			Connections = (connections ?? throw new ArgumentNullException(nameof(connections))).ToArray();
-			if (Nodes.Count == 0) throw new ArgumentException("A live Program graph requires at least one shader node.", nameof(nodes));
+			if (Nodes.Count == 0) throw new ArgumentException("A live Program graph requires at least one node.", nameof(nodes));
 			if (Nodes.Any(node => node == null) || Nodes.Select(node => node.Id).Distinct(StringComparer.Ordinal).Count() != Nodes.Count)
 				throw new ArgumentException("Live Program graph node IDs must be unique.", nameof(nodes));
-			if (!Nodes.Any(node => node.Id == OutputNodeId)) throw new ArgumentException("The live Program graph output must be a shader node.", nameof(outputNodeId));
-			if (Nodes.Any(node => node.Id == SourceNodeId)) throw new ArgumentException("The live Program graph source cannot be a shader node.", nameof(sourceNodeId));
+			if (!Nodes.Any(node => node.Id == OutputNodeId)) throw new ArgumentException("The live Program graph output must be a configured node.", nameof(outputNodeId));
 			if (Connections.Any(connection => connection == null)) throw new ArgumentException("Live Program graph connections cannot be null.", nameof(connections));
 			if (Connections.Any(connection => !Nodes.Any(node => node.Id == connection.TargetNodeId)))
-				throw new ArgumentException("Every live Program graph connection target must be a shader node.", nameof(connections));
-			if (Connections.Any(connection => connection.SourceNodeId != SourceNodeId && !Nodes.Any(node => node.Id == connection.SourceNodeId)))
+				throw new ArgumentException("Every live Program graph connection target must exist.", nameof(connections));
+			if (Connections.Any(connection => !Nodes.Any(node => node.Id == connection.SourceNodeId)))
 				throw new ArgumentException("Every live Program graph connection source must exist.", nameof(connections));
 			if (Connections.GroupBy(connection => new { connection.TargetNodeId, connection.TargetPortId }).Any(group => group.Count() > 1))
 				throw new ArgumentException("A live Program graph input port can have only one connection.", nameof(connections));
@@ -104,7 +116,7 @@ namespace ShitDesigner.Main {
 
 		private IReadOnlyList<NodeDefinition> BuildEvaluationOrder() {
 			var remaining = Nodes.ToList();
-			var resolved = new HashSet<string>(StringComparer.Ordinal) { SourceNodeId };
+			var resolved = new HashSet<string>(StringComparer.Ordinal);
 			var ordered = new List<NodeDefinition>(Nodes.Count);
 			while (remaining.Count > 0) {
 				var next = remaining.FirstOrDefault(node => Connections.Where(connection => connection.TargetNodeId == node.Id)
@@ -161,35 +173,27 @@ namespace ShitDesigner.Main {
 	}
 
 	internal sealed class LiveProgramOutput : IDisposable {
-		public Scene3DDefinition Definition { get; }
-		public SceneNodeRuntime Runtime { get; }
-		public LiveSceneRoot Root { get; }
 		public RenderTexture ProgramTexture { get; }
-		public RenderTexture RenderTexture { get; }
 		private readonly RenderTexture _shaderGraphTexture;
-		private readonly LiveProgramShaderGraph _programGraph;
+		private readonly LiveProgramGraph _programGraph;
 		private readonly LiveProgramFlash _flash;
 		private readonly PatchFlashDefinition _flashPatch;
 
-		public LiveProgramOutput(Scene3DDefinition definition, SceneNodeRuntime runtime, LiveSceneRoot root,
-			RenderTexture programTexture, RenderTexture renderTexture, RenderTexture shaderGraphTexture,
-			LiveProgramShaderGraph programGraph, LiveProgramFlash flash, PatchFlashDefinition flashPatch) {
-			Definition = definition ?? throw new ArgumentNullException(nameof(definition));
-			Runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
-			Root = root ?? throw new ArgumentNullException(nameof(root));
+		public LiveProgramOutput(RenderTexture programTexture, RenderTexture shaderGraphTexture,
+			LiveProgramGraph programGraph, LiveProgramFlash flash, PatchFlashDefinition flashPatch) {
 			ProgramTexture = programTexture ?? throw new ArgumentNullException(nameof(programTexture));
-			RenderTexture = renderTexture ?? throw new ArgumentNullException(nameof(renderTexture));
 			_shaderGraphTexture = shaderGraphTexture ?? throw new ArgumentNullException(nameof(shaderGraphTexture));
 			_programGraph = programGraph ?? throw new ArgumentNullException(nameof(programGraph));
 			_flash = flash ?? throw new ArgumentNullException(nameof(flash));
 			_flashPatch = flashPatch;
 		}
 
-		public void Render(double graphTime, double deltaSeconds, ulong frameNumber) {
-			var result = Runtime.Render(RenderTexture, LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight, frameNumber);
-			if (result.IsFailure || result.Value == null || !result.Value.Rendered)
-				throw new InvalidOperationException(result.IsFailure ? result.Error.Message : "A live ProgramOutput did not render.");
-			_programGraph.Render(RenderTexture, _shaderGraphTexture, graphTime, frameNumber);
+		public void Evaluate(double deltaSeconds, BeatClockFrame bpmFrame) => _programGraph.Evaluate(deltaSeconds, bpmFrame);
+
+		public void SceneUpdate(double deltaSeconds) => _programGraph.SceneUpdate(deltaSeconds);
+
+		public void Render(double graphTime, ulong frameNumber) {
+			_programGraph.Render(_shaderGraphTexture, graphTime, frameNumber);
 			_flash.Render(_shaderGraphTexture, ProgramTexture, graphTime);
 		}
 
@@ -202,13 +206,14 @@ namespace ShitDesigner.Main {
 		public bool TrySetGraphParameter(string nodeId, string parameterId, ParameterValue value, out string rejectionReason)
 			=> _programGraph.TrySetParameter(nodeId, parameterId, value, out rejectionReason);
 
+		public bool TryGetSceneParameter(string nodeId, string parameterId, out LiveSceneRoot root, out LiveParameterDefinition definition)
+			=> _programGraph.TryGetSceneParameter(nodeId, parameterId, out root, out definition);
+
 		public void Dispose() {
 			_flash.Dispose();
 			_programGraph.Dispose();
 			ReleaseTexture(_shaderGraphTexture);
-			Runtime.Dispose();
 			ReleaseTexture(ProgramTexture);
-			ReleaseTexture(RenderTexture);
 		}
 
 		private static void ReleaseTexture(RenderTexture texture) {
@@ -232,8 +237,81 @@ namespace ShitDesigner.Main {
 	internal interface ILiveProgramGraphNode : IDisposable {
 		string Id { get; }
 		RenderTexture Target { get; }
+		void Evaluate(double deltaSeconds, BeatClockFrame bpmFrame);
+		void SceneUpdate(double deltaSeconds);
 		void Render(IReadOnlyDictionary<string, Texture> outputs, double graphTime, ulong frameNumber);
 		bool TrySetParameter(string parameterId, ParameterValue value, out string rejectionReason);
+	}
+
+	internal sealed class LiveProgramSceneGraphNode : ILiveProgramGraphNode {
+		private readonly SceneNodeRuntime m_Runtime;
+		private readonly LiveSceneRoot m_Root;
+		private readonly RenderTexture m_Target;
+		private readonly LiveRenderSize m_RenderSize;
+		private bool m_Disposed;
+
+		public string Id { get; }
+		public RenderTexture Target => m_Target;
+		public Scene3DDefinition Definition { get; }
+		public LiveSceneRoot Root => m_Root;
+
+		public LiveProgramSceneGraphNode(string id, Scene3DDefinition definition, SceneNodeRuntime runtime, LiveSceneRoot root,
+			RenderTexture target, LiveRenderSize renderSize) {
+			if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("A live Program scene node ID is required.", nameof(id));
+			Definition = definition ?? throw new ArgumentNullException(nameof(definition));
+			m_Runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
+			m_Root = root ?? throw new ArgumentNullException(nameof(root));
+			m_Target = target ?? throw new ArgumentNullException(nameof(target));
+			m_RenderSize = renderSize;
+			Id = id.Trim();
+		}
+
+		public void Evaluate(double deltaSeconds, BeatClockFrame bpmFrame) {
+			var scaledDeltaSeconds = Math.Max(0d, deltaSeconds) * m_Root.TimeScale;
+			var animation = m_Runtime.AdvanceGraphClock(scaledDeltaSeconds);
+			if (animation.IsFailure) throw new InvalidOperationException(animation.Error.Message);
+			var bpm = m_Runtime.ApplyBpmClock(bpmFrame);
+			if (bpm.IsFailure) throw new InvalidOperationException(bpm.Error.Message);
+		}
+
+		public void SceneUpdate(double deltaSeconds) {
+			var result = m_Runtime.AdvancePhysics(Math.Max(0d, deltaSeconds) * m_Root.TimeScale);
+			if (result.IsFailure) throw new InvalidOperationException(result.Error.Message);
+		}
+
+		public void Render(IReadOnlyDictionary<string, Texture> outputs, double graphTime, ulong frameNumber) {
+			if (m_Disposed) throw new ObjectDisposedException(nameof(LiveProgramSceneGraphNode));
+			var result = m_Runtime.Render(m_Target, m_RenderSize.Width, m_RenderSize.Height, frameNumber);
+			if (result.IsFailure || result.Value == null || !result.Value.Rendered)
+				throw new InvalidOperationException(result.IsFailure ? result.Error.Message : "A live scene node did not render.");
+		}
+
+		public bool TrySetParameter(string parameterId, ParameterValue value, out string rejectionReason) {
+			if (value.Type != ParameterType.Float) {
+				rejectionReason = "The published scene parameter requires a float value.";
+				return false;
+			}
+			return m_Root.TrySetParameter(parameterId, value.AsFloat(), out rejectionReason);
+		}
+
+		public bool TryGetParameter(string parameterId, out LiveParameterDefinition definition) {
+			definition = m_Root.GetParameterDefinitions().FirstOrDefault(candidate => candidate.Id == parameterId);
+			return !string.IsNullOrWhiteSpace(definition.Id);
+		}
+
+		public void Dispose() {
+			if (m_Disposed) return;
+			m_Disposed = true;
+			m_Runtime.Dispose();
+			ReleaseTexture(m_Target);
+		}
+
+		private static void ReleaseTexture(RenderTexture texture) {
+			if (texture == null) return;
+			texture.Release();
+			if (UnityEngine.Application.isPlaying) UnityEngine.Object.Destroy(texture);
+			else UnityEngine.Object.DestroyImmediate(texture);
+		}
 	}
 
 	internal sealed class LiveProgramShaderGraphNode : ILiveProgramGraphNode {
@@ -249,6 +327,10 @@ namespace ShitDesigner.Main {
 			Inputs = inputs ?? throw new ArgumentNullException(nameof(inputs));
 		}
 
+		public void Evaluate(double deltaSeconds, BeatClockFrame bpmFrame) { }
+
+		public void SceneUpdate(double deltaSeconds) { }
+
 		public void Render(IReadOnlyDictionary<string, Texture> outputs, double graphTime, ulong frameNumber) {
 			var inputs = Inputs.ToDictionary(input => input.Key, input => outputs.TryGetValue(input.Value, out var texture) ? texture : null);
 			var result = _runtime.Render(inputs, Target, frameNumber, graphTime);
@@ -261,6 +343,172 @@ namespace ShitDesigner.Main {
 		public void Dispose() {
 			_runtime.Dispose();
 			ReleaseTexture(Target);
+		}
+
+		private static void ReleaseTexture(RenderTexture texture) {
+			if (texture == null) return;
+			texture.Release();
+			if (UnityEngine.Application.isPlaying) UnityEngine.Object.Destroy(texture);
+			else UnityEngine.Object.DestroyImmediate(texture);
+		}
+	}
+
+	internal sealed class LiveProgramFileVideoGraphNode : ILiveProgramGraphNode {
+		private readonly IVideoBackendHandle m_Backend;
+		private readonly HapUnityGraphicsBridge m_HapBridge;
+		private readonly IVideoFrameConversionPass m_Conversion;
+		private readonly VideoProbeResult m_Probe;
+		private readonly RenderTexture m_Target;
+		private readonly bool m_Playing;
+		private readonly double m_Playhead;
+		private readonly float m_Speed;
+		private readonly bool m_Loop;
+		private bool m_Disposed;
+
+		public string Id { get; }
+		public RenderTexture Target => m_Target;
+
+		public LiveProgramFileVideoGraphNode(string id, RenderTexture target, string videoPath, bool playing, double playhead, float speed, bool loop,
+			Material videoConversionMaterial, Material hapPremultiplyMaterial, Material hapYCoCgMaterial,
+			Material hapAlphaMaterial, ComputeShader hapDecodeShader) {
+			if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("A live Program video node ID is required.", nameof(id));
+			if (target == null) throw new ArgumentNullException(nameof(target));
+			if (string.IsNullOrWhiteSpace(videoPath)) throw new ArgumentException("A live Program video file is required.", nameof(videoPath));
+			if (double.IsNaN(playhead) || double.IsInfinity(playhead) || playhead < 0d) throw new ArgumentOutOfRangeException(nameof(playhead));
+			if (float.IsNaN(speed) || float.IsInfinity(speed) || speed < 0f || speed > 4f) throw new ArgumentOutOfRangeException(nameof(speed));
+
+			Id = id.Trim();
+			m_Target = target;
+			m_Playing = playing;
+			m_Playhead = playhead;
+			m_Speed = speed;
+			m_Loop = loop;
+
+			var sourcePath = ResolveSourcePath(videoPath);
+			var probe = new FileVideoMetadataProbe().Probe(sourcePath);
+			if (probe.IsFailure) throw new InvalidOperationException("The live Program video probe failed: " + probe.Error.Message);
+			if (!probe.Value.Supported) throw new InvalidOperationException("The live Program video is unsupported: " + probe.Value.DiagnosticMessage);
+
+			var hapGraphics = new UnityHapGraphicsCapabilityProbe();
+			var graphics = new VideoGraphicsCapabilities(hapGraphics.SupportsDirectCompressed, hapGraphics.SupportsCompute, hapGraphics.SupportsCpu);
+			var selected = VideoBackendSelector.Select(probe.Value, graphics);
+			if (selected.IsFailure) throw new InvalidOperationException("The live Program video backend could not be selected: " + selected.Error.Message);
+
+			IVideoBackendHandle backend = null;
+			HapUnityGraphicsBridge hapBridge = null;
+			IVideoFrameConversionPass conversion = null;
+			try {
+				if (selected.Value == VideoBackendKind.HapVideoBackend) {
+					hapBridge = new HapUnityGraphicsBridge(hapGraphics, hapDecodeShader, hapPremultiplyMaterial, hapYCoCgMaterial, hapAlphaMaterial);
+					backend = new HapVideoBackend(NodeInstanceId.New(), 1UL,
+						new HapNativeDecoder(new PInvokeHapNativeApi(hapBridge)));
+				}
+				else {
+					backend = new UnityVideoBackend(NodeInstanceId.New(), 1UL);
+					conversion = new UnityVideoFrameConversionPass(videoConversionMaterial);
+				}
+
+				var prepared = backend.Prepare(new VideoPrepareRequest(sourcePath, probe.Value));
+				if (prepared.IsFailure) throw new InvalidOperationException("The live Program video could not be prepared: " + prepared.Error.Message);
+				var setSpeed = backend.SetSpeed(speed);
+				if (setSpeed.IsFailure) throw new InvalidOperationException("The live Program video speed could not be applied: " + setSpeed.Error.Message);
+				var setLoop = backend.SetLoop(loop);
+				if (setLoop.IsFailure) throw new InvalidOperationException("The live Program video loop mode could not be applied: " + setLoop.Error.Message);
+
+				m_Backend = backend;
+				m_HapBridge = hapBridge;
+				m_Conversion = conversion;
+				m_Probe = probe.Value;
+			}
+			catch {
+				conversion?.Dispose();
+				backend?.Dispose();
+				hapBridge?.Dispose();
+				throw;
+			}
+		}
+
+		public void Evaluate(double deltaSeconds, BeatClockFrame bpmFrame) { }
+
+		public void SceneUpdate(double deltaSeconds) { }
+
+		public void Render(IReadOnlyDictionary<string, Texture> outputs, double graphTime, ulong frameNumber) {
+			if (m_Disposed) throw new ObjectDisposedException(nameof(LiveProgramFileVideoGraphNode));
+			var sync = m_Backend.SyncToGraphClock(LogicalPosition(graphTime), demanded: true);
+			if (sync.IsFailure) throw new InvalidOperationException(sync.Error.Message);
+
+			if (IsReady() || m_Backend.BackendKind == VideoBackendKind.HapVideoBackend) {
+				if (m_Playing && m_Backend.State != VideoBackendState.Playing) {
+					var play = m_Backend.Play();
+					if (play.IsFailure) throw new InvalidOperationException(play.Error.Message);
+				}
+				else if (!m_Playing && m_Backend.State == VideoBackendState.Playing) {
+					var pause = m_Backend.Pause();
+					if (pause.IsFailure) throw new InvalidOperationException(pause.Error.Message);
+				}
+			}
+
+			var source = m_Backend.BorrowedTexture as Texture;
+			if (source == null) {
+				ClearTexture(m_Target);
+				return;
+			}
+			if (m_Backend.BackendKind == VideoBackendKind.HapVideoBackend) {
+				Graphics.Blit(source, m_Target);
+				return;
+			}
+
+			var converted = m_Conversion.Convert(source, m_Target, m_Probe.ConversionMetadata);
+			if (converted.IsFailure) throw new InvalidOperationException(converted.Error.Message);
+		}
+
+		public bool TrySetParameter(string parameterId, ParameterValue value, out string rejectionReason) {
+			rejectionReason = "Video player parameters cannot be changed by a live patch parameter.";
+			return false;
+		}
+
+		public void Dispose() {
+			if (m_Disposed) return;
+			m_Disposed = true;
+			m_Backend.Dispose();
+			m_Conversion?.Dispose();
+			m_HapBridge?.Dispose();
+			ReleaseTexture(m_Target);
+		}
+
+		private bool IsReady() {
+			return m_Backend.State == VideoBackendState.Ready
+				|| m_Backend.State == VideoBackendState.Playing
+				|| m_Backend.State == VideoBackendState.Paused;
+		}
+
+		private double LogicalPosition(double graphTime) {
+			var position = m_Playing ? m_Playhead + Math.Max(0d, graphTime) * m_Speed : m_Playhead;
+			if (m_Probe.DurationSeconds <= 0d) return position;
+			if (m_Loop) return position % m_Probe.DurationSeconds;
+			return Math.Min(position, m_Probe.DurationSeconds);
+		}
+
+		private static string ResolveSourcePath(string storedPath) {
+			var normalized = (storedPath ?? string.Empty).Trim().Replace('\\', '/');
+			if (Path.IsPathRooted(normalized)) return Path.GetFullPath(normalized);
+			const string streamingAssetsPrefix = "Assets/StreamingAssets";
+			if (normalized.Equals(streamingAssetsPrefix, StringComparison.OrdinalIgnoreCase)
+				|| normalized.StartsWith(streamingAssetsPrefix + "/", StringComparison.OrdinalIgnoreCase)) {
+				var suffix = normalized.Substring(streamingAssetsPrefix.Length).TrimStart('/');
+				return Path.GetFullPath(Path.Combine(UnityEngine.Application.streamingAssetsPath, suffix.Replace('/', Path.DirectorySeparatorChar)));
+			}
+			var projectRoot = Directory.GetParent(Path.GetFullPath(UnityEngine.Application.dataPath)).FullName;
+			return Path.GetFullPath(Path.Combine(projectRoot, normalized.Replace('/', Path.DirectorySeparatorChar)));
+		}
+
+		private static void ClearTexture(RenderTexture texture) {
+			var previous = RenderTexture.active;
+			try {
+				RenderTexture.active = texture;
+				GL.Clear(true, true, Color.black);
+			}
+			finally { RenderTexture.active = previous; }
 		}
 
 		private static void ReleaseTexture(RenderTexture texture) {
@@ -306,7 +554,7 @@ namespace ShitDesigner.Main {
 				_player.renderMode = VideoRenderMode.APIOnly;
 				_player.audioOutputMode = VideoAudioOutputMode.None;
 				_player.sendFrameReadyEvents = false;
-				_player.source = VideoSource.VideoClip;
+				_player.source = UnityEngine.Video.VideoSource.VideoClip;
 				_player.clip = clip;
 				_player.isLooping = _loop;
 				_player.playbackSpeed = _speed;
@@ -317,6 +565,10 @@ namespace ShitDesigner.Main {
 				throw;
 			}
 		}
+
+		public void Evaluate(double deltaSeconds, BeatClockFrame bpmFrame) { }
+
+		public void SceneUpdate(double deltaSeconds) { }
 
 		public void Render(IReadOnlyDictionary<string, Texture> outputs, double graphTime, ulong frameNumber) {
 			if (_disposed) throw new ObjectDisposedException(nameof(LiveProgramVideoGraphNode));
@@ -375,23 +627,29 @@ namespace ShitDesigner.Main {
 		}
 	}
 
-	internal sealed class LiveProgramShaderGraph : IDisposable {
-		private readonly string _sourceNodeId;
+	internal sealed class LiveProgramGraph : IDisposable {
 		private readonly string _outputNodeId;
 		private readonly IReadOnlyList<ILiveProgramGraphNode> _nodes;
 
-		internal LiveProgramShaderGraph(GraphDefinition definition, IEnumerable<ILiveProgramGraphNode> nodes) {
+		internal LiveProgramGraph(GraphDefinition definition, IEnumerable<ILiveProgramGraphNode> nodes) {
 			if (definition == null) throw new ArgumentNullException(nameof(definition));
-			_sourceNodeId = definition.SourceNodeId;
 			_outputNodeId = definition.OutputNodeId;
 			_nodes = (nodes ?? throw new ArgumentNullException(nameof(nodes))).ToArray();
 			if (_nodes.Count != definition.EvaluationOrder.Count) throw new ArgumentException("Every live Program graph node must be constructed.", nameof(nodes));
 		}
 
-		public void Render(RenderTexture source, RenderTexture destination, double graphTime, ulong frameNumber) {
-			if (source == null || destination == null || !source.IsCreated() || !destination.IsCreated())
-				throw new ArgumentException("Live Program graph rendering requires created source and destination textures.");
-			var outputs = new Dictionary<string, Texture>(StringComparer.Ordinal) { [_sourceNodeId] = source };
+		public void Evaluate(double deltaSeconds, BeatClockFrame bpmFrame) {
+			foreach (var node in _nodes) node.Evaluate(deltaSeconds, bpmFrame);
+		}
+
+		public void SceneUpdate(double deltaSeconds) {
+			foreach (var node in _nodes) node.SceneUpdate(deltaSeconds);
+		}
+
+		public void Render(RenderTexture destination, double graphTime, ulong frameNumber) {
+			if (destination == null || !destination.IsCreated())
+				throw new ArgumentException("Live Program graph rendering requires a created destination texture.");
+			var outputs = new Dictionary<string, Texture>(StringComparer.Ordinal);
 			foreach (var node in _nodes) {
 				node.Render(outputs, graphTime, frameNumber);
 				outputs.Add(node.Id, node.Target);
@@ -409,26 +667,52 @@ namespace ShitDesigner.Main {
 			return node.TrySetParameter(parameterId, value, out rejectionReason);
 		}
 
+		public bool TryGetSceneParameter(string nodeId, string parameterId, out LiveSceneRoot root, out LiveParameterDefinition definition) {
+			var node = _nodes.OfType<LiveProgramSceneGraphNode>().FirstOrDefault(candidate => string.Equals(candidate.Id, nodeId, StringComparison.Ordinal));
+			if (node == null) {
+				root = null;
+				definition = default(LiveParameterDefinition);
+				return false;
+			}
+			root = node.Root;
+			return node.TryGetParameter(parameterId, out definition);
+		}
+
 		public void Dispose() {
 			for (var index = _nodes.Count - 1; index >= 0; index--) _nodes[index].Dispose();
 		}
 
 	}
 
-	/// <summary>Evaluates a Bootstrap-created graph without constructing nodes or rendering resources.</summary>
+	/// <summary>Evaluates a Bootstrap-created graph and manages its live patch outputs.</summary>
 	public sealed class LiveGraphRuntime : IDisposable {
 		public const int ProgramWidth = 1920;
 		public const int ProgramHeight = 1080;
+		// Slot previews are sampled independently so the full-resolution Program path remains unaffected.
+		public const int SlotPreviewWidth = 160;
+		public const int SlotPreviewHeight = 90;
+		public const int SlotPreviewFrameRate = 10;
+
+		private const double SlotPreviewIntervalSeconds = 1d / SlotPreviewFrameRate;
+		private static readonly LiveRenderSize ProgramRenderSize = new LiveRenderSize(ProgramWidth, ProgramHeight);
+		private static readonly LiveRenderSize SlotPreviewRenderSize = new LiveRenderSize(SlotPreviewWidth, SlotPreviewHeight);
 
 		private readonly LiveGraph _graph;
 		private readonly Dictionary<string, PatchDefinition> _patchDefinitionsById;
 		private readonly LiveBpmClock _bpmClock = new LiveBpmClock();
 		private readonly List<LivePatch> _createdPatches = new List<LivePatch>();
+		private readonly Dictionary<string, LiveSlotPreview> m_SlotPreviewPatches = new Dictionary<string, LiveSlotPreview>(StringComparer.Ordinal);
+		private readonly Dictionary<string, RenderTexture> m_SlotPreviewTextures = new Dictionary<string, RenderTexture>(StringComparer.Ordinal);
+		private readonly HashSet<string> m_SlotPreviewPatchFailures = new HashSet<string>(StringComparer.Ordinal);
+		private readonly HashSet<string> m_SlotPreviewTextureFailures = new HashSet<string>(StringComparer.Ordinal);
+		private readonly RenderTexture[] m_SlotPreviewFrames = new RenderTexture[LivePatchSlots.Capacity];
 		private LivePatch _loadedPatch;
 		private LivePatch _preloadedPatch;
 		private ulong _frameNumber;
+		private ulong m_SlotPreviewFrameNumber;
 		private double _graphTime;
 		private double _lastDeltaSeconds;
+		private double m_SlotPreviewElapsedSeconds;
 		private bool _disposed;
 
 		public string LoadedPatchId => _loadedPatch?.Definition.Id ?? string.Empty;
@@ -436,12 +720,13 @@ namespace ShitDesigner.Main {
 		public IReadOnlyList<PatchDefinition> Patches => _graph.PatchDefinitions;
 		public LiveProgramFrame CurrentFrame { get; private set; }
 		public LiveProgramFrames CurrentFrames { get; private set; }
+		public IReadOnlyList<RenderTexture> SlotPreviewTextures => m_SlotPreviewFrames;
 		public LiveParameterDefinition BpmDefinition => _bpmClock.Definition;
 
 		internal LiveGraphRuntime(LiveGraph graph) {
 			_graph = graph ?? throw new ArgumentNullException(nameof(graph));
 			_patchDefinitionsById = graph.PatchDefinitions.ToDictionary(definition => definition.Id, StringComparer.Ordinal);
-			_loadedPatch = CreatePatch(graph.PatchDefinitions[0]);
+			_loadedPatch = CreatePatch(graph.PatchDefinitions[0], ProgramRenderSize);
 			_preloadedPatch = _loadedPatch;
 			CurrentFrames = new LiveProgramFrames(_loadedPatch.Outputs.Select(output => new LiveProgramFrame(output.ProgramTexture, 0)));
 			CurrentFrame = CurrentFrames.Primary;
@@ -455,7 +740,7 @@ namespace ShitDesigner.Main {
 			if (!_patchDefinitionsById.TryGetValue(request.PatchId, out var definition)) return Reject(request, "The requested patch does not exist.");
 			if (request.Kind == LiveParameterRequestKind.PreloadPatch) {
 				if (_preloadedPatch?.Definition == definition) return Accept(request);
-				var nextPreloadedPatch = CreatePatch(definition);
+				var nextPreloadedPatch = CreatePatch(definition, ProgramRenderSize);
 				if (_preloadedPatch != _loadedPatch) DisposePatch(_preloadedPatch);
 				_preloadedPatch = nextPreloadedPatch;
 				return Accept(request);
@@ -467,7 +752,7 @@ namespace ShitDesigner.Main {
 			}
 			if (request.Kind == LiveParameterRequestKind.LaunchPatch) {
 				if (_preloadedPatch?.Definition != definition) {
-					var nextPreloadedPatch = CreatePatch(definition);
+					var nextPreloadedPatch = CreatePatch(definition, ProgramRenderSize);
 					if (_preloadedPatch != _loadedPatch) DisposePatch(_preloadedPatch);
 					_preloadedPatch = nextPreloadedPatch;
 				}
@@ -489,31 +774,56 @@ namespace ShitDesigner.Main {
 			_graphTime += _lastDeltaSeconds;
 			_bpmClock.Advance(_lastDeltaSeconds);
 			_loadedPatch.ApplyResolvedParameters(_bpmClock.Frame);
-			foreach (var scene in _loadedPatch.Outputs) {
-				var result = scene.Runtime.AdvanceGraphClock(_lastDeltaSeconds * scene.Root.TimeScale);
-				if (result.IsFailure) throw new InvalidOperationException(result.Error.Message);
-				var bpmResult = scene.Runtime.ApplyBpmClock(_bpmClock.Frame);
-				if (bpmResult.IsFailure) throw new InvalidOperationException(bpmResult.Error.Message);
-			}
+			foreach (var output in _loadedPatch.Outputs) output.Evaluate(_lastDeltaSeconds, _bpmClock.Frame);
 		}
 
 		public void SceneUpdate(double deltaSeconds) {
 			EnsureUsable();
-			foreach (var scene in _loadedPatch.Outputs) {
-				var result = scene.Runtime.AdvancePhysics(deltaSeconds * scene.Root.TimeScale);
-				if (result.IsFailure) throw new InvalidOperationException(result.Error.Message);
-			}
+			foreach (var output in _loadedPatch.Outputs) output.SceneUpdate(Math.Max(0d, deltaSeconds));
 		}
 
 		public LiveProgramFrames Render() {
 			EnsureUsable();
 			var nextFrame = _frameNumber + 1;
 			if (nextFrame == 0) nextFrame = 1;
-			foreach (var scene in _loadedPatch.Outputs) scene.Render(_graphTime, _lastDeltaSeconds, nextFrame);
+			foreach (var output in _loadedPatch.Outputs) output.Render(_graphTime, nextFrame);
 			_frameNumber = nextFrame;
 			CurrentFrames = new LiveProgramFrames(_loadedPatch.Outputs.Select(output => new LiveProgramFrame(output.ProgramTexture, _frameNumber)));
 			CurrentFrame = CurrentFrames.Primary;
 			return CurrentFrames;
+		}
+
+		public IReadOnlyList<RenderTexture> RenderSlotPreviews(IReadOnlyList<LivePatchSlotReadModel> slots, double deltaSeconds) {
+			EnsureUsable();
+			var activePatchIds = CollectActiveSlotPatchIds(slots);
+			ReconcileSlotPreviews(activePatchIds);
+			if (activePatchIds.Count == 0) {
+				m_SlotPreviewElapsedSeconds = 0d;
+				m_SlotPreviewFrameNumber = 0;
+			}
+			else {
+				m_SlotPreviewElapsedSeconds += Math.Max(0d, deltaSeconds);
+				if (m_SlotPreviewFrameNumber == 0 || m_SlotPreviewElapsedSeconds >= SlotPreviewIntervalSeconds) {
+					m_SlotPreviewElapsedSeconds %= SlotPreviewIntervalSeconds;
+					var nextFrame = m_SlotPreviewFrameNumber + 1;
+					if (nextFrame == 0) nextFrame = 1;
+					RenderSlotPreviewPatches(nextFrame);
+					RenderLoadedSlotPreview();
+					m_SlotPreviewFrameNumber = nextFrame;
+				}
+			}
+
+			Array.Clear(m_SlotPreviewFrames, 0, m_SlotPreviewFrames.Length);
+			if (slots != null) {
+				foreach (var slot in slots) {
+					if (!LivePatchSlots.IsValidSlotIndex(slot.Index) || string.IsNullOrEmpty(slot.PatchId)) continue;
+					if (slot.PatchId == LoadedPatchId)
+						m_SlotPreviewTextures.TryGetValue(slot.PatchId, out m_SlotPreviewFrames[slot.Index]);
+					else if (m_SlotPreviewPatches.TryGetValue(slot.PatchId, out var preview))
+						m_SlotPreviewFrames[slot.Index] = preview.Texture;
+				}
+			}
+			return m_SlotPreviewFrames;
 		}
 
 		public LiveParameterDefinition[] GetLoadedPatchParameterDefinitions() => _loadedPatch?.GetParameterDefinitions() ?? Array.Empty<LiveParameterDefinition>();
@@ -521,21 +831,150 @@ namespace ShitDesigner.Main {
 		public void Dispose() {
 			if (_disposed) return;
 			_disposed = true;
+			foreach (var texture in m_SlotPreviewTextures.Values) ReleaseTexture(texture);
+			m_SlotPreviewTextures.Clear();
+			m_SlotPreviewPatches.Clear();
+			m_SlotPreviewPatchFailures.Clear();
+			m_SlotPreviewTextureFailures.Clear();
 			for (var index = _createdPatches.Count - 1; index >= 0; index--) _createdPatches[index].Dispose();
 			_createdPatches.Clear();
 			_graph.Dispose();
 		}
 
-		private LivePatch CreatePatch(PatchDefinition definition) {
-			var patch = new LivePatch(definition, _graph.CreateOutput);
-			patch.ApplyResolvedParameters(_bpmClock.Frame);
-			_createdPatches.Add(patch);
-			return patch;
+		private LivePatch CreatePatch(PatchDefinition definition, LiveRenderSize renderSize) {
+			var patch = new LivePatch(definition, _graph.CreateOutput, renderSize);
+			try {
+				patch.ApplyResolvedParameters(_bpmClock.Frame);
+				_createdPatches.Add(patch);
+				return patch;
+			}
+			catch {
+				patch.Dispose();
+				throw;
+			}
 		}
 
 		private void DisposePatch(LivePatch patch) {
 			if (patch == null || !_createdPatches.Remove(patch)) return;
 			patch.Dispose();
+		}
+
+		private HashSet<string> CollectActiveSlotPatchIds(IReadOnlyList<LivePatchSlotReadModel> slots) {
+			var activePatchIds = new HashSet<string>(StringComparer.Ordinal);
+			if (slots == null) return activePatchIds;
+			foreach (var slot in slots)
+				if (!string.IsNullOrEmpty(slot.PatchId)) activePatchIds.Add(slot.PatchId);
+			return activePatchIds;
+		}
+
+		private void ReconcileSlotPreviews(ISet<string> activePatchIds) {
+			foreach (var patchId in m_SlotPreviewPatches.Keys.Where(patchId => !activePatchIds.Contains(patchId) || patchId == LoadedPatchId).ToArray())
+				DisposeSlotPreviewPatch(patchId);
+			foreach (var patchId in m_SlotPreviewTextures.Keys.Where(patchId => !activePatchIds.Contains(patchId) || patchId != LoadedPatchId).ToArray())
+				DisposeSlotPreviewTexture(patchId);
+			foreach (var patchId in m_SlotPreviewPatchFailures.Where(patchId => !activePatchIds.Contains(patchId)).ToArray())
+				m_SlotPreviewPatchFailures.Remove(patchId);
+			foreach (var patchId in m_SlotPreviewTextureFailures.Where(patchId => !activePatchIds.Contains(patchId)).ToArray())
+				m_SlotPreviewTextureFailures.Remove(patchId);
+
+			foreach (var patchId in activePatchIds) {
+				if (!_patchDefinitionsById.ContainsKey(patchId)) {
+					m_SlotPreviewPatchFailures.Add(patchId);
+					continue;
+				}
+				if (patchId == LoadedPatchId) {
+					m_SlotPreviewPatchFailures.Remove(patchId);
+					if (m_SlotPreviewTextures.ContainsKey(patchId) || m_SlotPreviewTextureFailures.Contains(patchId)) continue;
+					try {
+						m_SlotPreviewTextures.Add(patchId, CreateSlotPreviewTexture(patchId));
+					}
+					catch {
+						m_SlotPreviewTextureFailures.Add(patchId);
+					}
+					continue;
+				}
+
+				m_SlotPreviewTextureFailures.Remove(patchId);
+				if (m_SlotPreviewPatches.ContainsKey(patchId) || m_SlotPreviewPatchFailures.Contains(patchId)) continue;
+				try {
+					var previewPatch = CreatePatch(_patchDefinitionsById[patchId], SlotPreviewRenderSize);
+					m_SlotPreviewPatches.Add(patchId, new LiveSlotPreview(previewPatch));
+				}
+				catch {
+					m_SlotPreviewPatchFailures.Add(patchId);
+				}
+			}
+		}
+
+		private void RenderSlotPreviewPatches(ulong frameNumber) {
+			foreach (var pair in m_SlotPreviewPatches.ToArray()) {
+				try {
+					pair.Value.Render(_graphTime, _bpmClock.Frame, frameNumber);
+				}
+				catch {
+					DisposeSlotPreviewPatch(pair.Key);
+					m_SlotPreviewPatchFailures.Add(pair.Key);
+				}
+			}
+		}
+
+		private void RenderLoadedSlotPreview() {
+			if (!m_SlotPreviewTextures.TryGetValue(LoadedPatchId, out var target)) return;
+			try {
+				var source = _loadedPatch.Outputs.Count == 0 ? null : _loadedPatch.Outputs[0].ProgramTexture;
+				if (source == null || !source.IsCreated()) ClearTexture(target);
+				else Graphics.Blit(source, target);
+			}
+			catch {
+				DisposeSlotPreviewTexture(LoadedPatchId);
+				m_SlotPreviewTextureFailures.Add(LoadedPatchId);
+			}
+		}
+
+		private void DisposeSlotPreviewPatch(string patchId) {
+			if (!m_SlotPreviewPatches.TryGetValue(patchId, out var preview)) return;
+			m_SlotPreviewPatches.Remove(patchId);
+			DisposePatch(preview.Patch);
+		}
+
+		private void DisposeSlotPreviewTexture(string patchId) {
+			if (!m_SlotPreviewTextures.TryGetValue(patchId, out var texture)) return;
+			m_SlotPreviewTextures.Remove(patchId);
+			ReleaseTexture(texture);
+		}
+
+		private static RenderTexture CreateSlotPreviewTexture(string patchId) {
+			var texture = new RenderTexture(SlotPreviewWidth, SlotPreviewHeight, 0, RenderTextureFormat.ARGB32) {
+				name = "ShitDesigner.Main.PatchSlotPreview." + patchId,
+				filterMode = FilterMode.Bilinear,
+				wrapMode = TextureWrapMode.Clamp,
+				useMipMap = false,
+				autoGenerateMips = false
+			};
+			if (!texture.Create()) {
+				ReleaseTexture(texture);
+				throw new InvalidOperationException("A patch slot preview texture could not be created.");
+			}
+			ClearTexture(texture);
+			return texture;
+		}
+
+		private static void ClearTexture(RenderTexture texture) {
+			var previous = RenderTexture.active;
+			try {
+				RenderTexture.active = texture;
+				GL.Clear(true, true, Color.black);
+			}
+			finally {
+				RenderTexture.active = previous;
+			}
+		}
+
+		private static void ReleaseTexture(RenderTexture texture) {
+			if (texture == null) return;
+			texture.Release();
+			if (UnityEngine.Application.isPlaying) UnityEngine.Object.Destroy(texture);
+			else UnityEngine.Object.DestroyImmediate(texture);
 		}
 
 		private void LoadPreloadedPatch() {
@@ -553,34 +992,62 @@ namespace ShitDesigner.Main {
 		private static LiveParameterApplicationResult Reject(LiveParameterRequest request, string reason) => new LiveParameterApplicationResult(request.SequenceNumber, false, reason);
 	}
 
+	internal sealed class LiveSlotPreview {
+		private readonly LivePatch m_Patch;
+		private double m_LastGraphTime;
+		private bool m_HasRendered;
+
+		public LivePatch Patch => m_Patch;
+		public RenderTexture Texture => m_Patch.Outputs.Count == 0 ? null : m_Patch.Outputs[0].ProgramTexture;
+
+		public LiveSlotPreview(LivePatch patch) {
+			m_Patch = patch ?? throw new ArgumentNullException(nameof(patch));
+		}
+
+		public void Render(double graphTime, BeatClockFrame bpmFrame, ulong frameNumber) {
+			var deltaSeconds = m_HasRendered ? Math.Max(0d, graphTime - m_LastGraphTime) : Math.Max(0d, graphTime);
+			m_Patch.ApplyResolvedParameters(bpmFrame);
+			foreach (var output in m_Patch.Outputs) {
+				output.Evaluate(deltaSeconds, bpmFrame);
+				output.SceneUpdate(deltaSeconds);
+				output.Render(graphTime, frameNumber);
+			}
+			m_LastGraphTime = graphTime;
+			m_HasRendered = true;
+		}
+	}
+
 	internal sealed class LivePatch : IDisposable {
 		private readonly Dictionary<string, ILivePublishedParameter> _parameters;
 		public PatchDefinition Definition { get; }
 		public IReadOnlyList<LiveProgramOutput> Outputs { get; }
 
-		public LivePatch(PatchDefinition definition, Func<PatchDefinition, Scene3DDefinition, PatchFlashDefinition, LiveProgramOutput> createOutput) {
+		public LivePatch(PatchDefinition definition,
+			Func<PatchDefinition, PatchFlashDefinition, LiveRenderSize, LiveProgramOutput> createOutput,
+			LiveRenderSize renderSize) {
 			Definition = definition ?? throw new ArgumentNullException(nameof(definition));
 			if (createOutput == null) throw new ArgumentNullException(nameof(createOutput));
-			var outputsByNodeId = new Dictionary<string, LiveProgramOutput>(StringComparer.Ordinal);
+			LiveProgramOutput output = null;
 			try {
-				foreach (var node in definition.Nodes) outputsByNodeId.Add(node.Id, createOutput(definition, node, definition.Flash));
-				Outputs = outputsByNodeId.Values.ToArray();
+				output = createOutput(definition, definition.Flash, renderSize);
+				Outputs = new[] { output };
 				_parameters = definition.Parameters.ToDictionary(parameter => parameter.Id, parameter => {
-					if (parameter.Source == PatchParameterSource.ProgramGraphNode) {
-						var graphNode = definition.ProgramGraph.Nodes.FirstOrDefault(node => string.Equals(node.Id, parameter.NodeId, StringComparison.Ordinal));
-						var source = graphNode?.FindParameter(parameter.ParameterId);
-						if (source == null || !PatchGraphParameter.IsLiveControllable(source.Type))
-							throw new InvalidOperationException("A published graph parameter must reference a configured parameter supported by the live renderer: " + parameter.Id + ".");
-						return (ILivePublishedParameter)new LivePublishedGraphParameter(parameter, outputsByNodeId.Values, source.Value);
+					var graphNode = definition.ProgramGraph.Nodes.FirstOrDefault(node => string.Equals(node.Id, parameter.NodeId, StringComparison.Ordinal));
+					if (graphNode == null) throw new InvalidOperationException("A published parameter references an unknown patch graph node: " + parameter.Id + ".");
+					if (graphNode.IsSceneNode) {
+						if (!output.TryGetSceneParameter(parameter.NodeId, parameter.ParameterId, out var root, out var source)
+							|| string.IsNullOrWhiteSpace(source.Id))
+							throw new InvalidOperationException("A published parameter is not provided by its scene graph node: " + parameter.Id + ".");
+						return (ILivePublishedParameter)new LivePublishedParameter(parameter, root, source);
 					}
-					var output = outputsByNodeId[parameter.NodeId];
-					var sceneSource = output.Root.GetParameterDefinitions().FirstOrDefault(candidate => candidate.Id == parameter.ParameterId);
-					if (string.IsNullOrWhiteSpace(sceneSource.Id)) throw new InvalidOperationException("A published scene parameter is not provided by its Unity scene node: " + parameter.Id + ".");
-					return (ILivePublishedParameter)new LivePublishedParameter(parameter, output.Root, sceneSource);
+					var graphSource = graphNode.FindParameter(parameter.ParameterId);
+					if (graphSource == null || !PatchGraphParameter.IsLiveControllable(graphSource.Type))
+						throw new InvalidOperationException("A published graph parameter must reference a configured parameter supported by the live renderer: " + parameter.Id + ".");
+					return (ILivePublishedParameter)new LivePublishedGraphParameter(parameter, new[] { output }, graphSource.Value);
 				}, StringComparer.Ordinal);
 			}
 			catch {
-				for (var index = outputsByNodeId.Count - 1; index >= 0; index--) outputsByNodeId.Values.ElementAt(index).Dispose();
+				output?.Dispose();
 				throw;
 			}
 		}

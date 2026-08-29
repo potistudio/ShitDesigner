@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using ShitDesigner.Core;
+using ShitDesigner.Media;
 using ShitDesigner.Nodes;
 using ShitDesigner.Rendering;
 using ShitDesigner.Runtime;
@@ -11,7 +12,7 @@ using UnityEngine.Rendering;
 
 namespace ShitDesigner.Main {
 	/// <summary>
-	/// Holds the authored patches and their Unity scene nodes.
+	/// Holds the authored patches and their graph node dependencies.
 	/// </summary>
 	[DisallowMultipleComponent]
 	public sealed class LiveGraphBootstrap : MonoBehaviour {
@@ -22,12 +23,18 @@ namespace ShitDesigner.Main {
 		private const string LoopParameterId = "transport.loop";
 		[SerializeField] private PatchDefinition[] _patches = Array.Empty<PatchDefinition>();
 		[SerializeField] private ShaderNodeManifestAsset _shaderManifest;
+		[Header("Video decoding")]
+		[SerializeField] private Material m_VideoConversionMaterial;
+		[SerializeField] private Material m_HapPremultiplyMaterial;
+		[SerializeField] private Material m_HapYCoCgMaterial;
+		[SerializeField] private Material m_HapAlphaMaterial;
+		[SerializeField] private ComputeShader m_HapDecodeShader;
 
 		public PatchDefinition[] Patches => _patches ?? Array.Empty<PatchDefinition>();
-		public int ProgramOutputCount => Patches.Sum(patch => patch == null ? 0 : patch.Nodes.Count());
+		public int ProgramOutputCount => Patches.Count(patch => patch != null);
 
 		public LiveGraphRuntime CreateRuntime() {
-			var graph = BuildGraph();
+			var graph = BuildGraph(new LiveRenderSize(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight));
 			try { return new LiveGraphRuntime(graph); }
 			catch {
 				graph.Dispose();
@@ -35,7 +42,7 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		private LiveGraph BuildGraph() {
+		private LiveGraph BuildGraph(LiveRenderSize renderSize) {
 			var definitions = Patches;
 			ValidateDefinitions(definitions);
 			var programGraphs = definitions.ToDictionary(definition => definition.Id, BuildProgramGraph, StringComparer.Ordinal);
@@ -44,11 +51,9 @@ namespace ShitDesigner.Main {
 			if (flashShader == null) throw new InvalidOperationException("The live Program flash shader is missing from Resources.");
 			var sceneManager = new SceneIsolationManager(renderSource: new UnityCameraRenderSource());
 			var renderPool = new RenderTexturePool();
-			var nodeIndices = definitions.SelectMany(definition => definition.Nodes).Select((node, index) => new { node.Id, Index = index })
-				.ToDictionary(node => node.Id, node => node.Index, StringComparer.Ordinal);
 			try {
-				return new LiveGraph(sceneManager, renderPool, definitions, (patch, node, flashPatch) =>
-					BuildOutput(sceneManager, renderPool, patch, node, nodeIndices[node.Id], programGraphs[patch.Id], shaderDefinitions, flashShader, flashPatch));
+				return new LiveGraph(sceneManager, renderPool, definitions, (patch, flashPatch, outputSize) =>
+					BuildOutput(sceneManager, renderPool, patch, programGraphs[patch.Id], shaderDefinitions, flashShader, flashPatch, outputSize));
 			}
 			catch {
 				sceneManager.Dispose();
@@ -63,6 +68,7 @@ namespace ShitDesigner.Main {
 			var definitions = new Dictionary<NodeTypeId, LiveProgramShaderDefinition>();
 			foreach (var programGraph in programGraphs) {
 				foreach (var node in programGraph.Nodes) {
+					if (node.TypeId.Value == PatchGraphNode.Scene3DTypeId) continue;
 					if (node.TypeId.Value == VideoPlayerTypeId) continue;
 					if (definitions.ContainsKey(node.TypeId)) continue;
 					var entry = manifest.Find(node.TypeId.Value);
@@ -75,41 +81,28 @@ namespace ShitDesigner.Main {
 			return definitions;
 		}
 
-		private static LiveProgramOutput BuildOutput(SceneIsolationManager sceneManager, RenderTexturePool renderPool,
-			PatchDefinition patch, Scene3DDefinition definition, int index, GraphDefinition programGraph,
+		private LiveProgramOutput BuildOutput(SceneIsolationManager sceneManager, RenderTexturePool renderPool,
+			PatchDefinition patch, GraphDefinition programGraph,
 			IReadOnlyDictionary<NodeTypeId, LiveProgramShaderDefinition> shaderDefinitions,
-			Shader flashShader, PatchFlashDefinition flashPatch) {
-			var created = sceneManager.Create(new SceneCreateRequest(NodeInstanceId.New(), SceneNodeKind.ThreeD,
-				"ShitDesigner.Main.LiveScene." + index, 1, definition.Prefab, transparentBackground: true));
-			if (created.IsFailure) throw new InvalidOperationException(created.Error.Message);
-			var root = created.Value.Root.GetComponent<LiveSceneRoot>();
-			if (root == null) {
-				created.Value.Dispose();
-				throw new InvalidOperationException("Every live scene prefab root requires a LiveSceneRoot.");
-			}
-			root.Initialize(definition.Id);
-			created.Value.BindGraphClock();
-			var programTexture = CreateTexture("ShitDesigner.Main.ProgramOutput." + index, 0, RenderTextureFormat.ARGBHalf);
-			RenderTexture renderTexture = null;
+			Shader flashShader, PatchFlashDefinition flashPatch, LiveRenderSize renderSize) {
+			var resourceSuffix = patch.Id + "." + renderSize.Width + "x" + renderSize.Height;
+			var programTexture = CreateTexture("ShitDesigner.Main.ProgramOutput." + resourceSuffix, renderSize, 0, RenderTextureFormat.ARGBHalf);
 			RenderTexture shaderGraphTexture = null;
-			LiveProgramShaderGraph shaderGraph = null;
+			LiveProgramGraph programGraphRuntime = null;
 			LiveProgramFlash flash = null;
 			try {
 				ClearTexture(programTexture);
-				var renderFormat = SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null ? RenderTextureFormat.ARGB32 : RenderTextureFormat.ARGBHalf;
-				renderTexture = CreateTexture("ShitDesigner.Main.ProgramRender." + index, 24, renderFormat);
-				shaderGraphTexture = CreateTexture("ShitDesigner.Main.ProgramGraphOutput." + index, 0, RenderTextureFormat.ARGBHalf);
-				shaderGraph = BuildProgramShaderGraph(renderPool, shaderDefinitions, programGraph, patch.ProgramGraph, definition.Id);
+				shaderGraphTexture = CreateTexture("ShitDesigner.Main.ProgramGraphOutput." + resourceSuffix, renderSize, 0, RenderTextureFormat.ARGBHalf);
+				programGraphRuntime = BuildLiveProgramGraph(sceneManager, renderPool, shaderDefinitions, programGraph, patch.ProgramGraph,
+					resourceSuffix, renderSize);
 				flash = new LiveProgramFlash(flashShader);
-				return new LiveProgramOutput(definition, created.Value, root, programTexture, renderTexture, shaderGraphTexture, shaderGraph, flash, flashPatch);
+				return new LiveProgramOutput(programTexture, shaderGraphTexture, programGraphRuntime, flash, flashPatch);
 			}
 			catch {
 				flash?.Dispose();
-				shaderGraph?.Dispose();
+				programGraphRuntime?.Dispose();
 				ReleaseTexture(shaderGraphTexture);
 				ReleaseTexture(programTexture);
-				ReleaseTexture(renderTexture);
-				created.Value.Dispose();
 				throw;
 			}
 		}
@@ -142,15 +135,15 @@ namespace ShitDesigner.Main {
 
 		private static GraphDefinition BuildProgramGraph(PatchDefinition definition) {
 			var authored = definition.ProgramGraph;
-			return new GraphDefinition(authored.SourceNodeId, authored.OutputNodeId,
+			return new GraphDefinition(authored.OutputNodeId,
 				authored.Nodes.Select(node => new NodeDefinition(node.Id, node.TypeId)),
 				authored.Connections.Select(connection => new NodeConnection(connection.SourceNodeId, connection.SourcePortId,
 					connection.TargetNodeId, connection.TargetPortId)));
 		}
 
-		private static LiveProgramShaderGraph BuildProgramShaderGraph(RenderTexturePool renderPool,
+		private LiveProgramGraph BuildLiveProgramGraph(SceneIsolationManager sceneManager, RenderTexturePool renderPool,
 			IReadOnlyDictionary<NodeTypeId, LiveProgramShaderDefinition> shaderDefinitions, GraphDefinition programGraph,
-			PatchProgramGraph authoredGraph, string outputId) {
+			PatchProgramGraph authoredGraph, string outputId, LiveRenderSize renderSize) {
 			var connections = programGraph.Connections.GroupBy(connection => connection.TargetNodeId)
 				.ToDictionary(group => group.Key, group => (IReadOnlyDictionary<PortId, string>)group.ToDictionary(connection => connection.TargetPortId, connection => connection.SourceNodeId), StringComparer.Ordinal);
 			var nodes = new List<ILiveProgramGraphNode>(programGraph.EvaluationOrder.Count);
@@ -159,14 +152,48 @@ namespace ShitDesigner.Main {
 					var authoredNode = authoredGraph.Nodes.FirstOrDefault(candidate => string.Equals(candidate.Id, node.Id, StringComparison.Ordinal));
 					var inputs = connections.TryGetValue(node.Id, out var mapped) ? mapped : new Dictionary<PortId, string>();
 					ShaderPassGraphRuntimeNode runtime = null;
+					SceneNodeRuntime sceneRuntime = null;
 					RenderTexture target = null;
 					try {
-						target = CreateTexture("ShitDesigner.Main.ProgramGraph." + outputId + "." + node.Id, 0, RenderTextureFormat.ARGBHalf);
+						var renderFormat = SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null ? RenderTextureFormat.ARGB32 : RenderTextureFormat.ARGBHalf;
+						target = CreateTexture("ShitDesigner.Main.ProgramGraph." + outputId + "." + node.Id, renderSize,
+							node.TypeId.Value == PatchGraphNode.Scene3DTypeId ? 24 : 0, renderFormat);
+						if (node.TypeId.Value == PatchGraphNode.Scene3DTypeId) {
+							if (authoredNode == null || authoredNode.SceneDefinition == null)
+								throw new InvalidOperationException("The live Program scene node requires a Scene3DDefinition: " + node.Id + ".");
+							if (inputs.Count > 0)
+								throw new InvalidOperationException("The live Program scene node does not accept image inputs: " + node.Id + ".");
+							var created = sceneManager.Create(new SceneCreateRequest(NodeInstanceId.New(), SceneNodeKind.ThreeD,
+								"ShitDesigner.Main.LiveScene." + outputId + "." + node.Id,
+								1, authoredNode.SceneDefinition.Prefab, transparentBackground: true));
+							if (created.IsFailure) throw new InvalidOperationException(created.Error.Message);
+							sceneRuntime = created.Value;
+							var root = sceneRuntime.Root.GetComponent<LiveSceneRoot>();
+							if (root == null) throw new InvalidOperationException("Every live scene prefab root requires a LiveSceneRoot.");
+							root.Initialize(authoredNode.SceneDefinition.Id);
+							sceneRuntime.BindGraphClock();
+							nodes.Add(new LiveProgramSceneGraphNode(node.Id, authoredNode.SceneDefinition, sceneRuntime, root, target, renderSize));
+							sceneRuntime = null;
+							target = null;
+							continue;
+						}
 						if (node.TypeId.Value == VideoPlayerTypeId) {
-							if (authoredNode == null || authoredNode.VideoClip == null)
-								throw new InvalidOperationException("The live Program VideoPlayer node requires a Video Clip: " + node.Id + ".");
+							if (authoredNode == null)
+								throw new InvalidOperationException("The live Program VideoPlayer node requires a video source: " + node.Id + ".");
 							if (inputs.Count > 0)
 								throw new InvalidOperationException("The live Program VideoPlayer node does not accept image inputs: " + node.Id + ".");
+							if (!string.IsNullOrWhiteSpace(authoredNode.VideoPath)) {
+								nodes.Add(new LiveProgramFileVideoGraphNode(node.Id, target, authoredNode.VideoPath,
+									ReadBoolParameter(authoredNode, PlayingParameterId, true),
+									ReadFloatParameter(authoredNode, PlayheadParameterId, 0f),
+									ReadFloatParameter(authoredNode, SpeedParameterId, 1f),
+									ReadBoolParameter(authoredNode, LoopParameterId, true),
+									m_VideoConversionMaterial, m_HapPremultiplyMaterial, m_HapYCoCgMaterial,
+									m_HapAlphaMaterial, m_HapDecodeShader));
+								continue;
+							}
+							if (authoredNode.VideoClip == null)
+								throw new InvalidOperationException("The live Program VideoPlayer node requires a video source: " + node.Id + ".");
 							nodes.Add(new LiveProgramVideoGraphNode(node.Id, target, authoredNode.VideoClip,
 								ReadBoolParameter(authoredNode, PlayingParameterId, true),
 								ReadFloatParameter(authoredNode, PlayheadParameterId, 0f),
@@ -192,11 +219,12 @@ namespace ShitDesigner.Main {
 					}
 					catch {
 						runtime?.Dispose();
+						sceneRuntime?.Dispose();
 						ReleaseTexture(target);
 						throw;
 					}
 				}
-				return new LiveProgramShaderGraph(programGraph, nodes);
+				return new LiveProgramGraph(programGraph, nodes);
 			}
 			catch {
 				for (var index = nodes.Count - 1; index >= 0; index--) nodes[index].Dispose();
@@ -218,17 +246,19 @@ namespace ShitDesigner.Main {
 
 		private static void ValidateDefinitions(IReadOnlyList<PatchDefinition> definitions) {
 			if (definitions.Count == 0) throw new InvalidOperationException("At least one patch is required.");
-			if (definitions.Any(definition => definition == null || definition.Validate().IsFailure))
-				throw new InvalidOperationException("Every patch requires a valid definition.");
+			foreach (var definition in definitions) {
+				if (definition != null && definition.Validate().IsSuccess) continue;
+				var patchName = definition == null ? "<missing>" : definition.DisplayName;
+				if (string.IsNullOrWhiteSpace(patchName) && definition != null) patchName = definition.name;
+				if (string.IsNullOrWhiteSpace(patchName)) patchName = "<unnamed>";
+				throw new InvalidOperationException("Every patch requires a valid definition: " + patchName + ".");
+			}
 			if (definitions.Select(definition => definition.Id).Distinct(StringComparer.Ordinal).Count() != definitions.Count)
 				throw new InvalidOperationException("Patch IDs must be unique.");
-			var nodeIds = definitions.SelectMany(definition => definition.Nodes).Select(node => node.Id).ToArray();
-			if (nodeIds.Distinct(StringComparer.Ordinal).Count() != nodeIds.Length)
-				throw new InvalidOperationException("Unity scene nodes cannot be shared by patches.");
 		}
 
-		private static RenderTexture CreateTexture(string name, int depth, RenderTextureFormat format) {
-			var texture = new RenderTexture(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight, depth, format) {
+		private static RenderTexture CreateTexture(string name, LiveRenderSize renderSize, int depth, RenderTextureFormat format) {
+			var texture = new RenderTexture(renderSize.Width, renderSize.Height, depth, format) {
 				name = name,
 				useMipMap = false,
 				autoGenerateMips = false

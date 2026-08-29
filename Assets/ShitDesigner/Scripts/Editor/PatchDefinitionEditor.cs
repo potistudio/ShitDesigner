@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using ShitDesigner.Core;
@@ -15,7 +16,6 @@ namespace ShitDesigner.Editor {
 		private SerializedProperty _id;
 		private SerializedProperty _displayName;
 		private SerializedProperty _programGraph;
-		private SerializedProperty _nodes;
 		private SerializedProperty _parameters;
 		private SerializedProperty m_KeyboardInputs;
 		private SerializedProperty m_MidiInputs;
@@ -25,7 +25,6 @@ namespace ShitDesigner.Editor {
 			_id = serializedObject.FindProperty("_id");
 			_displayName = serializedObject.FindProperty("_displayName");
 			_programGraph = serializedObject.FindProperty("_programGraph");
-			_nodes = serializedObject.FindProperty("_nodes");
 			_parameters = serializedObject.FindProperty("_parameters");
 			m_KeyboardInputs = serializedObject.FindProperty("m_KeyboardInputs");
 			m_MidiInputs = serializedObject.FindProperty("m_MidiInputs");
@@ -43,9 +42,6 @@ namespace ShitDesigner.Editor {
 
 			EditorGUILayout.Space(6f);
 			DrawProgramGraph();
-
-			EditorGUILayout.Space(6f);
-			EditorGUILayout.PropertyField(_nodes, new GUIContent("Scene Nodes"), true);
 
 			EditorGUILayout.Space(6f);
 			EditorGUILayout.PropertyField(_parameters, new GUIContent("Published Parameters"), true);
@@ -70,16 +66,9 @@ namespace ShitDesigner.Editor {
 				return;
 			}
 
-			var sourceNodeId = _programGraph.FindPropertyRelative("_sourceNodeId");
 			var outputNodeId = _programGraph.FindPropertyRelative("_outputNodeId");
 			var nodes = _programGraph.FindPropertyRelative("_nodes");
 			var connections = _programGraph.FindPropertyRelative("_connections");
-			if (sourceNodeId != null && !string.Equals(sourceNodeId.stringValue, PatchProgramGraph.SceneInputNodeId, StringComparison.Ordinal))
-				sourceNodeId.stringValue = PatchProgramGraph.SceneInputNodeId;
-
-			EditorGUI.BeginDisabledGroup(true);
-			EditorGUILayout.TextField(new GUIContent("Scene Input", "The rendered Scene3DDefinition is exposed to the shader graph with this fixed ID."), PatchProgramGraph.SceneInputNodeId);
-			EditorGUI.EndDisabledGroup();
 
 			EditorGUILayout.PropertyField(nodes, new GUIContent("Nodes"), true);
 			EnsureGraphNodeIds(nodes);
@@ -298,12 +287,32 @@ namespace ShitDesigner.Editor {
 				EditorGUI.indentLevel++;
 				EditorGUI.PropertyField(Line(position, ref y), id, new GUIContent("ID"));
 				var typeChanged = DrawTypeIdPopup(Line(position, ref y), typeId);
+				var sceneDefinition = property.FindPropertyRelative("m_SceneDefinition");
+				var videoPath = property.FindPropertyRelative("m_VideoPath");
 				var videoClip = property.FindPropertyRelative("m_VideoClip");
-				if (IsVideoPlayer(typeId.stringValue) && videoClip != null) {
-					EditorGUI.PropertyField(Line(position, ref y), videoClip, new GUIContent("Video Clip", "The clip used by the Main live host for this VideoPlayer node."));
+				var isSceneNode = IsSceneNode(typeId.stringValue);
+				if (isSceneNode && sceneDefinition != null) {
+					EditorGUI.PropertyField(Line(position, ref y), sceneDefinition, new GUIContent("Scene Definition"));
 				}
-				else if (typeChanged && videoClip != null) {
+				else if (typeChanged && sceneDefinition != null) {
+					sceneDefinition.objectReferenceValue = null;
+				}
+				if (IsVideoPlayer(typeId.stringValue) && videoPath != null) {
+					if (DrawVideoPath(Line(position, ref y), videoPath, videoClip)) {
+						EditorGUI.indentLevel = indent;
+						EditorGUI.EndProperty();
+						return;
+					}
+				}
+				else if (typeChanged && videoPath != null) {
+					videoPath.stringValue = string.Empty;
+				}
+				if (!IsVideoPlayer(typeId.stringValue) && typeChanged && videoClip != null) {
 					videoClip.objectReferenceValue = null;
+				}
+				if (isSceneNode && typeChanged) {
+					if (videoPath != null) videoPath.stringValue = string.Empty;
+					if (videoClip != null) videoClip.objectReferenceValue = null;
 				}
 				var parametersHeight = EditorGUI.GetPropertyHeight(parameters, new GUIContent("Parameters"), true);
 				EditorGUI.PropertyField(new Rect(position.x, y, position.width, parametersHeight), parameters, new GUIContent("Parameters"), true);
@@ -317,9 +326,11 @@ namespace ShitDesigner.Editor {
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
 			if (!property.isExpanded) return EditorGUIUtility.singleLineHeight;
 			var parameters = property.FindPropertyRelative("_parameters");
-			var isVideoPlayer = IsVideoPlayer(property.FindPropertyRelative("_typeId").stringValue);
-			var fixedLineCount = isVideoPlayer ? 4f : 3f;
-			var fixedSpacingCount = isVideoPlayer ? 4f : 3f;
+			var typeId = property.FindPropertyRelative("_typeId").stringValue;
+			var isVideoPlayer = IsVideoPlayer(typeId);
+			var isSceneNode = IsSceneNode(typeId);
+			var fixedLineCount = isVideoPlayer || isSceneNode ? 4f : 3f;
+			var fixedSpacingCount = isVideoPlayer || isSceneNode ? 4f : 3f;
 			var height = EditorGUIUtility.singleLineHeight * fixedLineCount + LineSpacing * fixedSpacingCount
 				+ EditorGUI.GetPropertyHeight(parameters, new GUIContent("Parameters"), true);
 			return GetAddableParameters(property.FindPropertyRelative("_typeId").stringValue, parameters).Count == 0
@@ -393,7 +404,7 @@ namespace ShitDesigner.Editor {
 
 			var entries = catalog.Entries
 				.Where(entry => entry != null && entry.UserAddable && !entry.SystemOwned
-					&& (entry.ShaderBinding != null || entry.TypeId.Value == VideoPlayerTypeId))
+					&& (entry.ShaderBinding != null || entry.TypeId.Value == VideoPlayerTypeId || IsSceneNode(entry.TypeId.Value)))
 				.OrderBy(entry => entry.Category, StringComparer.Ordinal)
 				.ThenBy(entry => entry.DisplayName, StringComparer.Ordinal)
 				.ThenBy(entry => entry.TypeId.Value, StringComparer.Ordinal)
@@ -461,6 +472,65 @@ namespace ShitDesigner.Editor {
 
 		private static bool IsVideoPlayer(string typeId) => string.Equals(typeId, VideoPlayerTypeId, StringComparison.Ordinal);
 
+		internal static bool IsSceneNode(string typeId) => string.Equals(typeId, PatchGraphNode.Scene3DTypeId, StringComparison.Ordinal);
+
+		private static bool DrawVideoPath(Rect position, SerializedProperty videoPath, SerializedProperty legacyVideoClip) {
+			var field = EditorGUI.PrefixLabel(position, new GUIContent("Video File", "Select a project video file. Hap MOV files can be selected even when Unity cannot import them as VideoClip assets."));
+			const float buttonWidth = 58f;
+			var textRect = new Rect(field.x, field.y, Mathf.Max(1f, field.width - buttonWidth - LineSpacing), field.height);
+			var buttonRect = new Rect(textRect.xMax + LineSpacing, field.y, buttonWidth, field.height);
+			var current = videoPath.stringValue ?? string.Empty;
+			var edited = EditorGUI.TextField(textRect, current);
+			if (!string.Equals(edited, current, StringComparison.Ordinal)) {
+				SetVideoPath(videoPath, legacyVideoClip, edited, false);
+			}
+
+			if (!GUI.Button(buttonRect, "Browse")) return false;
+			var selected = EditorUtility.OpenFilePanelWithFilters("Select video file", BrowseDirectory(current), new[] {
+				"Video files", "mov,mp4,webm",
+				"All files", "*"
+			});
+			if (string.IsNullOrWhiteSpace(selected)) return false;
+			SetVideoPath(videoPath, legacyVideoClip, ToStoredVideoPath(selected), true);
+			return true;
+		}
+
+		private static void SetVideoPath(SerializedProperty videoPath, SerializedProperty legacyVideoClip, string value, bool applyImmediately) {
+			videoPath.stringValue = NormalizeVideoPath(value);
+			if (legacyVideoClip != null)
+				legacyVideoClip.objectReferenceValue = null;
+			if (!applyImmediately) return;
+			videoPath.serializedObject.ApplyModifiedProperties();
+			GUI.changed = true;
+		}
+
+		private static string BrowseDirectory(string storedPath) {
+			if (!string.IsNullOrWhiteSpace(storedPath)) {
+				var candidate = storedPath.Replace('/', Path.DirectorySeparatorChar);
+				if (!Path.IsPathRooted(candidate)) candidate = Path.Combine(ProjectRoot(), candidate);
+				if (File.Exists(candidate)) return Path.GetDirectoryName(candidate);
+				if (Directory.Exists(candidate)) return candidate;
+				var directory = Path.GetDirectoryName(candidate);
+				if (!string.IsNullOrWhiteSpace(directory) && Directory.Exists(directory)) return directory;
+			}
+			return UnityEngine.Application.dataPath;
+		}
+
+		private static string ToStoredVideoPath(string selectedPath) {
+			var fullPath = Path.GetFullPath(selectedPath).Replace('\\', '/');
+			var projectRoot = ProjectRoot().Replace('\\', '/').TrimEnd('/');
+			if (fullPath.StartsWith(projectRoot + "/", StringComparison.OrdinalIgnoreCase))
+				return fullPath.Substring(projectRoot.Length + 1);
+			return fullPath;
+		}
+
+		private static string NormalizeVideoPath(string value) => (value ?? string.Empty).Trim().Replace('\\', '/');
+
+		private static string ProjectRoot() {
+			var dataPath = Path.GetFullPath(UnityEngine.Application.dataPath);
+			return Directory.GetParent(dataPath).FullName;
+		}
+
 		private static string FormatLabel(NodeCatalogEntry entry)
 			=> string.IsNullOrWhiteSpace(entry.Category)
 				? entry.DisplayName + " (" + entry.TypeId.Value + ")"
@@ -492,10 +562,10 @@ namespace ShitDesigner.Editor {
 			if (property.isExpanded) {
 				var indent = EditorGUI.indentLevel;
 				EditorGUI.indentLevel++;
-				var sourceChanged = DrawNodePopup(Line(position, ref y), "Source Node", sourceNodeId, graphNodes, true);
+				var sourceChanged = DrawNodePopup(Line(position, ref y), "Source Node", sourceNodeId, graphNodes);
 				if (sourceChanged) sourcePortId.stringValue = PatchProgramGraph.ImagePortId;
 				DrawSourcePortPopup(Line(position, ref y), sourcePortId);
-				var targetChanged = DrawNodePopup(Line(position, ref y), "Target Node", targetNodeId, graphNodes, false);
+				var targetChanged = DrawNodePopup(Line(position, ref y), "Target Node", targetNodeId, graphNodes);
 				if (targetChanged) AssignFirstTargetPort(targetPortId, graphNodes, targetNodeId.stringValue);
 				DrawTargetPortPopup(Line(position, ref y), targetPortId, graphNodes, targetNodeId.stringValue);
 				EditorGUI.indentLevel = indent;
@@ -508,13 +578,9 @@ namespace ShitDesigner.Editor {
 				? EditorGUIUtility.singleLineHeight * 5f + LineSpacing * 4f
 				: EditorGUIUtility.singleLineHeight;
 
-		private static bool DrawNodePopup(Rect position, string label, SerializedProperty selectedNode, SerializedProperty graphNodes, bool includeSceneInput) {
+		private static bool DrawNodePopup(Rect position, string label, SerializedProperty selectedNode, SerializedProperty graphNodes) {
 			var values = new List<string>();
 			var labels = new List<string>();
-			if (includeSceneInput) {
-				values.Add(PatchProgramGraph.SceneInputNodeId);
-				labels.Add("Scene Input (scene)");
-			}
 			for (var index = 0; index < graphNodes.arraySize; index++) {
 				var node = graphNodes.GetArrayElementAtIndex(index);
 				var id = node.FindPropertyRelative("_id").stringValue;
@@ -592,10 +658,10 @@ namespace ShitDesigner.Editor {
 			EditorGUI.BeginProperty(position, label, property);
 			var id = property.FindPropertyRelative("_id");
 			var displayName = property.FindPropertyRelative("_displayName");
-			var source = property.FindPropertyRelative("_source");
 			var nodeId = property.FindPropertyRelative("_nodeId");
 			var parameterId = property.FindPropertyRelative("_parameterId");
 			var beatModulation = property.FindPropertyRelative("m_BeatModulation");
+			var graphNodes = property.serializedObject.FindProperty("_programGraph").FindPropertyRelative("_nodes");
 			var y = position.y;
 			property.isExpanded = EditorGUI.Foldout(Line(position, ref y), property.isExpanded, label, true);
 			if (property.isExpanded) {
@@ -603,20 +669,8 @@ namespace ShitDesigner.Editor {
 				EditorGUI.indentLevel++;
 				EditorGUI.PropertyField(Line(position, ref y), id, new GUIContent("ID"));
 				EditorGUI.PropertyField(Line(position, ref y), displayName, new GUIContent("Display Name"));
-				EditorGUI.BeginChangeCheck();
-				EditorGUI.PropertyField(Line(position, ref y), source, new GUIContent("Source"));
-				if (EditorGUI.EndChangeCheck()) {
-					nodeId.stringValue = string.Empty;
-					parameterId.stringValue = string.Empty;
-				}
-				var isGraphNode = (PatchParameterSource)source.enumValueIndex == PatchParameterSource.ProgramGraphNode;
-				var nodes = GetSceneNodes(property.serializedObject.FindProperty("_nodes"));
-				var graphNodes = property.serializedObject.FindProperty("_programGraph").FindPropertyRelative("_nodes");
-				var nodeChanged = isGraphNode
-					? DrawGraphNodePopup(Line(position, ref y), nodeId, graphNodes)
-					: DrawNodePopup(Line(position, ref y), nodeId, nodes);
-				var selectedNode = nodes.FirstOrDefault(node => string.Equals(node.Id, nodeId.stringValue, StringComparison.Ordinal));
-				var parameters = isGraphNode ? GetGraphParameters(graphNodes, nodeId.stringValue) : GetSceneParameters(selectedNode?.Definition);
+				var nodeChanged = DrawNodePopup(Line(position, ref y), nodeId, graphNodes);
+				var parameters = GetNodeParameters(graphNodes, nodeId.stringValue);
 				if (nodeChanged && parameters.Count > 0) parameterId.stringValue = parameters[0].Id;
 				DrawParameterPopup(Line(position, ref y), parameterId, parameters);
 				EditorGUI.PropertyField(new Rect(position.x, y, position.width, EditorGUI.GetPropertyHeight(beatModulation, true)), beatModulation, new GUIContent("Beat Modulation"), true);
@@ -627,18 +681,10 @@ namespace ShitDesigner.Editor {
 
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
 			=> property.isExpanded
-				? EditorGUIUtility.singleLineHeight * 6f + LineSpacing * 6f + EditorGUI.GetPropertyHeight(property.FindPropertyRelative("m_BeatModulation"), true)
+				? EditorGUIUtility.singleLineHeight * 5f + LineSpacing * 5f + EditorGUI.GetPropertyHeight(property.FindPropertyRelative("m_BeatModulation"), true)
 				: EditorGUIUtility.singleLineHeight;
 
-		private static bool DrawNodePopup(Rect position, SerializedProperty nodeId, List<SceneNodeOption> nodes) {
-			if (nodes.Count == 0) {
-				EditorGUI.PropertyField(position, nodeId, new GUIContent("Scene Node"));
-				return false;
-			}
-			return DrawPopup(position, "Scene Node", nodeId, nodes.Select(node => node.Id).ToList(), nodes.Select(node => node.Label).ToList());
-		}
-
-		private static bool DrawGraphNodePopup(Rect position, SerializedProperty nodeId, SerializedProperty nodes) {
+		private static bool DrawNodePopup(Rect position, SerializedProperty nodeId, SerializedProperty nodes) {
 			var values = new List<string>();
 			var labels = new List<string>();
 			for (var index = 0; index < nodes.arraySize; index++) {
@@ -649,10 +695,10 @@ namespace ShitDesigner.Editor {
 				labels.Add(id + " (" + node.FindPropertyRelative("_typeId").stringValue + ")");
 			}
 			if (values.Count == 0) {
-				EditorGUI.PropertyField(position, nodeId, new GUIContent("Graph Node"));
+				EditorGUI.PropertyField(position, nodeId, new GUIContent("Node"));
 				return false;
 			}
-			return DrawPopup(position, "Graph Node", nodeId, values, labels);
+			return DrawPopup(position, "Node", nodeId, values, labels);
 		}
 
 		private static void DrawParameterPopup(Rect position, SerializedProperty parameterId, List<ParameterOption> parameters) {
@@ -677,18 +723,6 @@ namespace ShitDesigner.Editor {
 			return true;
 		}
 
-		private static List<SceneNodeOption> GetSceneNodes(SerializedProperty nodes) {
-			var options = new List<SceneNodeOption>();
-			if (nodes == null) return options;
-			var seen = new HashSet<string>(StringComparer.Ordinal);
-			for (var index = 0; index < nodes.arraySize; index++) {
-				var definition = nodes.GetArrayElementAtIndex(index).objectReferenceValue as Scene3DDefinition;
-				if (definition == null || string.IsNullOrWhiteSpace(definition.Id) || !seen.Add(definition.Id)) continue;
-				options.Add(new SceneNodeOption(definition.Id, string.IsNullOrWhiteSpace(definition.name) ? definition.Id : definition.name + " (" + definition.Id + ")", definition));
-			}
-			return options;
-		}
-
 		private static List<ParameterOption> GetSceneParameters(Scene3DDefinition definition) {
 			var options = new List<ParameterOption>();
 			if (definition == null || definition.Prefab == null) return options;
@@ -708,22 +742,29 @@ namespace ShitDesigner.Editor {
 			return options.OrderBy(option => option.Label, StringComparer.Ordinal).ToList();
 		}
 
-		private static List<ParameterOption> GetGraphParameters(SerializedProperty nodes, string nodeId) {
+		private static List<ParameterOption> GetNodeParameters(SerializedProperty nodes, string nodeId) {
 			for (var index = 0; index < nodes.arraySize; index++) {
 				var node = nodes.GetArrayElementAtIndex(index);
 				if (!string.Equals(node.FindPropertyRelative("_id").stringValue, nodeId, StringComparison.Ordinal)) continue;
-				var parameters = node.FindPropertyRelative("_parameters");
-				var options = new List<ParameterOption>();
-				for (var parameterIndex = 0; parameterIndex < parameters.arraySize; parameterIndex++) {
-					var parameter = parameters.GetArrayElementAtIndex(parameterIndex);
-					var type = (ParameterType)parameter.FindPropertyRelative("_type").enumValueIndex;
-					if (!PatchGraphParameter.IsLiveControllable(type)) continue;
-					var id = parameter.FindPropertyRelative("_id").stringValue;
-					if (!string.IsNullOrWhiteSpace(id)) options.Add(new ParameterOption(id, id + " (" + type + ")"));
-				}
-				return options;
+				var typeId = node.FindPropertyRelative("_typeId").stringValue;
+				if (PatchGraphNodeDrawer.IsSceneNode(typeId))
+					return GetSceneParameters(node.FindPropertyRelative("m_SceneDefinition")?.objectReferenceValue as Scene3DDefinition);
+				return GetGraphParameters(node.FindPropertyRelative("_parameters"));
 			}
 			return new List<ParameterOption>();
+		}
+
+		private static List<ParameterOption> GetGraphParameters(SerializedProperty parameters) {
+			var options = new List<ParameterOption>();
+			if (parameters == null) return options;
+			for (var parameterIndex = 0; parameterIndex < parameters.arraySize; parameterIndex++) {
+				var parameter = parameters.GetArrayElementAtIndex(parameterIndex);
+				var type = (ParameterType)parameter.FindPropertyRelative("_type").enumValueIndex;
+				if (!PatchGraphParameter.IsLiveControllable(type)) continue;
+				var id = parameter.FindPropertyRelative("_id").stringValue;
+				if (!string.IsNullOrWhiteSpace(id)) options.Add(new ParameterOption(id, id + " (" + type + ")"));
+			}
+			return options;
 		}
 
 		private static string ReadStringProperty(object value, string propertyName) {
@@ -738,13 +779,6 @@ namespace ShitDesigner.Editor {
 			var line = new Rect(position.x, y, position.width, EditorGUIUtility.singleLineHeight);
 			y += EditorGUIUtility.singleLineHeight + LineSpacing;
 			return line;
-		}
-
-		private sealed class SceneNodeOption {
-			public string Id { get; }
-			public string Label { get; }
-			public Scene3DDefinition Definition { get; }
-			public SceneNodeOption(string id, string label, Scene3DDefinition definition) { Id = id; Label = label; Definition = definition; }
 		}
 
 		private sealed class ParameterOption {
