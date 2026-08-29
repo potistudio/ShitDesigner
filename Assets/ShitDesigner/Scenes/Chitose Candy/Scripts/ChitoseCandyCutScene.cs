@@ -321,11 +321,13 @@ namespace ShitDesigner.Scene {
 		}
 
 		private void PushCutLayer(int layerIndex) {
-			var splitOffset = m_SplitGap;
+			var mainBodyOffset = m_SplitGap * (layerIndex + 1);
 			for (var index = 0; index < m_Candies.Count; index++) {
 				var candy = m_Candies[index];
-				var fragment = candy.Fragments[layerIndex];
-				fragment.Segment.localPosition = Vector3.up * (fragment.BasePosition + splitOffset);
+				for (var fragmentIndex = layerIndex + 1; fragmentIndex < candy.Fragments.Length; fragmentIndex++) {
+					var fragment = candy.Fragments[fragmentIndex];
+					fragment.Segment.localPosition = Vector3.up * (fragment.BasePosition - mainBodyOffset);
+				}
 			}
 			if (!Application.isPlaying)
 				return;
