@@ -79,6 +79,11 @@ namespace ShitDesigner.Main {
 			return parameter.TrySetValue(value, out rejectionReason);
 		}
 
+		public bool IsTriggerParameter(string parameterId) {
+			CollectParameters();
+			return _parameters.TryGetValue(parameterId, out var parameter) && parameter is ILiveSceneTriggerParameter;
+		}
+
 		private void CollectParameters() {
 			if (_parametersCollected) return;
 			var parameters = GetComponents<MonoBehaviour>().OfType<ILiveSceneParameter>().ToArray();

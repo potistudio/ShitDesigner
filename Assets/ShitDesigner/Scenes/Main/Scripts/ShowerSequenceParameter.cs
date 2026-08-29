@@ -4,7 +4,7 @@ using UnityEngine;
 namespace ShitDesigner.Main {
 	/// <summary>Triggers a three-frame monochrome and rearrangement sequence for a shower scene.</summary>
 	[DisallowMultipleComponent]
-	public sealed class ShowerSequenceParameter : LiveSceneParameter, ISceneGraphClockReceiver {
+	public sealed class ShowerSequenceParameter : LiveSceneParameter, ILiveSceneTriggerParameter, ISceneGraphClockReceiver {
 		public const string ParameterId = "shower_sequence";
 		private const float SequenceFrameDuration = 1f / 30f;
 
