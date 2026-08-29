@@ -354,7 +354,8 @@ namespace ShitDesigner.Scene {
 		}
 
 		private void PushCutLayer(int layerIndex) {
-			var mainBodyOffset = m_SplitGap * (layerIndex + 1);
+			var pushDistance = m_FragmentLength + m_SplitGap;
+			var mainBodyOffset = pushDistance * (layerIndex + 1);
 			for (var index = 0; index < m_Candies.Count; index++) {
 				var candy = m_Candies[index];
 				for (var fragmentIndex = layerIndex + 1; fragmentIndex < candy.Fragments.Length; fragmentIndex++) {
