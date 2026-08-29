@@ -130,7 +130,15 @@ namespace ShitDesigner.Scene {
 		}
 
 		private int GetBeatSeed(long beat) {
-			return unchecked(m_GenerationSeed + (int)(beat * 7919L));
+			unchecked {
+				var beatHash = (int)(beat ^ (beat >> 32));
+				beatHash ^= beatHash >> 16;
+				beatHash *= 0x45d9f3b;
+				beatHash ^= beatHash >> 16;
+				beatHash *= 0x45d9f3b;
+				beatHash ^= beatHash >> 16;
+				return m_GenerationSeed ^ beatHash;
+			}
 		}
 
 		private void GenerateWithSeed(int seed) {
