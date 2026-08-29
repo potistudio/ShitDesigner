@@ -22,6 +22,7 @@ namespace ShitDesigner.Main {
 		public string LoadedPatchId { get; }
 		public string PreloadedPatchId { get; }
 		public LiveParameterDefinition Bpm { get; }
+		public IReadOnlyList<LiveProgramFrame> ProgramFrames { get; }
 		public IReadOnlyList<LiveParameterDefinition> Parameters { get; }
 		public RenderTexture ProgramTexture { get; }
 		public ulong ProgramFrameNumber { get; }
@@ -46,6 +47,7 @@ namespace ShitDesigner.Main {
 			PreloadedPatchId = preloadedPatchId ?? string.Empty;
 			Bpm = bpm;
 			Parameters = parameters ?? Array.Empty<LiveParameterDefinition>();
+			ProgramFrames = programFrames.Frames;
 			ProgramTexture = programFrames.Primary.Texture;
 			ProgramFrameNumber = programFrames.Primary.FrameNumber;
 			ConnectedDisplayCount = output?.ConnectedDisplayCount ?? 0;
