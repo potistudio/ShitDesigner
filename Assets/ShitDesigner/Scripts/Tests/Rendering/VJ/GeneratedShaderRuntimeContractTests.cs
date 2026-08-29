@@ -114,6 +114,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 
 				Assert.That(material.GetFloat(ShaderFrameUniformNames.HasBeatClock), Is.EqualTo(1f));
 				Assert.That(material.GetFloat(ShaderFrameUniformNames.BeatPhase), Is.EqualTo(.25f).Within(.0001f));
+				Assert.That(material.GetFloat(ShaderFrameUniformNames.BeatIndex), Is.EqualTo(3f));
 			}
 			finally { UnityEngine.Object.DestroyImmediate(material); }
 		}
