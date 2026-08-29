@@ -21,5 +21,6 @@
     "UNITY_INCLUDE_TESTS"
   ],
   "versionDefines": [],
-  "noEngineReferences": true
+  "noEngineReferences": true,
+  "optionalUnityReferences": ["TestAssemblies"]
 }
