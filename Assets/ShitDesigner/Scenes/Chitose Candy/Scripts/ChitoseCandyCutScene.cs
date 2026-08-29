@@ -342,6 +342,15 @@ namespace ShitDesigner.Scene {
 				if (layerIndex + 1 < candy.Fragments.Length)
 					candy.Fragments[layerIndex + 1].FrontCutFace.gameObject.SetActive(true);
 			}
+			if (!Application.isPlaying)
+				return;
+
+			Physics.SyncTransforms();
+			for (var index = 0; index < m_Candies.Count; index++) {
+				var candy = m_Candies[index];
+				var fragment = candy.Fragments[layerIndex];
+				ActivatePhysics(fragment.Body, fragment.Impulse);
+			}
 		}
 
 		private void PushCutLayer(int layerIndex) {
@@ -353,15 +362,8 @@ namespace ShitDesigner.Scene {
 					fragment.Segment.localPosition = Vector3.up * (fragment.BasePosition + mainBodyOffset);
 				}
 			}
-			if (!Application.isPlaying)
-				return;
-
-			Physics.SyncTransforms();
-			for (var index = 0; index < m_Candies.Count; index++) {
-				var candy = m_Candies[index];
-				var fragment = candy.Fragments[layerIndex];
-				ActivatePhysics(fragment.Body, fragment.Impulse);
-			}
+			if (Application.isPlaying)
+				Physics.SyncTransforms();
 		}
 
 		private static void ActivatePhysics(Rigidbody rigidbody, Vector3 horizontalImpulse) {
