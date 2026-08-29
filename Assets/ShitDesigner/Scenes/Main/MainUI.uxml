@@ -7,11 +7,13 @@
                     <ui:VisualElement name="program-monitor" class="output-preview output-preview-1">
                         <ui:Label text="Output 1" class="output-preview-label"/>
                     </ui:VisualElement>
-                    <ui:VisualElement name="output-2-preview" class="output-preview output-preview-2">
-                        <ui:Label text="Output 2" class="output-preview-label"/>
+                    <ui:VisualElement class="output-2-column">
+                        <ui:VisualElement name="output-2-preview" class="output-preview output-preview-2">
+                            <ui:Label text="Output 2" class="output-preview-label"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="patch-slot-controls" class="patch-slot-controls"/>
                     </ui:VisualElement>
                 </ui:VisualElement>
-                <ui:VisualElement name="patch-slot-controls" class="patch-slot-controls"/>
                 <ui:VisualElement class="live-fader-panel">
                     <ui:VisualElement name="parameter-controls" class="parameter-controls"/>
                 </ui:VisualElement>
