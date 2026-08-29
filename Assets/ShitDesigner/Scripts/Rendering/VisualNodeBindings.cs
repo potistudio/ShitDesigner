@@ -127,7 +127,7 @@ namespace ShitDesigner.Rendering {
 			// descriptor. Preserve the explicit constructor flags for old
 			// callers, while deriving the generator/composite behavior for
 			// dynamically registered entries.
-			var generator = _generator || binding.Family == ShaderNodeFamily.Generator;
+			var generator = _generator || binding.Family == ShaderNodeFamily.Generator || binding.Family == ShaderNodeFamily.Raymarch;
 			var blend = _blend || binding.Family == ShaderNodeFamily.Composite;
 			try {
 				if ((binding.Passes.Count > 1 || binding.Stateful) && _pool != null && !string.IsNullOrWhiteSpace(_sessionId))

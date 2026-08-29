@@ -201,6 +201,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: bb4f5b8c1d2e4f6091a2b3c4d5e6f70a, type: 2}
   - {fileID: 11400000, guid: 0703d35896b644c1a2f58216b4bc3785, type: 2}
   - {fileID: 11400000, guid: 8d91ecadb75036842b540e86cccb8807, type: 2}
+  - {fileID: 11400000, guid: 21c55f72e24c4e6d9d48aa5e0ff8a3d9, type: 2}
   _shaderManifest: {fileID: 11400000, guid: efc5dd0248d5c714783f13454b2c4b04, type: 2}
 --- !u!114 &444072071
 MonoBehaviour:
