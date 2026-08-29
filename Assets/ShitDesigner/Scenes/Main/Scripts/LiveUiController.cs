@@ -306,7 +306,7 @@ namespace ShitDesigner.Main {
 		private void AddPatchButtons(ScrollView controls, IEnumerable<LivePatchReadModel> patches) {
 			foreach (var patch in patches) {
 				var patchId = patch.Id;
-				var button = new Button(() => QueuePatch(patchId)) {
+				var button = new Button(() => AssignPatchToSelectedSlot(patchId)) {
 					name = "patch-" + patchId,
 					text = patch.Name,
 					userData = patchId
@@ -349,9 +349,9 @@ namespace ShitDesigner.Main {
 			ShowSlotRejection(_host.SelectPatchSlot(slotIndex));
 		}
 
-		private void QueuePatch(string patchId) {
+		private void AssignPatchToSelectedSlot(string patchId) {
 			if (_host == null) return;
-			ShowSlotRejection(_host.QueuePatch(patchId));
+			ShowSlotRejection(_host.AssignPatchToSelectedSlot(patchId));
 		}
 
 		private void CueSelectedPatchSlot() {

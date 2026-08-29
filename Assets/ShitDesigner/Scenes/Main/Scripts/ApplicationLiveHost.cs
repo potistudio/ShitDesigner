@@ -72,7 +72,7 @@ namespace ShitDesigner.Main {
 				m_SelectedPatchRole = m_MainPatchIds.Length > 0 ? LivePatchRole.Main : LivePatchRole.Overlay;
 				m_SelectedMainPatchIndex = 0;
 				m_SelectedOverlayPatchIndex = 0;
-				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, slotIndex => { LaunchPatchSlot(slotIndex); }, slotIndex => { ClearPatchSlot(slotIndex); }, MoveCatalogSelection, () => { QueueSelectedCatalogPatch(); }, TapBpm);
+				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, slotIndex => { LaunchPatchSlot(slotIndex); }, slotIndex => { ClearPatchSlot(slotIndex); }, MoveCatalogSelection, () => { AssignSelectedCatalogPatch(); }, TapBpm);
 				_midiInputManager.InitializeForHostPolling();
 				_shutdown.Add(_midiInputManager.Shutdown);
 				_midi = new LiveMidiInput(_midiInputManager, _parameterQueue, _runtime.Patches);
@@ -127,12 +127,10 @@ namespace ShitDesigner.Main {
 			State = ApplicationLiveHostState.Offline;
 		}
 
-		public LivePatchSlotOperationResult QueuePatch(string patchId) {
+		public LivePatchSlotOperationResult AssignPatchToSelectedSlot(string patchId) {
 			if (!IsKnownPatch(patchId)) return LivePatchSlotOperationResult.Reject("The requested patch does not exist.");
 			SelectCatalogPatch(patchId);
-			var result = _patchSlots.Queue(patchId);
-			if (result.Accepted) _selectedPatchSlotIndex = result.SlotIndex;
-			return result;
+			return _patchSlots.Assign(_selectedPatchSlotIndex, patchId);
 		}
 
 		public LivePatchSlotOperationResult SelectPatchSlot(int slotIndex) {
@@ -187,11 +185,11 @@ namespace ShitDesigner.Main {
 				m_SelectedOverlayPatchIndex = MoveWithinRow(m_SelectedOverlayPatchIndex, horizontalDirection, m_OverlayPatchIds.Length);
 		}
 
-		public LivePatchSlotOperationResult QueueSelectedCatalogPatch() {
+		public LivePatchSlotOperationResult AssignSelectedCatalogPatch() {
 			var patchId = SelectedCatalogPatchId;
 			return string.IsNullOrEmpty(patchId)
 				? LivePatchSlotOperationResult.Reject("The patch catalog is empty.")
-				: QueuePatch(patchId);
+				: AssignPatchToSelectedSlot(patchId);
 		}
 
 		public void TapBpm(double time) {
