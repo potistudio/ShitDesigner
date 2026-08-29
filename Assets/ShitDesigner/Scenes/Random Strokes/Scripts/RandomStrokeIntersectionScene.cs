@@ -23,7 +23,7 @@ namespace ShitDesigner.Scene {
 		[Range(30f, 300f)][SerializeField] private float m_PreviewBpm = 120f;
 
 		[Header("Motion")]
-		[Min(0.01f)][SerializeField] private float m_ContinuousRotationDegreesPerSecond = 2f;
+		[Min(0f)][SerializeField] private float m_ContinuousRotationDegreesPerSecond = 2f;
 		[Min(0f)][SerializeField] private float m_BeatRotationDegrees = 8f;
 
 		[Header("Randomness")]
@@ -49,7 +49,6 @@ namespace ShitDesigner.Scene {
 		private readonly List<int> m_RegionTriangles = new List<int>();
 		private double m_TransitionStartBeat;
 		private double m_AdjustedTotalBeats;
-		private double m_LastRotationBeat = double.NaN;
 		private long m_LastGeneratedBeat = long.MinValue;
 		private int m_GenerationSeed;
 		private float m_ContinuousRotationDegrees;
@@ -58,7 +57,6 @@ namespace ShitDesigner.Scene {
 
 		private void OnEnable() {
 			m_AdjustedTotalBeats = 0d;
-			m_LastRotationBeat = double.NaN;
 			m_LastGeneratedBeat = long.MinValue;
 			m_ContinuousRotationDegrees = 0f;
 			m_UsesExternalClock = false;
@@ -69,18 +67,18 @@ namespace ShitDesigner.Scene {
 
 		private void Start() {
 			m_GenerationSeed = GetGenerationSeed();
-			m_LastRotationBeat = m_AdjustedTotalBeats;
 			m_LastGeneratedBeat = 0L;
 			GenerateWithSeed(GetBeatSeed(0L));
 		}
 
 		private void Update() {
 			if (Application.isPlaying && !m_UsesExternalClock) {
-				m_AdjustedTotalBeats += Time.unscaledDeltaTime * m_PreviewBpm / 60d;
+				var deltaSeconds = Math.Max(0d, (double)Time.unscaledDeltaTime);
+				m_AdjustedTotalBeats += deltaSeconds * m_PreviewBpm / 60d;
 				ProcessBeatPosition(m_AdjustedTotalBeats);
+				AdvanceContinuousRotation(deltaSeconds);
 			}
 
-			AdvanceContinuousRotation(m_AdjustedTotalBeats, m_PreviewBpm);
 			ApplyTransition(m_AdjustedTotalBeats);
 			ApplyGeneratedRotation();
 		}
@@ -100,7 +98,7 @@ namespace ShitDesigner.Scene {
 			m_StrokeWidth = Mathf.Max(0.005f, m_StrokeWidth);
 			m_FilledRegionCount = Mathf.Clamp(m_FilledRegionCount, 0, 128);
 			m_PreviewBpm = Mathf.Clamp(m_PreviewBpm, 30f, 300f);
-			m_ContinuousRotationDegreesPerSecond = Mathf.Max(0.01f, m_ContinuousRotationDegreesPerSecond);
+			m_ContinuousRotationDegreesPerSecond = Mathf.Max(0f, m_ContinuousRotationDegreesPerSecond);
 			m_BeatRotationDegrees = Mathf.Max(0f, m_BeatRotationDegrees);
 
 			if (!Application.isPlaying && isActiveAndEnabled)
@@ -111,10 +109,12 @@ namespace ShitDesigner.Scene {
 			if (!frame.IsAvailable || double.IsNaN(frame.AdjustedTotalBeats) || double.IsInfinity(frame.AdjustedTotalBeats))
 				return;
 
+			var previousBeatPosition = m_AdjustedTotalBeats;
 			m_UsesExternalClock = true;
 			m_AdjustedTotalBeats = frame.AdjustedTotalBeats;
 			ProcessBeatPosition(m_AdjustedTotalBeats);
-			AdvanceContinuousRotation(m_AdjustedTotalBeats, frame.Bpm);
+			var beatDelta = Math.Max(0d, m_AdjustedTotalBeats - previousBeatPosition);
+			AdvanceContinuousRotation(beatDelta * 60d / frame.Bpm);
 			ApplyTransition(m_AdjustedTotalBeats);
 			ApplyGeneratedRotation();
 		}
@@ -230,14 +230,10 @@ namespace ShitDesigner.Scene {
 			m_TransitionRegenerated = false;
 		}
 
-		private void AdvanceContinuousRotation(double beatPosition, float bpm) {
-			if (double.IsNaN(beatPosition) || double.IsInfinity(beatPosition) || float.IsNaN(bpm) || float.IsInfinity(bpm) || bpm <= 0f)
+		private void AdvanceContinuousRotation(double deltaSeconds) {
+			if (double.IsNaN(deltaSeconds) || double.IsInfinity(deltaSeconds) || deltaSeconds <= 0d)
 				return;
-			if (!double.IsNaN(m_LastRotationBeat)) {
-				var beatDelta = Math.Max(0d, beatPosition - m_LastRotationBeat);
-				m_ContinuousRotationDegrees += (float)(beatDelta * 60d / bpm * m_ContinuousRotationDegreesPerSecond);
-			}
-			m_LastRotationBeat = beatPosition;
+			m_ContinuousRotationDegrees += (float)(deltaSeconds * m_ContinuousRotationDegreesPerSecond);
 		}
 
 		private void ApplyGeneratedRotation() {
@@ -254,17 +250,14 @@ namespace ShitDesigner.Scene {
 		}
 
 		private float GetBeatRotationDegrees(float phase) {
-			var halfRotation = m_BeatRotationDegrees * 0.5f;
-			const float linearRotationFraction = 0.2f;
 			if (phase < 0.5f) {
 				var upPhase = phase * 2f;
-				var easedInPhase = upPhase * upPhase * upPhase;
-				return halfRotation * Mathf.Lerp(easedInPhase, upPhase, linearRotationFraction);
+				return m_BeatRotationDegrees * 0.5f * upPhase * upPhase * upPhase;
 			}
 
 			var outPhase = (phase - 0.5f) * 2f;
 			var easedOutPhase = 1f - Mathf.Pow(1f - outPhase, 3f);
-			return halfRotation + halfRotation * Mathf.Lerp(easedOutPhase, outPhase, linearRotationFraction);
+			return m_BeatRotationDegrees * 0.5f * (1f + easedOutPhase);
 		}
 
 		private List<PolygonFace> SelectFilledRegions(List<PolygonFace> regions) {
