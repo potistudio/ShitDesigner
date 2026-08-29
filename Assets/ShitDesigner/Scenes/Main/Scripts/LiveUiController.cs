@@ -32,7 +32,6 @@ namespace ShitDesigner.Main {
 		private Label _diagnosticLabel;
 		private Button _outputButton;
 		private Button _identifyButton;
-		private Label _displaySelector;
 		private Button _confirmationCancelButton;
 		private Button _confirmationConfirmButton;
 		private Label _confirmationDisplaySelector;
@@ -77,7 +76,6 @@ namespace ShitDesigner.Main {
 			_diagnosticLabel = Required<Label>(root, "diagnostic-status");
 			_outputButton = Required<Button>(root, "output-toggle");
 			_identifyButton = Required<Button>(root, "identify-display");
-			_displaySelector = Required<Label>(root, "display-selector");
 			_confirmationCancelButton = Required<Button>(root, "output-confirm-cancel");
 			_confirmationConfirmButton = Required<Button>(root, "output-confirm-accept");
 			_confirmationDisplaySelector = Required<Label>(root, "output-confirm-display-selector");
@@ -136,9 +134,6 @@ namespace ShitDesigner.Main {
 				RefreshPatchSlotControls(model);
 				RefreshPatchControls(model);
 				RefreshTempoControls(model);
-				var connectedDisplayLabels = Enumerable.Range(2, Math.Max(0, model.ConnectedDisplayCount - 1)).Select(number => "Display " + number).ToList();
-				if (connectedDisplayLabels.Count == 0) connectedDisplayLabels.Add("No external Display");
-				_displaySelector.text = "OUTPUT: " + string.Join(", ", connectedDisplayLabels);
 				_outputButton.text = model.IsDisplayOutputActive ? "STOP OUTPUT" : "START OUTPUT";
 				_capabilityLabel.text = $"MIDI: {(model.Capabilities.MidiAvailable ? "READY" : "UNAVAILABLE")}  DISPLAY: {(model.Capabilities.ExternalDisplayAvailable ? "READY" : "UNAVAILABLE")}  FRAME: {model.ProgramFrameNumber}";
 				_diagnosticLabel.text = ResolveDiagnostic(model);
