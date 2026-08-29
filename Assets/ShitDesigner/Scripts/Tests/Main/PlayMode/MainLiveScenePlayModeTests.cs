@@ -65,7 +65,12 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(identifyButton, Is.Not.Null);
 			Assert.That(outputButton.parent.parent, Is.SameAs(topBar));
 			Assert.That(identifyButton.parent.parent, Is.SameAs(topBar));
-			Assert.That(ui.Q<VisualElement>("patch-controls").childCount, Is.EqualTo(4));
+			var mainPatchRow = ui.Q<VisualElement>("patch-main-row");
+			var overlayPatchRow = ui.Q<VisualElement>("patch-overlay-row");
+			Assert.That(mainPatchRow, Is.Not.Null);
+			Assert.That(overlayPatchRow, Is.Not.Null);
+			Assert.That(mainPatchRow.Query<Button>().ToList().Count, Is.EqualTo(host.ReadModel.Patches.Count(patch => patch.Role == LivePatchRole.Main)));
+			Assert.That(overlayPatchRow.Query<Button>().ToList().Count, Is.EqualTo(host.ReadModel.Patches.Count(patch => patch.Role == LivePatchRole.Overlay)));
 			Assert.That(ui.Q<Button>("patch-" + nextPatch.Id).ClassListContains("is-loaded"), Is.True);
 
 			var midi = (Component)typeof(ApplicationLiveHost).GetField("_midiInputManager", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(host);
