@@ -249,7 +249,7 @@ namespace ShitDesigner.Scene {
 				* m_CandyAxisRuntime).normalized;
 			var candy = CreateCandy(m_Candies.Count, frontPosition, axis, random);
 			candy.EntryTargetPosition = candy.Root.localPosition;
-			candy.EntryStartPosition = candy.EntryTargetPosition;
+			candy.EntryStartPosition = candy.EntryTargetPosition - axis * m_CandyLength;
 			candy.EntryStartBeat = startBeat;
 			candy.IsEntering = true;
 			candy.Root.localPosition = candy.EntryStartPosition;
