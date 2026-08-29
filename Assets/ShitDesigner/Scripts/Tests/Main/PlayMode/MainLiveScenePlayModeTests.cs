@@ -57,14 +57,12 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(ui.Q<Slider>("parameter-scale").direction, Is.EqualTo(SliderDirection.Vertical));
 			Assert.That(ui.Q<Label>("parameter-value-scale").text, Is.EqualTo("1.00"));
 			var topBar = ui.Q<VisualElement>("top-bar");
-			var displaySelector = ui.Q<Label>("display-selector");
 			var outputButton = ui.Q<Button>("output-toggle");
 			var identifyButton = ui.Q<Button>("identify-display");
 			Assert.That(topBar, Is.Not.Null);
-			Assert.That(displaySelector, Is.Not.Null);
+			Assert.That(ui.Q<Label>("display-selector"), Is.Null);
 			Assert.That(outputButton, Is.Not.Null);
 			Assert.That(identifyButton, Is.Not.Null);
-			Assert.That(displaySelector.parent, Is.SameAs(topBar));
 			Assert.That(outputButton.parent.parent, Is.SameAs(topBar));
 			Assert.That(identifyButton.parent.parent, Is.SameAs(topBar));
 			Assert.That(ui.Q<VisualElement>("patch-controls").childCount, Is.EqualTo(4));
