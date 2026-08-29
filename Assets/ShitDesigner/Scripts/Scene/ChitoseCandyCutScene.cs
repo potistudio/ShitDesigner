@@ -184,7 +184,7 @@ namespace ShitDesigner.Scene {
 			if (deltaSeconds <= 0f || float.IsNaN(deltaSeconds) || float.IsInfinity(deltaSeconds))
 				return;
 
-			m_AnimationTime = Mathf.Repeat(m_AnimationTime + deltaSeconds, 2048f);
+			m_AnimationTime = Mathf.Repeat(m_AnimationTime + deltaSeconds * m_CutterSpeed, 1f);
 			ApplyAnimationState();
 		}
 
@@ -298,8 +298,7 @@ namespace ShitDesigner.Scene {
 			if (m_Blade == null)
 				return;
 
-			var pingPong = Mathf.PingPong(m_AnimationTime * m_CutterSpeed, 1f);
-			var progress = Mathf.SmoothStep(0f, 1f, pingPong);
+			var progress = Mathf.SmoothStep(0f, 1f, m_AnimationTime);
 			var travel = Mathf.Lerp(-m_CutterTravel, m_CutterTravel, progress);
 			m_Blade.localPosition = m_BladePosition + m_CutterTravelDirection * travel;
 
