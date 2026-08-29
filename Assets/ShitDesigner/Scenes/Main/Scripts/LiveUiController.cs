@@ -386,7 +386,9 @@ namespace ShitDesigner.Main {
 				if (selected == null) return;
 				var viewportWidth = _patchControls.contentViewport.layout.width;
 				if (viewportWidth <= 0f) return;
-				var offset = selected.layout.x + selected.layout.width * 0.5f - viewportWidth * 0.5f;
+				var selectedCenter = selected.ChangeCoordinatesTo(_patchControls.contentContainer,
+					new Vector2(selected.layout.width * 0.5f, selected.layout.height * 0.5f));
+				var offset = selectedCenter.x - viewportWidth * 0.5f;
 				var maximum = Mathf.Max(0f, _patchControls.contentContainer.layout.width - viewportWidth);
 				_patchControls.scrollOffset = new Vector2(Mathf.Clamp(offset, 0f, maximum), _patchControls.scrollOffset.y);
 			}).StartingIn(0);

@@ -120,6 +120,8 @@
     height: 32px;
     min-height: 32px;
     flex-direction: row;
+    align-self: flex-start;
+    flex-shrink: 0;
 }
 
 .patch-row-label {
@@ -128,6 +130,7 @@
     max-width: 56px;
     height: 32px;
     min-height: 32px;
+    flex-shrink: 0;
     padding-top: 0;
     padding-right: 0;
     padding-bottom: 0;
@@ -253,6 +256,7 @@
 
 .patch-button {
     flex-grow: 0;
+    flex-shrink: 0;
     min-width: 160px;
 }
 
