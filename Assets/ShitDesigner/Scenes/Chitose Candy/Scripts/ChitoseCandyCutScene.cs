@@ -1,12 +1,11 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using ShitDesigner.Core;
 using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace ShitDesigner.Scene {
-	/// <summary>Generates a stylized field of candy sticks and releases one small decorated-end fragment from every stick on each beat.</summary>
+	/// <summary>Generates a stylized field of candy sticks and alternates their cuts and body pushes on each beat.</summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
 	public sealed class ChitoseCandyCutScene : MonoBehaviour, IBpmClockReceiver {
@@ -66,7 +65,6 @@ namespace ShitDesigner.Scene {
 
 		[Header("Cut")]
 		[Range(30f, 300f)] [SerializeField] private float m_PreviewBpm = 138f;
-		[Min(0f)] [SerializeField] private float m_CutPushDelaySeconds = 0.08f;
 		[Min(0f)] [SerializeField] private float m_SplitGap = 0.55f;
 		[Min(0f)] [SerializeField] private float m_HorizontalImpulse = 0.9f;
 
@@ -83,6 +81,7 @@ namespace ShitDesigner.Scene {
 		private Vector3 m_CandyAxisRuntime;
 		private float m_FragmentLength;
 		private int m_CutLayerIndex;
+		private bool m_PushPending;
 		private bool m_RebuildRequested = true;
 		private double m_AdjustedTotalBeats;
 		private long m_LastProcessedBeat = long.MinValue;
@@ -92,6 +91,7 @@ namespace ShitDesigner.Scene {
 			m_AdjustedTotalBeats = 0d;
 			m_LastProcessedBeat = long.MinValue;
 			m_CutLayerIndex = 0;
+			m_PushPending = false;
 			m_UsesExternalClock = false;
 			Rebuild();
 		}
@@ -132,7 +132,6 @@ namespace ShitDesigner.Scene {
 			if (m_CandyAxis.sqrMagnitude < 0.0001f)
 				m_CandyAxis = new Vector3(0.57f, -0.37f, -0.73f);
 			m_PreviewBpm = Mathf.Clamp(m_PreviewBpm, 30f, 300f);
-			m_CutPushDelaySeconds = Mathf.Max(0f, m_CutPushDelaySeconds);
 			m_SplitGap = Mathf.Max(0f, m_SplitGap);
 			m_HorizontalImpulse = Mathf.Max(0f, m_HorizontalImpulse);
 			m_RebuildRequested = true;
@@ -140,10 +139,10 @@ namespace ShitDesigner.Scene {
 
 		[ContextMenu("Rebuild Chitose Candy")]
 		public void Rebuild() {
-			StopAllCoroutines();
 			m_RebuildRequested = false;
 			m_LastProcessedBeat = long.MinValue;
 			m_CutLayerIndex = 0;
+			m_PushPending = false;
 			ReleaseGeneratedContent();
 
 			m_GeneratedRoot = new GameObject("Generated Chitose Candy").transform;
@@ -290,9 +289,22 @@ namespace ShitDesigner.Scene {
 
 			if (beatIndex > m_LastProcessedBeat) {
 				for (var index = m_LastProcessedBeat; index < beatIndex; index++)
-					CutNextLayer();
+					ProcessNextBeat();
 			}
 			m_LastProcessedBeat = beatIndex;
+		}
+
+		private void ProcessNextBeat() {
+			if (m_PushPending) {
+				PushCutLayer(m_CutLayerIndex - 1);
+				m_PushPending = false;
+				return;
+			}
+			if (m_CutLayerIndex >= CandyDivisionCount)
+				return;
+
+			CutNextLayer();
+			m_PushPending = true;
 		}
 
 		private void CutNextLayer() {
@@ -307,17 +319,6 @@ namespace ShitDesigner.Scene {
 				if (layerIndex + 1 < candy.Fragments.Length)
 					candy.Fragments[layerIndex + 1].FrontCutFace.gameObject.SetActive(true);
 			}
-			if (!Application.isPlaying)
-				PushCutLayer(layerIndex);
-			else if (m_CutPushDelaySeconds <= 0f)
-				PushCutLayer(layerIndex);
-			else
-				StartCoroutine(PushCutLayerAfterDelay(layerIndex));
-		}
-
-		private IEnumerator PushCutLayerAfterDelay(int layerIndex) {
-			yield return new WaitForSecondsRealtime(m_CutPushDelaySeconds);
-			PushCutLayer(layerIndex);
 		}
 
 		private void PushCutLayer(int layerIndex) {
