@@ -19,6 +19,7 @@
   ],
   "autoReferenced": false,
   "defineConstraints": [
+    "SHITDESIGNER_INCLUDE_TESTS",
     "UNITY_INCLUDE_TESTS"
   ],
   "versionDefines": [],

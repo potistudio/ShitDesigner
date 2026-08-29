@@ -6,14 +6,9 @@ namespace ShitDesigner.Media.Editor {
 	/// <summary>Editor-side guard for optional Hap native artifacts. Source
 	/// and CMake are real decoder inputs, but only an installed platform binary
 	/// can be used by a player.</summary>
-	[InitializeOnLoad]
 	public static class HapNativePluginValidation {
 		private const string WindowsSource = "Assets/Plugins/x86_64/ShitDesignerHapNative/CMakeLists.txt";
 		private const string MacSource = "Assets/Plugins/macOS/ShitDesignerHapNative/CMakeLists.txt";
-
-		static HapNativePluginValidation() {
-			if (!UnityEngine.Application.isBatchMode) ValidateSources(logWarning: true);
-		}
 
 		[MenuItem("ShitDesigner/Media/Validate Hap Native Plugin")]
 		public static void ValidateFromMenu() => ValidateSources(logWarning: false);
