@@ -1,0 +1,106 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36a7c9fd8af84f24a8db20cf4457e4ca, type: 3}
+  m_Name: MONTAGEM HIKARI Patch
+  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
+  _id: montagem-hikari
+  _displayName: MONTAGEM HIKARI
+  _flash:
+    _image: {fileID: 2800000, guid: 0d1251ac3c6f56e4886b64816e11de9f, type: 3}
+    _durationSeconds: 0.25
+  _programGraph:
+    _outputNodeId: overlay
+    _nodes:
+    - _id: fe60b664-f7e6-4a75-9c55-18ecbff56249
+      _typeId: shitdesigner.scene.3d
+      m_SceneDefinition: {fileID: 11400000, guid: c13f75f3aed7ef04088bb89f27971d2a, type: 2}
+      _parameters: []
+    - _id: video_a
+      _typeId: shitdesigner.video.player
+      m_VideoPath: Assets/ShitDesigner/Videos/Mr Beast Rizz.mov
+      m_VideoClip: {fileID: 0}
+      _parameters:
+      - _id: transport.playing
+        _type: 2
+        _floatValue: 0
+        _intValue: 0
+        _boolValue: 1
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 0, g: 0, b: 0, a: 0}
+        _textValue: 
+    - _id: video_b
+      _typeId: shitdesigner.video.player
+      m_VideoPath: 
+      m_VideoClip: {fileID: 32900000, guid: 5e1851a21fcb14a43b2d1784bf2bb66a, type: 3}
+      _parameters:
+      - _id: transport.playing
+        _type: 2
+        _floatValue: 0
+        _intValue: 0
+        _boolValue: 1
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 0, g: 0, b: 0, a: 0}
+        _textValue: 
+    - _id: overlay
+      _typeId: shitdesigner.shader.blend.under
+      m_VideoPath: 
+      m_VideoClip: {fileID: 0}
+      _parameters:
+      - _id: amount
+        _type: 0
+        _floatValue: 0
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 0, g: 0, b: 0, a: 0}
+        _textValue: 
+    _connections:
+    - _sourceNodeId: video_a
+      _sourcePortId: image
+      _targetNodeId: overlay
+      _targetPortId: a
+    - _sourceNodeId: video_b
+      _sourcePortId: image
+      _targetNodeId: overlay
+      _targetPortId: b
+  _parameters:
+  - _id: overlay_factor
+    _displayName: Overlay
+    _nodeId: overlay
+    _parameterId: amount
+  - _id: play_a
+    _displayName: Play
+    _nodeId: video_a
+    _parameterId: transport.playing
+  - _id: play_b
+    _displayName: Play
+    _nodeId: video_b
+    _parameterId: transport.playing
+  m_KeyboardInputs:
+  - m_Key: 31
+    m_ParameterId: play_a
+  - m_Key: 31
+    m_ParameterId: play_b
+  m_MidiInputs:
+  - m_MessageType: 1
+    m_Channel: 1
+    m_Number: 5
+    m_RawMinimum: 0
+    m_RawMaximum: 127
+    m_Invert: 0
+    m_ParameterId: overlay_factor

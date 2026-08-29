@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36a7c9fd8af84f24a8db20cf4457e4ca, type: 3}
+  m_Name: Shape Expansion Patch
+  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
+  _id: shape_expansion
+  _displayName: Shape Expansion
+  _flash:
+    _image: {fileID: -467849966315801283, guid: 7923732e0c5622c4a9f726ef31392170, type: 2}
+    _durationSeconds: 0.25
+  _programGraph:
+    _outputNodeId: item
+    _nodes:
+    - _id: item
+      _typeId: shitdesigner.scene.3d
+      m_SceneDefinition: {fileID: 11400000, guid: 61dfdbda1547ab046877b9f789e61d42, type: 2}
+      m_VideoPath: 
+      m_VideoClip: {fileID: 0}
+      _parameters: []
+    _connections: []
+  _parameters: []
+  m_KeyboardInputs: []
+  m_MidiInputs: []
