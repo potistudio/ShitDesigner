@@ -4,16 +4,16 @@ namespace ShitDesigner.Main.Tests {
 	[TestFixture]
 	public sealed class LiveStepSequencerTests {
 		[Test]
-		public void AStepSelectsAtMostOneOfFourLanes() {
+		public void MultipleLanesCanBeSelectedInTheSameStep() {
 			var sequencer = new LiveStepSequencer(LiveSequencerKind.Effect, "EFFECT");
 
 			Assert.That(sequencer.Toggle(1, 3).Accepted, Is.True);
-			Assert.That(sequencer.CreateReadModel(3d).ActiveLanes[3], Is.EqualTo(1));
 			Assert.That(sequencer.Toggle(2, 3).Accepted, Is.True);
 
 			var readModel = sequencer.CreateReadModel(3d);
-			Assert.That(readModel.ActiveLanes, Has.Count.EqualTo(LiveStepSequencer.StepCount));
-			Assert.That(readModel.ActiveLanes[3], Is.EqualTo(2));
+			Assert.That(readModel.ActiveLaneMasks, Has.Count.EqualTo(LiveStepSequencer.StepCount));
+			Assert.That(readModel.IsActive(1, 3), Is.True);
+			Assert.That(readModel.IsActive(2, 3), Is.True);
 		}
 
 		[Test]
@@ -24,7 +24,7 @@ namespace ShitDesigner.Main.Tests {
 			var result = sequencer.Toggle(0, 0);
 
 			Assert.That(result.Accepted, Is.True);
-			Assert.That(sequencer.CreateReadModel(0d).ActiveLanes[0], Is.EqualTo(-1));
+			Assert.That(sequencer.CreateReadModel(0d).IsActive(0, 0), Is.False);
 		}
 
 		[Test]
@@ -42,7 +42,7 @@ namespace ShitDesigner.Main.Tests {
 
 			Assert.That(sequencer.Toggle(LiveStepSequencer.LaneCount, 0).Accepted, Is.False);
 			Assert.That(sequencer.Toggle(0, LiveStepSequencer.StepCount).Accepted, Is.False);
-			Assert.That(sequencer.CreateReadModel(0d).ActiveLanes, Is.All.EqualTo(-1));
+			Assert.That(sequencer.CreateReadModel(0d).ActiveLaneMasks, Is.All.Zero);
 		}
 	}
 }
