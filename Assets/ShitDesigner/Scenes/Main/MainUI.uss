@@ -199,14 +199,14 @@
     height: 32px;
 }
 
-.tempo-offset-row {
+.tempo-alignment-row {
     flex-direction: row;
     align-items: center;
     height: 32px;
     margin-top: 4px;
 }
 
-.tempo-offset-label {
+.tempo-alignment-label {
     width: 72px;
     min-width: 72px;
     color: rgb(157, 167, 180);
@@ -215,13 +215,13 @@
 }
 
 .tempo-bpm-input,
-.tempo-offset-input {
+.tempo-alignment-input {
     flex-grow: 1;
     min-width: 0;
 }
 
 .tempo-bpm-input .unity-base-text-field__input,
-.tempo-offset-input .unity-base-text-field__input {
+.tempo-alignment-input .unity-base-text-field__input {
     height: 30px;
     min-height: 30px;
     padding-top: 0;

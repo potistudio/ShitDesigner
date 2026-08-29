@@ -9,7 +9,7 @@ namespace ShitDesigner.Main {
 		LaunchPatch,
 		SetParameter,
 		SetBpm,
-		SetBeatOffset,
+		SetBeatAlignment,
 		TriggerFlash
 	}
 
@@ -76,8 +76,8 @@ namespace ShitDesigner.Main {
 		public LiveParameterEnqueueResult EnqueueSetBpm(float bpm)
 			=> Enqueue(LiveParameterRequestKind.SetBpm, string.Empty, string.Empty, ParameterValue.FromFloat(bpm));
 
-		public LiveParameterEnqueueResult EnqueueSetBeatOffset(float milliseconds)
-			=> Enqueue(LiveParameterRequestKind.SetBeatOffset, string.Empty, string.Empty, ParameterValue.FromFloat(milliseconds));
+		public LiveParameterEnqueueResult EnqueueSetBeatAlignment(float milliseconds)
+			=> Enqueue(LiveParameterRequestKind.SetBeatAlignment, string.Empty, string.Empty, ParameterValue.FromFloat(milliseconds));
 
 		public LiveParameterEnqueueResult EnqueueTriggerFlash(string patchId)
 			=> Enqueue(LiveParameterRequestKind.TriggerFlash, patchId, string.Empty, ParameterValue.FromFloat(0f));
@@ -102,7 +102,7 @@ namespace ShitDesigner.Main {
 		}
 
 		private static bool IsGlobalRequest(LiveParameterRequestKind kind)
-			=> kind == LiveParameterRequestKind.SetBpm || kind == LiveParameterRequestKind.SetBeatOffset;
+			=> kind == LiveParameterRequestKind.SetBpm || kind == LiveParameterRequestKind.SetBeatAlignment;
 
 		private ulong NextSequenceNumber() {
 			var sequenceNumber = _nextSequenceNumber++;
