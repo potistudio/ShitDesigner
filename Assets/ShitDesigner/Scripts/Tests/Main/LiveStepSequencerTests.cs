@@ -44,5 +44,34 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(sequencer.Toggle(0, LiveStepSequencer.StepCount).Accepted, Is.False);
 			Assert.That(sequencer.CreateReadModel(0d).ActiveLaneMasks, Is.All.Zero);
 		}
+
+		[Test]
+		public void SelectingALaneAndAssigningASceneUpdatesItsReadModel() {
+			var sequencer = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
+
+			Assert.That(sequencer.SelectLane(2).Accepted, Is.True);
+			Assert.That(sequencer.CreateReadModel(0d).SelectedLaneIndex, Is.EqualTo(2));
+			Assert.That(sequencer.AssignSelectedLane("overlay-c").Accepted, Is.True);
+
+			var readModel = sequencer.CreateReadModel(0d);
+			Assert.That(readModel.SelectedLaneIndex, Is.EqualTo(-1));
+			Assert.That(readModel.LanePatchIds[2], Is.EqualTo("overlay-c"));
+		}
+
+		[Test]
+		public void EveryHighlightedLaneWithAnAssignedSceneTriggersAtTheStep() {
+			var sequencer = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
+			sequencer.SelectLane(0);
+			sequencer.AssignSelectedLane("overlay-a");
+			sequencer.SelectLane(2);
+			sequencer.AssignSelectedLane("overlay-c");
+			sequencer.Toggle(0, 5);
+			sequencer.Toggle(2, 5);
+
+			var triggered = sequencer.GetTriggeredPatchIds(5);
+
+			Assert.That(triggered, Is.EqualTo(new[] { "overlay-a", "overlay-c" }));
+			Assert.That(sequencer.GetTriggeredPatchIds(4), Is.Empty);
+		}
 	}
 }

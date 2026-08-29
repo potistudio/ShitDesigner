@@ -61,6 +61,16 @@ namespace ShitDesigner.Main {
 			}
 		}
 
+		private readonly struct SequencerLaneAddress {
+			public LiveSequencerKind Kind { get; }
+			public int LaneIndex { get; }
+
+			public SequencerLaneAddress(LiveSequencerKind kind, int laneIndex) {
+				Kind = kind;
+				LaneIndex = laneIndex;
+			}
+		}
+
 		public void Initialize(ApplicationLiveHost host, LiveExternalDisplayOutput output) {
 			_host = host ?? throw new ArgumentNullException(nameof(host));
 			_output = output ?? throw new ArgumentNullException(nameof(output));
@@ -179,7 +189,20 @@ namespace ShitDesigner.Main {
 				for (var laneIndex = 0; laneIndex < LiveStepSequencer.LaneCount; laneIndex++) {
 					var lane = new VisualElement();
 					lane.AddToClassList("sequencer-lane");
-					var laneLabel = new Label((laneIndex + 1).ToString(CultureInfo.InvariantCulture));
+					VisualElement laneLabel;
+					if (sequencer.Kind == LiveSequencerKind.Overlay) {
+						laneLabel = new Button {
+							name = GetSequencerLaneName(sequencer.Kind, laneIndex),
+							text = (laneIndex + 1).ToString(CultureInfo.InvariantCulture),
+							userData = new SequencerLaneAddress(sequencer.Kind, laneIndex)
+						};
+						laneLabel.AddToClassList("is-clickable");
+					}
+					else {
+						laneLabel = new Label((laneIndex + 1).ToString(CultureInfo.InvariantCulture)) {
+							name = GetSequencerLaneName(sequencer.Kind, laneIndex)
+						};
+					}
 					laneLabel.AddToClassList("sequencer-lane-label");
 					lane.Add(laneLabel);
 					for (var stepIndex = 0; stepIndex < LiveStepSequencer.StepCount; stepIndex++) {
@@ -198,6 +221,16 @@ namespace ShitDesigner.Main {
 		private void RefreshSequencers(LiveUiReadModel model) {
 			foreach (var sequencer in model.Sequencers) {
 				for (var laneIndex = 0; laneIndex < LiveStepSequencer.LaneCount; laneIndex++) {
+					var laneLabel = m_SequencerControls.Q<VisualElement>(GetSequencerLaneName(sequencer.Kind, laneIndex));
+					if (laneLabel != null) {
+						var patchId = sequencer.LanePatchIds.Count > laneIndex ? sequencer.LanePatchIds[laneIndex] : string.Empty;
+						var patch = model.Patches.FirstOrDefault(candidate => candidate.Id == patchId);
+						laneLabel.tooltip = string.IsNullOrEmpty(patchId)
+							? "LANE " + (laneIndex + 1) + " · SELECT OVERLAY SCENE"
+							: "LANE " + (laneIndex + 1) + " · " + (string.IsNullOrEmpty(patch.Name) ? patchId : patch.Name);
+						laneLabel.EnableInClassList("is-assigned", !string.IsNullOrEmpty(patchId));
+						laneLabel.EnableInClassList("is-selecting", sequencer.SelectedLaneIndex == laneIndex);
+					}
 					for (var stepIndex = 0; stepIndex < LiveStepSequencer.StepCount; stepIndex++) {
 						var button = m_SequencerControls.Q<Button>(GetSequencerCellName(sequencer.Kind, laneIndex, stepIndex));
 						if (button == null) continue;
@@ -206,14 +239,19 @@ namespace ShitDesigner.Main {
 					}
 				}
 			}
+			m_OverlayPatchControls.EnableInClassList("is-scene-selecting", model.Sequencers.Any(sequencer => sequencer.Kind == LiveSequencerKind.Overlay && sequencer.SelectedLaneIndex >= 0));
 		}
 
 		private void OnSequencerCellClicked(ClickEvent change) {
 			var target = change.target as VisualElement;
 			var button = target as Button ?? target?.GetFirstAncestorOfType<Button>();
-			if (!(button?.userData is SequencerCellAddress address) || _host == null) return;
-			var result = _host.ToggleSequencerStep(address.Kind, address.LaneIndex, address.StepIndex);
-			if (!result.Accepted && _diagnosticLabel != null) _diagnosticLabel.text = result.RejectionReason;
+			if (_host == null || button == null) return;
+			if (button.userData is SequencerCellAddress cellAddress) {
+				ShowSequencerRejection(_host.ToggleSequencerStep(cellAddress.Kind, cellAddress.LaneIndex, cellAddress.StepIndex));
+				return;
+			}
+			if (button.userData is SequencerLaneAddress laneAddress)
+				ShowSequencerRejection(_host.SelectSequencerLane(laneAddress.Kind, laneAddress.LaneIndex));
 		}
 
 		private static string GetSequencerElementName(LiveSequencerKind kind) {
@@ -227,6 +265,10 @@ namespace ShitDesigner.Main {
 
 		private static string GetSequencerCellName(LiveSequencerKind kind, int laneIndex, int stepIndex) {
 			return "sequencer-" + GetSequencerId(kind) + "-lane-" + laneIndex + "-step-" + stepIndex;
+		}
+
+		private static string GetSequencerLaneName(LiveSequencerKind kind, int laneIndex) {
+			return "sequencer-" + GetSequencerId(kind) + "-lane-label-" + laneIndex;
 		}
 
 		private static string GetSequencerId(LiveSequencerKind kind) {
@@ -374,6 +416,7 @@ namespace ShitDesigner.Main {
 				button.EnableInClassList("is-preloaded", patch.Id == model.PreloadedPatchId);
 				button.EnableInClassList("is-queued", model.PatchSlots.Any(slot => slot.PatchId == patch.Id));
 				button.EnableInClassList("is-selected", patch.Id == model.SelectedCatalogPatchId);
+				button.EnableInClassList("is-assignment-option", _host.IsSelectingSequencerLane && patch.Role == LivePatchRole.Overlay);
 			}
 			var selectedPatchId = string.IsNullOrEmpty(model.SelectedCatalogPatchId) ? model.LoadedPatchId : model.SelectedCatalogPatchId;
 			if (_centeredPatchId != selectedPatchId) {
@@ -393,7 +436,7 @@ namespace ShitDesigner.Main {
 		private void AddPatchButtons(ScrollView controls, IEnumerable<LivePatchReadModel> patches) {
 			foreach (var patch in patches) {
 				var patchId = patch.Id;
-				var button = new Button(() => AssignPatchToSelectedSlot(patchId)) {
+				var button = new Button(() => ChoosePatch(patchId)) {
 					name = "patch-" + patchId,
 					text = patch.Name,
 					userData = patchId
@@ -402,6 +445,15 @@ namespace ShitDesigner.Main {
 				button.AddToClassList(patch.Role == LivePatchRole.Main ? "patch-main-button" : "patch-overlay-button");
 				controls.Add(button);
 			}
+		}
+
+		private void ChoosePatch(string patchId) {
+			if (_host == null) return;
+			if (_host.IsSelectingSequencerLane) {
+				ShowSequencerRejection(_host.AssignSelectedSequencerPatch(patchId));
+				return;
+			}
+			AssignPatchToSelectedSlot(patchId);
 		}
 
 		private void RefreshPatchSlotControls(LiveUiReadModel model) {
@@ -573,6 +625,10 @@ namespace ShitDesigner.Main {
 		}
 
 		private void ShowSlotRejection(LivePatchSlotOperationResult result) {
+			if (!result.Accepted && _diagnosticLabel != null) _diagnosticLabel.text = result.RejectionReason;
+		}
+
+		private void ShowSequencerRejection(LiveSequencerOperationResult result) {
 			if (!result.Accepted && _diagnosticLabel != null) _diagnosticLabel.text = result.RejectionReason;
 		}
 
