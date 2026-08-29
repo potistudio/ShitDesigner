@@ -616,6 +616,7 @@ namespace ShitDesigner.Main {
 	internal sealed class LivePublishedParameter : ILivePublishedParameter {
 		private readonly PatchParameter _definition;
 		private float _baseValue;
+		private bool _isDirty;
 		private bool _hasResolvedValue;
 		private float _lastResolvedValue;
 		public LiveSceneRoot Root { get; }
@@ -640,20 +641,22 @@ namespace ShitDesigner.Main {
 				return false;
 			}
 			_baseValue = value.AsFloat();
+			_isDirty = true;
 			rejectionReason = string.Empty;
 			return true;
 		}
 
 		public bool TryApplyResolvedValue(BeatClockFrame frame, out string rejectionReason) {
 			var resolvedValue = _definition.BeatModulation?.Resolve(_baseValue, frame) ?? _baseValue;
-			// A Scene parameter can represent a one-shot action, so equal frame values must not be dispatched again.
-			if (_hasResolvedValue && Mathf.Approximately(_lastResolvedValue, resolvedValue)) {
+			// A Scene parameter can represent a one-shot action, so only an explicit input may re-dispatch an equal value.
+			if (!_isDirty && _hasResolvedValue && Mathf.Approximately(_lastResolvedValue, resolvedValue)) {
 				rejectionReason = string.Empty;
 				return true;
 			}
 			if (!Root.TrySetParameter(Source.Id, resolvedValue, out rejectionReason)) return false;
 			_lastResolvedValue = resolvedValue;
 			_hasResolvedValue = true;
+			_isDirty = false;
 			return true;
 		}
 	}
@@ -662,6 +665,7 @@ namespace ShitDesigner.Main {
 		private readonly PatchParameter _definition;
 		private readonly IReadOnlyCollection<LiveProgramOutput> _outputs;
 		private ParameterValue _baseValue;
+		private bool _isDirty;
 		private bool _hasResolvedValue;
 		private ParameterValue _lastResolvedValue;
 
@@ -682,6 +686,7 @@ namespace ShitDesigner.Main {
 				return false;
 			}
 			_baseValue = value;
+			_isDirty = true;
 			rejectionReason = string.Empty;
 			return true;
 		}
@@ -695,7 +700,7 @@ namespace ShitDesigner.Main {
 				}
 				resolved = ParameterValue.FromFloat(_definition.BeatModulation.Resolve(resolved.AsFloat(), frame));
 			}
-			if (_hasResolvedValue && _lastResolvedValue == resolved) {
+			if (!_isDirty && _hasResolvedValue && _lastResolvedValue == resolved) {
 				rejectionReason = string.Empty;
 				return true;
 			}
@@ -703,6 +708,7 @@ namespace ShitDesigner.Main {
 				if (!output.TrySetGraphParameter(_definition.NodeId, _definition.ParameterId, resolved, out rejectionReason)) return false;
 			_lastResolvedValue = resolved;
 			_hasResolvedValue = true;
+			_isDirty = false;
 			rejectionReason = string.Empty;
 			return true;
 		}
