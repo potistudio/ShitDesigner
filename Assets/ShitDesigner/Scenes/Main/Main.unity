@@ -156,7 +156,7 @@ MonoBehaviour:
   _midiInputManager: {fileID: 444072071}
   _capabilityMonitor: {fileID: 444072069}
   _externalDisplay: {fileID: 444072068}
-  _uiController: {fileID: 2032879209}
+  m_PanelRenderer: {fileID: 2032879209}
   _bootOnAwake: 1
 --- !u!114 &444072068
 MonoBehaviour:
@@ -291,7 +291,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a384a91c65174e2b863b07e053373b33, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.LiveUiController
+  m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.PanelRenderer
   _document: {fileID: 2032879210}
 --- !u!114 &2032879210
 MonoBehaviour:

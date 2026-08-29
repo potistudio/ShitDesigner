@@ -23,7 +23,7 @@ namespace ShitDesigner.Main.Tests {
 				var midi = root.GetComponent<MidiInputManager>();
 				var capability = root.GetComponent<LiveCapabilityMonitor>();
 				var output = root.GetComponent<LiveExternalDisplayOutput>();
-				var ui = root.GetComponent<LiveUiController>();
+				var ui = root.GetComponent<PanelRenderer>();
 				var document = root.GetComponent<UIDocument>();
 
 				Assert.That(root.name, Is.EqualTo("Main Live Host"));
@@ -69,7 +69,7 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(serializedHost.FindProperty("_midiInputManager").objectReferenceValue, Is.SameAs(midi));
 				Assert.That(serializedHost.FindProperty("_capabilityMonitor").objectReferenceValue, Is.SameAs(capability));
 				Assert.That(serializedHost.FindProperty("_externalDisplay").objectReferenceValue, Is.SameAs(output));
-				Assert.That(serializedHost.FindProperty("_uiController").objectReferenceValue, Is.SameAs(ui));
+				Assert.That(serializedHost.FindProperty("m_PanelRenderer").objectReferenceValue, Is.SameAs(ui));
 				Assert.That(serializedHost.FindProperty("_bootOnAwake").boolValue, Is.True);
 				var serializedOutput = new SerializedObject(output);
 				Assert.That(serializedOutput.FindProperty("_displayTransformShader").objectReferenceValue, Is.Not.Null);
