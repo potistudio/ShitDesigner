@@ -22,7 +22,7 @@
   "overrideReferences": false,
   "precompiledReferences": [],
   "autoReferenced": false,
-  "defineConstraints": ["SHITDESIGNER_TEST_HARNESS", "UNITY_INCLUDE_TESTS"],
+  "defineConstraints": ["SHITDESIGNER_TEST_HARNESS", "SHITDESIGNER_INCLUDE_TESTS", "UNITY_INCLUDE_TESTS"],
   "versionDefines": [],
   "noEngineReferences": false,
   "optionalUnityReferences": []
