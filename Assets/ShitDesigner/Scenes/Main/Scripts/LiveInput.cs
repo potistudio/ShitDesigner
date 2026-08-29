@@ -13,11 +13,11 @@ namespace ShitDesigner.Main {
 		private readonly IReadOnlyDictionary<string, PatchDefinition> m_PatchesById;
 		private readonly Action<int> m_LaunchPatchSlot;
 		private readonly Action<int> m_ClearPatchSlot;
-		private readonly Action<int> m_MoveCatalogSelection;
+		private readonly Action<int, int> m_MoveCatalogSelection;
 		private readonly Action m_QueueSelectedPatch;
 		private readonly Action<double> m_TapBpm;
 
-		public LiveKeyboardInput(LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches, Action<int> launchPatchSlot, Action<int> clearPatchSlot, Action<int> moveCatalogSelection, Action queueSelectedPatch, Action<double> tapBpm) {
+		public LiveKeyboardInput(LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches, Action<int> launchPatchSlot, Action<int> clearPatchSlot, Action<int, int> moveCatalogSelection, Action queueSelectedPatch, Action<double> tapBpm) {
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));
 
@@ -47,8 +47,10 @@ namespace ShitDesigner.Main {
 			if (keyboard.digit6Key.wasPressedThisFrame) HandleSlotKey(5, clearSlot);
 			if (keyboard.digit7Key.wasPressedThisFrame) HandleSlotKey(6, clearSlot);
 			if (keyboard.digit8Key.wasPressedThisFrame) HandleSlotKey(7, clearSlot);
-			if (keyboard.leftArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(-1);
-			if (keyboard.rightArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(1);
+			if (keyboard.leftArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(-1, 0);
+			if (keyboard.rightArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(1, 0);
+			if (keyboard.upArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, -1);
+			if (keyboard.downArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, 1);
 			if (keyboard.enterKey.wasPressedThisFrame) m_QueueSelectedPatch();
 			if (keyboard.spaceKey.wasPressedThisFrame) m_TapBpm(Time.unscaledTimeAsDouble);
 			if (keyboard.fKey.wasPressedThisFrame) m_Queue.EnqueueTriggerFlash(loadedPatchId);

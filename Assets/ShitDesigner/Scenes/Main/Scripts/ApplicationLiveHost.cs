@@ -160,9 +160,22 @@ namespace ShitDesigner.Main {
 			return selection.Accepted ? LaunchSelectedPatchSlot() : LiveParameterEnqueueResult.Reject(selection.RejectionReason);
 		}
 
-		public void MoveCatalogSelection(int direction) {
-			if (_patchIds.Length == 0 || direction == 0) return;
-			_selectedCatalogPatchIndex = Mathf.Clamp(_selectedCatalogPatchIndex + Math.Sign(direction), 0, _patchIds.Length - 1);
+		public void MoveCatalogSelection(int horizontalDirection, int verticalDirection) {
+			if (_patches.Length == 0 || (horizontalDirection == 0 && verticalDirection == 0)) return;
+			_selectedCatalogPatchIndex = Mathf.Clamp(_selectedCatalogPatchIndex, 0, _patches.Length - 1);
+			var selectedPatch = _patches[_selectedCatalogPatchIndex];
+			var sourceRow = _patches.Where(patch => patch.Role == selectedPatch.Role).ToArray();
+			var column = Array.FindIndex(sourceRow, patch => patch.Id == selectedPatch.Id);
+			if (column < 0) column = 0;
+
+			var targetRole = verticalDirection < 0 ? LivePatchRole.Main
+				: verticalDirection > 0 ? LivePatchRole.Overlay
+				: selectedPatch.Role;
+			var targetRow = _patches.Where(patch => patch.Role == targetRole).ToArray();
+			if (targetRow.Length == 0) return;
+			if (verticalDirection == 0) column += Math.Sign(horizontalDirection);
+			var targetPatch = targetRow[Mathf.Clamp(column, 0, targetRow.Length - 1)];
+			_selectedCatalogPatchIndex = Array.IndexOf(_patchIds, targetPatch.Id);
 		}
 
 		public LivePatchSlotOperationResult QueueSelectedCatalogPatch() {
