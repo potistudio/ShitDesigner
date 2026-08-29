@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace ShitDesigner.Scene {
-	/// <summary>Generates a stylized field of candy sticks and alternates their cuts and body pushes on each beat.</summary>
+	/// <summary>Generates a stylized field of candy sticks, alternates their cuts and body pushes on each beat, and animates new sticks into the field.</summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
 	public sealed class ChitoseCandyCutScene : MonoBehaviour, IBpmClockReceiver {
@@ -40,11 +40,17 @@ namespace ShitDesigner.Scene {
 		}
 
 		private sealed class Candy {
+			public Transform Root { get; }
 			public CandyFragment[] Fragments { get; }
 			public int NextCutLayer { get; set; }
 			public int PendingPushLayer { get; set; } = -1;
+			public bool IsEntering { get; set; }
+			public Vector3 EntryStartPosition { get; set; }
+			public Vector3 EntryTargetPosition { get; set; }
+			public long EntryStartBeat { get; set; }
 
-			public Candy(CandyFragment[] fragments) {
+			public Candy(Transform root, CandyFragment[] fragments) {
+				Root = root;
 				Fragments = fragments;
 			}
 		}
@@ -71,6 +77,8 @@ namespace ShitDesigner.Scene {
 		[Min(0f)] [SerializeField] private float m_HorizontalImpulse = 0.9f;
 		[Tooltip("Easing applied while the body is pushed during one beat.")]
 		[SerializeField] private AnimationCurve m_PushEasing = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+		[Tooltip("Easing applied while a new candy approaches from behind during one beat.")]
+		[SerializeField] private AnimationCurve m_EntryEasing = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
 		private readonly List<Candy> m_Candies = new List<Candy>();
 		private readonly List<Material> m_GeneratedMaterials = new List<Material>();
@@ -117,6 +125,7 @@ namespace ShitDesigner.Scene {
 
 			if (!m_UsesExternalClock)
 				m_AdjustedTotalBeats += Time.unscaledDeltaTime * m_PreviewBpm / 60d;
+			UpdateCandyEntries(m_AdjustedTotalBeats);
 			UpdatePushAnimation(m_AdjustedTotalBeats);
 			ProcessBeatPosition(m_AdjustedTotalBeats);
 		}
@@ -228,14 +237,21 @@ namespace ShitDesigner.Scene {
 			}
 		}
 
-		private void AddNewCandy() {
+		private void AddNewCandy(long startBeat) {
 			var random = m_RuntimeRandom;
 			var frontPosition = new Vector3(
 				NextFloat(random, -m_FieldSize.x * 0.5f, m_FieldSize.x * 0.5f),
 				NextFloat(random, -m_FieldSize.y * 0.5f, m_FieldSize.y * 0.5f),
 				NextFloat(random, -0.18f, 0.18f));
-			var axis = Quaternion.AngleAxis(NextFloat(random, -2.5f, 2.5f), Vector3.forward) * m_CandyAxisRuntime;
-			m_Candies.Add(CreateCandy(m_Candies.Count, frontPosition, axis.normalized, random));
+			var axis = (Quaternion.AngleAxis(NextFloat(random, -2.5f, 2.5f), Vector3.forward)
+				* m_CandyAxisRuntime).normalized;
+			var candy = CreateCandy(m_Candies.Count, frontPosition, axis, random);
+			candy.EntryTargetPosition = candy.Root.localPosition;
+			candy.EntryStartPosition = candy.EntryTargetPosition - axis * m_CandyLength;
+			candy.EntryStartBeat = startBeat;
+			candy.IsEntering = true;
+			candy.Root.localPosition = candy.EntryStartPosition;
+			m_Candies.Add(candy);
 		}
 
 		private Candy CreateCandy(int index, Vector3 frontPosition, Vector3 axis, System.Random random) {
@@ -273,7 +289,7 @@ namespace ShitDesigner.Scene {
 					body, basePosition, CreateHorizontalImpulse(random));
 			}
 
-			return new Candy(fragments);
+			return new Candy(candyRoot, fragments);
 		}
 
 		private void CreateOriginalCandyEnd(Transform frontFragment, int index, System.Random random) {
@@ -348,12 +364,32 @@ namespace ShitDesigner.Scene {
 
 			var cutOccurred = CutNextLayers();
 			if (!cutOccurred) {
-				AddNewCandy();
-				CutNextLayers();
+				AddNewCandy(beatIndex);
 			} else if (m_RuntimeRandom.Next(2) == 0) {
-				AddNewCandy();
+				AddNewCandy(beatIndex);
 			}
 			m_PushPending = true;
+		}
+
+		private void UpdateCandyEntries(double beatPosition) {
+			var moved = false;
+			for (var index = 0; index < m_Candies.Count; index++) {
+				var candy = m_Candies[index];
+				if (!candy.IsEntering)
+					continue;
+
+				var progress = Mathf.Clamp01((float)(beatPosition - candy.EntryStartBeat));
+				var easedProgress = EvaluateEasing(m_EntryEasing, progress);
+				candy.Root.localPosition = Vector3.Lerp(
+					candy.EntryStartPosition, candy.EntryTargetPosition, easedProgress);
+				moved = true;
+				if (progress >= 1f) {
+					candy.Root.localPosition = candy.EntryTargetPosition;
+					candy.IsEntering = false;
+				}
+			}
+			if (moved)
+				Physics.SyncTransforms();
 		}
 
 		private void UpdatePushAnimation(double beatPosition) {
@@ -361,15 +397,19 @@ namespace ShitDesigner.Scene {
 				return;
 
 			var progress = Mathf.Clamp01((float)(beatPosition - m_PushStartBeat));
-			var easedProgress = m_PushEasing == null || m_PushEasing.length == 0
-				? progress
-				: Mathf.Clamp01(m_PushEasing.Evaluate(progress));
+			var easedProgress = EvaluateEasing(m_PushEasing, progress);
 			PushCutLayers(easedProgress);
 			if (progress >= 1f) {
 				m_PushAnimating = false;
 				for (var index = 0; index < m_Candies.Count; index++)
 					m_Candies[index].PendingPushLayer = -1;
 			}
+		}
+
+		private static float EvaluateEasing(AnimationCurve easing, float progress) {
+			if (easing != null && easing.length > 0)
+				return Mathf.Clamp01(easing.Evaluate(progress));
+			return progress;
 		}
 
 		private bool CutNextLayers() {
