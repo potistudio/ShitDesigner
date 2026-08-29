@@ -1,5 +1,8 @@
 {
 	"name": "RandomStrokes",
 	"rootNamespace": "ShitDesigner.Scene",
-	"references": []
+	"references": [
+		"ShitDesigner.Scene",
+		"ShitDesigner.Core"
+	]
 }

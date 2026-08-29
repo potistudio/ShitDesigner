@@ -228,6 +228,7 @@ MonoBehaviour:
   m_StrokeCount: 8
   m_StrokeWidth: 0.08
   m_FilledRegionCount: 8
+  m_PreviewBpm: 120
   m_RandomizeOnPlay: 1
   m_Seed: 8127
   m_StrokeColorA: {r: 0.2, g: 0.85, b: 1, a: 1}
