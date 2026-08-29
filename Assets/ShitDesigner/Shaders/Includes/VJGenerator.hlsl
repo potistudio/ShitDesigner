@@ -137,12 +137,8 @@ float4 VJGeneratorEvaluate(float2 inputUv, int variant)
             break;
         }
         case 14: // Tunnel
-        {
-            float radius = max(length(coord), 0.05);
-            value = frac(1.0 / radius + time * 0.3 + atan2(coord.y, coord.x) * _VJAmount);
-            color = VJGeneratorGradient(value) * exp(-radius * max(_VJFalloff, 0.1));
+            color = VJDaniloTunnelEvaluate(uv).rgb;
             break;
-        }
         case 15: // SDF Shapes
             value = 1.0 - VJSoftMask(VJGeneratorSdf(coord, (int)fmod(abs(_VJSeed), 5.0)), 0.0, max(_VJSoftness, 0.02));
             color = lerp(_VJColorB.rgb, _VJColorA.rgb, value);
