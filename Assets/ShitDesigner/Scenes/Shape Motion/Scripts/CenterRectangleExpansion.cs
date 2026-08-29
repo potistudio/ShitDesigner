@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace ShitDesigner.Scene {
-	/// <summary>Expands a centered rectangular outline while reducing its line width.</summary>
+	/// <summary>Expands a centered rectangular outline while reducing its line width within a BPM-relative easing duration.</summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
 	public sealed class CenterRectangleExpansion : MonoBehaviour, IBpmClockReceiver {
@@ -13,6 +13,7 @@ namespace ShitDesigner.Scene {
 		[Min(0.25f)][SerializeField] private float m_BeatsPerExpansion = 1f;
 
 		[Header("Motion")]
+		[Min(0.05f)][SerializeField] private float m_MaxEasingSeconds = 1.4f;
 		[Range(0.001f, 0.25f)][SerializeField] private float m_InitialScale = 0.02f;
 		[SerializeField] private bool m_Loop = true;
 		[SerializeField] private AnimationCurve m_Easing = CreateEaseOutCurve();
@@ -31,10 +32,12 @@ namespace ShitDesigner.Scene {
 		private MeshRenderer m_Renderer;
 		private Vector3[] m_Vertices;
 		private double m_AdjustedTotalBeats;
+		private float m_ActiveBpm;
 		private bool m_UsesExternalClock;
 
 		private void OnEnable() {
 			m_AdjustedTotalBeats = 0d;
+			m_ActiveBpm = m_PreviewBpm;
 			m_UsesExternalClock = false;
 			CreateGeneratedContent();
 			ApplyFrame(0f);
@@ -44,8 +47,9 @@ namespace ShitDesigner.Scene {
 			if (!Application.isPlaying || m_UsesExternalClock)
 				return;
 
+			m_ActiveBpm = m_PreviewBpm;
 			m_AdjustedTotalBeats += Time.unscaledDeltaTime * m_PreviewBpm / 60d;
-			ApplyFrame(GetBeatPhase(m_AdjustedTotalBeats));
+			ApplyFrame(GetEasingProgress(m_AdjustedTotalBeats, m_ActiveBpm));
 		}
 
 		private void OnDisable() {
@@ -59,6 +63,7 @@ namespace ShitDesigner.Scene {
 		private void OnValidate() {
 			m_PreviewBpm = Mathf.Clamp(m_PreviewBpm, 30f, 300f);
 			m_BeatsPerExpansion = Mathf.Max(0.25f, m_BeatsPerExpansion);
+			m_MaxEasingSeconds = Mathf.Max(0.05f, m_MaxEasingSeconds);
 			m_InitialScale = Mathf.Clamp(m_InitialScale, 0.001f, 0.25f);
 			m_TargetSize.x = Mathf.Max(0.01f, m_TargetSize.x);
 			m_TargetSize.y = Mathf.Max(0.01f, m_TargetSize.y);
@@ -68,7 +73,7 @@ namespace ShitDesigner.Scene {
 			if (m_Material != null)
 				SetMaterialColor(m_Material, m_Color);
 			if (m_Mesh != null && isActiveAndEnabled)
-				ApplyFrame(GetBeatPhase(m_AdjustedTotalBeats));
+				ApplyFrame(GetEasingProgress(m_AdjustedTotalBeats, GetActiveBpm()));
 		}
 
 		public void SetBpmClock(BeatClockFrame frame) {
@@ -77,23 +82,33 @@ namespace ShitDesigner.Scene {
 				return;
 
 			m_UsesExternalClock = true;
+			m_ActiveBpm = frame.Bpm;
 			m_AdjustedTotalBeats = frame.AdjustedTotalBeats;
-			ApplyFrame(GetBeatPhase(m_AdjustedTotalBeats));
+			ApplyFrame(GetEasingProgress(m_AdjustedTotalBeats, m_ActiveBpm));
 		}
 
 		[ContextMenu("Rebuild Rectangle")]
 		public void Rebuild() {
 			ReleaseGeneratedContent();
 			CreateGeneratedContent();
-			ApplyFrame(GetBeatPhase(m_AdjustedTotalBeats));
+			ApplyFrame(GetEasingProgress(m_AdjustedTotalBeats, GetActiveBpm()));
 		}
 
-		private float GetBeatPhase(double beatPosition) {
-			if (m_BeatsPerExpansion <= Mathf.Epsilon)
+		private float GetActiveBpm() {
+			return m_UsesExternalClock && m_ActiveBpm > Mathf.Epsilon ? m_ActiveBpm : m_PreviewBpm;
+		}
+
+		private float GetEasingProgress(double beatPosition, float bpm) {
+			if (m_BeatsPerExpansion <= Mathf.Epsilon || bpm <= Mathf.Epsilon)
 				return 1f;
 
-			var normalizedTime = (float)(beatPosition / m_BeatsPerExpansion);
-			return m_Loop ? Mathf.Repeat(normalizedTime, 1f) : Mathf.Clamp01(normalizedTime);
+			var cyclePositionBeats = m_Loop
+				? Mathf.Repeat((float)beatPosition, m_BeatsPerExpansion)
+				: Mathf.Clamp((float)beatPosition, 0f, m_BeatsPerExpansion);
+			var cycleDurationSeconds = m_BeatsPerExpansion * 60f / bpm;
+			var easingDurationSeconds = Mathf.Min(m_MaxEasingSeconds, cycleDurationSeconds);
+			var elapsedSeconds = cyclePositionBeats * 60f / bpm;
+			return Mathf.Clamp01(elapsedSeconds / Mathf.Max(easingDurationSeconds, Mathf.Epsilon));
 		}
 
 		private void ApplyFrame(float normalizedTime) {
