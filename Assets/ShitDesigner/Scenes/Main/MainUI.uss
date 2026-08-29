@@ -171,6 +171,7 @@
     font-size: 16px;
     -unity-font-style: bold;
     -unity-text-align: middle-center;
+    -unity-background-scale-mode: scale-and-crop;
 }
 
 .patch-slot-button.is-selected {
