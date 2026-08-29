@@ -7,7 +7,7 @@ namespace ShitDesigner.Scene {
 	/// <summary>Generates a stylized field of candy sticks, cuts their decorated ends, and drops the split fragments.</summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
-	public sealed class ChitoseCandyCutScene : MonoBehaviour, ISceneGraphClockReceiver {
+	public sealed class ChitoseCandyCutScene : MonoBehaviour {
 		private enum PatternType {
 			Dot,
 			Star,
@@ -26,13 +26,12 @@ namespace ShitDesigner.Scene {
 			public Rigidbody FrontBody { get; }
 			public float RearBasePosition { get; }
 			public float FrontBasePosition { get; }
-			public float CutCoordinate { get; }
 			public Vector3 FrontImpulse { get; }
 			public bool PhysicsActivated { get; set; }
 
 			public Candy(Transform rearSegment, Transform frontSegment, Transform rearCutFace, Transform frontCutFace,
 				Rigidbody rearBody, Rigidbody frontBody, float rearBasePosition, float frontBasePosition,
-				float cutCoordinate, Vector3 frontImpulse) {
+				Vector3 frontImpulse) {
 				RearSegment = rearSegment;
 				FrontSegment = frontSegment;
 				RearCutFace = rearCutFace;
@@ -41,7 +40,6 @@ namespace ShitDesigner.Scene {
 				FrontBody = frontBody;
 				RearBasePosition = rearBasePosition;
 				FrontBasePosition = frontBasePosition;
-				CutCoordinate = cutCoordinate;
 				FrontImpulse = frontImpulse;
 			}
 		}
@@ -62,28 +60,14 @@ namespace ShitDesigner.Scene {
 			new Color(0.92f, 0.17f, 0.43f, 1f)
 		};
 
-		[Header("Cut animation")]
-		[Min(0.01f)] [SerializeField] private float m_CutterSpeed = 0.62f;
-		[Min(0.1f)] [SerializeField] private float m_CutterTravel = 8f;
-		[Min(0.01f)] [SerializeField] private float m_CutterImpactWidth = 0.72f;
+		[Header("Cut")]
 		[Min(0.1f)] [SerializeField] private float m_CutPieceLength = 1.75f;
 		[Min(0f)] [SerializeField] private float m_SplitGap = 0.55f;
 		[Min(0f)] [SerializeField] private float m_HorizontalImpulse = 0.9f;
 
-		[Header("Cutter")]
-		[SerializeField] private Vector3 m_BladePosition = new Vector3(0f, 0f, -2.8f);
-		[Min(1f)] [SerializeField] private float m_BladeLength = 17f;
-		[Min(0.01f)] [SerializeField] private float m_BladeThickness = 0.18f;
-		[Min(0.01f)] [SerializeField] private float m_BladeDepth = 0.16f;
-		[SerializeField] private float m_BladeAngle = 52f;
-		[Min(0.01f)] [SerializeField] private float m_BladeEdgeThickness = 0.07f;
-		[ColorUsage(true, true)] [SerializeField] private Color m_BladeColor = new Color(0.92f, 0.98f, 0.95f, 1f);
-		[ColorUsage(true, true)] [SerializeField] private Color m_BladeEdgeColor = new Color(0.08f, 0.25f, 0.27f, 1f);
-
 		private readonly List<Candy> m_Candies = new List<Candy>();
 		private readonly List<Material> m_GeneratedMaterials = new List<Material>();
 		private Transform m_GeneratedRoot;
-		private Transform m_Blade;
 		private Mesh m_RearBodyMesh;
 		private Mesh m_FrontBodyMesh;
 		private Mesh m_DiscMesh;
@@ -92,37 +76,20 @@ namespace ShitDesigner.Scene {
 		private Material[] m_PatternMaterials = Array.Empty<Material>();
 		private Material m_RimMaterial;
 		private Material m_FaceMaterial;
-		private Material m_BladeMaterial;
-		private Material m_BladeEdgeMaterial;
 		private Vector3 m_CandyAxisRuntime;
-		private Vector3 m_CutterTravelDirection;
 		private float m_RearPieceLength;
 		private float m_FrontPieceLength;
-		private float m_AnimationTime;
 		private bool m_RebuildRequested = true;
-		private bool m_GraphClockDriven;
 
 		private void OnEnable() {
-			m_AnimationTime = 0f;
 			Rebuild();
 		}
 
 		private void Update() {
 			if (m_RebuildRequested)
 				Rebuild();
-			if (Application.isPlaying && !m_GraphClockDriven)
-				Advance(Time.deltaTime);
-		}
-
-		public void SetGraphClockDriven(bool graphClockDriven) {
-			m_GraphClockDriven = graphClockDriven;
-		}
-
-		public void AdvanceGraphClock(double deltaSeconds) {
-			if (!m_GraphClockDriven || double.IsNaN(deltaSeconds) || double.IsInfinity(deltaSeconds) || deltaSeconds <= 0d)
-				return;
-
-			Advance((float)Math.Min(deltaSeconds, float.MaxValue));
+			else if (Application.isPlaying)
+				ApplyCutState();
 		}
 
 		private void OnDisable() {
@@ -141,16 +108,9 @@ namespace ShitDesigner.Scene {
 			m_FieldSize.y = Mathf.Max(0.1f, m_FieldSize.y);
 			if (m_CandyAxis.sqrMagnitude < 0.0001f)
 				m_CandyAxis = new Vector3(0.57f, -0.37f, -0.73f);
-			m_CutterSpeed = Mathf.Max(0.01f, m_CutterSpeed);
-			m_CutterTravel = Mathf.Max(0.1f, m_CutterTravel);
-			m_CutterImpactWidth = Mathf.Max(0.01f, m_CutterImpactWidth);
 			m_CutPieceLength = Mathf.Clamp(m_CutPieceLength, 0.1f, m_CandyLength - 0.1f);
 			m_SplitGap = Mathf.Max(0f, m_SplitGap);
 			m_HorizontalImpulse = Mathf.Max(0f, m_HorizontalImpulse);
-			m_BladeLength = Mathf.Max(1f, m_BladeLength);
-			m_BladeThickness = Mathf.Max(0.01f, m_BladeThickness);
-			m_BladeDepth = Mathf.Max(0.01f, m_BladeDepth);
-			m_BladeEdgeThickness = Mathf.Max(0.01f, m_BladeEdgeThickness);
 			m_RebuildRequested = true;
 		}
 
@@ -167,10 +127,6 @@ namespace ShitDesigner.Scene {
 			m_CandyAxisRuntime = m_CandyAxis.sqrMagnitude < 0.0001f
 				? new Vector3(0.57f, -0.37f, -0.73f).normalized
 				: m_CandyAxis.normalized;
-			var projectedAxis = new Vector3(m_CandyAxisRuntime.x, m_CandyAxisRuntime.y, 0f);
-			m_CutterTravelDirection = projectedAxis.sqrMagnitude < 0.0001f
-				? Vector3.right
-				: projectedAxis.normalized;
 
 			m_FrontPieceLength = Mathf.Clamp(m_CutPieceLength, 0.1f, m_CandyLength - 0.1f);
 			m_RearPieceLength = m_CandyLength - m_FrontPieceLength;
@@ -180,26 +136,7 @@ namespace ShitDesigner.Scene {
 			m_PatternMeshes = BuildPatternMeshes();
 			CreateMaterials();
 			CreateCandies();
-			CreateBlade();
-			ApplyAnimationState();
-		}
-
-		[ContextMenu("Reset Chitose Candy Cut")]
-		public void ResetAnimation() {
-			m_AnimationTime = 0f;
-			ResetPhysicsState();
-			ApplyAnimationState();
-		}
-
-		private void Advance(float deltaSeconds) {
-			if (deltaSeconds <= 0f || float.IsNaN(deltaSeconds) || float.IsInfinity(deltaSeconds))
-				return;
-
-			var nextAnimationTime = m_AnimationTime + deltaSeconds * m_CutterSpeed;
-			m_AnimationTime = Mathf.Repeat(nextAnimationTime, 1f);
-			if (nextAnimationTime >= 1f)
-				ResetPhysicsState();
-			ApplyAnimationState();
+			ApplyCutState();
 		}
 
 		private void CreateMaterials() {
@@ -213,8 +150,6 @@ namespace ShitDesigner.Scene {
 
 			m_RimMaterial = CreateMaterial("Chitose Candy Rim", new Color(0.72f, 0.98f, 0.82f, 1f));
 			m_FaceMaterial = CreateMaterial("Chitose Candy Face", new Color(1f, 0.94f, 0.68f, 1f));
-			m_BladeMaterial = CreateMaterial("Chitose Candy Cutter", m_BladeColor);
-			m_BladeEdgeMaterial = CreateMaterial("Chitose Candy Cutter Edge", m_BladeEdgeColor);
 		}
 
 		private void CreateCandies() {
@@ -289,8 +224,7 @@ namespace ShitDesigner.Scene {
 			pattern.localPosition = Vector3.up * 0.064f;
 
 			return new Candy(rearSegment, frontSegment, rearCutFace, frontCutFace, rearBody, frontBody,
-				rearBasePosition, frontBasePosition, Vector3.Dot(frontPosition, m_CutterTravelDirection),
-				CreateHorizontalImpulse(random));
+				rearBasePosition, frontBasePosition, CreateHorizontalImpulse(random));
 		}
 
 		private Rigidbody AddPhysicsBody(Transform segment, float length) {
@@ -313,48 +247,20 @@ namespace ShitDesigner.Scene {
 			return new Vector3(direction * magnitude, 0f, 0f);
 		}
 
-		private void CreateBlade() {
-			m_Blade = new GameObject("Cutter Blade").transform;
-			m_Blade.gameObject.hideFlags = HideFlags.DontSave;
-			m_Blade.SetParent(m_GeneratedRoot, false);
-			m_Blade.localRotation = Quaternion.Euler(0f, 0f, m_BladeAngle);
-
-			var shadow = CreatePrimitiveCube("Blade Shadow", m_Blade, m_BladeEdgeMaterial);
-			shadow.localPosition = new Vector3(0f, 0f, 0.11f);
-			shadow.localScale = new Vector3(m_BladeLength + 0.22f, m_BladeThickness + 0.12f, m_BladeDepth);
-
-			var plate = CreatePrimitiveCube("Blade Plate", m_Blade, m_BladeMaterial);
-			plate.localScale = new Vector3(m_BladeLength, m_BladeThickness, m_BladeDepth);
-
-			var edge = CreatePrimitiveCube("Blade Highlight", m_Blade, m_BladeMaterial);
-			edge.localPosition = new Vector3(0f, -m_BladeThickness * 0.34f, -m_BladeDepth * 0.58f);
-			edge.localScale = new Vector3(m_BladeLength * 1.02f, m_BladeEdgeThickness, m_BladeDepth * 0.4f);
-		}
-
-		private void ApplyAnimationState() {
-			if (m_Blade == null)
-				return;
-
-			var progress = Mathf.SmoothStep(0f, 1f, m_AnimationTime);
-			var travel = Mathf.Lerp(-m_CutterTravel, m_CutterTravel, progress);
-			m_Blade.localPosition = m_BladePosition + m_CutterTravelDirection * travel;
-
+		private void ApplyCutState() {
+			var splitOffset = m_SplitGap * 0.5f;
 			for (var index = 0; index < m_Candies.Count; index++) {
 				var candy = m_Candies[index];
-				var cutProgress = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(
-					(travel - candy.CutCoordinate + m_CutterImpactWidth * 0.5f) / m_CutterImpactWidth));
 				if (!candy.PhysicsActivated) {
-					var splitOffset = cutProgress * m_SplitGap * 0.5f;
 					candy.RearSegment.localPosition = Vector3.up * (candy.RearBasePosition - splitOffset);
 					candy.FrontSegment.localPosition = Vector3.up * (candy.FrontBasePosition + splitOffset);
-					if (cutProgress >= 0.999f)
+					if (Application.isPlaying)
 						ActivatePhysics(candy);
 				}
-				var cutFaceVisible = candy.PhysicsActivated || cutProgress > 0.01f;
-				if (candy.RearCutFace.gameObject.activeSelf != cutFaceVisible)
-					candy.RearCutFace.gameObject.SetActive(cutFaceVisible);
-				if (candy.FrontCutFace.gameObject.activeSelf != cutFaceVisible)
-					candy.FrontCutFace.gameObject.SetActive(cutFaceVisible);
+				if (!candy.RearCutFace.gameObject.activeSelf)
+					candy.RearCutFace.gameObject.SetActive(true);
+				if (!candy.FrontCutFace.gameObject.activeSelf)
+					candy.FrontCutFace.gameObject.SetActive(true);
 			}
 		}
 
@@ -375,33 +281,6 @@ namespace ShitDesigner.Scene {
 			rigidbody.useGravity = true;
 			rigidbody.collisionDetectionMode = CollisionDetectionMode.Continuous;
 			rigidbody.AddForce(horizontalImpulse, ForceMode.Impulse);
-		}
-
-		private void ResetPhysicsState() {
-			for (var index = 0; index < m_Candies.Count; index++) {
-				var candy = m_Candies[index];
-				ResetPhysics(candy.RearBody);
-				ResetPhysics(candy.FrontBody);
-				candy.PhysicsActivated = false;
-				candy.RearSegment.localPosition = Vector3.up * candy.RearBasePosition;
-				candy.FrontSegment.localPosition = Vector3.up * candy.FrontBasePosition;
-				candy.RearSegment.localRotation = Quaternion.identity;
-				candy.FrontSegment.localRotation = Quaternion.identity;
-				candy.RearCutFace.gameObject.SetActive(false);
-				candy.FrontCutFace.gameObject.SetActive(false);
-			}
-			Physics.SyncTransforms();
-		}
-
-		private static void ResetPhysics(Rigidbody rigidbody) {
-			if (rigidbody == null)
-				return;
-
-			rigidbody.linearVelocity = Vector3.zero;
-			rigidbody.angularVelocity = Vector3.zero;
-			rigidbody.isKinematic = true;
-			rigidbody.useGravity = false;
-			rigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
 		}
 
 		private Color[] ResolveCandyColors() {
@@ -554,23 +433,6 @@ namespace ShitDesigner.Scene {
 			return item;
 		}
 
-		private static Transform CreatePrimitiveCube(string objectName, Transform parent, Material material) {
-			var item = GameObject.CreatePrimitive(PrimitiveType.Cube);
-			item.name = objectName;
-			item.hideFlags = HideFlags.DontSave;
-			item.transform.SetParent(parent, false);
-			var collider = item.GetComponent<Collider>();
-			if (collider != null)
-				DestroyOwnedObject(collider);
-			var meshRenderer = item.GetComponent<MeshRenderer>();
-			if (meshRenderer != null) {
-				meshRenderer.sharedMaterial = material;
-				meshRenderer.shadowCastingMode = ShadowCastingMode.Off;
-				meshRenderer.receiveShadows = false;
-			}
-			return item.transform;
-		}
-
 		private Material CreateMaterial(string materialName, Color color) {
 			var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default");
 			if (shader == null)
@@ -595,7 +457,6 @@ namespace ShitDesigner.Scene {
 			if (m_GeneratedRoot != null)
 				DestroyOwnedObject(m_GeneratedRoot.gameObject);
 			m_GeneratedRoot = null;
-			m_Blade = null;
 			m_Candies.Clear();
 
 			DestroyOwnedObject(m_RearBodyMesh);
@@ -615,8 +476,6 @@ namespace ShitDesigner.Scene {
 			m_PatternMaterials = Array.Empty<Material>();
 			m_RimMaterial = null;
 			m_FaceMaterial = null;
-			m_BladeMaterial = null;
-			m_BladeEdgeMaterial = null;
 		}
 
 		private static float NextFloat(System.Random random, float minimum, float maximum) {
