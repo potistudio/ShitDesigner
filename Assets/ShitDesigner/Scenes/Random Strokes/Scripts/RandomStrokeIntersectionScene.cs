@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ShitDesigner.Core;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -7,7 +8,7 @@ namespace ShitDesigner.Scene {
 	/// <summary>Draws random 2D strokes and fills a random subset of the regions they enclose.</summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
-	public sealed class RandomStrokeIntersectionScene : MonoBehaviour {
+	public sealed class RandomStrokeIntersectionScene : MonoBehaviour, IBpmClockReceiver {
 		[Header("Canvas")]
 		[Min(1f)][SerializeField] private Vector2 m_CanvasSize = new Vector2(10f, 6f);
 
@@ -17,6 +18,9 @@ namespace ShitDesigner.Scene {
 
 		[Header("Regions")]
 		[Range(0, 128)][SerializeField] private int m_FilledRegionCount = 8;
+
+		[Header("Beat")]
+		[Range(30f, 300f)][SerializeField] private float m_PreviewBpm = 120f;
 
 		[Header("Randomness")]
 		[SerializeField] private bool m_RandomizeOnPlay = true;
@@ -32,14 +36,31 @@ namespace ShitDesigner.Scene {
 		private Material m_StrokeMaterial;
 		private Material m_RegionMaterial;
 		private Mesh m_RegionMesh;
+		private double m_AdjustedTotalBeats;
+		private long m_LastGeneratedBeat = long.MinValue;
+		private int m_GenerationSeed;
+		private bool m_UsesExternalClock;
 
 		private void OnEnable() {
+			m_AdjustedTotalBeats = 0d;
+			m_LastGeneratedBeat = long.MinValue;
+			m_UsesExternalClock = false;
+			m_GenerationSeed = GetGenerationSeed();
 			if (!Application.isPlaying)
-				Generate();
+				GenerateWithSeed(m_GenerationSeed);
 		}
 
 		private void Start() {
-			Generate();
+			m_GenerationSeed = GetGenerationSeed();
+			m_LastGeneratedBeat = 0L;
+			GenerateWithSeed(GetBeatSeed(0L));
+		}
+
+		private void Update() {
+			if (Application.isPlaying && !m_UsesExternalClock) {
+				m_AdjustedTotalBeats += Time.unscaledDeltaTime * m_PreviewBpm / 60d;
+				ProcessBeatPosition(m_AdjustedTotalBeats);
+			}
 		}
 
 		private void OnDisable() {
@@ -56,16 +77,46 @@ namespace ShitDesigner.Scene {
 			m_StrokeCount = Mathf.Clamp(m_StrokeCount, 2, 64);
 			m_StrokeWidth = Mathf.Max(0.005f, m_StrokeWidth);
 			m_FilledRegionCount = Mathf.Clamp(m_FilledRegionCount, 0, 128);
+			m_PreviewBpm = Mathf.Clamp(m_PreviewBpm, 30f, 300f);
 
 			if (!Application.isPlaying && isActiveAndEnabled)
 				Generate();
 		}
 
+		public void SetBpmClock(BeatClockFrame frame) {
+			if (!frame.IsAvailable || double.IsNaN(frame.AdjustedTotalBeats) || double.IsInfinity(frame.AdjustedTotalBeats))
+				return;
+
+			m_UsesExternalClock = true;
+			m_AdjustedTotalBeats = frame.AdjustedTotalBeats;
+			ProcessBeatPosition(m_AdjustedTotalBeats);
+		}
+
 		[ContextMenu("Generate Random Strokes")]
 		public void Generate() {
+			m_GenerationSeed = GetGenerationSeed();
+			GenerateWithSeed(m_GenerationSeed);
+		}
+
+		private void ProcessBeatPosition(double beatPosition) {
+			if (double.IsNaN(beatPosition) || double.IsInfinity(beatPosition))
+				return;
+
+			var beatIndex = (long)Math.Floor(beatPosition + 1e-9d);
+			if (beatIndex == m_LastGeneratedBeat)
+				return;
+
+			m_LastGeneratedBeat = beatIndex;
+			GenerateWithSeed(GetBeatSeed(beatIndex));
+		}
+
+		private int GetBeatSeed(long beat) {
+			return unchecked(m_GenerationSeed + (int)(beat * 7919L));
+		}
+
+		private void GenerateWithSeed(int seed) {
 			ReleaseGeneratedContent();
 
-			var seed = GetGenerationSeed();
 			List<StrokePath> paths = null;
 			List<PolygonFace> regions = null;
 			for (var attempt = 0; attempt < 4; attempt++) {
