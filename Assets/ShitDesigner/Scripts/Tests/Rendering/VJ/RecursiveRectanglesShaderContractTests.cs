@@ -13,7 +13,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 		private const string ShaderPath = "Assets/ShitDesigner/Scripts/Media/Shaders/RecursiveRectangles.shader";
 
 		[UnityTest]
-		public IEnumerator RecursiveRectangles_RevealZeroShowsOnlyTheRootRegion() {
+		public IEnumerator RecursiveRectangles_RevealZeroIsTransparent() {
 			RequireGraphicsDevice();
 			var material = CreateMaterial();
 			try {
@@ -24,7 +24,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 				Color32[] pixels = null;
 				yield return Render(material, 32, 32, result => pixels = result);
 
-				Assert.That(pixels.Distinct().Count(), Is.EqualTo(1));
+				Assert.That(pixels.All(pixel => pixel.a == 0), Is.True);
 			}
 			finally { UnityEngine.Object.DestroyImmediate(material); }
 		}
@@ -193,19 +193,26 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 				yield return Render(material, 64, 8, result => halfway = result);
 
 				var row = 4 * 64;
+				Assert.That(halfway[row + 8], Is.EqualTo(root[row + 8]));
 				Assert.That(halfway[row + 24], Is.EqualTo(root[row + 24]));
 				Assert.That(halfway[row + 56], Is.EqualTo(root[row + 56]));
-				Assert.That(halfway[row + 8], Is.Not.EqualTo(root[row + 8]));
 				Assert.That(halfway[row + 40], Is.Not.EqualTo(root[row + 40]));
 
+				material.SetFloat("_RevealProgress", 1f);
+				Color32[] completed = null;
+				yield return Render(material, 64, 8, result => completed = result);
+				Assert.That(completed.Count(pixel => pixel.a > 0), Is.EqualTo(completed.Length / 2));
+
 				material.SetInt("_AxisMode", 1);
+				material.SetFloat("_RevealProgress", .5f);
 				Color32[] verticalSplit = null;
 				yield return Render(material, 64, 8, result => verticalSplit = result);
 
 				Assert.That(verticalSplit[2 * 64 + 48], Is.EqualTo(root[2 * 64 + 48]));
 				Assert.That(verticalSplit[6 * 64 + 48], Is.EqualTo(root[6 * 64 + 48]));
-				Assert.That(verticalSplit[2 * 64 + 16], Is.Not.EqualTo(root[2 * 64 + 16]));
-				Assert.That(verticalSplit[6 * 64 + 16], Is.Not.EqualTo(root[6 * 64 + 16]));
+				var lowerChildIsVisible = verticalSplit[2 * 64 + 16].a > 0;
+				var upperChildIsVisible = verticalSplit[6 * 64 + 16].a > 0;
+				Assert.That(lowerChildIsVisible, Is.Not.EqualTo(upperChildIsVisible));
 			}
 			finally { UnityEngine.Object.DestroyImmediate(material); }
 		}

@@ -103,7 +103,10 @@ Shader "Hidden/ShitDesigner/RecursiveRectangles"
 
 			float4 PathColor(uint seed, uint path)
 			{
-				return Random01(seed, path, 47u) < 0.5 ? _ColorA : float4(0.0, 0.0, 0.0, 0.0);
+				if (path <= 1u) return float4(0.0, 0.0, 0.0, 0.0);
+				bool firstChild = (path & 1u) == 0u;
+				bool firstChildIsColored = Random01(seed, path >> 1, 47u) < 0.5;
+				return firstChild == firstChildIsColored ? _ColorA : float4(0.0, 0.0, 0.0, 0.0);
 			}
 
 			float4 Premultiply(float4 color)
