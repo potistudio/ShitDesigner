@@ -7,6 +7,9 @@ namespace ShitDesigner.Main {
 		bool TrySetValue(float value, out string rejectionReason);
 	}
 
+	/// <summary>Marks a scene parameter whose active transition invokes a one-shot action.</summary>
+	public interface ILiveSceneTriggerParameter { }
+
 	/// <summary>Supplies the graph-clock rate for a live scene.</summary>
 	public interface ILiveSceneTimeScaleProvider {
 		float TimeScale { get; }

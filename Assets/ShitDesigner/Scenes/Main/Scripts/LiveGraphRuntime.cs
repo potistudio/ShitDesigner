@@ -615,6 +615,7 @@ namespace ShitDesigner.Main {
 
 	internal sealed class LivePublishedParameter : ILivePublishedParameter {
 		private readonly PatchParameter _definition;
+		private readonly bool _isTriggerParameter;
 		private float _baseValue;
 		private bool _isDirty;
 		private bool _hasResolvedValue;
@@ -626,6 +627,7 @@ namespace ShitDesigner.Main {
 			_definition = definition ?? throw new ArgumentNullException(nameof(definition));
 			Root = root ?? throw new ArgumentNullException(nameof(root));
 			Source = source;
+			_isTriggerParameter = Root.IsTriggerParameter(source.Id);
 			_baseValue = source.Value;
 			_lastResolvedValue = source.Value;
 			_hasResolvedValue = true;
@@ -649,7 +651,18 @@ namespace ShitDesigner.Main {
 		public bool TryApplyResolvedValue(BeatClockFrame frame, out string rejectionReason) {
 			var resolvedValue = _definition.BeatModulation?.Resolve(_baseValue, frame) ?? _baseValue;
 			// A Scene parameter can represent a one-shot action, so only an explicit input may re-dispatch an equal value.
-			if (!_isDirty && _hasResolvedValue && Mathf.Approximately(_lastResolvedValue, resolvedValue)) {
+			var triggerActivated = false;
+			if (!_isDirty && _isTriggerParameter) {
+				var wasActive = _hasResolvedValue && IsTriggerActive(_lastResolvedValue);
+				_lastResolvedValue = resolvedValue;
+				_hasResolvedValue = true;
+				if (wasActive || !IsTriggerActive(resolvedValue)) {
+					rejectionReason = string.Empty;
+					return true;
+				}
+				triggerActivated = true;
+			}
+			if (!triggerActivated && !_isDirty && _hasResolvedValue && Mathf.Approximately(_lastResolvedValue, resolvedValue)) {
 				rejectionReason = string.Empty;
 				return true;
 			}
@@ -659,6 +672,8 @@ namespace ShitDesigner.Main {
 			_isDirty = false;
 			return true;
 		}
+
+		private bool IsTriggerActive(float value) => value > Source.Minimum + Mathf.Epsilon;
 	}
 
 	internal sealed class LivePublishedGraphParameter : ILivePublishedParameter {
