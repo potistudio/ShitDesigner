@@ -83,6 +83,8 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(patchDock.resolvedStyle.height, Is.EqualTo(64f));
 			Assert.That(mainPatchControls, Is.Not.Null);
 			Assert.That(overlayPatchControls, Is.Not.Null);
+			Assert.That(mainPatchControls.horizontalScrollerVisibility, Is.EqualTo(ScrollerVisibility.Auto));
+			Assert.That(overlayPatchControls.horizontalScrollerVisibility, Is.EqualTo(ScrollerVisibility.Auto));
 			Assert.That(patchRoleLabels.parent, Is.SameAs(patchControls));
 			Assert.That(mainPatchControls, Is.Not.SameAs(overlayPatchControls));
 			Assert.That(patchRoleLabels.Query<Label>().ToList().Select(label => label.text), Is.EqualTo(new[] { "MAIN", "OVERLAY" }));
