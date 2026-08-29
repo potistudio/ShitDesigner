@@ -24,19 +24,14 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
                 <ui:VisualElement class="patch-dock">
-                    <ui:VisualElement class="patch-actions">
-                        <ui:Button name="cue-patch-slot" text="CUE" class="patch-action"/>
-                        <ui:Button name="launch-patch-slot" text="PLAY" class="patch-action patch-action-primary"/>
-                        <ui:Button name="clear-patch-slot" text="CLEAR" class="patch-action"/>
-                        <ui:VisualElement name="patch-controls" class="patch-controls">
-                            <ui:VisualElement name="patch-role-labels" class="patch-role-labels">
-                                <ui:Label text="MAIN" class="patch-role-label"/>
-                                <ui:Label text="OVERLAY" class="patch-role-label"/>
-                            </ui:VisualElement>
-                            <ui:VisualElement class="patch-scroll-rows">
-                                <ui:ScrollView name="main-patch-controls" class="patch-row-controls" mode="Horizontal" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden"/>
-                                <ui:ScrollView name="overlay-patch-controls" class="patch-row-controls" mode="Horizontal" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden"/>
-                            </ui:VisualElement>
+                    <ui:VisualElement name="patch-controls" class="patch-controls">
+                        <ui:VisualElement name="patch-role-labels" class="patch-role-labels">
+                            <ui:Label text="MAIN" class="patch-role-label"/>
+                            <ui:Label text="OVERLAY" class="patch-role-label"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement class="patch-scroll-rows">
+                            <ui:ScrollView name="main-patch-controls" class="patch-row-controls" mode="Horizontal" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden"/>
+                            <ui:ScrollView name="overlay-patch-controls" class="patch-row-controls" mode="Horizontal" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden"/>
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:VisualElement>

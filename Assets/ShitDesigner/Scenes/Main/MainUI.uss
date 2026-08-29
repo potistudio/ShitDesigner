@@ -232,30 +232,6 @@
     border-color: rgb(88, 166, 255);
 }
 
-.patch-actions {
-    flex-direction: row;
-}
-
-.patch-action {
-    width: 56px;
-    height: 32px;
-    color: rgb(232, 236, 242);
-    background-color: rgb(29, 34, 41);
-    border-width: 1px;
-    border-color: rgb(48, 55, 65);
-    font-size: 9px;
-}
-
-.patch-action-primary {
-    color: rgb(255, 255, 255);
-    background-color: rgb(47, 111, 179);
-    border-color: rgb(88, 166, 255);
-}
-
-.patch-action:disabled {
-    color: rgb(92, 101, 112);
-}
-
 .patch-button {
     height: 32px;
     color: rgb(232, 236, 242);

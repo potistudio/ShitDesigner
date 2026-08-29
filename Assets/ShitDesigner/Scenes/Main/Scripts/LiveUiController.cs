@@ -22,9 +22,6 @@ namespace ShitDesigner.Main {
 		private VisualElement _patchControls;
 		private ScrollView m_MainPatchControls;
 		private ScrollView m_OverlayPatchControls;
-		private Button _cuePatchButton;
-		private Button _launchPatchButton;
-		private Button _clearPatchSlotButton;
 		private VisualElement _parameterControls;
 		private VisualElement _tempoControls;
 		private TextField _bpmField;
@@ -69,9 +66,6 @@ namespace ShitDesigner.Main {
 			_patchControls = Required<VisualElement>(root, "patch-controls");
 			m_MainPatchControls = Required<ScrollView>(root, "main-patch-controls");
 			m_OverlayPatchControls = Required<ScrollView>(root, "overlay-patch-controls");
-			_cuePatchButton = Required<Button>(root, "cue-patch-slot");
-			_launchPatchButton = Required<Button>(root, "launch-patch-slot");
-			_clearPatchSlotButton = Required<Button>(root, "clear-patch-slot");
 			_parameterControls = Required<VisualElement>(root, "parameter-controls");
 			_tempoControls = Required<VisualElement>(root, "tempo-controls");
 			_bpmField = Required<TextField>(root, "bpm-field");
@@ -89,9 +83,6 @@ namespace ShitDesigner.Main {
 			_confirmationOverlay = Required<VisualElement>(root, "output-confirm-overlay");
 			m_MainPatchControls.RegisterCallback<WheelEvent>(OnMainPatchSelectionWheel, TrickleDown.TrickleDown);
 			m_OverlayPatchControls.RegisterCallback<WheelEvent>(OnOverlayPatchSelectionWheel, TrickleDown.TrickleDown);
-			_cuePatchButton.clicked += CueSelectedPatchSlot;
-			_launchPatchButton.clicked += LaunchSelectedPatchSlot;
-			_clearPatchSlotButton.clicked += ClearSelectedPatchSlot;
 			_bpmField.RegisterValueChangedCallback(OnBpmInputChanged);
 			_bpmField.RegisterCallback<FocusInEvent>(OnBpmFocusIn);
 			_bpmField.RegisterCallback<FocusOutEvent>(OnBpmFocusOut);
@@ -109,9 +100,6 @@ namespace ShitDesigner.Main {
 			if (_patchSlotControls != null) _patchSlotControls.UnregisterCallback<ClickEvent>(OnPatchSlotClicked);
 			if (m_MainPatchControls != null) m_MainPatchControls.UnregisterCallback<WheelEvent>(OnMainPatchSelectionWheel, TrickleDown.TrickleDown);
 			if (m_OverlayPatchControls != null) m_OverlayPatchControls.UnregisterCallback<WheelEvent>(OnOverlayPatchSelectionWheel, TrickleDown.TrickleDown);
-			if (_cuePatchButton != null) _cuePatchButton.clicked -= CueSelectedPatchSlot;
-			if (_launchPatchButton != null) _launchPatchButton.clicked -= LaunchSelectedPatchSlot;
-			if (_clearPatchSlotButton != null) _clearPatchSlotButton.clicked -= ClearSelectedPatchSlot;
 			if (_bpmField != null) {
 				_bpmField.UnregisterValueChangedCallback(OnBpmInputChanged);
 				_bpmField.UnregisterCallback<FocusInEvent>(OnBpmFocusIn);
@@ -333,10 +321,6 @@ namespace ShitDesigner.Main {
 				button.EnableInClassList("is-playing", !slot.IsEmpty && slot.PatchId == model.LoadedPatchId);
 			}
 
-			var hasSelectedPatch = model.PatchSlots.Any(slot => slot.Index == model.SelectedPatchSlotIndex && !slot.IsEmpty);
-			_cuePatchButton.SetEnabled(hasSelectedPatch);
-			_launchPatchButton.SetEnabled(hasSelectedPatch);
-			_clearPatchSlotButton.SetEnabled(hasSelectedPatch);
 		}
 
 		private void OnPatchSlotClicked(ClickEvent change) {
@@ -352,18 +336,6 @@ namespace ShitDesigner.Main {
 		private void AssignPatchToSelectedSlot(string patchId) {
 			if (_host == null) return;
 			ShowSlotRejection(_host.AssignPatchToSelectedSlot(patchId));
-		}
-
-		private void CueSelectedPatchSlot() {
-			if (_host != null) ShowEnqueueRejection(_host.CueSelectedPatchSlot());
-		}
-
-		private void LaunchSelectedPatchSlot() {
-			if (_host != null) ShowEnqueueRejection(_host.LaunchSelectedPatchSlot());
-		}
-
-		private void ClearSelectedPatchSlot() {
-			if (_host != null) ShowSlotRejection(_host.ClearSelectedPatchSlot());
 		}
 
 		private static string FormatPatchSlot(LivePatchSlotReadModel slot, IReadOnlyList<LivePatchReadModel> patches) {
