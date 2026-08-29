@@ -722,6 +722,7 @@ namespace ShitDesigner.Main {
 		public LiveProgramFrames CurrentFrames { get; private set; }
 		public IReadOnlyList<RenderTexture> SlotPreviewTextures => m_SlotPreviewFrames;
 		public LiveParameterDefinition BpmDefinition => _bpmClock.Definition;
+		public BeatClockFrame BpmFrame => _bpmClock.Frame;
 
 		internal LiveGraphRuntime(LiveGraph graph) {
 			_graph = graph ?? throw new ArgumentNullException(nameof(graph));

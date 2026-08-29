@@ -26,6 +26,11 @@ namespace ShitDesigner.Main {
 		private readonly LiveParameterQueue _parameterQueue = new LiveParameterQueue();
 		private readonly LivePatchSlots _patchSlots = new LivePatchSlots();
 		private readonly LiveBpmTap _bpmTap = new LiveBpmTap();
+		private readonly LiveStepSequencer[] m_Sequencers = {
+			new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY"),
+			new LiveStepSequencer(LiveSequencerKind.Effect, "EFFECT"),
+			new LiveStepSequencer(LiveSequencerKind.CompositingMode, "COMPOSITING MODE")
+		};
 		private readonly List<LiveParameterRequest> _pendingRequests = new List<LiveParameterRequest>();
 		private readonly List<LiveParameterApplicationResult> _requestResults = new List<LiveParameterApplicationResult>();
 		private readonly List<Action> _shutdown = new List<Action>();
@@ -47,6 +52,7 @@ namespace ShitDesigner.Main {
 		public LiveParameterQueue ParameterQueue => _parameterQueue;
 		public LivePatchSlots PatchSlots => _patchSlots;
 		public string LastDiagnostic { get; private set; } = string.Empty;
+		public IReadOnlyList<LiveStepSequencer> Sequencers => m_Sequencers;
 
 		private void Awake() {
 			if (_bootOnAwake) Boot();
@@ -191,6 +197,13 @@ namespace ShitDesigner.Main {
 			_parameterQueue.EnqueueSetBpm(bpm);
 		}
 
+		public LiveSequencerOperationResult ToggleSequencerStep(LiveSequencerKind kind, int laneIndex, int stepIndex) {
+			var sequencer = m_Sequencers.FirstOrDefault(item => item.Kind == kind);
+			return sequencer == null
+				? LiveSequencerOperationResult.Reject("The requested sequencer does not exist.")
+				: sequencer.Toggle(laneIndex, stepIndex);
+		}
+
 		private void ApplyRequests() {
 			_pendingRequests.Clear();
 			_requestResults.Clear();
@@ -204,9 +217,14 @@ namespace ShitDesigner.Main {
 		private void PublishReadModel(string diagnostic) {
 			ReadModel = new LiveUiReadModel(_tickFrameNumber, _patches, _patchSlots.ReadModel, _runtime?.SlotPreviewTextures, _selectedPatchSlotIndex, SelectedCatalogPatchId,
 				_runtime?.LoadedPatchId, _runtime?.PreloadedPatchId,
-				_runtime?.BpmDefinition ?? default, _runtime?.GetLoadedPatchParameterDefinitions(), _runtime?.CurrentFrames ?? default(LiveProgramFrames), _externalDisplay,
+				_runtime?.BpmDefinition ?? default, _runtime?.GetLoadedPatchParameterDefinitions(), CreateSequencerReadModels(), _runtime?.CurrentFrames ?? default(LiveProgramFrames), _externalDisplay,
 				_capabilityMonitor != null ? _capabilityMonitor.Snapshot : default(LiveCapabilitySnapshot), diagnostic,
 				_requestResults.ToArray());
+		}
+
+		private LiveSequencerReadModel[] CreateSequencerReadModels() {
+			var adjustedTotalBeats = _runtime?.BpmFrame.AdjustedTotalBeats ?? 0d;
+			return m_Sequencers.Select(sequencer => sequencer.CreateReadModel(adjustedTotalBeats)).ToArray();
 		}
 
 		private bool IsKnownPatch(string patchId) => !string.IsNullOrWhiteSpace(patchId) && _patchIds.Contains(patchId);

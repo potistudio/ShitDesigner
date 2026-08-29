@@ -22,6 +22,7 @@ namespace ShitDesigner.Main {
 		private VisualElement _patchControls;
 		private ScrollView m_MainPatchControls;
 		private ScrollView m_OverlayPatchControls;
+		private VisualElement m_SequencerControls;
 		private VisualElement _parameterControls;
 		private VisualElement _tempoControls;
 		private TextField _bpmField;
@@ -48,6 +49,18 @@ namespace ShitDesigner.Main {
 
 		private const float PatchScrollWheelUnits = 48f;
 
+		private readonly struct SequencerCellAddress {
+			public LiveSequencerKind Kind { get; }
+			public int LaneIndex { get; }
+			public int StepIndex { get; }
+
+			public SequencerCellAddress(LiveSequencerKind kind, int laneIndex, int stepIndex) {
+				Kind = kind;
+				LaneIndex = laneIndex;
+				StepIndex = stepIndex;
+			}
+		}
+
 		public void Initialize(ApplicationLiveHost host, LiveExternalDisplayOutput output) {
 			_host = host ?? throw new ArgumentNullException(nameof(host));
 			_output = output ?? throw new ArgumentNullException(nameof(output));
@@ -66,6 +79,7 @@ namespace ShitDesigner.Main {
 			_patchControls = Required<VisualElement>(root, "patch-controls");
 			m_MainPatchControls = Required<ScrollView>(root, "main-patch-controls");
 			m_OverlayPatchControls = Required<ScrollView>(root, "overlay-patch-controls");
+			m_SequencerControls = Required<VisualElement>(root, "sequencer-controls");
 			_parameterControls = Required<VisualElement>(root, "parameter-controls");
 			_tempoControls = Required<VisualElement>(root, "tempo-controls");
 			_bpmField = Required<TextField>(root, "bpm-field");
@@ -83,6 +97,8 @@ namespace ShitDesigner.Main {
 			_confirmationOverlay = Required<VisualElement>(root, "output-confirm-overlay");
 			m_MainPatchControls.RegisterCallback<WheelEvent>(OnMainPatchSelectionWheel, TrickleDown.TrickleDown);
 			m_OverlayPatchControls.RegisterCallback<WheelEvent>(OnOverlayPatchSelectionWheel, TrickleDown.TrickleDown);
+			m_SequencerControls.RegisterCallback<ClickEvent>(OnSequencerCellClicked);
+			BuildSequencers(root);
 			_bpmField.RegisterValueChangedCallback(OnBpmInputChanged);
 			_bpmField.RegisterCallback<FocusInEvent>(OnBpmFocusIn);
 			_bpmField.RegisterCallback<FocusOutEvent>(OnBpmFocusOut);
@@ -100,6 +116,7 @@ namespace ShitDesigner.Main {
 			if (_patchSlotControls != null) _patchSlotControls.UnregisterCallback<ClickEvent>(OnPatchSlotClicked);
 			if (m_MainPatchControls != null) m_MainPatchControls.UnregisterCallback<WheelEvent>(OnMainPatchSelectionWheel, TrickleDown.TrickleDown);
 			if (m_OverlayPatchControls != null) m_OverlayPatchControls.UnregisterCallback<WheelEvent>(OnOverlayPatchSelectionWheel, TrickleDown.TrickleDown);
+			if (m_SequencerControls != null) m_SequencerControls.UnregisterCallback<ClickEvent>(OnSequencerCellClicked);
 			if (_bpmField != null) {
 				_bpmField.UnregisterValueChangedCallback(OnBpmInputChanged);
 				_bpmField.UnregisterCallback<FocusInEvent>(OnBpmFocusIn);
@@ -129,6 +146,7 @@ namespace ShitDesigner.Main {
 				ApplyPreviewTexture(m_Output2Preview, model.ProgramFrames.Count > 1 ? model.ProgramFrames[1].Texture : null);
 				RefreshPatchSlotControls(model);
 				RefreshPatchControls(model);
+				RefreshSequencers(model);
 				RefreshTempoControls(model);
 				_outputButton.text = model.IsDisplayOutputActive ? "STOP OUTPUT" : "START OUTPUT";
 				_capabilityLabel.text = $"MIDI: {(model.Capabilities.MidiAvailable ? "READY" : "UNAVAILABLE")}  DISPLAY: {(model.Capabilities.ExternalDisplayAvailable ? "READY" : "UNAVAILABLE")}  FRAME: {model.ProgramFrameNumber}";
@@ -137,6 +155,87 @@ namespace ShitDesigner.Main {
 				else RefreshParameterValues(model);
 			}
 			finally { _updating = false; }
+		}
+
+		private void BuildSequencers(VisualElement root) {
+			foreach (var sequencer in _host.Sequencers) {
+				var container = Required<VisualElement>(root, GetSequencerElementName(sequencer.Kind));
+				container.Clear();
+				container.Add(new Label(sequencer.DisplayName) { name = "sequencer-title-" + GetSequencerId(sequencer.Kind) });
+				container[0].AddToClassList("sequencer-title");
+
+				var header = new VisualElement();
+				header.AddToClassList("sequencer-beat-header");
+				var corner = new Label("LANE");
+				corner.AddToClassList("sequencer-corner");
+				header.Add(corner);
+				for (var stepIndex = 0; stepIndex < LiveStepSequencer.StepCount; stepIndex++) {
+					var beat = new Label((stepIndex + 1).ToString(CultureInfo.InvariantCulture));
+					beat.AddToClassList("sequencer-beat-label");
+					header.Add(beat);
+				}
+				container.Add(header);
+
+				for (var laneIndex = 0; laneIndex < LiveStepSequencer.LaneCount; laneIndex++) {
+					var lane = new VisualElement();
+					lane.AddToClassList("sequencer-lane");
+					var laneLabel = new Label((laneIndex + 1).ToString(CultureInfo.InvariantCulture));
+					laneLabel.AddToClassList("sequencer-lane-label");
+					lane.Add(laneLabel);
+					for (var stepIndex = 0; stepIndex < LiveStepSequencer.StepCount; stepIndex++) {
+						var button = new Button {
+							name = GetSequencerCellName(sequencer.Kind, laneIndex, stepIndex),
+							userData = new SequencerCellAddress(sequencer.Kind, laneIndex, stepIndex)
+						};
+						button.AddToClassList("sequencer-step");
+						lane.Add(button);
+					}
+					container.Add(lane);
+				}
+			}
+		}
+
+		private void RefreshSequencers(LiveUiReadModel model) {
+			foreach (var sequencer in model.Sequencers) {
+				for (var laneIndex = 0; laneIndex < LiveStepSequencer.LaneCount; laneIndex++) {
+					for (var stepIndex = 0; stepIndex < LiveStepSequencer.StepCount; stepIndex++) {
+						var button = m_SequencerControls.Q<Button>(GetSequencerCellName(sequencer.Kind, laneIndex, stepIndex));
+						if (button == null) continue;
+						button.EnableInClassList("is-set", sequencer.ActiveLanes.Count > stepIndex && sequencer.ActiveLanes[stepIndex] == laneIndex);
+						button.EnableInClassList("is-playhead", sequencer.CurrentStep == stepIndex);
+					}
+				}
+			}
+		}
+
+		private void OnSequencerCellClicked(ClickEvent change) {
+			var target = change.target as VisualElement;
+			var button = target as Button ?? target?.GetFirstAncestorOfType<Button>();
+			if (!(button?.userData is SequencerCellAddress address) || _host == null) return;
+			var result = _host.ToggleSequencerStep(address.Kind, address.LaneIndex, address.StepIndex);
+			if (!result.Accepted && _diagnosticLabel != null) _diagnosticLabel.text = result.RejectionReason;
+		}
+
+		private static string GetSequencerElementName(LiveSequencerKind kind) {
+			switch (kind) {
+				case LiveSequencerKind.Overlay: return "overlay-sequencer";
+				case LiveSequencerKind.Effect: return "effect-sequencer";
+				case LiveSequencerKind.CompositingMode: return "compositing-mode-sequencer";
+				default: throw new ArgumentOutOfRangeException(nameof(kind), kind, null);
+			}
+		}
+
+		private static string GetSequencerCellName(LiveSequencerKind kind, int laneIndex, int stepIndex) {
+			return "sequencer-" + GetSequencerId(kind) + "-lane-" + laneIndex + "-step-" + stepIndex;
+		}
+
+		private static string GetSequencerId(LiveSequencerKind kind) {
+			switch (kind) {
+				case LiveSequencerKind.Overlay: return "overlay";
+				case LiveSequencerKind.Effect: return "effect";
+				case LiveSequencerKind.CompositingMode: return "compositing-mode";
+				default: throw new ArgumentOutOfRangeException(nameof(kind), kind, null);
+			}
 		}
 
 		private void RebuildParameters(LiveUiReadModel model) {

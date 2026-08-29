@@ -47,6 +47,11 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
                 <ui:VisualElement class="control-panel">
+                    <ui:VisualElement name="sequencer-controls" class="sequencer-controls">
+                        <ui:VisualElement name="overlay-sequencer" class="sequencer"/>
+                        <ui:VisualElement name="effect-sequencer" class="sequencer"/>
+                        <ui:VisualElement name="compositing-mode-sequencer" class="sequencer"/>
+                    </ui:VisualElement>
                     <ui:VisualElement name="tempo-controls" class="tempo-controls is-hidden">
                         <ui:VisualElement class="tempo-input-row">
                             <ui:TextField name="bpm-field" class="tempo-bpm-input" is-delayed="true"/>

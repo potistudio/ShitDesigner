@@ -109,6 +109,22 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void MainUiDefinesThreeSequencerHosts() {
+			var asset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/ShitDesigner/Scenes/Main/MainUI.uxml");
+			Assert.That(asset, Is.Not.Null);
+			var root = new VisualElement();
+			asset.CloneTree(root);
+
+			var controls = root.Q<VisualElement>("sequencer-controls");
+
+			Assert.That(controls, Is.Not.Null);
+			Assert.That(controls.childCount, Is.EqualTo(3));
+			Assert.That(root.Q<VisualElement>("overlay-sequencer"), Is.Not.Null);
+			Assert.That(root.Q<VisualElement>("effect-sequencer"), Is.Not.Null);
+			Assert.That(root.Q<VisualElement>("compositing-mode-sequencer"), Is.Not.Null);
+		}
+
+		[Test]
 		public void ExternalProgramDisplayCamera_UsesAnUrpRenderableSurface() {
 			var host = new GameObject("External Program Display Camera Test");
 			var source = new RenderTexture(4, 4, 0, RenderTextureFormat.ARGB32);
