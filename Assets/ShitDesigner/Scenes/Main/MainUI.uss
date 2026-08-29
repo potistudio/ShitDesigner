@@ -299,6 +299,11 @@
 }
 
 .patch-dock {
+    height: 64px;
+    min-height: 64px;
+    max-height: 64px;
+    flex-grow: 0;
+    flex-shrink: 0;
     padding: 0;
     background-color: rgb(21, 24, 29);
     border-top-width: 1px;
