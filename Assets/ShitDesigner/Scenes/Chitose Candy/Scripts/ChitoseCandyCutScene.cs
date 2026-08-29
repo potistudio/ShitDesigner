@@ -56,14 +56,16 @@ namespace ShitDesigner.Scene {
 		}
 
 		[Header("Candy field")]
-		[Min(3)] [SerializeField] private int m_CandyCount = 12;
-		[Min(1f)] [SerializeField] private float m_CandyLength = 14f;
-		[Min(0.05f)] [SerializeField] private float m_CandyRadius = 0.68f;
+		[Min(3)][SerializeField] private int m_CandyCount = 12;
+		[Min(1f)][SerializeField] private float m_CandyLength = 14f;
+		[Min(0.05f)][SerializeField] private float m_CandyRadius = 0.68f;
 		[SerializeField] private Vector2 m_FieldSize = new Vector2(9.5f, 5.5f);
 		[Tooltip("Direction from the rear of each stick to its cut end. The negative Z component points toward the camera.")]
 		[SerializeField] private Vector3 m_CandyAxis = new Vector3(0.57f, -0.37f, -0.73f);
 		[SerializeField] private int m_RandomSeed = 5108;
-		[ColorUsage(true, true)] [SerializeField] private Color[] m_CandyColors = {
+		[ColorUsage(true, true)]
+		[SerializeField]
+		private Color[] m_CandyColors = {
 			new Color(0.05f, 0.72f, 0.74f, 1f),
 			new Color(0.98f, 0.13f, 0.25f, 1f),
 			new Color(0.98f, 0.91f, 0.04f, 1f),
@@ -72,9 +74,9 @@ namespace ShitDesigner.Scene {
 		};
 
 		[Header("Cut")]
-		[Range(30f, 300f)] [SerializeField] private float m_PreviewBpm = 138f;
-		[Min(0f)] [SerializeField] private float m_SplitGap = 0.55f;
-		[Min(0f)] [SerializeField] private float m_HorizontalImpulse = 0.9f;
+		[Range(30f, 300f)][SerializeField] private float m_PreviewBpm = 138f;
+		[Min(0f)][SerializeField] private float m_SplitGap = 0.55f;
+		[Min(0f)][SerializeField] private float m_HorizontalImpulse = 0.9f;
 		[Tooltip("Easing applied while the body is pushed during one beat.")]
 		[SerializeField] private AnimationCurve m_PushEasing = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 		[Tooltip("Easing applied while a new candy approaches from behind during one beat.")]
