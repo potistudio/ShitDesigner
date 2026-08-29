@@ -23,6 +23,14 @@
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:VisualElement>
+                <ui:VisualElement class="patch-dock">
+                    <ui:VisualElement class="patch-actions">
+                        <ui:Button name="cue-patch-slot" text="CUE" class="patch-action"/>
+                        <ui:Button name="launch-patch-slot" text="PLAY" class="patch-action patch-action-primary"/>
+                        <ui:Button name="clear-patch-slot" text="CLEAR" class="patch-action"/>
+                        <ui:ScrollView name="patch-controls" class="patch-controls" mode="Horizontal" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
                 <ui:VisualElement class="live-fader-panel">
                     <ui:VisualElement name="parameter-controls" class="parameter-controls"/>
                 </ui:VisualElement>
@@ -46,14 +54,6 @@
                     <ui:Label name="capability-status" class="status-label"/>
                     <ui:Label name="diagnostic-status" class="diagnostic-label"/>
                 </ui:VisualElement>
-            </ui:VisualElement>
-        </ui:VisualElement>
-        <ui:VisualElement class="patch-dock">
-            <ui:VisualElement class="patch-actions">
-				<ui:Button name="cue-patch-slot" text="CUE" class="patch-action"/>
-				<ui:Button name="launch-patch-slot" text="PLAY" class="patch-action patch-action-primary"/>
-				<ui:Button name="clear-patch-slot" text="CLEAR" class="patch-action"/>
-                <ui:ScrollView name="patch-controls" class="patch-controls" mode="Horizontal" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden"/>
             </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="output-confirm-overlay" class="confirmation-overlay is-hidden">
