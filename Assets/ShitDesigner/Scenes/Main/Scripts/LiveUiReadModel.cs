@@ -17,6 +17,7 @@ namespace ShitDesigner.Main {
 		public ulong FrameNumber { get; }
 		public IReadOnlyList<LivePatchReadModel> Patches { get; }
 		public IReadOnlyList<LivePatchSlotReadModel> PatchSlots { get; }
+		public IReadOnlyList<RenderTexture> PatchSlotPreviews { get; }
 		public int SelectedPatchSlotIndex { get; }
 		public string SelectedCatalogPatchId { get; }
 		public string LoadedPatchId { get; }
@@ -34,13 +35,15 @@ namespace ShitDesigner.Main {
 		public string Diagnostic { get; }
 		public IReadOnlyList<LiveParameterApplicationResult> RequestResults { get; }
 
-		public LiveUiReadModel(ulong frameNumber, IReadOnlyList<LivePatchReadModel> patches, IReadOnlyList<LivePatchSlotReadModel> patchSlots, int selectedPatchSlotIndex, string selectedCatalogPatchId,
+		public LiveUiReadModel(ulong frameNumber, IReadOnlyList<LivePatchReadModel> patches, IReadOnlyList<LivePatchSlotReadModel> patchSlots, IReadOnlyList<RenderTexture> patchSlotPreviews,
+			int selectedPatchSlotIndex, string selectedCatalogPatchId,
 			string loadedPatchId, string preloadedPatchId,
 			LiveParameterDefinition bpm, IReadOnlyList<LiveParameterDefinition> parameters, LiveProgramFrames programFrames, LiveExternalDisplayOutput output,
 			LiveCapabilitySnapshot capabilities, string diagnostic, IReadOnlyList<LiveParameterApplicationResult> requestResults) {
 			FrameNumber = frameNumber;
 			Patches = patches ?? Array.Empty<LivePatchReadModel>();
 			PatchSlots = patchSlots ?? Array.Empty<LivePatchSlotReadModel>();
+			PatchSlotPreviews = patchSlotPreviews ?? Array.Empty<RenderTexture>();
 			SelectedPatchSlotIndex = selectedPatchSlotIndex;
 			SelectedCatalogPatchId = selectedCatalogPatchId ?? string.Empty;
 			LoadedPatchId = loadedPatchId ?? string.Empty;

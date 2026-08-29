@@ -18,6 +18,7 @@ namespace ShitDesigner.Main {
 		private VisualElement _programMonitor;
 		private VisualElement m_Output2Preview;
 		private VisualElement _patchSlotControls;
+		private readonly RenderTexture[] m_PatchSlotPreviewTextures = new RenderTexture[LivePatchSlots.Capacity];
 		private ScrollView _patchControls;
 		private Button _cuePatchButton;
 		private Button _launchPatchButton;
@@ -122,6 +123,7 @@ namespace ShitDesigner.Main {
 			_output = null;
 			_renderedPatchId = string.Empty;
 			_centeredPatchId = string.Empty;
+			Array.Clear(m_PatchSlotPreviewTextures, 0, m_PatchSlotPreviewTextures.Length);
 		}
 
 		private void LateUpdate() {
@@ -307,8 +309,14 @@ namespace ShitDesigner.Main {
 
 		private void RefreshPatchSlotControls(LiveUiReadModel model) {
 			foreach (var slot in model.PatchSlots) {
+				if (!LivePatchSlots.IsValidSlotIndex(slot.Index)) continue;
 				var button = _patchSlotControls.Q<Button>("patch-slot-" + slot.Index);
 				if (button == null) continue;
+				var preview = slot.Index >= 0 && slot.Index < model.PatchSlotPreviews.Count ? model.PatchSlotPreviews[slot.Index] : null;
+				if (m_PatchSlotPreviewTextures[slot.Index] != preview) {
+					m_PatchSlotPreviewTextures[slot.Index] = preview;
+					ApplyPreviewTexture(button, preview);
+				}
 				button.tooltip = FormatPatchSlot(slot, model.Patches);
 				button.EnableInClassList("is-selected", slot.Index == model.SelectedPatchSlotIndex);
 				button.EnableInClassList("is-cued", !slot.IsEmpty && slot.PatchId == model.PreloadedPatchId);

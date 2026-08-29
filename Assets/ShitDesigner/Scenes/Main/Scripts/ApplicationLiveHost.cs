@@ -99,6 +99,7 @@ namespace ShitDesigner.Main {
 				_runtime.Evaluate(deltaSeconds);
 				_runtime.SceneUpdate(deltaSeconds);
 				var frames = _runtime.Render();
+				_runtime.RenderSlotPreviews(_patchSlots.ReadModel, deltaSeconds);
 				_externalDisplay.Present(frames);
 				LastDiagnostic = string.Empty;
 				PublishReadModel(string.Empty);
@@ -184,7 +185,7 @@ namespace ShitDesigner.Main {
 		}
 
 		private void PublishReadModel(string diagnostic) {
-			ReadModel = new LiveUiReadModel(_tickFrameNumber, _patches, _patchSlots.ReadModel, _selectedPatchSlotIndex, SelectedCatalogPatchId,
+			ReadModel = new LiveUiReadModel(_tickFrameNumber, _patches, _patchSlots.ReadModel, _runtime?.SlotPreviewTextures, _selectedPatchSlotIndex, SelectedCatalogPatchId,
 				_runtime?.LoadedPatchId, _runtime?.PreloadedPatchId,
 				_runtime?.BpmDefinition ?? default, _runtime?.GetLoadedPatchParameterDefinitions(), _runtime?.CurrentFrames ?? default(LiveProgramFrames), _externalDisplay,
 				_capabilityMonitor != null ? _capabilityMonitor.Snapshot : default(LiveCapabilitySnapshot), diagnostic,
