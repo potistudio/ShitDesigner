@@ -12,46 +12,45 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void QueueFillsSlotsInOrderAndPreservesTheirPatchIds() {
+		public void AssignReplacesOnlyTheRequestedSlot() {
 			var slots = new LivePatchSlots();
 
-			var first = slots.Queue("patch-a");
-			var second = slots.Queue("patch-b");
+			var first = slots.Assign(2, "patch-a");
+			var second = slots.Assign(3, "patch-b");
+			var replacement = slots.Assign(2, "patch-c");
 
 			Assert.That(first.Accepted, Is.True);
-			Assert.That(first.SlotIndex, Is.Zero);
+			Assert.That(first.SlotIndex, Is.EqualTo(2));
 			Assert.That(second.Accepted, Is.True);
-			Assert.That(second.SlotIndex, Is.EqualTo(1));
-			Assert.That(slots.ReadModel[0].PatchId, Is.EqualTo("patch-a"));
-			Assert.That(slots.ReadModel[1].PatchId, Is.EqualTo("patch-b"));
+			Assert.That(second.SlotIndex, Is.EqualTo(3));
+			Assert.That(replacement.Accepted, Is.True);
+			Assert.That(replacement.SlotIndex, Is.EqualTo(2));
+			Assert.That(slots.ReadModel[2].PatchId, Is.EqualTo("patch-c"));
+			Assert.That(slots.ReadModel[3].PatchId, Is.EqualTo("patch-b"));
 		}
 
 		[Test]
-		public void ClearingSlotMakesItAvailableToTheNextQueuedPatch() {
+		public void ClearingSlotDoesNotAffectAssignmentToAnotherSlot() {
 			var slots = new LivePatchSlots();
-			slots.Queue("patch-a");
-			slots.Queue("patch-b");
+			slots.Assign(0, "patch-a");
+			slots.Assign(1, "patch-b");
 
 			var cleared = slots.Clear(0);
-			var queued = slots.Queue("patch-c");
+			var assigned = slots.Assign(1, "patch-c");
 
 			Assert.That(cleared.Accepted, Is.True);
-			Assert.That(queued.Accepted, Is.True);
-			Assert.That(queued.SlotIndex, Is.Zero);
-			Assert.That(slots.ReadModel[0].PatchId, Is.EqualTo("patch-c"));
+			Assert.That(assigned.Accepted, Is.True);
+			Assert.That(slots.ReadModel[0].IsEmpty, Is.True);
+			Assert.That(slots.ReadModel[1].PatchId, Is.EqualTo("patch-c"));
 		}
 
 		[Test]
-		public void QueueRejectsWhenAllSlotsAreOccupied() {
+		public void AssignRejectsInvalidSlotAndPatchId() {
 			var slots = new LivePatchSlots();
-			for (var index = 0; index < LivePatchSlots.Capacity; index++)
-				Assert.That(slots.Queue("patch-" + index).Accepted, Is.True);
 
-			var result = slots.Queue("overflow");
-
-			Assert.That(result.Accepted, Is.False);
-			Assert.That(result.SlotIndex, Is.EqualTo(-1));
-			Assert.That(result.RejectionReason, Is.Not.Empty);
+			Assert.That(slots.Assign(-1, "patch-a").Accepted, Is.False);
+			Assert.That(slots.Assign(LivePatchSlots.Capacity, "patch-a").Accepted, Is.False);
+			Assert.That(slots.Assign(0, string.Empty).Accepted, Is.False);
 		}
 
 		[Test]

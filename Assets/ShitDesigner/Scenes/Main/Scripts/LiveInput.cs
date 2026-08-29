@@ -14,10 +14,10 @@ namespace ShitDesigner.Main {
 		private readonly Action<int> m_LaunchPatchSlot;
 		private readonly Action<int> m_ClearPatchSlot;
 		private readonly Action<int, int> m_MoveCatalogSelection;
-		private readonly Action m_QueueSelectedPatch;
+		private readonly Action m_AssignSelectedPatch;
 		private readonly Action<double> m_TapBpm;
 
-		public LiveKeyboardInput(LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches, Action<int> launchPatchSlot, Action<int> clearPatchSlot, Action<int, int> moveCatalogSelection, Action queueSelectedPatch, Action<double> tapBpm) {
+		public LiveKeyboardInput(LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches, Action<int> launchPatchSlot, Action<int> clearPatchSlot, Action<int, int> moveCatalogSelection, Action assignSelectedPatch, Action<double> tapBpm) {
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));
 
@@ -30,7 +30,7 @@ namespace ShitDesigner.Main {
 			m_LaunchPatchSlot = launchPatchSlot ?? throw new ArgumentNullException(nameof(launchPatchSlot));
 			m_ClearPatchSlot = clearPatchSlot ?? throw new ArgumentNullException(nameof(clearPatchSlot));
 			m_MoveCatalogSelection = moveCatalogSelection ?? throw new ArgumentNullException(nameof(moveCatalogSelection));
-			m_QueueSelectedPatch = queueSelectedPatch ?? throw new ArgumentNullException(nameof(queueSelectedPatch));
+			m_AssignSelectedPatch = assignSelectedPatch ?? throw new ArgumentNullException(nameof(assignSelectedPatch));
 			m_TapBpm = tapBpm ?? throw new ArgumentNullException(nameof(tapBpm));
 		}
 
@@ -51,7 +51,7 @@ namespace ShitDesigner.Main {
 			if (keyboard.rightArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(1, 0);
 			if (keyboard.upArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, -1);
 			if (keyboard.downArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, 1);
-			if (keyboard.enterKey.wasPressedThisFrame) m_QueueSelectedPatch();
+			if (keyboard.enterKey.wasPressedThisFrame) m_AssignSelectedPatch();
 			if (keyboard.spaceKey.wasPressedThisFrame) m_TapBpm(Time.unscaledTimeAsDouble);
 			if (keyboard.fKey.wasPressedThisFrame) m_Queue.EnqueueTriggerFlash(loadedPatchId);
 			QueuePatchKeyboardInputs(keyboard, loadedPatchId);

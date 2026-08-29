@@ -43,14 +43,11 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		public LivePatchSlotOperationResult Queue(string patchId) {
+		public LivePatchSlotOperationResult Assign(int slotIndex, string patchId) {
+			if (!IsValidSlotIndex(slotIndex)) return LivePatchSlotOperationResult.Reject("The patch slot does not exist.");
 			if (string.IsNullOrWhiteSpace(patchId)) return LivePatchSlotOperationResult.Reject("A patch ID is required.");
-			for (var index = 0; index < Capacity; index++) {
-				if (!string.IsNullOrEmpty(_patchIds[index])) continue;
-				_patchIds[index] = patchId;
-				return LivePatchSlotOperationResult.Accept(index);
-			}
-			return LivePatchSlotOperationResult.Reject("All patch slots are occupied.");
+			_patchIds[slotIndex] = patchId;
+			return LivePatchSlotOperationResult.Accept(slotIndex);
 		}
 
 		public LivePatchSlotOperationResult Clear(int slotIndex) {

@@ -80,10 +80,13 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(ui.Q<Button>("patch-" + nextPatch.Id).ClassListContains("is-loaded"), Is.True);
 			var rememberedMainPatch = host.ReadModel.Patches.Last(patch => patch.Role == LivePatchRole.Main);
 			var rememberedOverlayPatch = host.ReadModel.Patches.First(patch => patch.Role == LivePatchRole.Overlay);
-			Assert.That(host.QueuePatch(rememberedMainPatch.Id).Accepted, Is.True);
-			Assert.That(host.QueuePatch(rememberedOverlayPatch.Id).Accepted, Is.True);
+			var selectedPatchSlotIndex = host.ReadModel.SelectedPatchSlotIndex;
+			Assert.That(host.AssignPatchToSelectedSlot(rememberedMainPatch.Id).Accepted, Is.True);
+			Assert.That(host.AssignPatchToSelectedSlot(rememberedOverlayPatch.Id).Accepted, Is.True);
 			host.MoveCatalogSelection(0, -1);
 			yield return null;
+			Assert.That(host.ReadModel.SelectedPatchSlotIndex, Is.EqualTo(selectedPatchSlotIndex));
+			Assert.That(host.ReadModel.PatchSlots[selectedPatchSlotIndex].PatchId, Is.EqualTo(rememberedOverlayPatch.Id));
 			Assert.That(host.ReadModel.SelectedCatalogPatchId, Is.EqualTo(rememberedMainPatch.Id));
 			host.MoveCatalogSelection(0, 1);
 			yield return null;
