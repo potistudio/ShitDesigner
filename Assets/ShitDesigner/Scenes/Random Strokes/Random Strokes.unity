@@ -192,7 +192,7 @@ GameObject:
   - component: {fileID: 1002002}
   - component: {fileID: 1002003}
   m_Layer: 0
-  m_Name: Random Stroke Intersection Scene
+  m_Name: Random Stroke Region Scene
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -230,13 +230,12 @@ MonoBehaviour:
   m_StrokeWidth: 0.08
   m_Wobble: 0.35
   m_PointJitter: 0.1
-  m_FilledIntersectionCount: 14
-  m_IntersectionRadius: 0.17
+  m_FilledRegionCount: 8
   m_RandomizeOnPlay: 1
   m_Seed: 8127
   m_StrokeColorA: {r: 0.2, g: 0.85, b: 1, a: 1}
   m_StrokeColorB: {r: 0.75, g: 0.35, b: 1, a: 1}
-  m_IntersectionColor: {r: 1, g: 0.35, b: 0.1, a: 1}
+  m_RegionFillColor: {r: 1, g: 0.35, b: 0.1, a: 1}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace ShitDesigner.Scene {
-	/// <summary>Draws random 2D strokes and fills a random subset of their intersections.</summary>
+	/// <summary>Draws random 2D strokes and fills a random subset of the regions they enclose.</summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
 	public sealed class RandomStrokeIntersectionScene : MonoBehaviour {
@@ -18,9 +18,8 @@ namespace ShitDesigner.Scene {
 		[Min(0f)][SerializeField] private float m_Wobble = 0.35f;
 		[Range(0f, 1f)][SerializeField] private float m_PointJitter = 0.1f;
 
-		[Header("Intersections")]
-		[Range(0, 128)][SerializeField] private int m_FilledIntersectionCount = 14;
-		[Min(0.01f)][SerializeField] private float m_IntersectionRadius = 0.17f;
+		[Header("Regions")]
+		[Range(0, 128)][SerializeField] private int m_FilledRegionCount = 8;
 
 		[Header("Randomness")]
 		[SerializeField] private bool m_RandomizeOnPlay = true;
@@ -29,15 +28,13 @@ namespace ShitDesigner.Scene {
 		[Header("Appearance")]
 		[ColorUsage(false, true)][SerializeField] private Color m_StrokeColorA = new Color(0.2f, 0.85f, 1f, 1f);
 		[ColorUsage(false, true)][SerializeField] private Color m_StrokeColorB = new Color(0.75f, 0.35f, 1f, 1f);
-		[ColorUsage(false, true)][SerializeField] private Color m_IntersectionColor = new Color(1f, 0.35f, 0.1f, 1f);
-
-		private const int IntersectionCircleSegments = 24;
+		[ColorUsage(false, true)][SerializeField] private Color m_RegionFillColor = new Color(1f, 0.35f, 0.1f, 1f);
 
 		private Transform m_StrokeRoot;
-		private Transform m_IntersectionRoot;
+		private Transform m_RegionRoot;
 		private Material m_StrokeMaterial;
-		private Material m_IntersectionMaterial;
-		private Mesh m_IntersectionMesh;
+		private Material m_RegionMaterial;
+		private Mesh m_RegionMesh;
 
 		private void OnEnable() {
 			if (!Application.isPlaying)
@@ -64,8 +61,7 @@ namespace ShitDesigner.Scene {
 			m_StrokeWidth = Mathf.Max(0.005f, m_StrokeWidth);
 			m_Wobble = Mathf.Max(0f, m_Wobble);
 			m_PointJitter = Mathf.Clamp01(m_PointJitter);
-			m_FilledIntersectionCount = Mathf.Clamp(m_FilledIntersectionCount, 0, 128);
-			m_IntersectionRadius = Mathf.Max(0.01f, m_IntersectionRadius);
+			m_FilledRegionCount = Mathf.Clamp(m_FilledRegionCount, 0, 128);
 
 			if (!Application.isPlaying && isActiveAndEnabled)
 				Generate();
@@ -77,34 +73,34 @@ namespace ShitDesigner.Scene {
 
 			var seed = GetGenerationSeed();
 			List<StrokePath> paths = null;
-			List<Vector2> intersections = null;
+			List<PolygonFace> regions = null;
 			for (var attempt = 0; attempt < 4; attempt++) {
 				var pathRandom = new System.Random(unchecked(seed + attempt * 7919));
 				paths = BuildPaths(pathRandom, Mathf.Pow(0.65f, attempt));
-				intersections = FindIntersections(paths);
-				if (intersections.Count > 0)
+				regions = FindRegions(paths);
+				if (regions.Count > 0)
 					break;
 			}
 
-			if (intersections == null || intersections.Count == 0) {
+			if (regions == null || regions.Count == 0) {
 				var fallbackRandom = new System.Random(seed);
 				paths = BuildPaths(fallbackRandom, 0f);
-				intersections = FindIntersections(paths);
+				regions = FindRegions(paths);
 			}
 
 			m_StrokeRoot = CreateGeneratedRoot("Random Strokes");
-			m_IntersectionRoot = CreateGeneratedRoot("Filled Intersections");
+			m_RegionRoot = CreateGeneratedRoot("Filled Regions");
 			m_StrokeMaterial = CreateMaterial("Random Stroke Material");
-			m_IntersectionMaterial = CreateMaterial("Random Intersection Material");
+			m_RegionMaterial = CreateMaterial("Random Region Material");
 			SetMaterialColor(m_StrokeMaterial, Color.white);
-			SetMaterialColor(m_IntersectionMaterial, m_IntersectionColor);
+			SetMaterialColor(m_RegionMaterial, m_RegionFillColor);
 
 			CreateStrokeRenderers(paths);
 
-			Shuffle(intersections, new System.Random(unchecked(seed ^ 0x5F3759DF)));
-			var fillCount = Mathf.Min(m_FilledIntersectionCount, intersections.Count);
+			Shuffle(regions, new System.Random(unchecked(seed ^ 0x5F3759DF)));
+			var fillCount = Mathf.Min(m_FilledRegionCount, regions.Count);
 			if (fillCount > 0)
-				CreateIntersectionRenderer(intersections, fillCount);
+				CreateRegionRenderer(regions, fillCount);
 		}
 
 		private List<StrokePath> BuildPaths(System.Random random, float variationScale) {
@@ -151,9 +147,24 @@ namespace ShitDesigner.Scene {
 			return paths;
 		}
 
-		private List<Vector2> FindIntersections(List<StrokePath> paths) {
-			var intersections = new List<Vector2>();
-			var mergeDistance = Mathf.Max(0.02f, m_IntersectionRadius * 0.5f);
+		private List<PolygonFace> FindRegions(List<StrokePath> paths) {
+			var nodes = new List<Vector2>();
+			var adjacency = new List<List<int>>();
+			var segmentSplits = new List<SegmentSplit>[paths.Count][];
+			var mergeDistance = Mathf.Max(0.001f, m_StrokeWidth * 0.1f);
+
+			for (var pathIndex = 0; pathIndex < paths.Count; pathIndex++) {
+				var points = paths[pathIndex].Points;
+				segmentSplits[pathIndex] = new List<SegmentSplit>[points.Length - 1];
+				for (var segmentIndex = 0; segmentIndex < points.Length - 1; segmentIndex++) {
+					var splits = new List<SegmentSplit>(2) {
+						new SegmentSplit(0f, GetOrCreateNode(nodes, adjacency, points[segmentIndex], mergeDistance)),
+						new SegmentSplit(1f, GetOrCreateNode(nodes, adjacency, points[segmentIndex + 1], mergeDistance))
+					};
+					segmentSplits[pathIndex][segmentIndex] = splits;
+				}
+			}
+
 			for (var firstPath = 0; firstPath < paths.Count - 1; firstPath++) {
 				for (var secondPath = firstPath + 1; secondPath < paths.Count; secondPath++) {
 					var firstPoints = paths[firstPath].Points;
@@ -162,17 +173,154 @@ namespace ShitDesigner.Scene {
 						for (var secondSegment = 0; secondSegment < secondPoints.Length - 1; secondSegment++) {
 							if (!TryGetSegmentIntersection(
 								firstPoints[firstSegment], firstPoints[firstSegment + 1],
-								secondPoints[secondSegment], secondPoints[secondSegment + 1], out var point))
+								secondPoints[secondSegment], secondPoints[secondSegment + 1],
+								out var point, out var firstProgress, out var secondProgress))
 								continue;
 
-							if (!ContainsNearby(intersections, point, mergeDistance))
-								intersections.Add(point);
+							var nodeIndex = GetOrCreateNode(nodes, adjacency, point, mergeDistance);
+							segmentSplits[firstPath][firstSegment].Add(new SegmentSplit(firstProgress, nodeIndex));
+							segmentSplits[secondPath][secondSegment].Add(new SegmentSplit(secondProgress, nodeIndex));
 						}
 					}
 				}
 			}
 
-			return intersections;
+			for (var pathIndex = 0; pathIndex < segmentSplits.Length; pathIndex++) {
+				for (var segmentIndex = 0; segmentIndex < segmentSplits[pathIndex].Length; segmentIndex++) {
+					var splits = segmentSplits[pathIndex][segmentIndex];
+					splits.Sort((first, second) => first.Progress.CompareTo(second.Progress));
+					for (var splitIndex = 1; splitIndex < splits.Count; splitIndex++)
+						AddGraphEdge(adjacency, splits[splitIndex - 1].NodeIndex, splits[splitIndex].NodeIndex);
+				}
+			}
+
+			for (var nodeIndex = 0; nodeIndex < adjacency.Count; nodeIndex++) {
+				var node = nodes[nodeIndex];
+				adjacency[nodeIndex].Sort((first, second) => {
+					var firstDirection = nodes[first] - node;
+					var secondDirection = nodes[second] - node;
+					return Mathf.Atan2(firstDirection.y, firstDirection.x)
+						.CompareTo(Mathf.Atan2(secondDirection.y, secondDirection.x));
+				});
+			}
+
+			var directedEdgeCount = 0;
+			for (var nodeIndex = 0; nodeIndex < adjacency.Count; nodeIndex++)
+				directedEdgeCount += adjacency[nodeIndex].Count;
+
+			var regions = new List<PolygonFace>();
+			var visitedEdges = new HashSet<ulong>();
+			for (var fromNode = 0; fromNode < adjacency.Count; fromNode++) {
+				for (var neighborIndex = 0; neighborIndex < adjacency[fromNode].Count; neighborIndex++) {
+					var toNode = adjacency[fromNode][neighborIndex];
+					if (visitedEdges.Contains(DirectedEdgeKey(fromNode, toNode)))
+						continue;
+
+					var polygonNodeIndices = new List<int>();
+					var currentFrom = fromNode;
+					var currentTo = toNode;
+					var closed = false;
+					for (var step = 0; step <= directedEdgeCount; step++) {
+						if (step > 0 && currentFrom == fromNode && currentTo == toNode) {
+							closed = true;
+							break;
+						}
+
+						if (!visitedEdges.Add(DirectedEdgeKey(currentFrom, currentTo)))
+							break;
+						polygonNodeIndices.Add(currentFrom);
+
+						var neighbors = adjacency[currentTo];
+						var reverseIndex = neighbors.IndexOf(currentFrom);
+						if (reverseIndex < 0 || neighbors.Count < 2)
+							break;
+
+						var nextNeighborIndex = (reverseIndex - 1 + neighbors.Count) % neighbors.Count;
+						currentFrom = currentTo;
+						currentTo = neighbors[nextNeighborIndex];
+					}
+
+					if (!closed || polygonNodeIndices.Count < 3)
+						continue;
+
+					var polygon = new List<Vector2>(polygonNodeIndices.Count);
+					for (var index = 0; index < polygonNodeIndices.Count; index++)
+						polygon.Add(nodes[polygonNodeIndices[index]]);
+					polygon = SimplifyPolygon(polygon);
+					var area = CalculateSignedArea(polygon);
+					var minimumArea = Mathf.Max(0.005f, m_StrokeWidth * m_StrokeWidth * 2f);
+					if (polygon.Count >= 3 && area > minimumArea)
+						regions.Add(new PolygonFace(polygon));
+				}
+			}
+
+			return regions;
+		}
+
+		private static int GetOrCreateNode(
+			List<Vector2> nodes, List<List<int>> adjacency, Vector2 candidate, float mergeDistance) {
+			var distanceSquared = mergeDistance * mergeDistance;
+			for (var index = 0; index < nodes.Count; index++) {
+				if ((nodes[index] - candidate).sqrMagnitude <= distanceSquared)
+					return index;
+			}
+
+			nodes.Add(candidate);
+			adjacency.Add(new List<int>());
+			return nodes.Count - 1;
+		}
+
+		private static void AddGraphEdge(List<List<int>> adjacency, int firstNode, int secondNode) {
+			if (firstNode == secondNode)
+				return;
+			if (!adjacency[firstNode].Contains(secondNode))
+				adjacency[firstNode].Add(secondNode);
+			if (!adjacency[secondNode].Contains(firstNode))
+				adjacency[secondNode].Add(firstNode);
+		}
+
+		private static ulong DirectedEdgeKey(int fromNode, int toNode) {
+			return ((ulong)(uint)fromNode << 32) | (uint)toNode;
+		}
+
+		private static List<Vector2> SimplifyPolygon(List<Vector2> polygon) {
+			const float pointEpsilonSquared = 0.000001f;
+			var simplified = new List<Vector2>(polygon.Count);
+			for (var index = 0; index < polygon.Count; index++) {
+				if (simplified.Count == 0 || (simplified[simplified.Count - 1] - polygon[index]).sqrMagnitude > pointEpsilonSquared)
+					simplified.Add(polygon[index]);
+			}
+
+			if (simplified.Count > 1 && (simplified[0] - simplified[simplified.Count - 1]).sqrMagnitude <= pointEpsilonSquared)
+				simplified.RemoveAt(simplified.Count - 1);
+
+			var removedPoint = true;
+			while (removedPoint && simplified.Count >= 3) {
+				removedPoint = false;
+				for (var index = 0; index < simplified.Count; index++) {
+					var previous = simplified[(index - 1 + simplified.Count) % simplified.Count];
+					var current = simplified[index];
+					var next = simplified[(index + 1) % simplified.Count];
+					if (Mathf.Abs(Cross(current - previous, next - current)) > 0.00001f)
+						continue;
+
+					simplified.RemoveAt(index);
+					removedPoint = true;
+					break;
+				}
+			}
+
+			return simplified;
+		}
+
+		private static float CalculateSignedArea(IList<Vector2> polygon) {
+			var area = 0f;
+			for (var index = 0; index < polygon.Count; index++) {
+				var nextIndex = (index + 1) % polygon.Count;
+				area += Cross(polygon[index], polygon[nextIndex]);
+			}
+
+			return area * 0.5f;
 		}
 
 		private void CreateStrokeRenderers(List<StrokePath> paths) {
@@ -202,59 +350,128 @@ namespace ShitDesigner.Scene {
 			}
 		}
 
-		private void CreateIntersectionRenderer(List<Vector2> intersections, int count) {
-			var fillObject = new GameObject("Random Filled Intersections") {
+		private void CreateRegionRenderer(List<PolygonFace> regions, int count) {
+			m_RegionMesh = BuildRegionMesh(regions, count);
+			if (m_RegionMesh == null)
+				return;
+
+			var fillObject = new GameObject("Random Filled Regions") {
 				layer = gameObject.layer,
 				hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSave
 			};
-			fillObject.transform.SetParent(m_IntersectionRoot, false);
+			fillObject.transform.SetParent(m_RegionRoot, false);
 
-			m_IntersectionMesh = BuildIntersectionMesh(intersections, count);
 			var filter = fillObject.AddComponent<MeshFilter>();
-			filter.sharedMesh = m_IntersectionMesh;
+			filter.sharedMesh = m_RegionMesh;
 			var renderer = fillObject.AddComponent<MeshRenderer>();
-			renderer.sharedMaterial = m_IntersectionMaterial;
+			renderer.sharedMaterial = m_RegionMaterial;
 			renderer.shadowCastingMode = ShadowCastingMode.Off;
 			renderer.receiveShadows = false;
 			renderer.allowOcclusionWhenDynamic = false;
-			renderer.sortingOrder = 10;
+			renderer.sortingOrder = 0;
 		}
 
-		private Mesh BuildIntersectionMesh(List<Vector2> intersections, int count) {
-			var vertexCountPerCircle = IntersectionCircleSegments + 1;
-			var vertices = new Vector3[count * vertexCountPerCircle];
-			var triangles = new int[count * IntersectionCircleSegments * 3];
-			var triangleIndex = 0;
+		private Mesh BuildRegionMesh(List<PolygonFace> regions, int count) {
+			var vertices = new List<Vector3>();
+			var triangles = new List<int>();
+			for (var regionIndex = 0; regionIndex < count; regionIndex++) {
+				var polygon = regions[regionIndex].Points;
+				var polygonTriangles = TriangulatePolygon(polygon);
+				if (polygonTriangles.Count == 0)
+					continue;
 
-			for (var circle = 0; circle < count; circle++) {
-				var vertexStart = circle * vertexCountPerCircle;
-				var center = intersections[circle];
-				vertices[vertexStart] = new Vector3(center.x, center.y, -0.05f);
-				for (var segment = 0; segment < IntersectionCircleSegments; segment++) {
-					var angle = segment * Mathf.PI * 2f / IntersectionCircleSegments;
-					vertices[vertexStart + segment + 1] = new Vector3(
-						center.x + Mathf.Cos(angle) * m_IntersectionRadius,
-						center.y + Mathf.Sin(angle) * m_IntersectionRadius,
-						-0.05f);
+				var vertexStart = vertices.Count;
+				for (var pointIndex = 0; pointIndex < polygon.Count; pointIndex++) {
+					var point = polygon[pointIndex];
+					vertices.Add(new Vector3(point.x, point.y, 0.02f));
 				}
 
-				for (var segment = 0; segment < IntersectionCircleSegments; segment++) {
-					var current = vertexStart + segment + 1;
-					var next = vertexStart + (segment + 1) % IntersectionCircleSegments + 1;
-					triangles[triangleIndex++] = vertexStart;
-					triangles[triangleIndex++] = next;
-					triangles[triangleIndex++] = current;
+				for (var triangleIndex = 0; triangleIndex < polygonTriangles.Count; triangleIndex += 3) {
+					triangles.Add(vertexStart + polygonTriangles[triangleIndex]);
+					triangles.Add(vertexStart + polygonTriangles[triangleIndex + 2]);
+					triangles.Add(vertexStart + polygonTriangles[triangleIndex + 1]);
 				}
 			}
 
+			if (triangles.Count == 0)
+				return null;
+
 			var mesh = new Mesh {
-				name = "Random Intersection Fills",
+				name = "Random Region Fills",
 				hideFlags = HideFlags.HideAndDontSave
 			};
-			mesh.vertices = vertices;
-			mesh.triangles = triangles;
+			mesh.SetVertices(vertices);
+			mesh.SetTriangles(triangles, 0);
 			mesh.RecalculateBounds();
 			return mesh;
+		}
+
+		private static List<int> TriangulatePolygon(IList<Vector2> polygon) {
+			if (polygon.Count < 3)
+				return new List<int>();
+
+			var remaining = new List<int>(polygon.Count);
+			for (var index = 0; index < polygon.Count; index++)
+				remaining.Add(index);
+			if (CalculateSignedArea(polygon) < 0f)
+				remaining.Reverse();
+
+			var triangles = new List<int>((polygon.Count - 2) * 3);
+			var maximumIterations = polygon.Count * polygon.Count;
+			while (remaining.Count > 3 && maximumIterations-- > 0) {
+				var earFound = false;
+				for (var index = 0; index < remaining.Count; index++) {
+					var previousIndex = remaining[(index - 1 + remaining.Count) % remaining.Count];
+					var currentIndex = remaining[index];
+					var nextIndex = remaining[(index + 1) % remaining.Count];
+					var previous = polygon[previousIndex];
+					var current = polygon[currentIndex];
+					var next = polygon[nextIndex];
+					if (Cross(current - previous, next - current) <= 0.00001f)
+						continue;
+
+					var containsPoint = false;
+					for (var candidateIndex = 0; candidateIndex < remaining.Count; candidateIndex++) {
+						var candidate = remaining[candidateIndex];
+						if (candidate == previousIndex || candidate == currentIndex || candidate == nextIndex)
+							continue;
+						if (!IsPointInTriangle(polygon[candidate], previous, current, next))
+							continue;
+
+						containsPoint = true;
+						break;
+					}
+
+					if (containsPoint)
+						continue;
+
+					triangles.Add(previousIndex);
+					triangles.Add(currentIndex);
+					triangles.Add(nextIndex);
+					remaining.RemoveAt(index);
+					earFound = true;
+					break;
+				}
+
+				if (!earFound)
+					return new List<int>();
+			}
+
+			if (remaining.Count == 3) {
+				triangles.Add(remaining[0]);
+				triangles.Add(remaining[1]);
+				triangles.Add(remaining[2]);
+			}
+
+			return triangles;
+		}
+
+		private static bool IsPointInTriangle(Vector2 point, Vector2 first, Vector2 second, Vector2 third) {
+			const float edgeEpsilon = 0.00001f;
+			var firstSide = Cross(second - first, point - first);
+			var secondSide = Cross(third - second, point - second);
+			var thirdSide = Cross(first - third, point - third);
+			return firstSide >= -edgeEpsilon && secondSide >= -edgeEpsilon && thirdSide >= -edgeEpsilon;
 		}
 
 		private Transform CreateGeneratedRoot(string rootName) {
@@ -273,10 +490,13 @@ namespace ShitDesigner.Scene {
 			if (shader == null)
 				throw new InvalidOperationException("An unlit shader is required for the random stroke scene.");
 
-			return new Material(shader) {
+			var material = new Material(shader) {
 				name = materialName,
 				hideFlags = HideFlags.HideAndDontSave
 			};
+			if (material.HasProperty("_Cull"))
+				material.SetInt("_Cull", (int)CullMode.Off);
+			return material;
 		}
 
 		private static void SetMaterialColor(Material material, Color color) {
@@ -291,20 +511,20 @@ namespace ShitDesigner.Scene {
 		private void ReleaseGeneratedContent() {
 			if (m_StrokeRoot != null)
 				DestroyOwnedObject(m_StrokeRoot.gameObject);
-			if (m_IntersectionRoot != null)
-				DestroyOwnedObject(m_IntersectionRoot.gameObject);
-			if (m_IntersectionMesh != null)
-				DestroyOwnedObject(m_IntersectionMesh);
+			if (m_RegionRoot != null)
+				DestroyOwnedObject(m_RegionRoot.gameObject);
+			if (m_RegionMesh != null)
+				DestroyOwnedObject(m_RegionMesh);
 			if (m_StrokeMaterial != null)
 				DestroyOwnedObject(m_StrokeMaterial);
-			if (m_IntersectionMaterial != null)
-				DestroyOwnedObject(m_IntersectionMaterial);
+			if (m_RegionMaterial != null)
+				DestroyOwnedObject(m_RegionMaterial);
 
 			m_StrokeRoot = null;
-			m_IntersectionRoot = null;
-			m_IntersectionMesh = null;
+			m_RegionRoot = null;
+			m_RegionMesh = null;
 			m_StrokeMaterial = null;
-			m_IntersectionMaterial = null;
+			m_RegionMaterial = null;
 		}
 
 		private int GetGenerationSeed() {
@@ -323,18 +543,20 @@ namespace ShitDesigner.Scene {
 		private static bool TryGetSegmentIntersection(
 			Vector2 firstStart, Vector2 firstEnd,
 			Vector2 secondStart, Vector2 secondEnd,
-			out Vector2 intersection) {
+			out Vector2 intersection, out float firstProgress, out float secondProgress) {
 			var firstDirection = firstEnd - firstStart;
 			var secondDirection = secondEnd - secondStart;
 			var denominator = Cross(firstDirection, secondDirection);
 			if (Mathf.Abs(denominator) < 0.00001f) {
 				intersection = default;
+				firstProgress = 0f;
+				secondProgress = 0f;
 				return false;
 			}
 
 			var offset = secondStart - firstStart;
-			var firstProgress = Cross(offset, secondDirection) / denominator;
-			var secondProgress = Cross(offset, firstDirection) / denominator;
+			firstProgress = Cross(offset, secondDirection) / denominator;
+			secondProgress = Cross(offset, firstDirection) / denominator;
 			if (firstProgress < 0f || firstProgress > 1f || secondProgress < 0f || secondProgress > 1f) {
 				intersection = default;
 				return false;
@@ -342,16 +564,6 @@ namespace ShitDesigner.Scene {
 
 			intersection = firstStart + firstDirection * firstProgress;
 			return true;
-		}
-
-		private static bool ContainsNearby(List<Vector2> points, Vector2 candidate, float distance) {
-			var distanceSquared = distance * distance;
-			for (var index = 0; index < points.Count; index++) {
-				if ((points[index] - candidate).sqrMagnitude <= distanceSquared)
-					return true;
-			}
-
-			return false;
 		}
 
 		private static float Cross(Vector2 first, Vector2 second) {
@@ -376,6 +588,24 @@ namespace ShitDesigner.Scene {
 				Destroy(value);
 			else
 				DestroyImmediate(value);
+		}
+
+		private readonly struct SegmentSplit {
+			public readonly float Progress;
+			public readonly int NodeIndex;
+
+			public SegmentSplit(float progress, int nodeIndex) {
+				Progress = progress;
+				NodeIndex = nodeIndex;
+			}
+		}
+
+		private readonly struct PolygonFace {
+			public readonly List<Vector2> Points;
+
+			public PolygonFace(List<Vector2> points) {
+				Points = points;
+			}
 		}
 
 		private readonly struct StrokePath {
