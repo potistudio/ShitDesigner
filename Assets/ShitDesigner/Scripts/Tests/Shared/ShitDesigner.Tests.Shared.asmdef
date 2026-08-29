@@ -13,7 +13,8 @@
     "ShitDesigner.Persistence",
     "ShitDesigner.Application",
     "ShitDesigner.Input",
-    "ShitDesigner.Presentation"
+    "ShitDesigner.Presentation",
+    "UnityEngine.TestRunner"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

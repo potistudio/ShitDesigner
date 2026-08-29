@@ -6,6 +6,7 @@
     "ShitDesigner.Runtime",
     "ShitDesigner.Core",
     "ShitDesigner.Tests.Shared",
+    "UnityEngine.TestRunner",
     "Unity.RenderPipelines.Universal.Runtime"
   ],
   "includePlatforms": [],

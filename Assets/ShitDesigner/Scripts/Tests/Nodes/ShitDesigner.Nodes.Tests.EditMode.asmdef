@@ -6,7 +6,9 @@
     "ShitDesigner.Bootstrap",
     "ShitDesigner.Runtime",
     "ShitDesigner.Core",
-    "ShitDesigner.Tests.Shared"
+    "ShitDesigner.Tests.Shared",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
   ],
   "includePlatforms": ["Editor"],
   "excludePlatforms": [],

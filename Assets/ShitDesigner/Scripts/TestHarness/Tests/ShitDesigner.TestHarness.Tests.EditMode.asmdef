@@ -12,7 +12,9 @@
     "ShitDesigner.Nodes",
     "ShitDesigner.Persistence",
     "ShitDesigner.Runtime",
-    "ShitDesigner.Rendering"
+    "ShitDesigner.Rendering",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
   ],
   "includePlatforms": ["Editor"],
   "excludePlatforms": [],
