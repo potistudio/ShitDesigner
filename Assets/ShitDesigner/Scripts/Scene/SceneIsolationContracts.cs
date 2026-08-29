@@ -401,7 +401,12 @@ namespace ShitDesigner.Scene {
 			// renderers during a URP render request.  The node owns its whole
 			// camera space, therefore disabling that optimisation is both
 			// deterministic and scoped to this camera.
-			camera.enabled = true;
+			// These cameras are submitted explicitly by UnityCameraRenderSource
+			// into graph-owned RenderTextures. Leaving one enabled also schedules
+			// its normal screen render, which can overlap the request's target
+			// and make URP combine the program texture with the display back
+			// buffer in one render pass.
+			camera.enabled = false;
 			// Keep the isolated camera's viewport explicit.  Unity 6 stores
 			// this as a versioned Rect in prefabs, but enforcing it here also
 			// protects runtime-created nodes from malformed/legacy assets.
