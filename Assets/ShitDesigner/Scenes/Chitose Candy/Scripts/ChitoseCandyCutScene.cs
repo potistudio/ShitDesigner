@@ -248,8 +248,8 @@ namespace ShitDesigner.Scene {
 			var axis = (Quaternion.AngleAxis(NextFloat(random, -2.5f, 2.5f), Vector3.forward)
 				* m_CandyAxisRuntime).normalized;
 			var candy = CreateCandy(m_Candies.Count, frontPosition, axis, random);
-			candy.EntryTargetPosition = candy.Root.localPosition + axis * (m_CandyLength * 0.5f);
-			candy.EntryStartPosition = candy.EntryTargetPosition - axis * (m_CandyLength * 0.5f);
+			candy.EntryTargetPosition = candy.Root.localPosition;
+			candy.EntryStartPosition = candy.EntryTargetPosition - axis * m_CandyLength;
 			candy.EntryStartBeat = startBeat;
 			candy.IsEntering = true;
 			candy.Root.localPosition = candy.EntryStartPosition;
