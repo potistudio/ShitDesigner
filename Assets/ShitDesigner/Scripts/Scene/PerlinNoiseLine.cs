@@ -7,7 +7,7 @@ namespace ShitDesigner.Scene {
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
 	[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
-	public sealed class PerlinNoiseLine : MonoBehaviour, ISceneGraphClockReceiver {
+	public sealed class PerlinNoiseLine : MonoBehaviour {
 		[Header("Line")]
 		[Min(2)][SerializeField] private int m_Segments = 256;
 		[Min(0.01f)][SerializeField] private float m_Length = 20f;
@@ -39,7 +39,8 @@ namespace ShitDesigner.Scene {
 		private bool m_GraphClockDriven;
 
 		private void OnEnable() {
-			m_GraphClockDriven = false;
+			var clockController = GetComponentInParent<PerlinNoiseLineClockController>();
+			m_GraphClockDriven = clockController != null && clockController.isActiveAndEnabled;
 			m_NoiseTravelZ = m_InitialNoiseTravelZ;
 			RebuildMesh();
 		}
@@ -50,6 +51,7 @@ namespace ShitDesigner.Scene {
 		}
 
 		private void OnDisable() {
+			m_GraphClockDriven = false;
 			ReleaseGeneratedMaterial();
 			ReleaseGeneratedMesh();
 			m_MeshFilter = null;
