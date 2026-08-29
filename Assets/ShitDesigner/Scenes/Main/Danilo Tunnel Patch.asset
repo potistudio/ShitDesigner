@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36a7c9fd8af84f24a8db20cf4457e4ca, type: 3}
+  m_Name: Danilo Tunnel Patch
+  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
+  _id: danilo-tunnel
+  _displayName: Danilo Tunnel
+  _flash:
+    _image: {fileID: 2800000, guid: 7811e043fc896e74592668a1a45cd6bc, type: 3}
+    _durationSeconds: 0.25
+  _programGraph:
+    _sourceNodeId: scene
+    _outputNodeId: danilo_tunnel
+    _nodes:
+    - _id: danilo_tunnel
+      _typeId: shitdesigner.shader.generator.tunnel
+      m_VideoPath:
+      m_VideoClip: {fileID: 0}
+      _parameters: []
+    _connections: []
+  _nodes:
+  - {fileID: 11400000, guid: d93734c00bdb4f4b9094c7a18c221d53, type: 2}
+  _parameters: []
+  m_KeyboardInputs: []
+  m_MidiInputs: []

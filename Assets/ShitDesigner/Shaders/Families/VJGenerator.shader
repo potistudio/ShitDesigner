@@ -54,6 +54,7 @@ Shader "Hidden/ShitDesigner/VJ/Generator"
 		CGINCLUDE
 		#include "UnityCG.cginc"
 		#include "../Includes/VJCommon.hlsl"
+		#include "../Includes/VJDaniloTunnel.hlsl"
 		#include "../Includes/VJGenerator.hlsl"
 		struct appdata { float4 vertex : POSITION; float2 uv : TEXCOORD0; };
 		struct v2f { float4 vertex : SV_POSITION; float2 uv : TEXCOORD0; };
