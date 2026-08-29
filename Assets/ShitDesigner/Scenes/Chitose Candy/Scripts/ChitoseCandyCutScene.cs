@@ -85,11 +85,13 @@ namespace ShitDesigner.Scene {
 		private bool m_RebuildRequested = true;
 		private double m_AdjustedTotalBeats;
 		private long m_LastProcessedBeat = long.MinValue;
+		private int m_LastActionFrame = -1;
 		private bool m_UsesExternalClock;
 
 		private void OnEnable() {
 			m_AdjustedTotalBeats = 0d;
 			m_LastProcessedBeat = long.MinValue;
+			m_LastActionFrame = -1;
 			m_CutLayerIndex = 0;
 			m_PushPending = false;
 			m_UsesExternalClock = false;
@@ -149,6 +151,7 @@ namespace ShitDesigner.Scene {
 		public void Rebuild() {
 			m_RebuildRequested = false;
 			m_LastProcessedBeat = long.MinValue;
+			m_LastActionFrame = -1;
 			m_CutLayerIndex = 0;
 			m_PushPending = false;
 			ReleaseGeneratedContent();
@@ -296,7 +299,11 @@ namespace ShitDesigner.Scene {
 			}
 
 			if (beatIndex > m_LastProcessedBeat) {
+				if (m_LastActionFrame == Time.frameCount)
+					return;
+
 				ProcessNextBeat();
+				m_LastActionFrame = Time.frameCount;
 			}
 			m_LastProcessedBeat = beatIndex;
 		}
