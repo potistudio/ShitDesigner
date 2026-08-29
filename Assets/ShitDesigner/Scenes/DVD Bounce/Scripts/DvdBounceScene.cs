@@ -12,6 +12,9 @@ namespace ShitDesigner.Scene {
 		[SerializeField] private VideoClip m_Video;
 		[Min(0.01f)][SerializeField] private Vector2 m_VisualSize = new Vector2(2.8f, 1.6f);
 
+		[Header("Video")]
+		[Min(0f)][SerializeField] private float m_VideoPlaybackSpeed = 1f;
+
 		[Header("Motion")]
 		[Min(0.01f)][SerializeField] private float m_Speed = 4.5f;
 		[SerializeField] private Vector2 m_InitialDirection = new Vector2(1f, 0.63f);
@@ -68,6 +71,7 @@ namespace ShitDesigner.Scene {
 			m_VisualSize.x = Mathf.Max(0.01f, m_VisualSize.x);
 			m_VisualSize.y = Mathf.Max(0.01f, m_VisualSize.y);
 			UpdateVisualSizeForSourceAspect();
+			m_VideoPlaybackSpeed = Mathf.Max(0f, m_VideoPlaybackSpeed);
 			m_Speed = Mathf.Max(0.01f, m_Speed);
 			if (m_InitialDirection.sqrMagnitude < 0.0001f)
 				m_InitialDirection = new Vector2(1f, 0.63f);
@@ -76,6 +80,8 @@ namespace ShitDesigner.Scene {
 				ApplyImage();
 				ApplyColor();
 			}
+			if (m_VideoPlayer != null)
+				m_VideoPlayer.playbackSpeed = m_VideoPlaybackSpeed;
 		}
 
 		private void CreateVisual() {
@@ -112,6 +118,7 @@ namespace ShitDesigner.Scene {
 			m_VideoPlayer.audioOutputMode = VideoAudioOutputMode.None;
 			m_VideoPlayer.isLooping = true;
 			m_VideoPlayer.playOnAwake = false;
+			m_VideoPlayer.playbackSpeed = m_VideoPlaybackSpeed;
 		}
 
 		private void ApplyImage() {
