@@ -25,6 +25,8 @@ namespace ShitDesigner.Scene {
 		[Header("Motion")]
 		[Min(0f)][SerializeField] private float m_ContinuousRotationDegreesPerSecond = 2f;
 		[Min(0f)][SerializeField] private float m_BeatRotationDegrees = 8f;
+		[SerializeField] private AnimationCurve m_BeatRotationEaseIn = CreateEaseInCurve();
+		[SerializeField] private AnimationCurve m_BeatRotationEaseOut = CreateEaseOutCurve();
 
 		[Header("Randomness")]
 		[SerializeField] private bool m_RandomizeOnPlay = true;
@@ -255,12 +257,19 @@ namespace ShitDesigner.Scene {
 		private float GetBeatRotationDegrees(float phase) {
 			if (phase < 0.5f) {
 				var upPhase = phase * 2f;
-				return m_BeatRotationDegrees * 0.5f * upPhase * upPhase * upPhase;
+				return m_BeatRotationDegrees * 0.5f * EvaluateEasing(m_BeatRotationEaseIn, upPhase, true);
 			}
 
 			var outPhase = (phase - 0.5f) * 2f;
-			var easedOutPhase = 1f - Mathf.Pow(1f - outPhase, 3f);
+			var easedOutPhase = EvaluateEasing(m_BeatRotationEaseOut, outPhase, false);
 			return m_BeatRotationDegrees * 0.5f * (1f + easedOutPhase);
+		}
+
+		private static float EvaluateEasing(AnimationCurve curve, float phase, bool easeIn) {
+			phase = Mathf.Clamp01(phase);
+			if (curve == null || curve.length == 0)
+				return easeIn ? phase * phase * phase : 1f - Mathf.Pow(1f - phase, 3f);
+			return Mathf.Clamp01(curve.Evaluate(phase));
 		}
 
 		private List<PolygonFace> SelectFilledRegions(List<PolygonFace> regions) {
@@ -853,6 +862,18 @@ namespace ShitDesigner.Scene {
 
 		private static float NextFloat(System.Random random, float minimum, float maximum) {
 			return Mathf.Lerp(minimum, maximum, (float)random.NextDouble());
+		}
+
+		private static AnimationCurve CreateEaseInCurve() {
+			return new AnimationCurve(
+				new Keyframe(0f, 0f, 0f, 0f),
+				new Keyframe(1f, 1f, 3f, 3f));
+		}
+
+		private static AnimationCurve CreateEaseOutCurve() {
+			return new AnimationCurve(
+				new Keyframe(0f, 0f, 0f, 3f),
+				new Keyframe(1f, 1f, 0f, 0f));
 		}
 
 		private static void DestroyOwnedObject(UnityEngine.Object value) {
