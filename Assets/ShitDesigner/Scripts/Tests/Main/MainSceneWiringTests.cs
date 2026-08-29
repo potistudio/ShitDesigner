@@ -37,17 +37,22 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(document.visualTreeAsset, Is.Not.Null);
 				Assert.That(document.panelSettings, Is.Not.Null);
 				Assert.That(graph.Patches.Length, Is.EqualTo(5));
-				Assert.That(graph.Patches.All(definition => definition != null && !string.IsNullOrWhiteSpace(definition.Id) && definition.Nodes.Count > 0), Is.True);
+				Assert.That(graph.ProgramOutputCount, Is.EqualTo(graph.Patches.Length));
+				Assert.That(graph.Patches.All(definition => definition != null && !string.IsNullOrWhiteSpace(definition.Id)
+					&& definition.ProgramGraph.Nodes.Any(node => node != null && node.IsSceneNode && node.SceneDefinition != null)), Is.True);
 				Assert.That(graph.Patches.All(definition => definition.ProgramGraph.Nodes.Count > 0 && definition.ProgramGraph.Connections.Count > 0), Is.True);
 				Assert.That(graph.Patches.Select(definition => definition.Id).Distinct().Count(), Is.EqualTo(5));
-				Assert.That(graph.Patches.SelectMany(definition => definition.Nodes).All(node => node.Prefab.GetComponent<LiveSceneRoot>() != null), Is.True);
+				Assert.That(graph.Patches.SelectMany(definition => definition.ProgramGraph.Nodes).Where(node => node.IsSceneNode)
+					.Select(node => node.SceneDefinition.Prefab).All(prefab => prefab.GetComponent<LiveSceneRoot>() != null), Is.True);
 				var bpmShapes = graph.Patches.Single(definition => definition.Id == "bpm-shapes");
-				var bpmShapesPrefab = bpmShapes.Nodes.Single().Prefab;
+				var bpmShapesSceneNode = bpmShapes.ProgramGraph.Nodes.Single(node => node.IsSceneNode);
+				var bpmShapesPrefab = bpmShapesSceneNode.SceneDefinition.Prefab;
 				Assert.That(bpmShapesPrefab.GetComponent("BpmShapeMotionScene"), Is.Not.Null);
 				Assert.That(bpmShapesPrefab.GetComponentInChildren<Camera>().orthographic, Is.True);
 				var stage = graph.Patches.Single(definition => definition.Id == "stage");
-				var stagePrefab = stage.Nodes.Single().Prefab;
-				Assert.That(stage.Parameters.Single().NodeId, Is.EqualTo(stage.Nodes.Single().Id));
+				var stageSceneNode = stage.ProgramGraph.Nodes.Single(node => node.IsSceneNode);
+				var stagePrefab = stageSceneNode.SceneDefinition.Prefab;
+				Assert.That(stage.Parameters.Single().NodeId, Is.EqualTo(stageSceneNode.Id));
 				Assert.That(stage.Parameters.Single().ParameterId, Is.EqualTo(LiveGraphClockRateParameter.ParameterId));
 				Assert.That(stagePrefab.GetComponent<LiveGraphClockRateParameter>(), Is.Not.Null);
 				Assert.That(stagePrefab.GetComponent("BpmAnimatorSpeedController"), Is.Not.Null);

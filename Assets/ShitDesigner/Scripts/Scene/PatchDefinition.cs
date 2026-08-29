@@ -97,23 +97,32 @@ namespace ShitDesigner.Scene {
 
 	[Serializable]
 	public sealed class PatchGraphNode {
+		public const string Scene3DTypeId = "shitdesigner.scene.3d";
+
 		[SerializeField] private string _id;
 		[SerializeField] private string _typeId;
-		// Main's authored live host uses a direct Unity clip reference; the
-		// standalone project runtime continues to use the MediaAsset parameter.
+		[SerializeField] private Scene3DDefinition m_SceneDefinition;
+		// Retain the Unity reference for existing patches. New video sources use
+		// the path so codecs that Unity cannot import can still be selected.
+		[SerializeField] private string m_VideoPath;
 		[SerializeField] private VideoClip m_VideoClip;
 		[SerializeField] private List<PatchGraphParameter> _parameters = new List<PatchGraphParameter>();
 
 		public string Id => (_id ?? string.Empty).Trim();
 		public string TypeId => (_typeId ?? string.Empty).Trim();
+		public Scene3DDefinition SceneDefinition => m_SceneDefinition;
+		public string VideoPath => (m_VideoPath ?? string.Empty).Trim();
 		public VideoClip VideoClip => m_VideoClip;
 		public IReadOnlyList<PatchGraphParameter> Parameters => _parameters ?? (IReadOnlyList<PatchGraphParameter>)Array.Empty<PatchGraphParameter>();
+		public bool IsSceneNode => string.Equals(TypeId, Scene3DTypeId, StringComparison.Ordinal);
 
 		public PatchGraphNode() { }
 
-		public PatchGraphNode(string id, string typeId, IEnumerable<PatchGraphParameter> parameters = null, VideoClip videoClip = null) {
+		public PatchGraphNode(string id, string typeId, IEnumerable<PatchGraphParameter> parameters = null, VideoClip videoClip = null,
+			Scene3DDefinition sceneDefinition = null) {
 			_id = id;
 			_typeId = typeId;
+			m_SceneDefinition = sceneDefinition;
 			m_VideoClip = videoClip;
 			_parameters = new List<PatchGraphParameter>(parameters ?? Enumerable.Empty<PatchGraphParameter>());
 		}
@@ -146,39 +155,41 @@ namespace ShitDesigner.Scene {
 	[Serializable]
 	public sealed class PatchProgramGraph {
 		public const string ImagePortId = "image";
-		public const string SceneInputNodeId = "scene";
 
-		[SerializeField] private string _sourceNodeId = SceneInputNodeId;
 		[SerializeField] private string _outputNodeId = "composite";
 		[SerializeField] private List<PatchGraphNode> _nodes = new List<PatchGraphNode>();
 		[SerializeField] private List<PatchGraphConnection> _connections = new List<PatchGraphConnection>();
 
-		public string SourceNodeId => (_sourceNodeId ?? string.Empty).Trim();
 		public string OutputNodeId => (_outputNodeId ?? string.Empty).Trim();
 		public IReadOnlyList<PatchGraphNode> Nodes => _nodes ?? (IReadOnlyList<PatchGraphNode>)Array.Empty<PatchGraphNode>();
 		public IReadOnlyList<PatchGraphConnection> Connections => _connections ?? (IReadOnlyList<PatchGraphConnection>)Array.Empty<PatchGraphConnection>();
 
 		public PatchProgramGraph() { }
 
-		public PatchProgramGraph(string sourceNodeId, string outputNodeId, IEnumerable<PatchGraphNode> nodes, IEnumerable<PatchGraphConnection> connections) {
-			_sourceNodeId = sourceNodeId;
+		public PatchProgramGraph(string outputNodeId, IEnumerable<PatchGraphNode> nodes, IEnumerable<PatchGraphConnection> connections) {
 			_outputNodeId = outputNodeId;
 			_nodes = new List<PatchGraphNode>(nodes ?? Enumerable.Empty<PatchGraphNode>());
 			_connections = new List<PatchGraphConnection>(connections ?? Enumerable.Empty<PatchGraphConnection>());
 		}
 
 		public UnitResult<Diagnostic> Validate() {
-			if (string.IsNullOrWhiteSpace(SourceNodeId) || string.IsNullOrWhiteSpace(OutputNodeId))
-				return Failure("patch.definition.graph.endpoint", "A patch program graph requires source and output node IDs.");
+			if (string.IsNullOrWhiteSpace(OutputNodeId))
+				return Failure("patch.definition.graph.endpoint", "A patch program graph requires an output node ID.");
 			if (Nodes.Count == 0) return Failure("patch.definition.graph.nodes", "A patch program graph requires at least one node.");
 			if (Nodes.Any(node => node == null || string.IsNullOrWhiteSpace(node.Id) || !NodeTypeId.TryParse(node.TypeId, out _)))
 				return Failure("patch.definition.graph.node", "Every patch graph node requires an ID and a valid node type ID.");
 			if (Nodes.GroupBy(node => node.Id, StringComparer.Ordinal).Any(group => group.Count() > 1))
 				return Failure("patch.definition.graph.node_duplicate", "Patch graph node IDs must be unique.");
-			if (Nodes.Any(node => string.Equals(node.Id, SourceNodeId, StringComparison.Ordinal)))
-				return Failure("patch.definition.graph.source_collision", "The patch graph source ID is reserved for the scene input.");
 			if (!Nodes.Any(node => string.Equals(node.Id, OutputNodeId, StringComparison.Ordinal)))
 				return Failure("patch.definition.graph.output_missing", "The patch graph output must reference a configured node.");
+			var sceneNodes = Nodes.Where(node => node.IsSceneNode).ToArray();
+			if (sceneNodes.Length == 0)
+				return Failure("patch.definition.graph.scene_missing", "A patch program graph requires at least one 3D scene node.");
+			if (sceneNodes.Any(node => node.SceneDefinition == null || string.IsNullOrWhiteSpace(node.SceneDefinition.Id)
+				|| node.SceneDefinition.Validate().IsFailure))
+				return Failure("patch.definition.graph.scene", "Every 3D scene node requires a valid Scene3DDefinition.");
+			if (Nodes.Any(node => !node.IsSceneNode && node.SceneDefinition != null))
+				return Failure("patch.definition.graph.scene_asset", "Only 3D scene nodes may reference a Scene3DDefinition.");
 			foreach (var node in Nodes) {
 				if (node.Parameters.Any(parameter => parameter == null || string.IsNullOrWhiteSpace(parameter.Id) || !ParameterId.TryParse(parameter.Id, out _) || !parameter.TryGetValue(out _)))
 					return Failure("patch.definition.graph.parameter", "Every patch graph parameter requires a valid ID and finite value.");
@@ -191,9 +202,8 @@ namespace ShitDesigner.Scene {
 				|| !PortId.TryParse(connection.TargetPortId, out _)))
 				return Failure("patch.definition.graph.connection", "Every patch graph connection requires valid source and target ports.");
 			if (Connections.Any(connection => !string.Equals(connection.SourcePortId, ImagePortId, StringComparison.Ordinal)))
-				return Failure("patch.definition.graph.source_port", "Patch graph shader nodes expose the image output port only.");
-			if (Connections.Any(connection => !string.Equals(connection.SourceNodeId, SourceNodeId, StringComparison.Ordinal)
-				&& !Nodes.Any(node => string.Equals(node.Id, connection.SourceNodeId, StringComparison.Ordinal))))
+				return Failure("patch.definition.graph.source_port", "Patch graph nodes expose the image output port only.");
+			if (Connections.Any(connection => !Nodes.Any(node => string.Equals(node.Id, connection.SourceNodeId, StringComparison.Ordinal))))
 				return Failure("patch.definition.graph.connection_source", "A patch graph connection references an unknown source node.");
 			if (Connections.Any(connection => !Nodes.Any(node => string.Equals(node.Id, connection.TargetNodeId, StringComparison.Ordinal))))
 				return Failure("patch.definition.graph.connection_target", "A patch graph connection references an unknown target node.");
@@ -206,7 +216,7 @@ namespace ShitDesigner.Scene {
 		private bool HasCycle() {
 			var adjacency = Nodes.ToDictionary(node => node.Id, node => new List<string>(), StringComparer.Ordinal);
 			foreach (var connection in Connections)
-				if (!string.Equals(connection.SourceNodeId, SourceNodeId, StringComparison.Ordinal) && adjacency.ContainsKey(connection.SourceNodeId))
+				if (adjacency.ContainsKey(connection.SourceNodeId))
 					adjacency[connection.SourceNodeId].Add(connection.TargetNodeId);
 			var visiting = new HashSet<string>(StringComparer.Ordinal);
 			var visited = new HashSet<string>(StringComparer.Ordinal);
@@ -224,12 +234,6 @@ namespace ShitDesigner.Scene {
 
 		private static UnitResult<Diagnostic> Failure(string code, string message)
 			=> UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "scene"));
-	}
-
-	[Serializable]
-	public enum PatchParameterSource {
-		SceneNode,
-		ProgramGraphNode
 	}
 
 	public enum PatchBeatSignal {
@@ -283,14 +287,12 @@ namespace ShitDesigner.Scene {
 	public sealed class PatchParameter {
 		[SerializeField] private string _id;
 		[SerializeField] private string _displayName;
-		[SerializeField] private PatchParameterSource _source;
 		[SerializeField] private string _nodeId;
 		[SerializeField] private string _parameterId;
 		[SerializeField] private PatchBeatModulation m_BeatModulation = new PatchBeatModulation();
 
 		public string Id => _id ?? string.Empty;
 		public string DisplayName => _displayName ?? string.Empty;
-		public PatchParameterSource Source => _source;
 		public string NodeId => _nodeId ?? string.Empty;
 		public string ParameterId => _parameterId ?? string.Empty;
 		public PatchBeatModulation BeatModulation => m_BeatModulation;
@@ -405,14 +407,13 @@ namespace ShitDesigner.Scene {
 			=> UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "scene"));
 	}
 
-	/// <summary>Logical live patch composed from Unity scene nodes and published controls.</summary>
+	/// <summary>Logical live patch composed from graph nodes and published controls.</summary>
 	[CreateAssetMenu(fileName = "PatchDefinition", menuName = "ShitDesigner/Patch Definition")]
 	public sealed class PatchDefinition : ScriptableObject {
 		[SerializeField] private string _id;
 		[SerializeField] private string _displayName;
 		[SerializeField] private PatchFlashDefinition _flash;
 		[SerializeField] private PatchProgramGraph _programGraph = new PatchProgramGraph();
-		[SerializeField] private List<Scene3DDefinition> _nodes = new List<Scene3DDefinition>();
 		[SerializeField] private List<PatchParameter> _parameters = new List<PatchParameter>();
 		[SerializeField] private List<PatchKeyboardInputBinding> m_KeyboardInputs = new List<PatchKeyboardInputBinding>();
 		[SerializeField] private List<PatchMidiInputBinding> m_MidiInputs = new List<PatchMidiInputBinding>();
@@ -421,7 +422,6 @@ namespace ShitDesigner.Scene {
 		public string DisplayName => _displayName ?? string.Empty;
 		public PatchFlashDefinition Flash => _flash;
 		public PatchProgramGraph ProgramGraph => _programGraph;
-		public IReadOnlyList<Scene3DDefinition> Nodes => _nodes ?? (IReadOnlyList<Scene3DDefinition>)Array.Empty<Scene3DDefinition>();
 		public IReadOnlyList<PatchParameter> Parameters => _parameters ?? (IReadOnlyList<PatchParameter>)Array.Empty<PatchParameter>();
 		public IReadOnlyList<PatchKeyboardInputBinding> KeyboardInputs => m_KeyboardInputs ?? (IReadOnlyList<PatchKeyboardInputBinding>)Array.Empty<PatchKeyboardInputBinding>();
 		public IReadOnlyList<PatchMidiInputBinding> MidiInputs => m_MidiInputs ?? (IReadOnlyList<PatchMidiInputBinding>)Array.Empty<PatchMidiInputBinding>();
@@ -432,25 +432,17 @@ namespace ShitDesigner.Scene {
 			if (ProgramGraph == null) return Failure("patch.definition.graph", "A patch requires a program graph.");
 			var graphValidation = ProgramGraph.Validate();
 			if (graphValidation.IsFailure) return graphValidation;
-			if (Nodes.Count == 0) return Failure("patch.definition.nodes", "Every patch requires at least one Scene3DDefinition.");
-			var nodes = Nodes.ToArray();
-			if (nodes.Any(node => node == null || string.IsNullOrWhiteSpace(node.Id) || node.Validate().IsFailure)) return Failure("patch.definition.node", "Every Scene3DDefinition must have an ID and a prefab.");
-			if (nodes.Select(node => node.Id).Distinct(StringComparer.Ordinal).Count() != nodes.Length) return Failure("patch.definition.node_duplicate", "A patch cannot reference a Unity scene node more than once.");
 			if (Parameters.Any(parameter => parameter == null || string.IsNullOrWhiteSpace(parameter.Id) || string.IsNullOrWhiteSpace(parameter.DisplayName) || string.IsNullOrWhiteSpace(parameter.NodeId) || string.IsNullOrWhiteSpace(parameter.ParameterId)))
-				return Failure("patch.definition.parameter", "Published patch parameters require IDs, names, nodes, and source parameters.");
+				return Failure("patch.definition.parameter", "Published patch parameters require IDs, names, nodes, and parameter IDs.");
 			if (Parameters.GroupBy(parameter => parameter.Id, StringComparer.Ordinal).Any(group => group.Count() > 1)) return Failure("patch.definition.parameter_duplicate", "Published patch parameter IDs must be unique.");
 			foreach (var parameter in Parameters) {
 				if (parameter.BeatModulation != null && parameter.BeatModulation.Validate().IsFailure)
 					return Failure("patch.definition.parameter_modulation", "A published patch parameter has invalid beat modulation settings.");
-				if (parameter.Source == PatchParameterSource.SceneNode) {
-					if (!nodes.Any(node => string.Equals(node.Id, parameter.NodeId, StringComparison.Ordinal)))
-						return Failure("patch.definition.parameter_node", "A published patch parameter references an unknown scene node.");
-					continue;
-				}
-				if (parameter.Source != PatchParameterSource.ProgramGraphNode)
-					return Failure("patch.definition.parameter_source", "A published patch parameter has an unknown source.");
 				var graphNode = ProgramGraph.Nodes.FirstOrDefault(node => string.Equals(node.Id, parameter.NodeId, StringComparison.Ordinal));
-				var graphParameter = graphNode?.FindParameter(parameter.ParameterId);
+				if (graphNode == null)
+					return Failure("patch.definition.parameter_node", "A published patch parameter references an unknown patch graph node.");
+				if (graphNode.IsSceneNode) continue;
+				var graphParameter = graphNode.FindParameter(parameter.ParameterId);
 				if (graphParameter == null || !PatchGraphParameter.IsLiveControllable(graphParameter.Type))
 					return Failure("patch.definition.parameter_graph", "A published graph parameter must reference a configured parameter supported by the live renderer.");
 				if (parameter.BeatModulation != null && parameter.BeatModulation.IsEnabled && graphParameter.Type != ParameterType.Float)

@@ -18,17 +18,18 @@ MonoBehaviour:
     _image: {fileID: 2800000, guid: 7811e043fc896e74592668a1a45cd6bc, type: 3}
     _durationSeconds: 0.25
   _programGraph:
-    _sourceNodeId: scene
     _outputNodeId: danilo_tunnel
     _nodes:
+    - _id: danilo-tunnel
+      _typeId: shitdesigner.scene.3d
+      m_SceneDefinition: {fileID: 11400000, guid: d93734c00bdb4f4b9094c7a18c221d53, type: 2}
+      _parameters: []
     - _id: danilo_tunnel
       _typeId: shitdesigner.shader.generator.tunnel
       m_VideoPath:
       m_VideoClip: {fileID: 0}
       _parameters: []
     _connections: []
-  _nodes:
-  - {fileID: 11400000, guid: d93734c00bdb4f4b9094c7a18c221d53, type: 2}
   _parameters: []
   m_KeyboardInputs: []
   m_MidiInputs: []

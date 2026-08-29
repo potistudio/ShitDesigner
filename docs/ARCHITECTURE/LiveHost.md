@@ -151,10 +151,10 @@
 ### 2026-08-26: パッチ数はInspectorで設定し、1件だけ事前ロードする
 
 - `LiveGraphBootstrap` は任意数の `PatchDefinition` をシリアライズして保持する。
-- `PatchDefinition` はInspectorでProgram graphのノード、接続およびノードパラメーターをそれぞれ単純な可変長リストとして設定し、Unityの `Scene3DDefinition` もScene Nodesの単純なリストとして参照し、ライブUIへ公開するパラメーターを明示的に束ねる。Shaderパラメーターは必要なものだけを個別に追加し、未追加の値はManifestの既定値を使用する。これはUnityのSceneとは別の論理的なパッチである。
+- `PatchDefinition` はInspectorでProgram graphのノード、接続およびノードパラメーターを単一の可変長リストとして設定する。`Scene3DDefinition` はSceneノードのペイロードとして参照し、ライブUIへ公開するパラメーターをグラフノードIDとパラメーターIDで明示的に束ねる。Shaderパラメーターは必要なものだけを個別に追加し、未追加の値はManifestの既定値を使用する。これはUnityのSceneとは別の論理的なパッチである。
 - Inspectorの可変長要素はUnity標準のリスト描画を使用し、各要素とその子要素を再帰的に表示する。追加・削除は各リストの標準操作から行う。
 - `PatchDefinition` のInspectorは生成済みShader Manifestとプロジェクト内の `Scene3DDefinition` を選択肢として表示する。ノード型、接続元/接続先、画像ポート、ShaderパラメーターおよびScene公開パラメーターのIDは、候補選択または定義からの自動生成を基本とし、手入力を要求しない。
-- `PatchDefinition` のShader graph node IDおよび公開パラメーターIDは、空欄の追加時にInspectorが一意な値を生成する。Scene3DDefinitionはScene Nodesリストから選択し、Scene Input IDは `scene` に固定し、Shader nodeのSource Portは `image` に固定する。
+- `PatchDefinition` のグラフノードIDおよび公開パラメーターIDは、空欄の追加時にInspectorが一意な値を生成する。Sceneノードは `Scene3DDefinition` を選択し、すべてのノードを同じノードID・接続・`image` ポートの契約で扱う。
 - `PatchDefinition` はMIDI入力一覧を持ち、MIDIのメッセージ種別、チャンネル、番号、生値範囲、反転および対象となる公開パラメーターIDを設定する。`ApplicationLiveHost` はロード中パッチの設定だけを `LiveParameterQueue` の `SetParameter` 要求へ変換する。
 - `PatchDefinition` はKeyboard入力一覧を持ち、Input SystemのKeyおよび対象となる公開パラメーターIDを設定する。押下時だけ1.0を送り、離上時は要求を生成しない。`ApplicationLiveHost` はロード中パッチの設定だけを `LiveParameterQueue` の `SetParameter` 要求へ変換する。
 - Program graphのLook調整は `PatchDefinition` Assetの変更として保存し、C#スクリプトのコンパイルを必要としない。
@@ -219,9 +219,9 @@
 
 ### 2026-08-26: 公開パラメーターはパッチ境界で解決する
 
-- `PatchDefinition` の公開パラメーターは、Scene3DDefinitionのIDとその `LiveSceneRoot` が提供するパラメーターIDへ対応付ける。
-- `SetParameter` はパッチの公開IDだけを受け付け、対応するUnityシーンノードの `LiveSceneRoot` へ委譲する。
-- Unityシーンノードが提供していないパラメーターはBootを失敗させる。UIおよび入力側は下位ノードの内部パラメーターを直接指定しない。
+- `PatchDefinition` の公開パラメーターは、グラフノードIDとそのパラメーターIDへ対応付ける。Sceneノードは `Scene3DDefinition` の `LiveSceneRoot` が提供するパラメーターへ、ShaderおよびVideoノードは各ノードRuntimeへ委譲する。
+- `SetParameter` はパッチの公開IDだけを受け付け、対応するグラフノードへ委譲する。
+- Sceneノードが提供していないパラメーター、またはグラフノードが提供していないパラメーターはBootを失敗させる。UIおよび入力側は下位ノードの内部パラメーターを直接指定しない。
 
 ### 2026-08-26: Mainシーンは既存の起動・ライブ実行コンポーネントをLive Host構成へ置き換える
 
@@ -233,7 +233,7 @@
 
 ### 2026-08-26: ライブ用Assetは使用する専用スクリプトが明示参照する
 
-- `LiveGraphBootstrap` はInspectorで設定する `PatchDefinition[]` を保持する。各DefinitionはProgram graphと `Scene3DDefinition`、その依存Assetを参照する。
+- `LiveGraphBootstrap` はInspectorで設定する `PatchDefinition[]` を保持する。各DefinitionはSceneノードを含むProgram graphと、その依存Assetを参照する。
 - 外部Display専用スクリプトは、HDRのProgram TextureをDisplay向けLDRへ変換する `DisplayTransform.shader` を保持する。
 - `LiveUiController` または `UIDocument` は、専用UXML、必要なUSSおよびPanelSettingsを保持する。
 - `BootstrapAssets` 全体はMainへ移さない。固定ライブグラフがShaderまたはVideoノードを使用する場合だけ、そのノードに必要なShader、MaterialまたはPrefabを `LiveGraphBootstrap` へ追加する。
