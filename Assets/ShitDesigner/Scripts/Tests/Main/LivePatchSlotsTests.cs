@@ -4,6 +4,14 @@ namespace ShitDesigner.Main.Tests {
 	[TestFixture]
 	public sealed class LivePatchSlotsTests {
 		[Test]
+		public void ReadModelContainsEightFixedSlots() {
+			var slots = new LivePatchSlots();
+
+			Assert.That(LivePatchSlots.Capacity, Is.EqualTo(8));
+			Assert.That(slots.ReadModel, Has.Count.EqualTo(8));
+		}
+
+		[Test]
 		public void QueueFillsSlotsInOrderAndPreservesTheirPatchIds() {
 			var slots = new LivePatchSlots();
 

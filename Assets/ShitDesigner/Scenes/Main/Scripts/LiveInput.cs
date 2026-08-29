@@ -43,6 +43,10 @@ namespace ShitDesigner.Main {
 			if (keyboard.digit2Key.wasPressedThisFrame) HandleSlotKey(1, clearSlot);
 			if (keyboard.digit3Key.wasPressedThisFrame) HandleSlotKey(2, clearSlot);
 			if (keyboard.digit4Key.wasPressedThisFrame) HandleSlotKey(3, clearSlot);
+			if (keyboard.digit5Key.wasPressedThisFrame) HandleSlotKey(4, clearSlot);
+			if (keyboard.digit6Key.wasPressedThisFrame) HandleSlotKey(5, clearSlot);
+			if (keyboard.digit7Key.wasPressedThisFrame) HandleSlotKey(6, clearSlot);
+			if (keyboard.digit8Key.wasPressedThisFrame) HandleSlotKey(7, clearSlot);
 			if (keyboard.leftArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(-1);
 			if (keyboard.rightArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(1);
 			if (keyboard.enterKey.wasPressedThisFrame) m_QueueSelectedPatch();

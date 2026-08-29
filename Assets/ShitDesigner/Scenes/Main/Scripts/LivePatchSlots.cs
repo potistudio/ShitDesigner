@@ -29,9 +29,9 @@ namespace ShitDesigner.Main {
 		internal static LivePatchSlotOperationResult Reject(string reason) => new LivePatchSlotOperationResult(false, -1, reason);
 	}
 
-	/// <summary>Maintains the fixed patch slots used to cue and launch live patches.</summary>
+	/// <summary>Maintains the eight fixed patch slots used to cue and launch live patches.</summary>
 	public sealed class LivePatchSlots {
-		public const int Capacity = 4;
+		public const int Capacity = 8;
 
 		private readonly string[] _patchIds = new string[Capacity];
 

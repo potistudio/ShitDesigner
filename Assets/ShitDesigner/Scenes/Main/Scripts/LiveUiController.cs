@@ -304,7 +304,8 @@ namespace ShitDesigner.Main {
 			foreach (var slot in model.PatchSlots) {
 				var button = _patchSlotControls.Q<Button>("patch-slot-" + slot.Index);
 				if (button == null) continue;
-				button.text = FormatPatchSlot(slot, model.Patches);
+				button.text = (slot.Index + 1).ToString(CultureInfo.InvariantCulture);
+				button.tooltip = FormatPatchSlot(slot, model.Patches);
 				button.EnableInClassList("is-selected", slot.Index == model.SelectedPatchSlotIndex);
 				button.EnableInClassList("is-cued", !slot.IsEmpty && slot.PatchId == model.PreloadedPatchId);
 				button.EnableInClassList("is-playing", !slot.IsEmpty && slot.PatchId == model.LoadedPatchId);
@@ -322,6 +323,7 @@ namespace ShitDesigner.Main {
 				var index = slotIndex;
 				var button = new Button(() => SelectPatchSlot(index)) {
 					name = "patch-slot-" + index,
+					text = (index + 1).ToString(CultureInfo.InvariantCulture),
 					userData = index
 				};
 				button.AddToClassList("patch-slot-button");
@@ -354,7 +356,8 @@ namespace ShitDesigner.Main {
 
 		private static string FormatPatchSlot(LivePatchSlotReadModel slot, IReadOnlyList<LivePatchReadModel> patches) {
 			var patch = patches.FirstOrDefault(candidate => candidate.Id == slot.PatchId);
-			return "SLOT " + (slot.Index + 1) + " · " + (slot.IsEmpty ? "EMPTY" : patch.Name);
+			var patchName = slot.IsEmpty ? "EMPTY" : (string.IsNullOrEmpty(patch.Name) ? "UNKNOWN" : patch.Name);
+			return "SLOT " + (slot.Index + 1) + " · " + patchName;
 		}
 
 		private void OnPatchSelectionWheel(WheelEvent change) {
