@@ -757,12 +757,14 @@ namespace ShitDesigner.Editor {
 		private const float LineSpacing = 2f;
 
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
+			EditorGUI.BeginProperty(position, label, property);
 			var id = property.FindPropertyRelative("_id");
 			var type = property.FindPropertyRelative("_type");
 			var y = position.y;
 			EditorGUI.PropertyField(Line(position, ref y), id, new GUIContent("ID"));
 			EditorGUI.PropertyField(Line(position, ref y), type, new GUIContent("Type"));
-			EditorGUI.PropertyField(Line(position, ref y), ValueProperty(property, type), new GUIContent("Value"));
+			DrawValue(Line(position, ref y), ValueProperty(property, type), new GUIContent("Value"));
+			EditorGUI.EndProperty();
 		}
 
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
@@ -772,6 +774,18 @@ namespace ShitDesigner.Editor {
 			var line = new Rect(position.x, y, position.width, EditorGUIUtility.singleLineHeight);
 			y += EditorGUIUtility.singleLineHeight + LineSpacing;
 			return line;
+		}
+
+		private static void DrawValue(Rect position, SerializedProperty value, GUIContent label) {
+			if (value == null) return;
+			if (value.propertyType != SerializedPropertyType.Vector4) {
+				EditorGUI.PropertyField(position, value, label);
+				return;
+			}
+
+			var current = value.vector4Value;
+			var next = EditorGUI.Vector4Field(position, label.text, current);
+			if (next != current) value.vector4Value = next;
 		}
 
 		private static SerializedProperty ValueProperty(SerializedProperty property, SerializedProperty type) {
