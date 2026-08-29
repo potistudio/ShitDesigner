@@ -118,14 +118,11 @@
 }
 
 .sequencer {
-    flex-grow: 1;
-    flex-basis: 0;
+    width: 426.6667px;
+    min-width: 426.6667px;
+    max-width: 426.6667px;
+    flex-grow: 0;
     flex-shrink: 0;
-    min-width: 0;
-    border-left-width: 1px;
-    border-right-width: 1px;
-    border-bottom-width: 1px;
-    border-color: rgb(48, 55, 65);
 }
 
 .sequencer-title {
@@ -145,16 +142,24 @@
 
 .sequencer-beat-header,
 .sequencer-lane {
+    width: 426.6667px;
+    min-width: 426.6667px;
+    max-width: 426.6667px;
     height: 22px;
     min-height: 22px;
+    flex-grow: 0;
+    flex-shrink: 0;
     flex-direction: row;
 }
 
 .sequencer-lane-label,
 .sequencer-corner {
-    width: 32px;
-    min-width: 32px;
+    width: 42.6667px;
+    min-width: 42.6667px;
+    max-width: 42.6667px;
     height: 22px;
+    flex-grow: 0;
+    flex-shrink: 0;
     padding: 0;
     color: rgb(117, 128, 142);
     background-color: rgb(21, 24, 29);
@@ -167,9 +172,11 @@
 
 .sequencer-beat-label,
 .sequencer-step {
-    flex-grow: 1;
-    flex-basis: 0;
-    min-width: 0;
+    width: 48px;
+    min-width: 48px;
+    max-width: 48px;
+    flex-grow: 0;
+    flex-shrink: 0;
     height: 22px;
     margin: 0;
     padding: 0;
