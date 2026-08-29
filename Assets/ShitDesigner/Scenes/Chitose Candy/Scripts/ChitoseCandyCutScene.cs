@@ -41,6 +41,8 @@ namespace ShitDesigner.Scene {
 
 		private sealed class Candy {
 			public CandyFragment[] Fragments { get; }
+			public int NextCutLayer { get; set; }
+			public int PendingPushLayer { get; set; } = -1;
 
 			public Candy(CandyFragment[] fragments) {
 				Fragments = fragments;
@@ -83,10 +85,8 @@ namespace ShitDesigner.Scene {
 		private Vector3 m_CandyAxisRuntime;
 		private float m_FragmentLength;
 		private System.Random m_RuntimeRandom;
-		private int m_CutLayerIndex;
 		private bool m_PushPending;
 		private bool m_PushAnimating;
-		private int m_PushLayerIndex;
 		private long m_PushStartBeat;
 		private bool m_RebuildRequested = true;
 		private double m_AdjustedTotalBeats;
@@ -162,10 +162,8 @@ namespace ShitDesigner.Scene {
 		public void Rebuild() {
 			m_RebuildRequested = false;
 			m_LastProcessedBeat = long.MinValue;
-			m_CutLayerIndex = 0;
 			m_PushPending = false;
 			m_PushAnimating = false;
-			m_PushLayerIndex = -1;
 			m_PushStartBeat = long.MinValue;
 			ReleaseGeneratedContent();
 
@@ -190,10 +188,8 @@ namespace ShitDesigner.Scene {
 		private void ResetPlaybackState() {
 			m_AdjustedTotalBeats = 0d;
 			m_LastProcessedBeat = long.MinValue;
-			m_CutLayerIndex = 0;
 			m_PushPending = false;
 			m_PushAnimating = false;
-			m_PushLayerIndex = -1;
 			m_PushStartBeat = long.MinValue;
 			m_UsesExternalClock = false;
 		}
@@ -345,15 +341,18 @@ namespace ShitDesigner.Scene {
 			if (m_PushPending) {
 				m_PushPending = false;
 				m_PushAnimating = true;
-				m_PushLayerIndex = m_CutLayerIndex - 1;
 				m_PushStartBeat = beatIndex;
-				PushCutLayer(m_PushLayerIndex, 0f);
+				PushCutLayers(0f);
 				return;
 			}
-			if (m_CutLayerIndex >= CandyDivisionCount)
-				return;
 
-			CutNextLayer();
+			var cutOccurred = CutNextLayers();
+			if (!cutOccurred) {
+				AddNewCandy();
+				CutNextLayers();
+			} else if (m_RuntimeRandom.Next(2) == 0) {
+				AddNewCandy();
+			}
 			m_PushPending = true;
 		}
 
@@ -365,41 +364,56 @@ namespace ShitDesigner.Scene {
 			var easedProgress = m_PushEasing == null || m_PushEasing.length == 0
 				? progress
 				: Mathf.Clamp01(m_PushEasing.Evaluate(progress));
-			PushCutLayer(m_PushLayerIndex, easedProgress);
-			if (progress >= 1f)
+			PushCutLayers(easedProgress);
+			if (progress >= 1f) {
 				m_PushAnimating = false;
+				for (var index = 0; index < m_Candies.Count; index++)
+					m_Candies[index].PendingPushLayer = -1;
+			}
 		}
 
-		private void CutNextLayer() {
-			if (m_CutLayerIndex >= CandyDivisionCount)
-				return;
-
-			var layerIndex = m_CutLayerIndex++;
+		private bool CutNextLayers() {
+			var cutOccurred = false;
 			for (var index = 0; index < m_Candies.Count; index++) {
 				var candy = m_Candies[index];
+				if (candy.NextCutLayer >= candy.Fragments.Length) {
+					candy.PendingPushLayer = -1;
+					continue;
+				}
+
+				var layerIndex = candy.NextCutLayer++;
+				candy.PendingPushLayer = layerIndex;
+				cutOccurred = true;
 				var fragment = candy.Fragments[layerIndex];
 				fragment.RearCutFace.gameObject.SetActive(true);
 				if (layerIndex + 1 < candy.Fragments.Length)
 					candy.Fragments[layerIndex + 1].FrontCutFace.gameObject.SetActive(true);
 			}
 			if (!Application.isPlaying)
-				return;
+				return cutOccurred;
 
 			Physics.SyncTransforms();
 			for (var index = 0; index < m_Candies.Count; index++) {
 				var candy = m_Candies[index];
+				var layerIndex = candy.PendingPushLayer;
+				if (layerIndex < 0)
+					continue;
 				var fragment = candy.Fragments[layerIndex];
 				ActivatePhysics(fragment.Body, fragment.Impulse);
 			}
-			if (m_RuntimeRandom.Next(2) == 0)
-				AddNewCandy();
+			return cutOccurred;
 		}
 
-		private void PushCutLayer(int layerIndex, float progress) {
+		private void PushCutLayers(float progress) {
 			var pushDistance = m_FragmentLength + m_SplitGap;
-			var mainBodyOffset = pushDistance * (layerIndex + Mathf.Clamp01(progress));
+			var clampedProgress = Mathf.Clamp01(progress);
 			for (var index = 0; index < m_Candies.Count; index++) {
 				var candy = m_Candies[index];
+				var layerIndex = candy.PendingPushLayer;
+				if (layerIndex < 0)
+					continue;
+
+				var mainBodyOffset = pushDistance * (layerIndex + clampedProgress);
 				for (var fragmentIndex = layerIndex + 1; fragmentIndex < candy.Fragments.Length; fragmentIndex++) {
 					var fragment = candy.Fragments[fragmentIndex];
 					fragment.Segment.localPosition = Vector3.up * (fragment.BasePosition + mainBodyOffset);
