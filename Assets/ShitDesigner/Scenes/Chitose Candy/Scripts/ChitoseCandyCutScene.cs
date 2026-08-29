@@ -288,8 +288,7 @@ namespace ShitDesigner.Scene {
 			}
 
 			if (beatIndex > m_LastProcessedBeat) {
-				for (var index = m_LastProcessedBeat; index < beatIndex; index++)
-					ProcessNextBeat();
+				ProcessNextBeat();
 			}
 			m_LastProcessedBeat = beatIndex;
 		}
