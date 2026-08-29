@@ -38,9 +38,14 @@ namespace ShitDesigner.Scene {
 		private Mesh m_RegionMesh;
 		private GameObject m_RegionObject;
 		private readonly List<LineRenderer> m_StrokeRenderers = new List<LineRenderer>();
+		private List<PolygonFace> m_CurrentRegions;
 		private List<StrokePath> m_TransitionStartPaths;
 		private List<StrokePath> m_TransitionTargetPaths;
+		private List<PolygonFace> m_TransitionStartRegions;
 		private List<PolygonFace> m_TransitionTargetRegions;
+		private List<PolygonFace> m_TransitionCurrentRegions;
+		private readonly List<Vector3> m_RegionVertices = new List<Vector3>();
+		private readonly List<int> m_RegionTriangles = new List<int>();
 		private double m_TransitionStartBeat;
 		private double m_AdjustedTotalBeats;
 		private long m_LastGeneratedBeat = long.MinValue;
@@ -145,9 +150,9 @@ namespace ShitDesigner.Scene {
 
 			CreateStrokeRenderers(layout.Paths);
 
-			var fillCount = Mathf.Min(m_FilledRegionCount, layout.Regions.Count);
-			if (fillCount > 0)
-				CreateRegionRenderer(layout.Regions, fillCount);
+			m_CurrentRegions = SelectFilledRegions(layout.Regions);
+			if (m_CurrentRegions.Count > 0)
+				CreateRegionRenderer(m_CurrentRegions, m_CurrentRegions.Count);
 		}
 
 		private StrokeLayout BuildLayout(int seed) {
@@ -178,7 +183,8 @@ namespace ShitDesigner.Scene {
 
 			m_TransitionStartPaths = CaptureCurrentPaths();
 			m_TransitionTargetPaths = layout.Paths;
-			m_TransitionTargetRegions = layout.Regions;
+			m_TransitionStartRegions = m_CurrentRegions ?? new List<PolygonFace>();
+			m_TransitionTargetRegions = SelectFilledRegions(layout.Regions);
 			m_TransitionStartBeat = beat;
 		}
 
@@ -199,7 +205,8 @@ namespace ShitDesigner.Scene {
 		}
 
 		private void ApplyTransition(double beatPosition) {
-			if (m_TransitionStartPaths == null || m_TransitionTargetPaths == null)
+			if (m_TransitionStartPaths == null || m_TransitionTargetPaths == null
+				|| m_TransitionStartRegions == null || m_TransitionTargetRegions == null)
 				return;
 
 			var phase = Mathf.Clamp01((float)(beatPosition - m_TransitionStartBeat));
@@ -214,14 +221,129 @@ namespace ShitDesigner.Scene {
 				}
 			}
 
+			m_TransitionCurrentRegions = InterpolateRegions(
+				m_TransitionStartRegions, m_TransitionTargetRegions, easedPhase);
+			m_CurrentRegions = m_TransitionCurrentRegions;
+			UpdateRegionRenderer(m_TransitionCurrentRegions);
+
 			if (phase < 1f)
 				return;
 
 			var targetRegions = m_TransitionTargetRegions;
 			m_TransitionStartPaths = null;
 			m_TransitionTargetPaths = null;
+			m_TransitionStartRegions = null;
+			m_TransitionCurrentRegions = null;
 			m_TransitionTargetRegions = null;
-			ReplaceRegionRenderer(targetRegions);
+			m_CurrentRegions = targetRegions;
+			UpdateRegionRenderer(m_CurrentRegions);
+		}
+
+		private List<PolygonFace> SelectFilledRegions(List<PolygonFace> regions) {
+			var fillCount = Mathf.Min(m_FilledRegionCount, regions == null ? 0 : regions.Count);
+			var selectedRegions = new List<PolygonFace>(fillCount);
+			for (var index = 0; index < fillCount; index++)
+				selectedRegions.Add(regions[index]);
+			return selectedRegions;
+		}
+
+		private static List<PolygonFace> InterpolateRegions(
+			List<PolygonFace> startRegions, List<PolygonFace> targetRegions, float progress) {
+			var startCount = startRegions == null ? 0 : startRegions.Count;
+			var targetCount = targetRegions == null ? 0 : targetRegions.Count;
+			var regionCount = Mathf.Max(startCount, targetCount);
+			var interpolatedRegions = new List<PolygonFace>(regionCount);
+			for (var regionIndex = 0; regionIndex < regionCount; regionIndex++) {
+				var hasStartRegion = regionIndex < startCount;
+				var hasTargetRegion = regionIndex < targetCount;
+				var startSource = hasStartRegion ? startRegions[regionIndex].Points : targetRegions[regionIndex].Points;
+				var targetSource = hasTargetRegion ? targetRegions[regionIndex].Points : startRegions[regionIndex].Points;
+				var pointCount = Mathf.Max(3, Mathf.Max(startSource.Count, targetSource.Count));
+				var startPoints = hasStartRegion
+					? ResamplePolygon(startSource, pointCount)
+					: CreateCollapsedPolygon(startSource, pointCount);
+				var targetPoints = hasTargetRegion
+					? ResamplePolygon(targetSource, pointCount)
+					: CreateCollapsedPolygon(targetSource, pointCount);
+				targetPoints = AlignPolygon(startPoints, targetPoints);
+
+				var points = new List<Vector2>(pointCount);
+				for (var pointIndex = 0; pointIndex < pointCount; pointIndex++)
+					points.Add(Vector2.Lerp(startPoints[pointIndex], targetPoints[pointIndex], progress));
+				interpolatedRegions.Add(new PolygonFace(points));
+			}
+
+			return interpolatedRegions;
+		}
+
+		private static List<Vector2> ResamplePolygon(IList<Vector2> polygon, int pointCount) {
+			var result = new List<Vector2>(pointCount);
+			if (polygon == null || polygon.Count == 0)
+				return result;
+			if (polygon.Count == pointCount) {
+				for (var index = 0; index < polygon.Count; index++)
+					result.Add(polygon[index]);
+				return result;
+			}
+
+			var perimeter = 0f;
+			for (var index = 0; index < polygon.Count; index++)
+				perimeter += Vector2.Distance(polygon[index], polygon[(index + 1) % polygon.Count]);
+			if (perimeter <= 0.00001f)
+				return CreateCollapsedPolygon(polygon, pointCount);
+
+			for (var sampleIndex = 0; sampleIndex < pointCount; sampleIndex++) {
+				var distance = perimeter * sampleIndex / pointCount;
+				var traversed = 0f;
+				for (var edgeIndex = 0; edgeIndex < polygon.Count; edgeIndex++) {
+					var first = polygon[edgeIndex];
+					var second = polygon[(edgeIndex + 1) % polygon.Count];
+					var edgeLength = Vector2.Distance(first, second);
+					if (distance > traversed + edgeLength && edgeIndex < polygon.Count - 1) {
+						traversed += edgeLength;
+						continue;
+					}
+
+					var edgeProgress = edgeLength <= 0.00001f ? 0f : (distance - traversed) / edgeLength;
+					result.Add(Vector2.Lerp(first, second, Mathf.Clamp01(edgeProgress)));
+					break;
+				}
+			}
+
+			return result;
+		}
+
+		private static List<Vector2> CreateCollapsedPolygon(IList<Vector2> source, int pointCount) {
+			var center = CalculatePolygonCenter(source);
+			var collapsed = new List<Vector2>(pointCount);
+			for (var index = 0; index < pointCount; index++)
+				collapsed.Add(center);
+			return collapsed;
+		}
+
+		private static List<Vector2> AlignPolygon(IList<Vector2> reference, IList<Vector2> candidate) {
+			if (reference.Count != candidate.Count || candidate.Count == 0)
+				return new List<Vector2>(candidate);
+
+			var bestOffset = 0;
+			var bestDistance = float.PositiveInfinity;
+			for (var offset = 0; offset < candidate.Count; offset++) {
+				var distance = 0f;
+				for (var index = 0; index < candidate.Count; index++) {
+					var candidatePoint = candidate[(offset + index) % candidate.Count];
+					distance += (reference[index] - candidatePoint).sqrMagnitude;
+				}
+				if (distance >= bestDistance)
+					continue;
+
+				bestDistance = distance;
+				bestOffset = offset;
+			}
+
+			var aligned = new List<Vector2>(candidate.Count);
+			for (var index = 0; index < candidate.Count; index++)
+				aligned.Add(candidate[(bestOffset + index) % candidate.Count]);
+			return aligned;
 		}
 
 		private List<StrokePath> BuildPaths(System.Random random) {
@@ -460,6 +582,16 @@ namespace ShitDesigner.Scene {
 			return area * 0.5f;
 		}
 
+		private static Vector2 CalculatePolygonCenter(IList<Vector2> polygon) {
+			if (polygon == null || polygon.Count == 0)
+				return Vector2.zero;
+
+			var center = Vector2.zero;
+			for (var index = 0; index < polygon.Count; index++)
+				center += polygon[index];
+			return center / polygon.Count;
+		}
+
 		private void CreateStrokeRenderers(List<StrokePath> paths) {
 			m_StrokeRenderers.Clear();
 			for (var index = 0; index < paths.Count; index++) {
@@ -489,22 +621,20 @@ namespace ShitDesigner.Scene {
 			}
 		}
 
-		private void ReplaceRegionRenderer(List<PolygonFace> regions) {
+		private void UpdateRegionRenderer(List<PolygonFace> regions) {
 			var fillCount = Mathf.Min(m_FilledRegionCount, regions == null ? 0 : regions.Count);
 			if (fillCount <= 0)
 				return;
 
-			var replacementMesh = BuildRegionMesh(regions, fillCount);
-			if (replacementMesh == null)
+			if (m_RegionMesh == null) {
+				CreateRegionRenderer(regions, fillCount);
 				return;
+			}
 
-			if (m_RegionObject != null)
-				DestroyOwnedObject(m_RegionObject);
-			m_RegionObject = null;
-			if (m_RegionMesh != null)
-				DestroyOwnedObject(m_RegionMesh);
-			m_RegionMesh = replacementMesh;
-			CreateRegionObject();
+			if (!TryPopulateRegionMesh(m_RegionMesh, regions, fillCount))
+				return;
+			if (m_RegionObject == null)
+				CreateRegionObject();
 		}
 
 		private void CreateRegionRenderer(List<PolygonFace> regions, int count) {
@@ -533,38 +663,48 @@ namespace ShitDesigner.Scene {
 		}
 
 		private Mesh BuildRegionMesh(List<PolygonFace> regions, int count) {
-			var vertices = new List<Vector3>();
-			var triangles = new List<int>();
+			var mesh = new Mesh {
+				name = "Random Region Fills",
+				hideFlags = HideFlags.HideAndDontSave
+			};
+			mesh.MarkDynamic();
+			if (TryPopulateRegionMesh(mesh, regions, count))
+				return mesh;
+
+			DestroyOwnedObject(mesh);
+			return null;
+		}
+
+		private bool TryPopulateRegionMesh(Mesh mesh, List<PolygonFace> regions, int count) {
+			m_RegionVertices.Clear();
+			m_RegionTriangles.Clear();
 			for (var regionIndex = 0; regionIndex < count; regionIndex++) {
 				var polygon = regions[regionIndex].Points;
 				var polygonTriangles = TriangulatePolygon(polygon);
 				if (polygonTriangles.Count == 0)
 					continue;
 
-				var vertexStart = vertices.Count;
+				var vertexStart = m_RegionVertices.Count;
 				for (var pointIndex = 0; pointIndex < polygon.Count; pointIndex++) {
 					var point = polygon[pointIndex];
-					vertices.Add(new Vector3(point.x, point.y, 0.02f));
+					m_RegionVertices.Add(new Vector3(point.x, point.y, 0.02f));
 				}
 
 				for (var triangleIndex = 0; triangleIndex < polygonTriangles.Count; triangleIndex += 3) {
-					triangles.Add(vertexStart + polygonTriangles[triangleIndex]);
-					triangles.Add(vertexStart + polygonTriangles[triangleIndex + 2]);
-					triangles.Add(vertexStart + polygonTriangles[triangleIndex + 1]);
+					m_RegionTriangles.Add(vertexStart + polygonTriangles[triangleIndex]);
+					m_RegionTriangles.Add(vertexStart + polygonTriangles[triangleIndex + 2]);
+					m_RegionTriangles.Add(vertexStart + polygonTriangles[triangleIndex + 1]);
 				}
 			}
 
-			if (triangles.Count == 0)
-				return null;
+			if (m_RegionTriangles.Count == 0)
+				return false;
 
-			var mesh = new Mesh {
-				name = "Random Region Fills",
-				hideFlags = HideFlags.HideAndDontSave
-			};
-			mesh.SetVertices(vertices);
-			mesh.SetTriangles(triangles, 0);
+			mesh.Clear();
+			mesh.SetVertices(m_RegionVertices);
+			mesh.SetTriangles(m_RegionTriangles, 0);
 			mesh.RecalculateBounds();
-			return mesh;
+			return true;
 		}
 
 		private static List<int> TriangulatePolygon(IList<Vector2> polygon) {
@@ -690,7 +830,12 @@ namespace ShitDesigner.Scene {
 			m_StrokeRenderers.Clear();
 			m_TransitionStartPaths = null;
 			m_TransitionTargetPaths = null;
+			m_CurrentRegions = null;
+			m_TransitionStartRegions = null;
+			m_TransitionCurrentRegions = null;
 			m_TransitionTargetRegions = null;
+			m_RegionVertices.Clear();
+			m_RegionTriangles.Clear();
 		}
 
 		private int GetGenerationSeed() {
