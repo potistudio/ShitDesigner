@@ -173,6 +173,35 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 		}
 
 		[UnityTest]
+		public IEnumerator RecursiveRectangles_ZeroStaggerStartsDepthsTogether() {
+			RequireGraphicsDevice();
+			var material = CreateMaterial();
+			try {
+				Configure(material);
+				material.SetInt("_StructureSeed", 5);
+				material.SetInt("_MaxDepth", 2);
+				material.SetInt("_AxisMode", 2);
+				material.SetFloat("_RatioMin", .5f);
+				material.SetFloat("_RatioMax", .5f);
+				material.SetFloat("_Gutter", .04f);
+				material.SetColor("_ColorA", Color.clear);
+				material.SetColor("_LineColor", Color.white);
+				material.SetFloat("_Easing", 0f);
+				material.SetFloat("_SplitDuration", 1f);
+				material.SetFloat("_SplitStagger", 0f);
+				material.SetFloat("_RevealProgress", .5f);
+
+				Color32[] pixels = null;
+				yield return Render(material, 64, 8, result => pixels = result);
+
+				var row = 4 * 64;
+				Assert.That(pixels[row + 15].a, Is.GreaterThan(0));
+				Assert.That(pixels[row + 47].a, Is.GreaterThan(0));
+			}
+			finally { UnityEngine.Object.DestroyImmediate(material); }
+		}
+
+		[UnityTest]
 		public IEnumerator RecursiveRectangles_ChildrenAlwaysRevealLeftToRight() {
 			RequireGraphicsDevice();
 			var material = CreateMaterial();
