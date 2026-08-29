@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -10,8 +11,8 @@ namespace ShitDesigner.Main {
 	/// <summary>Reflects the latest completed live frame and queues patch and parameter requests.</summary>
 	[DisallowMultipleComponent]
 	[DefaultExecutionOrder(1100)]
-	public sealed class PanelRenderer : MonoBehaviour {
-		[SerializeField] private UIDocument _document;
+	public sealed class LiveUiController : MonoBehaviour {
+		[SerializeField] private PanelRenderer m_PanelRenderer;
 
 		private VisualElement m_Root;
 		private ApplicationLiveHost _host;
@@ -39,6 +40,7 @@ namespace ShitDesigner.Main {
 		private Label _confirmationTitle;
 		private Label _confirmationMessage;
 		private VisualElement _confirmationOverlay;
+		private Coroutine m_ReloadRoutine;
 		private string _renderedPatchId = string.Empty;
 		private string _centeredPatchId = string.Empty;
 		private int m_RenderedPatchCount = -1;
@@ -75,10 +77,25 @@ namespace ShitDesigner.Main {
 		public void Initialize(ApplicationLiveHost host, LiveExternalDisplayOutput output) {
 			_host = host ?? throw new ArgumentNullException(nameof(host));
 			_output = output ?? throw new ArgumentNullException(nameof(output));
-			if (_document == null) throw new InvalidOperationException("A dedicated live UIDocument is required.");
-			m_Root = _document.rootVisualElement;
-			if (m_Root == null) throw new InvalidOperationException("The live UIDocument has no visual tree.");
-			var root = m_Root;
+			if (m_PanelRenderer == null) throw new InvalidOperationException("A dedicated live PanelRenderer is required.");
+			m_PanelRenderer.RegisterUIReloadCallback(OnUiReload);
+			m_ReloadRoutine = StartCoroutine(ReloadUiAfterPanelInitialization());
+		}
+
+		private IEnumerator ReloadUiAfterPanelInitialization() {
+			yield return null;
+			m_ReloadRoutine = null;
+			if (m_PanelRenderer == null) yield break;
+
+			var asset = m_PanelRenderer.visualTreeAsset;
+			m_PanelRenderer.visualTreeAsset = null;
+			m_PanelRenderer.visualTreeAsset = asset;
+		}
+
+		private void OnUiReload(PanelRenderer panelRenderer, VisualElement root) {
+			if (root == null || root.childCount == 0 || _host == null || _output == null) return;
+			UnbindVisualTree();
+			m_Root = root;
 
 			_programMonitor = Required<VisualElement>(root, "program-monitor");
 			m_Output2Preview = Required<VisualElement>(root, "output-2-preview");
@@ -126,6 +143,17 @@ namespace ShitDesigner.Main {
 		}
 
 		public void Shutdown() {
+			if (m_ReloadRoutine != null) {
+				StopCoroutine(m_ReloadRoutine);
+				m_ReloadRoutine = null;
+			}
+			if (m_PanelRenderer != null) m_PanelRenderer.UnregisterUIReloadCallback(OnUiReload);
+			UnbindVisualTree();
+			_host = null;
+			_output = null;
+		}
+
+		private void UnbindVisualTree() {
 			if (m_Root != null) m_Root.UnregisterCallback<NavigationSubmitEvent>(OnNavigationSubmit, TrickleDown.TrickleDown);
 			if (_patchSlotControls != null) _patchSlotControls.UnregisterCallback<ClickEvent>(OnPatchSlotClicked);
 			if (m_MainPatchControls != null) m_MainPatchControls.UnregisterCallback<WheelEvent>(OnMainPatchSelectionWheel, TrickleDown.TrickleDown);
@@ -144,8 +172,6 @@ namespace ShitDesigner.Main {
 			if (_confirmationConfirmButton != null) _confirmationConfirmButton.clicked -= ConfirmOutputToggle;
 			_initialized = false;
 			m_Root = null;
-			_host = null;
-			_output = null;
 			_renderedPatchId = string.Empty;
 			_centeredPatchId = string.Empty;
 			m_RenderedPatchCount = -1;

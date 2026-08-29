@@ -23,8 +23,8 @@ namespace ShitDesigner.Main.Tests {
 				var midi = root.GetComponent<MidiInputManager>();
 				var capability = root.GetComponent<LiveCapabilityMonitor>();
 				var output = root.GetComponent<LiveExternalDisplayOutput>();
-				var ui = root.GetComponent<PanelRenderer>();
-				var document = root.GetComponent<UIDocument>();
+				var ui = root.GetComponent<LiveUiController>();
+				var panelRenderer = root.GetComponent<PanelRenderer>();
 
 				Assert.That(root.name, Is.EqualTo("Main Live Host"));
 				Assert.That(host, Is.Not.Null);
@@ -33,9 +33,12 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(capability, Is.Not.Null);
 				Assert.That(output, Is.Not.Null);
 				Assert.That(ui, Is.Not.Null);
-				Assert.That(document, Is.Not.Null);
-				Assert.That(document.visualTreeAsset, Is.Not.Null);
-				Assert.That(document.panelSettings, Is.Not.Null);
+				Assert.That(panelRenderer, Is.Not.Null);
+				Assert.That(panelRenderer.visualTreeAsset, Is.Not.Null);
+				Assert.That(panelRenderer.panelSettings, Is.Not.Null);
+				Assert.That(root.GetComponent<UIDocument>(), Is.Null);
+				var serializedUi = new SerializedObject(ui);
+				Assert.That(serializedUi.FindProperty("m_PanelRenderer").objectReferenceValue, Is.SameAs(panelRenderer));
 				Assert.That(graph.Patches.Length, Is.EqualTo(5));
 				Assert.That(graph.ProgramOutputCount, Is.EqualTo(graph.Patches.Length));
 				Assert.That(graph.Patches.All(definition => definition != null && !string.IsNullOrWhiteSpace(definition.Id)
@@ -69,7 +72,7 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(serializedHost.FindProperty("_midiInputManager").objectReferenceValue, Is.SameAs(midi));
 				Assert.That(serializedHost.FindProperty("_capabilityMonitor").objectReferenceValue, Is.SameAs(capability));
 				Assert.That(serializedHost.FindProperty("_externalDisplay").objectReferenceValue, Is.SameAs(output));
-				Assert.That(serializedHost.FindProperty("m_PanelRenderer").objectReferenceValue, Is.SameAs(ui));
+				Assert.That(serializedHost.FindProperty("_uiController").objectReferenceValue, Is.SameAs(ui));
 				Assert.That(serializedHost.FindProperty("_bootOnAwake").boolValue, Is.True);
 				var serializedOutput = new SerializedObject(output);
 				Assert.That(serializedOutput.FindProperty("_displayTransformShader").objectReferenceValue, Is.Not.Null);
