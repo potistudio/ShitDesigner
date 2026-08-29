@@ -3,6 +3,7 @@
   "rootNamespace": "ShitDesigner.Scene.Tests",
   "references": [
     "ShitDesigner.Scene",
+    "ChitoseCandy",
     "ShitDesigner.Runtime",
     "ShitDesigner.Core",
     "ShitDesigner.Tests.Shared",

@@ -129,9 +129,7 @@ namespace ShitDesigner.Scene {
 
 			if (!m_UsesExternalClock)
 				m_AdjustedTotalBeats += Time.unscaledDeltaTime * m_PreviewBpm / 60d;
-			UpdateCandyEntries(m_AdjustedTotalBeats);
-			UpdatePushAnimation(m_AdjustedTotalBeats);
-			ProcessBeatPosition(m_AdjustedTotalBeats);
+			ApplyBeatPosition(m_AdjustedTotalBeats);
 		}
 
 		public void SetBpmClock(BeatClockFrame frame) {
@@ -147,6 +145,7 @@ namespace ShitDesigner.Scene {
 
 			m_UsesExternalClock = true;
 			m_AdjustedTotalBeats = frame.AdjustedTotalBeats;
+			ApplyBeatPosition(m_AdjustedTotalBeats);
 		}
 
 		private void OnDisable() {
@@ -180,10 +179,8 @@ namespace ShitDesigner.Scene {
 			m_PushStartBeat = long.MinValue;
 			ReleaseGeneratedContent();
 
-			m_GeneratedRoot = new GameObject("Generated Chitose Candy").transform;
-			m_GeneratedRoot.SetParent(transform, false);
-			m_GeneratedRoot.gameObject.layer = gameObject.layer;
-			m_GeneratedRoot.gameObject.hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSave;
+			m_GeneratedRoot = CreateGeneratedTransform(
+				"Generated Chitose Candy", transform, HideFlags.HideInHierarchy | HideFlags.DontSave);
 
 			m_CandyAxisRuntime = m_CandyAxis.sqrMagnitude < 0.0001f
 				? new Vector3(0.57f, -0.37f, -0.73f).normalized
@@ -260,22 +257,16 @@ namespace ShitDesigner.Scene {
 		}
 
 		private Candy CreateCandy(int index, Vector3 frontPosition, Vector3 axis, System.Random random) {
-			var candyRoot = new GameObject($"Candy {index + 1:00}").transform;
-			candyRoot.gameObject.hideFlags = HideFlags.DontSave;
-			candyRoot.SetParent(m_GeneratedRoot, false);
+			var candyRoot = CreateGeneratedTransform($"Candy {index + 1:00}", m_GeneratedRoot);
 			candyRoot.localPosition = frontPosition - axis * (m_CandyLength * 0.5f);
 			candyRoot.localRotation = Quaternion.FromToRotation(Vector3.up, axis);
 
-			var entryRoot = new GameObject("Candy Entry").transform;
-			entryRoot.gameObject.hideFlags = HideFlags.DontSave;
-			entryRoot.SetParent(candyRoot, false);
+			var entryRoot = CreateGeneratedTransform("Candy Entry", candyRoot);
 
 			var cutFaceScale = new Vector3(m_CandyRadius * 0.76f, 0.028f, m_CandyRadius * 0.76f);
 			var fragments = new CandyFragment[CandyDivisionCount];
 			for (var fragmentIndex = 0; fragmentIndex < fragments.Length; fragmentIndex++) {
-				var fragment = new GameObject($"Cut Fragment {fragmentIndex + 1:00}").transform;
-				fragment.gameObject.hideFlags = HideFlags.DontSave;
-				fragment.SetParent(entryRoot, false);
+				var fragment = CreateGeneratedTransform($"Cut Fragment {fragmentIndex + 1:00}", entryRoot);
 				var basePosition = m_CandyLength * 0.5f - m_FragmentLength * (fragmentIndex + 0.5f);
 				fragment.localPosition = Vector3.up * basePosition;
 				CreateMeshObject("Fragment Candy Body", fragment, m_FragmentBodyMesh,
@@ -302,9 +293,7 @@ namespace ShitDesigner.Scene {
 		}
 
 		private void CreateOriginalCandyEnd(Transform frontFragment, int index, System.Random random) {
-			var originalEnd = new GameObject("Original Candy End").transform;
-			originalEnd.gameObject.hideFlags = HideFlags.DontSave;
-			originalEnd.SetParent(frontFragment, false);
+			var originalEnd = CreateGeneratedTransform("Original Candy End", frontFragment);
 			originalEnd.localPosition = Vector3.up * (m_FragmentLength * 0.5f + m_CandyRadius * 0.02f);
 			CreateMeshObject("Pale Rim", originalEnd, m_DiscMesh, m_RimMaterial,
 				new Vector3(m_CandyRadius * 0.94f, 0.055f, m_CandyRadius * 0.94f));
@@ -339,25 +328,30 @@ namespace ShitDesigner.Scene {
 			return new Vector3(direction * magnitude, 0f, 0f);
 		}
 
-		private void ProcessBeatPosition(double beatPosition) {
+		private void ApplyBeatPosition(double beatPosition) {
 			if (double.IsNaN(beatPosition) || double.IsInfinity(beatPosition))
 				return;
 
 			var beatIndex = GetBeatIndex(beatPosition);
 			if (m_LastProcessedBeat == long.MinValue) {
 				m_LastProcessedBeat = beatIndex;
-				return;
 			}
-			if (beatIndex < m_LastProcessedBeat) {
+			else if (beatIndex < m_LastProcessedBeat) {
 				Rebuild();
 				m_LastProcessedBeat = beatIndex;
-				return;
+			}
+			else {
+				while (m_LastProcessedBeat < beatIndex) {
+					var nextBeat = m_LastProcessedBeat + 1L;
+					UpdateCandyEntries(nextBeat);
+					UpdatePushAnimation(nextBeat);
+					ProcessNextBeat(nextBeat);
+					m_LastProcessedBeat = nextBeat;
+				}
 			}
 
-			if (beatIndex > m_LastProcessedBeat) {
-				ProcessNextBeat(beatIndex);
-			}
-			m_LastProcessedBeat = beatIndex;
+			UpdateCandyEntries(beatPosition);
+			UpdatePushAnimation(beatPosition);
 		}
 
 		private static long GetBeatIndex(double beatPosition) => (long)Math.Floor(beatPosition + 1e-9d);
@@ -618,10 +612,8 @@ namespace ShitDesigner.Scene {
 			return mesh;
 		}
 
-		private static Transform CreateMeshObject(string objectName, Transform parent, Mesh mesh, Material material, Vector3 localScale) {
-			var item = new GameObject(objectName).transform;
-			item.gameObject.hideFlags = HideFlags.DontSave;
-			item.SetParent(parent, false);
+		private Transform CreateMeshObject(string objectName, Transform parent, Mesh mesh, Material material, Vector3 localScale) {
+			var item = CreateGeneratedTransform(objectName, parent);
 			item.localScale = localScale;
 			var meshFilter = item.gameObject.AddComponent<MeshFilter>();
 			meshFilter.sharedMesh = mesh;
@@ -629,6 +621,15 @@ namespace ShitDesigner.Scene {
 			meshRenderer.sharedMaterial = material;
 			meshRenderer.shadowCastingMode = ShadowCastingMode.Off;
 			meshRenderer.receiveShadows = false;
+			return item;
+		}
+
+		private Transform CreateGeneratedTransform(
+			string objectName, Transform parent, HideFlags hideFlags = HideFlags.DontSave) {
+			var item = new GameObject(objectName).transform;
+			item.gameObject.layer = gameObject.layer;
+			item.gameObject.hideFlags = hideFlags;
+			item.SetParent(parent, false);
 			return item;
 		}
 
