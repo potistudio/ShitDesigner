@@ -214,7 +214,7 @@ namespace ShitDesigner.Scene {
 			var phase = Mathf.Clamp01((float)(beatPosition - m_TransitionStartBeat));
 			if (phase >= 0.5f && !m_TransitionRegenerated) {
 				for (var strokeIndex = 0; strokeIndex < m_StrokeRenderers.Count; strokeIndex++)
-					m_StrokeRenderers[strokeIndex].SetPositions(ToVector3Array(m_TransitionTargetPaths[strokeIndex].Points));
+					m_StrokeRenderers[strokeIndex].SetPositions(ToVector3Array(m_TransitionTargetPaths[strokeIndex].RenderPoints));
 
 				m_CurrentRegions = m_TransitionTargetRegions;
 				UpdateRegionRenderer(m_CurrentRegions);
@@ -288,10 +288,19 @@ namespace ShitDesigner.Scene {
 
 				var colorProgress = m_StrokeCount <= 1 ? 0f : strokeIndex / (float)(m_StrokeCount - 1);
 				var color = Color.Lerp(m_StrokeColorA, m_StrokeColorB, colorProgress);
-				paths.Add(new StrokePath(new[] { start, end }, color));
+				paths.Add(new StrokePath(new[] { start, end }, BuildRenderPoints(start, end), color));
 			}
 
 			return paths;
+		}
+
+		private Vector2[] BuildRenderPoints(Vector2 start, Vector2 end) {
+			var direction = (end - start).normalized;
+			var extension = m_CanvasSize.magnitude * 2f;
+			return new[] {
+				start - direction * extension,
+				end + direction * extension
+			};
 		}
 
 		private static bool TryClipLineToCanvas(
@@ -339,7 +348,7 @@ namespace ShitDesigner.Scene {
 			var mergeDistance = Mathf.Max(0.001f, m_StrokeWidth * 0.1f);
 
 			for (var pathIndex = 0; pathIndex < paths.Count; pathIndex++) {
-				var points = paths[pathIndex].Points;
+				var points = paths[pathIndex].CanvasPoints;
 				segmentSplits[pathIndex] = new List<SegmentSplit>[points.Length - 1];
 				for (var segmentIndex = 0; segmentIndex < points.Length - 1; segmentIndex++) {
 					var splits = new List<SegmentSplit>(2) {
@@ -352,8 +361,8 @@ namespace ShitDesigner.Scene {
 
 			for (var firstPath = 0; firstPath < paths.Count - 1; firstPath++) {
 				for (var secondPath = firstPath + 1; secondPath < paths.Count; secondPath++) {
-					var firstPoints = paths[firstPath].Points;
-					var secondPoints = paths[secondPath].Points;
+					var firstPoints = paths[firstPath].CanvasPoints;
+					var secondPoints = paths[secondPath].CanvasPoints;
 					for (var firstSegment = 0; firstSegment < firstPoints.Length - 1; firstSegment++) {
 						for (var secondSegment = 0; secondSegment < secondPoints.Length - 1; secondSegment++) {
 							if (!TryGetSegmentIntersection(
@@ -531,8 +540,8 @@ namespace ShitDesigner.Scene {
 				line.receiveShadows = false;
 				line.allowOcclusionWhenDynamic = false;
 				line.sortingOrder = 1;
-				line.positionCount = paths[index].Points.Length;
-				line.SetPositions(ToVector3Array(paths[index].Points));
+				line.positionCount = paths[index].RenderPoints.Length;
+				line.SetPositions(ToVector3Array(paths[index].RenderPoints));
 				m_StrokeRenderers.Add(line);
 			}
 		}
@@ -844,11 +853,13 @@ namespace ShitDesigner.Scene {
 		}
 
 		private readonly struct StrokePath {
-			public readonly Vector2[] Points;
+			public readonly Vector2[] CanvasPoints;
+			public readonly Vector2[] RenderPoints;
 			public readonly Color Color;
 
-			public StrokePath(Vector2[] points, Color color) {
-				Points = points;
+			public StrokePath(Vector2[] canvasPoints, Vector2[] renderPoints, Color color) {
+				CanvasPoints = canvasPoints;
+				RenderPoints = renderPoints;
 				Color = color;
 			}
 		}
