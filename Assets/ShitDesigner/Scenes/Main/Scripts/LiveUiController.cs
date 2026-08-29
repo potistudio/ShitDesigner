@@ -16,6 +16,7 @@ namespace ShitDesigner.Main {
 		private ApplicationLiveHost _host;
 		private LiveExternalDisplayOutput _output;
 		private VisualElement _programMonitor;
+		private VisualElement m_Output2Preview;
 		private VisualElement _patchSlotControls;
 		private ScrollView _patchControls;
 		private Button _cuePatchButton;
@@ -54,6 +55,7 @@ namespace ShitDesigner.Main {
 			if (root == null) throw new InvalidOperationException("The live UIDocument has no visual tree.");
 
 			_programMonitor = Required<VisualElement>(root, "program-monitor");
+			m_Output2Preview = Required<VisualElement>(root, "output-2-preview");
 			_patchSlotControls = Required<VisualElement>(root, "patch-slot-controls");
 			_patchControls = Required<ScrollView>(root, "patch-controls");
 			_cuePatchButton = Required<Button>(root, "cue-patch-slot");
@@ -117,9 +119,8 @@ namespace ShitDesigner.Main {
 			var model = _host.ReadModel;
 			_updating = true;
 			try {
-				_programMonitor.style.backgroundImage = model.ProgramTexture == null
-					? StyleKeyword.None
-					: new StyleBackground(Background.FromRenderTexture(model.ProgramTexture));
+				ApplyPreviewTexture(_programMonitor, model.ProgramFrames.Count > 0 ? model.ProgramFrames[0].Texture : null);
+				ApplyPreviewTexture(m_Output2Preview, model.ProgramFrames.Count > 1 ? model.ProgramFrames[1].Texture : null);
 				RefreshPatchSlotControls(model);
 				RefreshPatchControls(model);
 				RefreshTempoControls(model);
@@ -407,6 +408,13 @@ namespace ShitDesigner.Main {
 		}
 
 		private static string FormatBpm(float bpm) => bpm.ToString("0.##", CultureInfo.InvariantCulture);
+
+		private static void ApplyPreviewTexture(VisualElement preview, RenderTexture texture) {
+			if (preview == null) return;
+			preview.style.backgroundImage = texture == null
+				? StyleKeyword.None
+				: new StyleBackground(Background.FromRenderTexture(texture));
+		}
 
 		private void RequestOutputToggle() {
 			if (_output == null) return;

@@ -10,7 +10,14 @@
         </ui:VisualElement>
         <ui:VisualElement class="workspace">
             <ui:VisualElement class="preview-stack">
-                <ui:VisualElement name="program-monitor" class="program-monitor"/>
+                <ui:VisualElement class="output-previews">
+                    <ui:VisualElement name="program-monitor" class="output-preview output-preview-1">
+                        <ui:Label text="Output 1" class="output-preview-label"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="output-2-preview" class="output-preview output-preview-2">
+                        <ui:Label text="Output 2" class="output-preview-label"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
                 <ui:VisualElement class="live-fader-panel">
                     <ui:VisualElement name="parameter-controls" class="parameter-controls"/>
                 </ui:VisualElement>

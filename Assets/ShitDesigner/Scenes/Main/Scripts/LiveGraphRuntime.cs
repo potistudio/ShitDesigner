@@ -36,6 +36,7 @@ namespace ShitDesigner.Main {
 		public int Count => _frames?.Length ?? 0;
 		public LiveProgramFrame this[int index] => _frames[index];
 		public LiveProgramFrame Primary => Count > 0 ? _frames[0] : default(LiveProgramFrame);
+		public IReadOnlyList<LiveProgramFrame> Frames => _frames ?? (IReadOnlyList<LiveProgramFrame>)Array.Empty<LiveProgramFrame>();
 	}
 
 	public readonly struct LiveParameterApplicationResult {
