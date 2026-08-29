@@ -241,10 +241,9 @@ namespace ShitDesigner.Scene {
 
 		private void ApplyGeneratedRotation() {
 			var rotationDegrees = m_ContinuousRotationDegrees;
-			if (m_TransitionTargetPaths != null) {
-				var phase = Mathf.Clamp01((float)(m_AdjustedTotalBeats - m_TransitionStartBeat));
-				rotationDegrees += GetBeatRotationDegrees(phase);
-			}
+			var beatStart = Math.Floor(m_AdjustedTotalBeats + 1e-9d);
+			var beatPhase = Mathf.Clamp01((float)(m_AdjustedTotalBeats - beatStart));
+			rotationDegrees += (float)(beatStart * m_BeatRotationDegrees) + GetBeatRotationDegrees(beatPhase);
 
 			var rotation = Quaternion.Euler(0f, 0f, rotationDegrees);
 			if (m_StrokeRoot != null)
@@ -254,14 +253,15 @@ namespace ShitDesigner.Scene {
 		}
 
 		private float GetBeatRotationDegrees(float phase) {
+			var halfRotation = m_BeatRotationDegrees * 0.5f;
 			if (phase < 0.5f) {
 				var upPhase = phase * 2f;
-				return m_BeatRotationDegrees * upPhase * upPhase * upPhase;
+				return halfRotation * upPhase * upPhase * upPhase;
 			}
 
-			var downPhase = (phase - 0.5f) * 2f;
-			var easedDownPhase = 1f - Mathf.Pow(1f - downPhase, 3f);
-			return m_BeatRotationDegrees * (1f - easedDownPhase);
+			var outPhase = (phase - 0.5f) * 2f;
+			var easedOutPhase = 1f - Mathf.Pow(1f - outPhase, 3f);
+			return halfRotation + halfRotation * easedOutPhase;
 		}
 
 		private List<PolygonFace> SelectFilledRegions(List<PolygonFace> regions) {
