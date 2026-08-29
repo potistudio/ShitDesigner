@@ -310,6 +310,8 @@ namespace ShitDesigner.Main {
 		[DllImport("user32.dll")]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		private static extern bool SetWindowPos(IntPtr window, IntPtr insertAfter, int x, int y, int width, int height, uint flags);
+#else
+		public void SetOutputVisible(bool visible) { }
 #endif
 	}
 
