@@ -41,6 +41,7 @@ namespace ShitDesigner.Scene {
 
 		private sealed class Candy {
 			public Transform Root { get; }
+			public Transform EntryRoot { get; }
 			public CandyFragment[] Fragments { get; }
 			public int NextCutLayer { get; set; }
 			public int PendingPushLayer { get; set; } = -1;
@@ -49,8 +50,9 @@ namespace ShitDesigner.Scene {
 			public Vector3 EntryTargetPosition { get; set; }
 			public long EntryStartBeat { get; set; }
 
-			public Candy(Transform root, CandyFragment[] fragments) {
+			public Candy(Transform root, Transform entryRoot, CandyFragment[] fragments) {
 				Root = root;
+				EntryRoot = entryRoot;
 				Fragments = fragments;
 			}
 		}
@@ -248,11 +250,12 @@ namespace ShitDesigner.Scene {
 			var axis = (Quaternion.AngleAxis(NextFloat(random, -2.5f, 2.5f), Vector3.forward)
 				* m_CandyAxisRuntime).normalized;
 			var candy = CreateCandy(m_Candies.Count, frontPosition, axis, random);
-			candy.EntryTargetPosition = candy.Root.localPosition + axis * (m_CandyLength * 0.5f);
-			candy.EntryStartPosition = candy.Root.localPosition;
+			candy.Root.localPosition += axis * (m_CandyLength * 0.5f);
+			candy.EntryTargetPosition = Vector3.zero;
+			candy.EntryStartPosition = Vector3.down * (m_CandyLength * 0.5f);
 			candy.EntryStartBeat = startBeat;
 			candy.IsEntering = true;
-			candy.Root.localPosition = candy.EntryStartPosition;
+			candy.EntryRoot.localPosition = candy.EntryStartPosition;
 			m_Candies.Add(candy);
 		}
 
@@ -263,12 +266,16 @@ namespace ShitDesigner.Scene {
 			candyRoot.localPosition = frontPosition - axis * (m_CandyLength * 0.5f);
 			candyRoot.localRotation = Quaternion.FromToRotation(Vector3.up, axis);
 
+			var entryRoot = new GameObject("Candy Entry").transform;
+			entryRoot.gameObject.hideFlags = HideFlags.DontSave;
+			entryRoot.SetParent(candyRoot, false);
+
 			var cutFaceScale = new Vector3(m_CandyRadius * 0.76f, 0.028f, m_CandyRadius * 0.76f);
 			var fragments = new CandyFragment[CandyDivisionCount];
 			for (var fragmentIndex = 0; fragmentIndex < fragments.Length; fragmentIndex++) {
 				var fragment = new GameObject($"Cut Fragment {fragmentIndex + 1:00}").transform;
 				fragment.gameObject.hideFlags = HideFlags.DontSave;
-				fragment.SetParent(candyRoot, false);
+				fragment.SetParent(entryRoot, false);
 				var basePosition = m_CandyLength * 0.5f - m_FragmentLength * (fragmentIndex + 0.5f);
 				fragment.localPosition = Vector3.up * basePosition;
 				CreateMeshObject("Fragment Candy Body", fragment, m_FragmentBodyMesh,
@@ -291,7 +298,7 @@ namespace ShitDesigner.Scene {
 					body, basePosition, CreateHorizontalImpulse(random));
 			}
 
-			return new Candy(candyRoot, fragments);
+			return new Candy(candyRoot, entryRoot, fragments);
 		}
 
 		private void CreateOriginalCandyEnd(Transform frontFragment, int index, System.Random random) {
@@ -382,11 +389,11 @@ namespace ShitDesigner.Scene {
 
 				var progress = Mathf.Clamp01((float)(beatPosition - candy.EntryStartBeat));
 				var easedProgress = EvaluateEasing(m_EntryEasing, progress);
-				candy.Root.localPosition = Vector3.Lerp(
+				candy.EntryRoot.localPosition = Vector3.Lerp(
 					candy.EntryStartPosition, candy.EntryTargetPosition, easedProgress);
 				moved = true;
 				if (progress >= 1f) {
-					candy.Root.localPosition = candy.EntryTargetPosition;
+					candy.EntryRoot.localPosition = candy.EntryTargetPosition;
 					candy.IsEntering = false;
 				}
 			}
