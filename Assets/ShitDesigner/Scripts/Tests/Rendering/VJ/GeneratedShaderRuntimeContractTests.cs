@@ -38,7 +38,9 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 			var recursive = asset.Find("shitdesigner.shader.generator.recursive-rectangles");
 			Assert.That(recursive, Is.Not.Null);
 			Assert.That(recursive.Shader, Is.Not.Null);
-			Assert.That(recursive.Parameters.Count, Is.EqualTo(16));
+			Assert.That(recursive.Parameters.Count, Is.EqualTo(15));
+			Assert.That(recursive.Parameters.Single(x => x.Id == "color_a").DisplayName, Is.EqualTo("Color"));
+			Assert.That(recursive.Parameters.Any(x => x.Id == "color_b"), Is.False);
 			Assert.That(recursive.Parameters.Single(x => x.Id == "seed").Property, Is.EqualTo("_StructureSeed"));
 		}
 

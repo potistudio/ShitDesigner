@@ -13,7 +13,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 		private const string ShaderPath = "Assets/ShitDesigner/Scripts/Media/Shaders/RecursiveRectangles.shader";
 
 		[UnityTest]
-		public IEnumerator RecursiveRectangles_RevealZeroShowsOnlyTheRootRegion() {
+		public IEnumerator RecursiveRectangles_RevealZeroIsTransparent() {
 			RequireGraphicsDevice();
 			var material = CreateMaterial();
 			try {
@@ -24,7 +24,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 				Color32[] pixels = null;
 				yield return Render(material, 32, 32, result => pixels = result);
 
-				Assert.That(pixels.Distinct().Count(), Is.EqualTo(1));
+				Assert.That(pixels.All(pixel => pixel.a == 0), Is.True);
 			}
 			finally { UnityEngine.Object.DestroyImmediate(material); }
 		}
@@ -78,7 +78,6 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 			try {
 				Configure(material);
 				material.SetVector("_ColorA", new Vector4(1f, 0f, 0f, .5f));
-				material.SetVector("_ColorB", new Vector4(0f, 1f, 0f, .5f));
 				material.SetVector("_LineColor", new Vector4(0f, 0f, 1f, .5f));
 
 				Color32[] pixels = null;
@@ -109,8 +108,8 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 				Color32[] beatEnd = null;
 				yield return Render(material, 48, 32, result => beatEnd = result);
 
-				Assert.That(beatStart.Distinct().Count(), Is.EqualTo(1));
-				Assert.That(beatEnd.Distinct().Count(), Is.GreaterThan(1));
+				Assert.That(beatStart.All(pixel => pixel.a == 0), Is.True);
+				Assert.That(beatEnd.All(pixel => pixel.a > 0), Is.True);
 			}
 			finally { UnityEngine.Object.DestroyImmediate(material); }
 		}
@@ -135,10 +134,10 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 				yield return Render(material, 64, 8, result => halfway = result);
 
 				var row = 4 * 64;
-				Assert.That(halfway[row + 24], Is.EqualTo(root[row + 24]));
+				Assert.That(halfway[row + 40], Is.EqualTo(root[row + 40]));
 				Assert.That(halfway[row + 56], Is.EqualTo(root[row + 56]));
 				Assert.That(halfway[row + 8], Is.Not.EqualTo(root[row + 8]));
-				Assert.That(halfway[row + 40], Is.Not.EqualTo(root[row + 40]));
+				Assert.That(halfway[row + 24], Is.Not.EqualTo(root[row + 24]));
 
 				material.SetInt("_AxisMode", 1);
 				Color32[] verticalSplit = null;
@@ -212,7 +211,6 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 			material.SetFloat("_SplitStagger", .04f);
 			material.SetInt("_Easing", 1);
 			material.SetVector("_ColorA", new Vector4(.05f, .12f, .22f, 1f));
-			material.SetVector("_ColorB", new Vector4(.95f, .32f, .14f, 1f));
 			material.SetFloat("_Gutter", .004f);
 			material.SetVector("_LineColor", new Vector4(.01f, .01f, .01f, 1f));
 		}

@@ -340,8 +340,7 @@ namespace ShitDesigner.Nodes {
 				Parameter("split_duration", "Split Duration", ParameterType.Float, ParameterValue.FromFloat(.15f), "_SplitDuration", ParameterValue.FromFloat(.001f), ParameterValue.FromFloat(1f), group: "Animation", order: 11),
 				Parameter("split_stagger", "Split Stagger", ParameterType.Float, ParameterValue.FromFloat(.04f), "_SplitStagger", ParameterValue.FromFloat(0f), ParameterValue.FromFloat(1f), group: "Animation", order: 12),
 				EnumParameter("easing", "Easing", "_Easing", "smooth_step", new[] { "linear", "smooth_step", "ease_in", "ease_out", "ease_in_out" }, "Animation", 13),
-				Parameter("color_a", "Color A", ParameterType.Color, ParameterValue.FromColor(new ColorValue(.05f, .12f, .22f, 1f)), "_ColorA", group: "Appearance", order: 20),
-				Parameter("color_b", "Color B", ParameterType.Color, ParameterValue.FromColor(new ColorValue(.95f, .32f, .14f, 1f)), "_ColorB", group: "Appearance", order: 21),
+				Parameter("color_a", "Color", ParameterType.Color, ParameterValue.FromColor(new ColorValue(.05f, .12f, .22f, 1f)), "_ColorA", group: "Appearance", order: 20),
 				Parameter("gutter", "Gutter", ParameterType.Float, ParameterValue.FromFloat(.004f), "_Gutter", ParameterValue.FromFloat(0f), ParameterValue.FromFloat(.1f), group: "Appearance", order: 22),
 				Parameter("line_color", "Line Color", ParameterType.Color, ParameterValue.FromColor(new ColorValue(.01f, .01f, .01f, 1f)), "_LineColor", group: "Appearance", order: 23)
 			};

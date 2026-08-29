@@ -414,7 +414,6 @@ MonoBehaviour:
     - split_stagger
     - easing
     - color_a
-    - color_b
     - gutter
     - line_color
     ports:
@@ -640,7 +639,7 @@ MonoBehaviour:
       isReadOnly: 0
       isHidden: 0
     - id: color_a
-      displayName: Color A
+      displayName: Color
       type: 6
       defaultValue: color:0.05,0.12,0.22,1
       hasMinimum: 0
@@ -651,23 +650,6 @@ MonoBehaviour:
       enumOptions: []
       group: Appearance
       displayOrder: 20
-      description: 
-      unit: 
-      step: 0
-      isReadOnly: 0
-      isHidden: 0
-    - id: color_b
-      displayName: Color B
-      type: 6
-      defaultValue: color:0.95,0.32,0.14,1
-      hasMinimum: 0
-      minimumValue: 
-      hasMaximum: 0
-      maximumValue: 
-      runtimeStateful: 0
-      enumOptions: []
-      group: Appearance
-      displayOrder: 21
       description: 
       unit: 
       step: 0
@@ -793,11 +775,6 @@ MonoBehaviour:
       enumValues: 0000000001000000020000000300000004000000
     - parameterId: color_a
       property: _ColorA
-      type: 6
-      enumKeys: []
-      enumValues: 
-    - parameterId: color_b
-      property: _ColorB
       type: 6
       enumKeys: []
       enumValues: 
