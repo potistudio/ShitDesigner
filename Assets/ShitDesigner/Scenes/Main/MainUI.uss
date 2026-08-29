@@ -203,12 +203,29 @@
     height: 32px;
 }
 
-.tempo-bpm-input {
+.tempo-offset-row {
+    flex-direction: row;
+    align-items: center;
+    height: 32px;
+    margin-top: 4px;
+}
+
+.tempo-offset-label {
+    width: 72px;
+    min-width: 72px;
+    color: rgb(157, 167, 180);
+    font-size: 10px;
+    -unity-font-style: bold;
+}
+
+.tempo-bpm-input,
+.tempo-offset-input {
     flex-grow: 1;
     min-width: 0;
 }
 
-.tempo-bpm-input .unity-base-text-field__input {
+.tempo-bpm-input .unity-base-text-field__input,
+.tempo-offset-input .unity-base-text-field__input {
     height: 30px;
     min-height: 30px;
     padding-top: 0;

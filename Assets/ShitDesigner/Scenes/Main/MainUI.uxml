@@ -28,6 +28,10 @@
                         <ui:TextField name="bpm-field" class="tempo-bpm-input" is-delayed="true"/>
                         <ui:Button name="bpm-tap" text="TAP" class="tempo-tap-button"/>
                     </ui:VisualElement>
+                    <ui:VisualElement class="tempo-offset-row">
+                        <ui:Label text="OFFSET MS" class="tempo-offset-label"/>
+                        <ui:TextField name="beat-offset-field" class="tempo-offset-input" is-delayed="true"/>
+                    </ui:VisualElement>
                 </ui:VisualElement>
                 <ui:Label name="capability-status" class="status-label"/>
                 <ui:Label name="diagnostic-status" class="diagnostic-label"/>

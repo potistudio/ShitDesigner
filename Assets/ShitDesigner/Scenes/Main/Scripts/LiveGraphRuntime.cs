@@ -437,6 +437,7 @@ namespace ShitDesigner.Main {
 		public LiveProgramFrame CurrentFrame { get; private set; }
 		public LiveProgramFrames CurrentFrames { get; private set; }
 		public LiveParameterDefinition BpmDefinition => _bpmClock.Definition;
+		public LiveParameterDefinition BeatOffsetDefinition => _bpmClock.BeatOffsetDefinition;
 
 		internal LiveGraphRuntime(LiveGraph graph) {
 			_graph = graph ?? throw new ArgumentNullException(nameof(graph));
@@ -450,6 +451,8 @@ namespace ShitDesigner.Main {
 		public LiveParameterApplicationResult Apply(LiveParameterRequest request) {
 			if (request.Kind == LiveParameterRequestKind.SetBpm)
 				return _bpmClock.TrySetBpm(request.Value, out var bpmRejection) ? Accept(request) : Reject(request, bpmRejection);
+			if (request.Kind == LiveParameterRequestKind.SetBeatOffset)
+				return _bpmClock.TrySetBeatOffsetMilliseconds(request.Value, out var offsetRejection) ? Accept(request) : Reject(request, offsetRejection);
 			if (!_patchDefinitionsById.TryGetValue(request.PatchId, out var definition)) return Reject(request, "The requested patch does not exist.");
 			if (request.Kind == LiveParameterRequestKind.PreloadPatch) {
 				if (_preloadedPatch?.Definition == definition) return Accept(request);

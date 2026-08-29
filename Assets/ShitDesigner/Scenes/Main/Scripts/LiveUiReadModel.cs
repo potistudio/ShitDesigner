@@ -22,8 +22,9 @@ namespace ShitDesigner.Main {
 		public string LoadedPatchId { get; }
 		public string PreloadedPatchId { get; }
 		public LiveParameterDefinition Bpm { get; }
-		public IReadOnlyList<LiveProgramFrame> ProgramFrames { get; }
+		public LiveParameterDefinition BeatOffset { get; }
 		public IReadOnlyList<LiveParameterDefinition> Parameters { get; }
+		public IReadOnlyList<LiveProgramFrame> ProgramFrames { get; }
 		public RenderTexture ProgramTexture { get; }
 		public ulong ProgramFrameNumber { get; }
 		public int ConnectedDisplayCount { get; }
@@ -37,7 +38,8 @@ namespace ShitDesigner.Main {
 		public LiveUiReadModel(ulong frameNumber, IReadOnlyList<LivePatchReadModel> patches, IReadOnlyList<LivePatchSlotReadModel> patchSlots, int selectedPatchSlotIndex, string selectedCatalogPatchId,
 			string loadedPatchId, string preloadedPatchId,
 			LiveParameterDefinition bpm, IReadOnlyList<LiveParameterDefinition> parameters, LiveProgramFrames programFrames, LiveExternalDisplayOutput output,
-			LiveCapabilitySnapshot capabilities, string diagnostic, IReadOnlyList<LiveParameterApplicationResult> requestResults) {
+			LiveCapabilitySnapshot capabilities, string diagnostic, IReadOnlyList<LiveParameterApplicationResult> requestResults,
+			LiveParameterDefinition beatOffset = default(LiveParameterDefinition)) {
 			FrameNumber = frameNumber;
 			Patches = patches ?? Array.Empty<LivePatchReadModel>();
 			PatchSlots = patchSlots ?? Array.Empty<LivePatchSlotReadModel>();
@@ -46,6 +48,7 @@ namespace ShitDesigner.Main {
 			LoadedPatchId = loadedPatchId ?? string.Empty;
 			PreloadedPatchId = preloadedPatchId ?? string.Empty;
 			Bpm = bpm;
+			BeatOffset = beatOffset;
 			Parameters = parameters ?? Array.Empty<LiveParameterDefinition>();
 			ProgramFrames = programFrames.Frames;
 			ProgramTexture = programFrames.Primary.Texture;

@@ -253,8 +253,9 @@ namespace ShitDesigner.Scene {
 
 		public UnitResult<Diagnostic> ApplyBpmClock(BeatClockFrame frame) {
 			if (!frame.IsAvailable || float.IsNaN(frame.Bpm) || float.IsInfinity(frame.Bpm) || frame.Bpm <= 0f
-				|| double.IsNaN(frame.TotalBeats) || double.IsInfinity(frame.TotalBeats) || frame.TotalBeats < 0d)
-				return AnimationFailure("scene.bpm-clock.state", "BPM clock values must be positive and finite.");
+				|| double.IsNaN(frame.TotalBeats) || double.IsInfinity(frame.TotalBeats) || frame.TotalBeats < 0d
+				|| double.IsNaN(frame.AdjustedTotalBeats) || double.IsInfinity(frame.AdjustedTotalBeats))
+				return AnimationFailure("scene.bpm-clock.state", "BPM clock values must be finite and the BPM must be positive.");
 			if (State != SceneLifecycleState.Ready)
 				return AnimationFailure("scene.bpm-clock.scene", "Scene node is not ready for BPM animation.");
 			try {
