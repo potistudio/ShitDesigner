@@ -1,14 +1,16 @@
+using System;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Video;
 
 namespace ShitDesigner.Scene {
-	/// <summary>Moves a wordmark within the orthographic camera bounds and changes its color at each impact.</summary>
+	/// <summary>Moves an image or video surface within the orthographic camera bounds and changes its tint at each impact.</summary>
 	[DisallowMultipleComponent]
 	public sealed class DvdBounceScene : MonoBehaviour {
-		[Header("Logo")]
-		[SerializeField] private string m_Label = "DVD";
-		[Min(1)][SerializeField] private int m_FontSize = 120;
-		[Min(0.01f)][SerializeField] private float m_CharacterSize = 0.12f;
+		[Header("Visual")]
+		[SerializeField] private Texture2D m_Image;
+		[SerializeField] private VideoClip m_Video;
+		[Min(0.01f)][SerializeField] private Vector2 m_VisualSize = new Vector2(2.8f, 1.6f);
 
 		[Header("Motion")]
 		[Min(0.01f)][SerializeField] private float m_Speed = 4.5f;
@@ -17,16 +19,16 @@ namespace ShitDesigner.Scene {
 
 		[Header("Appearance")]
 		[ColorUsage(false, true)][SerializeField] private Color[] m_Colors = {
-			new Color(1f, 0.22f, 0.36f, 1f),
-			new Color(0.2f, 0.9f, 1f, 1f),
-			new Color(1f, 0.78f, 0.16f, 1f),
-			new Color(0.5f, 1f, 0.35f, 1f),
+			new Color(1f, 0.22f, 0.36f, 1f), new Color(0.2f, 0.9f, 1f, 1f),
+			new Color(1f, 0.78f, 0.16f, 1f), new Color(0.5f, 1f, 0.35f, 1f),
 			new Color(0.82f, 0.36f, 1f, 1f)
 		};
 
 		private Camera m_Camera;
-		private TextMesh m_TextMesh;
+		private GameObject m_VisualObject;
+		private Material m_Material;
 		private MeshRenderer m_Renderer;
+		private VideoPlayer m_VideoPlayer;
 		private Vector2 m_Velocity;
 		private int m_ColorIndex;
 
@@ -34,7 +36,7 @@ namespace ShitDesigner.Scene {
 			m_Camera = Camera.main;
 			if (m_Camera == null)
 				m_Camera = FindFirstObjectByType<Camera>();
-			CreateLogo();
+			CreateVisual();
 		}
 
 		private void Start() {
@@ -42,6 +44,8 @@ namespace ShitDesigner.Scene {
 			m_Velocity = GetInitialVelocity();
 			ApplyColor();
 			KeepWithinBounds();
+			if (m_VideoPlayer != null)
+				m_VideoPlayer.Play();
 		}
 
 		private void Update() {
@@ -56,36 +60,64 @@ namespace ShitDesigner.Scene {
 				AdvanceColor();
 		}
 
+		private void OnDestroy() {
+			ReleaseVisual();
+		}
+
 		private void OnValidate() {
-			m_FontSize = Mathf.Max(1, m_FontSize);
-			m_CharacterSize = Mathf.Max(0.01f, m_CharacterSize);
+			m_VisualSize.x = Mathf.Max(0.01f, m_VisualSize.x);
+			m_VisualSize.y = Mathf.Max(0.01f, m_VisualSize.y);
 			m_Speed = Mathf.Max(0.01f, m_Speed);
 			if (m_InitialDirection.sqrMagnitude < 0.0001f)
 				m_InitialDirection = new Vector2(1f, 0.63f);
-			if (m_TextMesh != null) {
-				m_TextMesh.text = m_Label;
-				m_TextMesh.fontSize = m_FontSize;
-				m_TextMesh.characterSize = m_CharacterSize;
+			if (m_VisualObject != null) {
+				m_VisualObject.transform.localScale = new Vector3(m_VisualSize.x, m_VisualSize.y, 1f);
+				ApplyImage();
 				ApplyColor();
 			}
 		}
 
-		private void CreateLogo() {
-			m_TextMesh = GetComponent<TextMesh>();
-			if (m_TextMesh == null)
-				m_TextMesh = gameObject.AddComponent<TextMesh>();
-			m_TextMesh.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-			m_TextMesh.text = m_Label;
-			m_TextMesh.fontSize = m_FontSize;
-			m_TextMesh.characterSize = m_CharacterSize;
-			m_TextMesh.anchor = TextAnchor.MiddleCenter;
-			m_TextMesh.alignment = TextAlignment.Center;
-			m_TextMesh.fontStyle = FontStyle.Bold;
-			m_Renderer = GetComponent<MeshRenderer>();
+		private void CreateVisual() {
+			ReleaseVisual();
+			m_VisualObject = GameObject.CreatePrimitive(PrimitiveType.Quad);
+			m_VisualObject.name = "Bouncing Visual";
+			m_VisualObject.transform.SetParent(transform, false);
+			m_VisualObject.transform.localScale = new Vector3(m_VisualSize.x, m_VisualSize.y, 1f);
+			var collider = m_VisualObject.GetComponent<Collider>();
+			if (collider != null)
+				Destroy(collider);
+
+			m_Renderer = m_VisualObject.GetComponent<MeshRenderer>();
+			m_Material = CreateMaterial();
+			m_Renderer.sharedMaterial = m_Material;
 			m_Renderer.shadowCastingMode = ShadowCastingMode.Off;
 			m_Renderer.receiveShadows = false;
 			m_Renderer.allowOcclusionWhenDynamic = false;
 			m_Renderer.sortingOrder = 1;
+			ApplyImage();
+			ConfigureVideo();
+		}
+
+		private void ConfigureVideo() {
+			if (m_Video == null)
+				return;
+
+			m_VideoPlayer = m_VisualObject.AddComponent<VideoPlayer>();
+			m_VideoPlayer.source = VideoSource.VideoClip;
+			m_VideoPlayer.clip = m_Video;
+			m_VideoPlayer.renderMode = VideoRenderMode.MaterialOverride;
+			m_VideoPlayer.targetMaterialRenderer = m_Renderer;
+			m_VideoPlayer.targetMaterialProperty = GetTexturePropertyName(m_Material);
+			m_VideoPlayer.audioOutputMode = VideoAudioOutputMode.None;
+			m_VideoPlayer.isLooping = true;
+			m_VideoPlayer.playOnAwake = false;
+		}
+
+		private void ApplyImage() {
+			if (m_Material == null || m_Video != null)
+				return;
+
+			m_Material.SetTexture(GetTexturePropertyName(m_Material), m_Image == null ? Texture2D.whiteTexture : m_Image);
 		}
 
 		private Vector2 GetInitialVelocity() {
@@ -95,10 +127,10 @@ namespace ShitDesigner.Scene {
 		private Bounds2D GetMovementBounds() {
 			var cameraHalfHeight = m_Camera.orthographicSize;
 			var cameraHalfWidth = cameraHalfHeight * m_Camera.aspect;
-			var logoExtents = m_Renderer.bounds.extents;
+			var visualExtents = m_Renderer.bounds.extents;
 			return new Bounds2D(
-				new Vector2(-cameraHalfWidth + logoExtents.x, -cameraHalfHeight + logoExtents.y),
-				new Vector2(cameraHalfWidth - logoExtents.x, cameraHalfHeight - logoExtents.y));
+				new Vector2(-cameraHalfWidth + visualExtents.x, -cameraHalfHeight + visualExtents.y),
+				new Vector2(cameraHalfWidth - visualExtents.x, cameraHalfHeight - visualExtents.y));
 		}
 
 		private void KeepWithinBounds() {
@@ -135,11 +167,54 @@ namespace ShitDesigner.Scene {
 		}
 
 		private void ApplyColor() {
-			if (m_TextMesh == null || m_Colors == null || m_Colors.Length == 0)
+			if (m_Material == null || m_Colors == null || m_Colors.Length == 0)
 				return;
 
 			m_ColorIndex = Mathf.Clamp(m_ColorIndex, 0, m_Colors.Length - 1);
-			m_TextMesh.color = m_Colors[m_ColorIndex];
+			SetMaterialColor(m_Material, m_Colors[m_ColorIndex]);
+		}
+
+		private void ReleaseVisual() {
+			if (m_VisualObject != null)
+				Destroy(m_VisualObject);
+			if (m_Material != null)
+				Destroy(m_Material);
+			m_VisualObject = null;
+			m_Material = null;
+			m_Renderer = null;
+			m_VideoPlayer = null;
+		}
+
+		private static Material CreateMaterial() {
+			var shader = Shader.Find("Universal Render Pipeline/Unlit")
+				?? Shader.Find("Unlit/Texture")
+				?? throw new InvalidOperationException("An unlit shader is required for the DVD bounce scene.");
+			var material = new Material(shader) { name = "DVD Bounce Visual" };
+			if (material.HasProperty("_Cull"))
+				material.SetInt("_Cull", (int)CullMode.Off);
+			if (material.HasProperty("_Surface")) {
+				material.SetFloat("_Surface", 1f);
+				material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+			}
+			if (material.HasProperty("_SrcBlend"))
+				material.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+			if (material.HasProperty("_DstBlend"))
+				material.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+			if (material.HasProperty("_ZWrite"))
+				material.SetFloat("_ZWrite", 0f);
+			material.renderQueue = (int)RenderQueue.Transparent;
+			return material;
+		}
+
+		private static string GetTexturePropertyName(Material material) {
+			return material.HasProperty("_BaseMap") ? "_BaseMap" : "_MainTex";
+		}
+
+		private static void SetMaterialColor(Material material, Color color) {
+			if (material.HasProperty("_BaseColor"))
+				material.SetColor("_BaseColor", color);
+			if (material.HasProperty("_Color"))
+				material.SetColor("_Color", color);
 		}
 
 		private readonly struct Bounds2D {
