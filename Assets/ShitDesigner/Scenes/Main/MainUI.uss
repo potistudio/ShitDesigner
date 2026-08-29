@@ -105,6 +105,99 @@
     border-color: rgb(48, 55, 65);
 }
 
+.sequencer-controls {
+    flex-shrink: 0;
+}
+
+.sequencer {
+    flex-shrink: 0;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-color: rgb(48, 55, 65);
+}
+
+.sequencer-title {
+    height: 22px;
+    min-height: 22px;
+    padding-left: 6px;
+    color: rgb(232, 236, 242);
+    background-color: rgb(29, 34, 41);
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-color: rgb(48, 55, 65);
+    font-size: 9px;
+    letter-spacing: 0.8px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-left;
+}
+
+.sequencer-beat-header,
+.sequencer-lane {
+    height: 22px;
+    min-height: 22px;
+    flex-direction: row;
+}
+
+.sequencer-lane-label,
+.sequencer-corner {
+    width: 32px;
+    min-width: 32px;
+    height: 22px;
+    padding: 0;
+    color: rgb(117, 128, 142);
+    background-color: rgb(21, 24, 29);
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-color: rgb(48, 55, 65);
+    font-size: 8px;
+    -unity-text-align: middle-center;
+}
+
+.sequencer-beat-label,
+.sequencer-step {
+    flex-grow: 1;
+    flex-basis: 0;
+    min-width: 0;
+    height: 22px;
+    margin: 0;
+    padding: 0;
+    border-left-width: 0;
+    border-top-width: 0;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-color: rgb(48, 55, 65);
+    border-radius: 0;
+    -unity-text-align: middle-center;
+}
+
+.sequencer-beat-label {
+    color: rgb(117, 128, 142);
+    background-color: rgb(21, 24, 29);
+    font-size: 8px;
+}
+
+.sequencer-step {
+    color: rgb(157, 167, 180);
+    background-color: rgb(13, 15, 18);
+}
+
+.sequencer-step:hover {
+    background-color: rgb(36, 43, 52);
+}
+
+.sequencer-step.is-set {
+    background-color: rgb(47, 111, 179);
+}
+
+.sequencer-step.is-playhead {
+    border-bottom-color: rgb(255, 190, 74);
+}
+
+.sequencer-step.is-set.is-playhead {
+    background-color: rgb(78, 139, 205);
+}
+
 .patch-controls {
     flex-grow: 1;
     min-width: 0;

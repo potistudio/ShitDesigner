@@ -27,6 +27,8 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(host.ReadModel.ProgramTexture.height, Is.EqualTo(1080));
 			Assert.That(host.ReadModel.ProgramTexture.format, Is.EqualTo(RenderTextureFormat.ARGBHalf));
 			Assert.That(host.ReadModel.ProgramFrameNumber, Is.GreaterThan(0));
+			Assert.That(host.ReadModel.Sequencers, Has.Count.EqualTo(3));
+			Assert.That(host.ReadModel.Sequencers.All(sequencer => sequencer.ActiveLanes.Count == LiveStepSequencer.StepCount), Is.True);
 			var runtime = (LiveGraphRuntime)typeof(ApplicationLiveHost).GetField("_runtime", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(host);
 			Assert.That(runtime.CurrentFrames.Count, Is.EqualTo(1));
 			Assert.That(runtime.CurrentFrames[0].Texture, Is.SameAs(host.ReadModel.ProgramTexture));
@@ -77,6 +79,11 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(patchRoleLabels.Query<Label>().ToList().Select(label => label.text), Is.EqualTo(new[] { "MAIN", "OVERLAY" }));
 			Assert.That(mainPatchControls.Query<Button>().ToList().Count, Is.EqualTo(host.ReadModel.Patches.Count(patch => patch.Role == LivePatchRole.Main)));
 			Assert.That(overlayPatchControls.Query<Button>().ToList().Count, Is.EqualTo(host.ReadModel.Patches.Count(patch => patch.Role == LivePatchRole.Overlay)));
+			var sequencerControls = ui.Q<VisualElement>("sequencer-controls");
+			Assert.That(sequencerControls.Query<Button>(className: "sequencer-step").ToList(), Has.Count.EqualTo(3 * LiveStepSequencer.LaneCount * LiveStepSequencer.StepCount));
+			Assert.That(host.ToggleSequencerStep(LiveSequencerKind.Effect, 2, 4).Accepted, Is.True);
+			yield return null;
+			Assert.That(ui.Q<Button>("sequencer-effect-lane-2-step-4").ClassListContains("is-set"), Is.True);
 			Assert.That(ui.Q<Button>("patch-" + nextPatch.Id).ClassListContains("is-loaded"), Is.True);
 			var rememberedMainPatch = host.ReadModel.Patches.Last(patch => patch.Role == LivePatchRole.Main);
 			var rememberedOverlayPatch = host.ReadModel.Patches.First(patch => patch.Role == LivePatchRole.Overlay);

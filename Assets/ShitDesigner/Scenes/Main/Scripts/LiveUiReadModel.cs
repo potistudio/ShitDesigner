@@ -31,6 +31,7 @@ namespace ShitDesigner.Main {
 		public string PreloadedPatchId { get; }
 		public LiveParameterDefinition Bpm { get; }
 		public IReadOnlyList<LiveParameterDefinition> Parameters { get; }
+		public IReadOnlyList<LiveSequencerReadModel> Sequencers { get; }
 		public IReadOnlyList<LiveProgramFrame> ProgramFrames { get; }
 		public RenderTexture ProgramTexture { get; }
 		public ulong ProgramFrameNumber { get; }
@@ -45,7 +46,7 @@ namespace ShitDesigner.Main {
 		public LiveUiReadModel(ulong frameNumber, IReadOnlyList<LivePatchReadModel> patches, IReadOnlyList<LivePatchSlotReadModel> patchSlots, IReadOnlyList<RenderTexture> patchSlotPreviews,
 			int selectedPatchSlotIndex, string selectedCatalogPatchId,
 			string loadedPatchId, string preloadedPatchId,
-			LiveParameterDefinition bpm, IReadOnlyList<LiveParameterDefinition> parameters, LiveProgramFrames programFrames, LiveExternalDisplayOutput output,
+			LiveParameterDefinition bpm, IReadOnlyList<LiveParameterDefinition> parameters, IReadOnlyList<LiveSequencerReadModel> sequencers, LiveProgramFrames programFrames, LiveExternalDisplayOutput output,
 			LiveCapabilitySnapshot capabilities, string diagnostic, IReadOnlyList<LiveParameterApplicationResult> requestResults) {
 			FrameNumber = frameNumber;
 			Patches = patches ?? Array.Empty<LivePatchReadModel>();
@@ -57,6 +58,7 @@ namespace ShitDesigner.Main {
 			PreloadedPatchId = preloadedPatchId ?? string.Empty;
 			Bpm = bpm;
 			Parameters = parameters ?? Array.Empty<LiveParameterDefinition>();
+			Sequencers = sequencers ?? Array.Empty<LiveSequencerReadModel>();
 			ProgramFrames = programFrames.Frames;
 			ProgramTexture = programFrames.Primary.Texture;
 			ProgramFrameNumber = programFrames.Primary.FrameNumber;
