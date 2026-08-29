@@ -60,7 +60,9 @@ namespace ShitDesigner.Main {
 				_runtime = _graphBootstrap.CreateRuntime();
 				_shutdown.Add(() => { _runtime?.Dispose(); _runtime = null; });
 				_patchIds = _runtime.Patches.Select(patch => patch.Id).ToArray();
-				_patches = _runtime.Patches.Select(patch => new LivePatchReadModel(patch.Id, patch.DisplayName)).ToArray();
+				var mainPatchIds = new HashSet<string>(_graphBootstrap.MainPatches.Where(patch => patch != null).Select(patch => patch.Id), StringComparer.Ordinal);
+				_patches = _runtime.Patches.Select(patch => new LivePatchReadModel(patch.Id, patch.DisplayName,
+					mainPatchIds.Contains(patch.Id) ? LivePatchRole.Main : LivePatchRole.Overlay)).ToArray();
 				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, slotIndex => { LaunchPatchSlot(slotIndex); }, slotIndex => { ClearPatchSlot(slotIndex); }, MoveCatalogSelection, () => { QueueSelectedCatalogPatch(); }, TapBpm);
 				_midiInputManager.InitializeForHostPolling();
 				_shutdown.Add(_midiInputManager.Shutdown);

@@ -40,6 +40,7 @@ namespace ShitDesigner.Main {
 		private VisualElement _confirmationOverlay;
 		private string _renderedPatchId = string.Empty;
 		private string _centeredPatchId = string.Empty;
+		private int m_RenderedPatchCount = -1;
 		private bool _pendingOutputActive;
 		private bool _showingOutputError;
 		private bool _initialized;
@@ -121,6 +122,7 @@ namespace ShitDesigner.Main {
 			_output = null;
 			_renderedPatchId = string.Empty;
 			_centeredPatchId = string.Empty;
+			m_RenderedPatchCount = -1;
 			Array.Clear(m_PatchSlotPreviewTextures, 0, m_PatchSlotPreviewTextures.Length);
 		}
 
@@ -268,7 +270,7 @@ namespace ShitDesigner.Main {
 		}
 
 		private void RefreshPatchControls(LiveUiReadModel model) {
-			if (_patchControls.childCount != model.Patches.Count) {
+			if (m_RenderedPatchCount != model.Patches.Count) {
 				RebuildPatchControls(model);
 				_centeredPatchId = string.Empty;
 			}
@@ -289,8 +291,18 @@ namespace ShitDesigner.Main {
 
 		private void RebuildPatchControls(LiveUiReadModel model) {
 			_patchControls.Clear();
-			for (var index = 0; index < model.Patches.Count; index++) {
-				var patch = model.Patches[index];
+			AddPatchRow("patch-main-row", "MAIN", model.Patches.Where(patch => patch.Role == LivePatchRole.Main));
+			AddPatchRow("patch-overlay-row", "OVERLAY", model.Patches.Where(patch => patch.Role == LivePatchRole.Overlay));
+			m_RenderedPatchCount = model.Patches.Count;
+		}
+
+		private void AddPatchRow(string name, string label, IEnumerable<LivePatchReadModel> patches) {
+			var row = new VisualElement { name = name };
+			row.AddToClassList("patch-row");
+			var rowLabel = new Label(label);
+			rowLabel.AddToClassList("patch-row-label");
+			row.Add(rowLabel);
+			foreach (var patch in patches) {
 				var patchId = patch.Id;
 				var button = new Button(() => QueuePatch(patchId)) {
 					name = "patch-" + patchId,
@@ -298,8 +310,9 @@ namespace ShitDesigner.Main {
 					userData = patchId
 				};
 				button.AddToClassList("patch-button");
-				_patchControls.Add(button);
+				row.Add(button);
 			}
+			_patchControls.Add(row);
 		}
 
 		private void RefreshPatchSlotControls(LiveUiReadModel model) {

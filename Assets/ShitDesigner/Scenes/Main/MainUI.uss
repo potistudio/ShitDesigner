@@ -111,9 +111,34 @@
 }
 
 .patch-controls .unity-scroll-view__content-container {
-    flex-direction: row;
+    flex-direction: column;
     padding-left: 50%;
     padding-right: 50%;
+}
+
+.patch-row {
+    height: 32px;
+    min-height: 32px;
+    flex-direction: row;
+}
+
+.patch-row-label {
+    width: 56px;
+    min-width: 56px;
+    max-width: 56px;
+    height: 32px;
+    min-height: 32px;
+    padding-top: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    color: rgb(157, 167, 180);
+    background-color: rgb(21, 24, 29);
+    border-width: 1px;
+    border-color: rgb(48, 55, 65);
+    font-size: 9px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
 }
 
 .patch-dock {

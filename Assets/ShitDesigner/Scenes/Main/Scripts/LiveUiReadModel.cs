@@ -3,13 +3,20 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace ShitDesigner.Main {
+	public enum LivePatchRole {
+		Main,
+		Overlay
+	}
+
 	public readonly struct LivePatchReadModel {
 		public string Id { get; }
 		public string Name { get; }
+		public LivePatchRole Role { get; }
 
-		public LivePatchReadModel(string id, string name) {
+		public LivePatchReadModel(string id, string name, LivePatchRole role) {
 			Id = id;
 			Name = name;
+			Role = role;
 		}
 	}
 
