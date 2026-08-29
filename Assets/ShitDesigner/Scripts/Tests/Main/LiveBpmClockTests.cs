@@ -35,8 +35,9 @@ namespace ShitDesigner.Main.Tests {
 
 			clock.Advance(.625d);
 
-			var frame = ShaderBeatClock.Current;
+			var frame = clock.Frame;
 			Assert.That(frame.IsAvailable, Is.True);
+			Assert.That(frame.Bpm, Is.EqualTo(120f));
 			Assert.That(frame.BeatPhase, Is.EqualTo(.25f).Within(1e-6f));
 			Assert.That(frame.BarPhase, Is.EqualTo(.3125f).Within(1e-6f));
 		}

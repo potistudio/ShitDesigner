@@ -28,20 +28,9 @@ namespace ShitDesigner.Scene {
 		void AdvanceGraphClock(double deltaSeconds);
 	}
 
-	/// <summary>Describes the shared tempo clock at one live-graph evaluation point.</summary>
-	public readonly struct BpmClockState {
-		public float BeatsPerMinute { get; }
-		public double TotalBeats { get; }
-
-		public BpmClockState(float beatsPerMinute, double totalBeats) {
-			BeatsPerMinute = beatsPerMinute;
-			TotalBeats = totalBeats;
-		}
-	}
-
 	/// <summary>Receives the shared tempo clock immediately before an isolated Scene is rendered.</summary>
 	public interface IBpmClockReceiver {
-		void SetBpmClock(BpmClockState clock);
+		void SetBpmClock(BeatClockFrame frame);
 	}
 
 	/// <summary>One of the reserved user layers 8..31. Releasing the lease is
@@ -262,14 +251,14 @@ namespace ShitDesigner.Scene {
 			}
 		}
 
-		public UnitResult<Diagnostic> ApplyBpmClock(BpmClockState clock) {
-			if (float.IsNaN(clock.BeatsPerMinute) || float.IsInfinity(clock.BeatsPerMinute) || clock.BeatsPerMinute <= 0f
-				|| double.IsNaN(clock.TotalBeats) || double.IsInfinity(clock.TotalBeats) || clock.TotalBeats < 0d)
+		public UnitResult<Diagnostic> ApplyBpmClock(BeatClockFrame frame) {
+			if (!frame.IsAvailable || float.IsNaN(frame.Bpm) || float.IsInfinity(frame.Bpm) || frame.Bpm <= 0f
+				|| double.IsNaN(frame.TotalBeats) || double.IsInfinity(frame.TotalBeats) || frame.TotalBeats < 0d)
 				return AnimationFailure("scene.bpm-clock.state", "BPM clock values must be positive and finite.");
 			if (State != SceneLifecycleState.Ready)
 				return AnimationFailure("scene.bpm-clock.scene", "Scene node is not ready for BPM animation.");
 			try {
-				foreach (var receiver in _bpmClockReceivers) receiver.SetBpmClock(clock);
+				foreach (var receiver in _bpmClockReceivers) receiver.SetBpmClock(frame);
 				return UnitResult.Success<Diagnostic>();
 			}
 			catch (Exception exception) {

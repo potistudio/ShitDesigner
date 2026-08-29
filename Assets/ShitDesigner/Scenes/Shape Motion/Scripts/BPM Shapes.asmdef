@@ -2,6 +2,7 @@
 	"name": "BpmShapes",
 	"rootNamespace": "ShitDesigner.Scene",
 	"references": [
-		"ShitDesigner.Scene"
+		"ShitDesigner.Scene",
+		"ShitDesigner.Core"
 	]
 }

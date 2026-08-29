@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ShitDesigner.Core;
 using ShitDesigner.Scene;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -77,11 +78,11 @@ namespace ShitDesigner.Stage {
 			Gizmos.color = previousColor;
 		}
 
-		public void SetBpmClock(BpmClockState clock) {
-			if (double.IsNaN(clock.TotalBeats) || double.IsInfinity(clock.TotalBeats)) return;
+		public void SetBpmClock(BeatClockFrame frame) {
+			if (double.IsNaN(frame.TotalBeats) || double.IsInfinity(frame.TotalBeats)) return;
 
 			_usesExternalClock = true;
-			_totalBeats = clock.TotalBeats;
+			_totalBeats = frame.TotalBeats;
 		}
 
 		private void OnDestroy() {

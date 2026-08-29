@@ -1,4 +1,5 @@
 using System;
+using ShitDesigner.Core;
 using UnityEngine;
 
 namespace ShitDesigner.Scene {
@@ -46,8 +47,8 @@ namespace ShitDesigner.Scene {
 			_iconSize = Mathf.Max(.1f, _iconSize);
 		}
 
-		public void SetBpmClock(BpmClockState clock) {
-			_totalBeats = clock.TotalBeats;
+		public void SetBpmClock(BeatClockFrame frame) {
+			_totalBeats = frame.TotalBeats;
 			ApplyAnimation();
 		}
 

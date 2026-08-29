@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using NUnit.Framework;
+using ShitDesigner.Core;
 using ShitDesigner.Nodes;
 using ShitDesigner.Rendering;
 using UnityEditor;
@@ -106,7 +107,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 			var shader = asset.Find(entry.TypeId.Value).Shader;
 			var material = new Material(shader);
 			try {
-				ShaderBeatClock.Publish(3.25d);
+				ShaderBeatClock.Publish(new BeatClockFrame(120f, 3.25d));
 				var binding = new ShaderMaterialBinding(entry.ShaderKey, shader, descriptor: entry.ToShaderBinding());
 				ShaderRuntimeUniformApplier.Apply(material, binding, graphTime: 0d, deltaTime: 0d,
 					frameNumber: 1, width: 64, height: 64, seed: 0f);

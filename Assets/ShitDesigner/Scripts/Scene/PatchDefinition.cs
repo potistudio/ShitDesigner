@@ -232,6 +232,53 @@ namespace ShitDesigner.Scene {
 		ProgramGraphNode
 	}
 
+	public enum PatchBeatSignal {
+		BeatPulse
+	}
+
+	[Serializable]
+	public sealed class PatchBeatModulation {
+		[SerializeField] private bool m_Enabled;
+		[SerializeField] private PatchBeatSignal m_Signal = PatchBeatSignal.BeatPulse;
+		[SerializeField] private float m_Strength;
+		[SerializeField] private float m_Minimum;
+		[SerializeField] private float m_Maximum = 1f;
+
+		public bool IsEnabled => m_Enabled;
+		public PatchBeatSignal Signal => m_Signal;
+		public float Strength => m_Strength;
+		public float Minimum => m_Minimum;
+		public float Maximum => m_Maximum;
+
+		public PatchBeatModulation() { }
+
+		public PatchBeatModulation(bool enabled, float strength, float minimum = 0f, float maximum = 1f) {
+			m_Enabled = enabled;
+			m_Strength = strength;
+			m_Minimum = minimum;
+			m_Maximum = maximum;
+			if (Validate().IsFailure) throw new ArgumentException("Patch beat modulation values are invalid.");
+		}
+
+		public float Resolve(float baseValue, BeatClockFrame frame) {
+			if (!m_Enabled) return baseValue;
+			var signal = m_Signal == PatchBeatSignal.BeatPulse ? frame.BeatPulse : throw new InvalidOperationException("The beat modulation signal is unknown.");
+			return Mathf.Clamp(baseValue + signal * m_Strength, m_Minimum, m_Maximum);
+		}
+
+		public UnitResult<Diagnostic> Validate() {
+			if (!Enum.IsDefined(typeof(PatchBeatSignal), m_Signal))
+				return Failure("patch.definition.beat_modulation.signal", "A patch beat modulation signal is unknown.");
+			if (float.IsNaN(m_Strength) || float.IsInfinity(m_Strength) || float.IsNaN(m_Minimum) || float.IsInfinity(m_Minimum)
+				|| float.IsNaN(m_Maximum) || float.IsInfinity(m_Maximum) || m_Minimum > m_Maximum)
+				return Failure("patch.definition.beat_modulation.range", "A patch beat modulation requires finite ordered values.");
+			return UnitResult.Success<Diagnostic>();
+		}
+
+		private static UnitResult<Diagnostic> Failure(string code, string message)
+			=> UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "scene"));
+	}
+
 	[Serializable]
 	public sealed class PatchParameter {
 		[SerializeField] private string _id;
@@ -239,12 +286,14 @@ namespace ShitDesigner.Scene {
 		[SerializeField] private PatchParameterSource _source;
 		[SerializeField] private string _nodeId;
 		[SerializeField] private string _parameterId;
+		[SerializeField] private PatchBeatModulation m_BeatModulation = new PatchBeatModulation();
 
 		public string Id => _id ?? string.Empty;
 		public string DisplayName => _displayName ?? string.Empty;
 		public PatchParameterSource Source => _source;
 		public string NodeId => _nodeId ?? string.Empty;
 		public string ParameterId => _parameterId ?? string.Empty;
+		public PatchBeatModulation BeatModulation => m_BeatModulation;
 	}
 
 	[Serializable]
@@ -391,6 +440,8 @@ namespace ShitDesigner.Scene {
 				return Failure("patch.definition.parameter", "Published patch parameters require IDs, names, nodes, and source parameters.");
 			if (Parameters.GroupBy(parameter => parameter.Id, StringComparer.Ordinal).Any(group => group.Count() > 1)) return Failure("patch.definition.parameter_duplicate", "Published patch parameter IDs must be unique.");
 			foreach (var parameter in Parameters) {
+				if (parameter.BeatModulation != null && parameter.BeatModulation.Validate().IsFailure)
+					return Failure("patch.definition.parameter_modulation", "A published patch parameter has invalid beat modulation settings.");
 				if (parameter.Source == PatchParameterSource.SceneNode) {
 					if (!nodes.Any(node => string.Equals(node.Id, parameter.NodeId, StringComparison.Ordinal)))
 						return Failure("patch.definition.parameter_node", "A published patch parameter references an unknown scene node.");
@@ -402,6 +453,8 @@ namespace ShitDesigner.Scene {
 				var graphParameter = graphNode?.FindParameter(parameter.ParameterId);
 				if (graphParameter == null || !PatchGraphParameter.IsLiveControllable(graphParameter.Type))
 					return Failure("patch.definition.parameter_graph", "A published graph parameter must reference a configured parameter supported by the live renderer.");
+				if (parameter.BeatModulation != null && parameter.BeatModulation.IsEnabled && graphParameter.Type != ParameterType.Float)
+					return Failure("patch.definition.parameter_modulation_type", "Beat-modulated graph parameters must use the float type.");
 			}
 			if (KeyboardInputs.Any(binding => binding == null || binding.Validate().IsFailure)) return Failure("patch.definition.keyboard_input", "Every patch keyboard input must be valid.");
 			if (KeyboardInputs.Any(binding => !Parameters.Any(parameter => parameter != null && string.Equals(parameter.Id, binding.ParameterId, StringComparison.Ordinal))))

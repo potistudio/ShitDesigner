@@ -595,6 +595,7 @@ namespace ShitDesigner.Editor {
 			var source = property.FindPropertyRelative("_source");
 			var nodeId = property.FindPropertyRelative("_nodeId");
 			var parameterId = property.FindPropertyRelative("_parameterId");
+			var beatModulation = property.FindPropertyRelative("m_BeatModulation");
 			var y = position.y;
 			property.isExpanded = EditorGUI.Foldout(Line(position, ref y), property.isExpanded, label, true);
 			if (property.isExpanded) {
@@ -618,6 +619,7 @@ namespace ShitDesigner.Editor {
 				var parameters = isGraphNode ? GetGraphParameters(graphNodes, nodeId.stringValue) : GetSceneParameters(selectedNode?.Definition);
 				if (nodeChanged && parameters.Count > 0) parameterId.stringValue = parameters[0].Id;
 				DrawParameterPopup(Line(position, ref y), parameterId, parameters);
+				EditorGUI.PropertyField(new Rect(position.x, y, position.width, EditorGUI.GetPropertyHeight(beatModulation, true)), beatModulation, new GUIContent("Beat Modulation"), true);
 				EditorGUI.indentLevel = indent;
 			}
 			EditorGUI.EndProperty();
@@ -625,7 +627,7 @@ namespace ShitDesigner.Editor {
 
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
 			=> property.isExpanded
-				? EditorGUIUtility.singleLineHeight * 6f + LineSpacing * 5f
+				? EditorGUIUtility.singleLineHeight * 6f + LineSpacing * 6f + EditorGUI.GetPropertyHeight(property.FindPropertyRelative("m_BeatModulation"), true)
 				: EditorGUIUtility.singleLineHeight;
 
 		private static bool DrawNodePopup(Rect position, SerializedProperty nodeId, List<SceneNodeOption> nodes) {
