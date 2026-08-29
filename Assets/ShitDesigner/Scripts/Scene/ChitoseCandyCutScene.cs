@@ -27,7 +27,6 @@ namespace ShitDesigner.Scene {
 			public float RearBasePosition { get; }
 			public float FrontBasePosition { get; }
 			public Vector3 FrontImpulse { get; }
-			public bool IsCut { get; set; }
 
 			public Candy(Transform rearSegment, Transform frontSegment, Transform rearCutFace, Transform frontCutFace,
 				Rigidbody frontBody, float rearBasePosition, float frontBasePosition,
@@ -82,13 +81,13 @@ namespace ShitDesigner.Scene {
 		private bool m_RebuildRequested = true;
 		private double m_AdjustedTotalBeats;
 		private long m_LastProcessedBeat = long.MinValue;
-		private int m_NextCandyIndex;
+		private bool m_CutActivated;
 		private bool m_UsesExternalClock;
 
 		private void OnEnable() {
 			m_AdjustedTotalBeats = 0d;
 			m_LastProcessedBeat = long.MinValue;
-			m_NextCandyIndex = 0;
+			m_CutActivated = false;
 			m_UsesExternalClock = false;
 			Rebuild();
 		}
@@ -139,7 +138,7 @@ namespace ShitDesigner.Scene {
 		public void Rebuild() {
 			m_RebuildRequested = false;
 			m_LastProcessedBeat = long.MinValue;
-			m_NextCandyIndex = 0;
+			m_CutActivated = false;
 			ReleaseGeneratedContent();
 
 			m_GeneratedRoot = new GameObject("Generated Chitose Candy").transform;
@@ -284,28 +283,30 @@ namespace ShitDesigner.Scene {
 				return;
 			}
 
-			var crossedBeats = beatIndex - m_LastProcessedBeat;
-			for (var index = 0L; index < crossedBeats; index++)
-				CutNextCandy();
+			if (beatIndex > m_LastProcessedBeat)
+				CutAllCandies();
 			m_LastProcessedBeat = beatIndex;
 		}
 
-		private void CutNextCandy() {
-			if (m_NextCandyIndex >= m_Candies.Count)
+		private void CutAllCandies() {
+			if (m_CutActivated)
 				return;
 
-			var candy = m_Candies[m_NextCandyIndex++];
-			if (candy.IsCut)
-				return;
-
-			candy.IsCut = true;
+			m_CutActivated = true;
 			var splitOffset = m_SplitGap * 0.5f;
-			candy.RearSegment.localPosition = Vector3.up * (candy.RearBasePosition - splitOffset);
-			candy.FrontSegment.localPosition = Vector3.up * (candy.FrontBasePosition + splitOffset);
-			candy.RearCutFace.gameObject.SetActive(true);
-			candy.FrontCutFace.gameObject.SetActive(true);
-			if (Application.isPlaying) {
-				Physics.SyncTransforms();
+			for (var index = 0; index < m_Candies.Count; index++) {
+				var candy = m_Candies[index];
+				candy.RearSegment.localPosition = Vector3.up * (candy.RearBasePosition - splitOffset);
+				candy.FrontSegment.localPosition = Vector3.up * (candy.FrontBasePosition + splitOffset);
+				candy.RearCutFace.gameObject.SetActive(true);
+				candy.FrontCutFace.gameObject.SetActive(true);
+			}
+			if (!Application.isPlaying)
+				return;
+
+			Physics.SyncTransforms();
+			for (var index = 0; index < m_Candies.Count; index++) {
+				var candy = m_Candies[index];
 				ActivatePhysics(candy.FrontBody, candy.FrontImpulse);
 			}
 		}
