@@ -65,12 +65,11 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(identifyButton, Is.Not.Null);
 			Assert.That(outputButton.parent.parent, Is.SameAs(topBar));
 			Assert.That(identifyButton.parent.parent, Is.SameAs(topBar));
-			var mainPatchRow = ui.Q<VisualElement>("patch-main-row");
-			var overlayPatchRow = ui.Q<VisualElement>("patch-overlay-row");
-			Assert.That(mainPatchRow, Is.Not.Null);
-			Assert.That(overlayPatchRow, Is.Not.Null);
-			Assert.That(mainPatchRow.Query<Button>().ToList().Count, Is.EqualTo(host.ReadModel.Patches.Count(patch => patch.Role == LivePatchRole.Main)));
-			Assert.That(overlayPatchRow.Query<Button>().ToList().Count, Is.EqualTo(host.ReadModel.Patches.Count(patch => patch.Role == LivePatchRole.Overlay)));
+			var patchRoleLabels = ui.Q<VisualElement>("patch-role-labels");
+			Assert.That(patchRoleLabels, Is.Not.Null);
+			Assert.That(patchRoleLabels.Query<Label>().ToList().Select(label => label.text), Is.EqualTo(new[] { "MAIN", "OVERLAY" }));
+			Assert.That(ui.Query<Button>(className: "patch-main-button").ToList().Count, Is.EqualTo(host.ReadModel.Patches.Count(patch => patch.Role == LivePatchRole.Main)));
+			Assert.That(ui.Query<Button>(className: "patch-overlay-button").ToList().Count, Is.EqualTo(host.ReadModel.Patches.Count(patch => patch.Role == LivePatchRole.Overlay)));
 			Assert.That(ui.Q<Button>("patch-" + nextPatch.Id).ClassListContains("is-loaded"), Is.True);
 
 			var midi = (Component)typeof(ApplicationLiveHost).GetField("_midiInputManager", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(host);

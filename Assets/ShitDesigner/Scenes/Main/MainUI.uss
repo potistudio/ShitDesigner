@@ -111,26 +111,33 @@
 }
 
 .patch-controls .unity-scroll-view__content-container {
-    flex-direction: column;
+    flex-direction: row;
     padding-left: 50%;
     padding-right: 50%;
 }
 
-.patch-row {
-    height: 32px;
-    min-height: 32px;
-    flex-direction: row;
-    align-self: flex-start;
+.patch-column {
+    width: 160px;
+    min-width: 160px;
+    max-width: 160px;
+    flex-direction: column;
     flex-shrink: 0;
 }
 
-.patch-row-label {
+.patch-role-labels {
     width: 56px;
     min-width: 56px;
     max-width: 56px;
+}
+
+.patch-role-label,
+.patch-cell-spacer {
     height: 32px;
     min-height: 32px;
     flex-shrink: 0;
+}
+
+.patch-role-label {
     padding-top: 0;
     padding-right: 0;
     padding-bottom: 0;
