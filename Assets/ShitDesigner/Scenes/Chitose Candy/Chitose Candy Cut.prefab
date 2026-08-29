@@ -57,6 +57,7 @@ MonoBehaviour:
   - {r: 0.98, g: 0.91, b: 0.04, a: 1}
   - {r: 0.03, g: 0.86, b: 0.58, a: 1}
   - {r: 0.92, g: 0.17, b: 0.43, a: 1}
+  m_PreviewBpm: 138
   m_CutPieceLength: 1.75
   m_SplitGap: 0.55
   m_HorizontalImpulse: 0.9
