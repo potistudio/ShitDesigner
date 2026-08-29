@@ -82,6 +82,7 @@ namespace ShitDesigner.Scene {
 		private Material m_FaceMaterial;
 		private Vector3 m_CandyAxisRuntime;
 		private float m_FragmentLength;
+		private System.Random m_RuntimeRandom;
 		private int m_CutLayerIndex;
 		private bool m_PushPending;
 		private bool m_PushAnimating;
@@ -178,6 +179,7 @@ namespace ShitDesigner.Scene {
 				: m_CandyAxis.normalized;
 
 			m_FragmentLength = m_CandyLength / CandyDivisionCount;
+			m_RuntimeRandom = new System.Random(m_RandomSeed);
 			m_FragmentBodyMesh = BuildCylinderMesh(m_FragmentLength, m_CandyRadius, 18);
 			m_DiscMesh = BuildCylinderMesh(1f, 1f, 24);
 			m_PatternMeshes = BuildPatternMeshes();
@@ -210,7 +212,7 @@ namespace ShitDesigner.Scene {
 		}
 
 		private void CreateCandies() {
-			var random = new System.Random(m_RandomSeed);
+			var random = m_RuntimeRandom;
 			var columns = Mathf.CeilToInt(Mathf.Sqrt(m_CandyCount));
 			var rows = Mathf.CeilToInt(m_CandyCount / (float)columns);
 			var xStep = columns <= 1 ? 0f : m_FieldSize.x / (columns - 1f);
@@ -228,6 +230,16 @@ namespace ShitDesigner.Scene {
 				var candy = CreateCandy(index, frontPosition, axis.normalized, random);
 				m_Candies.Add(candy);
 			}
+		}
+
+		private void AddNewCandy() {
+			var random = m_RuntimeRandom;
+			var frontPosition = new Vector3(
+				NextFloat(random, -m_FieldSize.x * 0.5f, m_FieldSize.x * 0.5f),
+				NextFloat(random, -m_FieldSize.y * 0.5f, m_FieldSize.y * 0.5f),
+				NextFloat(random, -0.18f, 0.18f));
+			var axis = Quaternion.AngleAxis(NextFloat(random, -2.5f, 2.5f), Vector3.forward) * m_CandyAxisRuntime;
+			m_Candies.Add(CreateCandy(m_Candies.Count, frontPosition, axis.normalized, random));
 		}
 
 		private Candy CreateCandy(int index, Vector3 frontPosition, Vector3 axis, System.Random random) {
@@ -379,6 +391,8 @@ namespace ShitDesigner.Scene {
 				var fragment = candy.Fragments[layerIndex];
 				ActivatePhysics(fragment.Body, fragment.Impulse);
 			}
+			if (layerIndex == CandyDivisionCount - 1)
+				AddNewCandy();
 		}
 
 		private void PushCutLayer(int layerIndex, float progress) {
