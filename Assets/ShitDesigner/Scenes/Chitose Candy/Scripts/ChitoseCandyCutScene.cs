@@ -391,7 +391,7 @@ namespace ShitDesigner.Scene {
 				var fragment = candy.Fragments[layerIndex];
 				ActivatePhysics(fragment.Body, fragment.Impulse);
 			}
-			if (layerIndex == CandyDivisionCount - 1)
+			if (m_RuntimeRandom.Next(2) == 0)
 				AddNewCandy();
 		}
 
