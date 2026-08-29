@@ -1,16 +1,18 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Video;
 
 namespace ShitDesigner.Scene {
-	/// <summary>Moves an image or video surface within the orthographic camera bounds and changes its tint at each impact.</summary>
+	/// <summary>Moves multiple image or video surfaces independently within orthographic camera bounds.</summary>
 	[DisallowMultipleComponent]
 	public sealed class DvdBounceScene : MonoBehaviour {
 		[Header("Visual")]
 		[SerializeField] private Texture2D m_Image;
 		[SerializeField] private VideoClip m_Video;
 		[Min(0.01f)][SerializeField] private float m_VisualSize = 1.6f;
+		[Range(1, 32)][SerializeField] private int m_InstanceCount = 1;
 
 		[Header("Video")]
 		[Min(0f)][SerializeField] private float m_VideoPlaybackSpeed = 1f;
@@ -20,98 +22,127 @@ namespace ShitDesigner.Scene {
 		[SerializeField] private Vector2 m_InitialDirection = new Vector2(1f, 0.63f);
 		[SerializeField] private Vector2 m_InitialPosition = Vector2.zero;
 
+		private readonly List<BouncingVisual> m_Visuals = new List<BouncingVisual>();
 		private Camera m_Camera;
-		private GameObject m_VisualObject;
-		private Material m_Material;
-		private MeshRenderer m_Renderer;
-		private VideoPlayer m_VideoPlayer;
-		private Vector2 m_Velocity;
 
 		private void Awake() {
 			m_Camera = Camera.main;
 			if (m_Camera == null)
 				m_Camera = FindFirstObjectByType<Camera>();
-			CreateVisual();
+			CreateVisuals();
 		}
 
 		private void Start() {
-			transform.position = new Vector3(m_InitialPosition.x, m_InitialPosition.y, 0f);
-			m_Velocity = GetInitialVelocity();
-			KeepWithinBounds();
-			if (m_VideoPlayer != null)
-				m_VideoPlayer.Play();
+			InitializeVisuals();
 		}
 
 		private void Update() {
-			if (m_Camera == null || m_Renderer == null)
+			if (m_Camera == null)
 				return;
 
-			var position = (Vector2)transform.position + m_Velocity * Time.unscaledDeltaTime;
-			var bounds = GetMovementBounds();
-			ReflectWithinBounds(ref position, ref m_Velocity, bounds);
-			transform.position = new Vector3(position.x, position.y, 0f);
+			for (var index = 0; index < m_Visuals.Count; index++) {
+				var visual = m_Visuals[index];
+				var position = (Vector2)visual.Object.transform.position + visual.Velocity * Time.unscaledDeltaTime;
+				ReflectWithinBounds(ref position, ref visual.Velocity, GetMovementBounds(visual.Renderer));
+				visual.Object.transform.position = new Vector3(position.x, position.y, 0f);
+			}
 		}
 
 		private void OnDestroy() {
-			ReleaseVisual();
+			ReleaseVisuals();
 		}
 
 		private void OnValidate() {
 			m_VisualSize = Mathf.Max(0.01f, m_VisualSize);
+			m_InstanceCount = Mathf.Clamp(m_InstanceCount, 1, 32);
 			m_VideoPlaybackSpeed = Mathf.Max(0f, m_VideoPlaybackSpeed);
 			m_Speed = Mathf.Max(0.01f, m_Speed);
 			if (m_InitialDirection.sqrMagnitude < 0.0001f)
 				m_InitialDirection = new Vector2(1f, 0.63f);
-			if (m_VisualObject != null) {
-				m_VisualObject.transform.localScale = ToScale(GetVisualSize());
-				ApplyImage();
+
+			for (var index = 0; index < m_Visuals.Count; index++) {
+				var visual = m_Visuals[index];
+				visual.Object.transform.localScale = ToScale(GetVisualSize());
+				ApplyImage(visual);
+				if (visual.VideoPlayer != null)
+					visual.VideoPlayer.playbackSpeed = m_VideoPlaybackSpeed;
 			}
-			if (m_VideoPlayer != null)
-				m_VideoPlayer.playbackSpeed = m_VideoPlaybackSpeed;
 		}
 
-		private void CreateVisual() {
-			ReleaseVisual();
-			m_VisualObject = GameObject.CreatePrimitive(PrimitiveType.Quad);
-			m_VisualObject.name = "Bouncing Visual";
-			m_VisualObject.transform.SetParent(transform, false);
-			m_VisualObject.transform.localScale = ToScale(GetVisualSize());
-			var collider = m_VisualObject.GetComponent<Collider>();
+		[ContextMenu("Rebuild Visuals")]
+		public void Rebuild() {
+			CreateVisuals();
+			if (Application.isPlaying)
+				InitializeVisuals();
+		}
+
+		private void CreateVisuals() {
+			ReleaseVisuals();
+			for (var index = 0; index < m_InstanceCount; index++)
+				m_Visuals.Add(CreateVisual(index));
+		}
+
+		private BouncingVisual CreateVisual(int index) {
+			var visualObject = GameObject.CreatePrimitive(PrimitiveType.Quad);
+			visualObject.name = $"Bouncing Visual {index + 1:00}";
+			visualObject.layer = gameObject.layer;
+			visualObject.transform.SetParent(transform, false);
+			visualObject.transform.localScale = ToScale(GetVisualSize());
+			var collider = visualObject.GetComponent<Collider>();
 			if (collider != null)
 				Destroy(collider);
 
-			m_Renderer = m_VisualObject.GetComponent<MeshRenderer>();
-			m_Material = CreateMaterial();
-			m_Renderer.sharedMaterial = m_Material;
-			m_Renderer.shadowCastingMode = ShadowCastingMode.Off;
-			m_Renderer.receiveShadows = false;
-			m_Renderer.allowOcclusionWhenDynamic = false;
-			m_Renderer.sortingOrder = 1;
-			ApplyImage();
-			ConfigureVideo();
+			var renderer = visualObject.GetComponent<MeshRenderer>();
+			var material = CreateMaterial();
+			renderer.sharedMaterial = material;
+			renderer.shadowCastingMode = ShadowCastingMode.Off;
+			renderer.receiveShadows = false;
+			renderer.allowOcclusionWhenDynamic = false;
+			renderer.sortingOrder = 1;
+
+			var visual = new BouncingVisual(visualObject, renderer, material);
+			ApplyImage(visual);
+			ConfigureVideo(visual);
+			return visual;
 		}
 
-		private void ConfigureVideo() {
+		private void InitializeVisuals() {
+			if (m_Camera == null)
+				return;
+
+			for (var index = 0; index < m_Visuals.Count; index++) {
+				var visual = m_Visuals[index];
+				var position = index == 0 ? m_InitialPosition : GetSpawnPosition(index, visual.Renderer);
+				visual.Object.transform.position = new Vector3(position.x, position.y, 0f);
+				visual.Velocity = GetInitialVelocity(index);
+				KeepWithinBounds(visual);
+				if (visual.VideoPlayer != null)
+					visual.VideoPlayer.Play();
+			}
+		}
+
+		private void ConfigureVideo(BouncingVisual visual) {
 			if (m_Video == null)
 				return;
 
-			m_VideoPlayer = m_VisualObject.AddComponent<VideoPlayer>();
-			m_VideoPlayer.source = VideoSource.VideoClip;
-			m_VideoPlayer.clip = m_Video;
-			m_VideoPlayer.renderMode = VideoRenderMode.MaterialOverride;
-			m_VideoPlayer.targetMaterialRenderer = m_Renderer;
-			m_VideoPlayer.targetMaterialProperty = GetTexturePropertyName(m_Material);
-			m_VideoPlayer.audioOutputMode = VideoAudioOutputMode.None;
-			m_VideoPlayer.isLooping = true;
-			m_VideoPlayer.playOnAwake = false;
-			m_VideoPlayer.playbackSpeed = m_VideoPlaybackSpeed;
+			var player = visual.Object.AddComponent<VideoPlayer>();
+			player.source = VideoSource.VideoClip;
+			player.clip = m_Video;
+			player.renderMode = VideoRenderMode.MaterialOverride;
+			player.targetMaterialRenderer = visual.Renderer;
+			player.targetMaterialProperty = GetTexturePropertyName(visual.Material);
+			player.audioOutputMode = VideoAudioOutputMode.None;
+			player.isLooping = true;
+			player.playOnAwake = false;
+			player.playbackSpeed = m_VideoPlaybackSpeed;
+			visual.VideoPlayer = player;
 		}
 
-		private void ApplyImage() {
-			if (m_Material == null || m_Video != null)
+		private void ApplyImage(BouncingVisual visual) {
+			if (m_Video != null)
 				return;
 
-			m_Material.SetTexture(GetTexturePropertyName(m_Material), m_Image == null ? Texture2D.whiteTexture : m_Image);
+			visual.Material.SetTexture(GetTexturePropertyName(visual.Material), m_Image == null ? Texture2D.whiteTexture : m_Image);
 		}
 
 		private Vector2 GetVisualSize() {
@@ -134,27 +165,33 @@ namespace ShitDesigner.Scene {
 			return new Vector3(size.x, size.y, 1f);
 		}
 
-		private Vector2 GetInitialVelocity() {
-			return m_InitialDirection.normalized * m_Speed;
+		private Vector2 GetInitialVelocity(int index) {
+			var direction = Quaternion.Euler(0f, 0f, index * 137.5f) * m_InitialDirection;
+			return direction.normalized * m_Speed;
 		}
 
-		private Bounds2D GetMovementBounds() {
+		private Vector2 GetSpawnPosition(int index, MeshRenderer renderer) {
+			var bounds = GetMovementBounds(renderer);
+			var horizontalProgress = Mathf.Repeat(index * 0.618034f, 1f);
+			var verticalProgress = Mathf.Repeat(index * 0.414214f, 1f);
+			return new Vector2(
+				Mathf.Lerp(bounds.Minimum.x, bounds.Maximum.x, horizontalProgress),
+				Mathf.Lerp(bounds.Minimum.y, bounds.Maximum.y, verticalProgress));
+		}
+
+		private Bounds2D GetMovementBounds(MeshRenderer renderer) {
 			var cameraHalfHeight = m_Camera.orthographicSize;
 			var cameraHalfWidth = cameraHalfHeight * m_Camera.aspect;
-			var visualExtents = m_Renderer.bounds.extents;
+			var visualExtents = renderer.bounds.extents;
 			return new Bounds2D(
 				new Vector2(-cameraHalfWidth + visualExtents.x, -cameraHalfHeight + visualExtents.y),
 				new Vector2(cameraHalfWidth - visualExtents.x, cameraHalfHeight - visualExtents.y));
 		}
 
-		private void KeepWithinBounds() {
-			if (m_Camera == null || m_Renderer == null)
-				return;
-
-			var position = (Vector2)transform.position;
-			var bounds = GetMovementBounds();
-			ReflectWithinBounds(ref position, ref m_Velocity, bounds);
-			transform.position = new Vector3(position.x, position.y, 0f);
+		private void KeepWithinBounds(BouncingVisual visual) {
+			var position = (Vector2)visual.Object.transform.position;
+			ReflectWithinBounds(ref position, ref visual.Velocity, GetMovementBounds(visual.Renderer));
+			visual.Object.transform.position = new Vector3(position.x, position.y, 0f);
 		}
 
 		private static void ReflectWithinBounds(ref Vector2 position, ref Vector2 velocity, Bounds2D bounds) {
@@ -168,15 +205,15 @@ namespace ShitDesigner.Scene {
 			}
 		}
 
-		private void ReleaseVisual() {
-			if (m_VisualObject != null)
-				Destroy(m_VisualObject);
-			if (m_Material != null)
-				Destroy(m_Material);
-			m_VisualObject = null;
-			m_Material = null;
-			m_Renderer = null;
-			m_VideoPlayer = null;
+		private void ReleaseVisuals() {
+			for (var index = 0; index < m_Visuals.Count; index++) {
+				var visual = m_Visuals[index];
+				if (visual.Object != null)
+					Destroy(visual.Object);
+				if (visual.Material != null)
+					Destroy(visual.Material);
+			}
+			m_Visuals.Clear();
 		}
 
 		private static Material CreateMaterial() {
@@ -202,6 +239,20 @@ namespace ShitDesigner.Scene {
 
 		private static string GetTexturePropertyName(Material material) {
 			return material.HasProperty("_BaseMap") ? "_BaseMap" : "_MainTex";
+		}
+
+		private sealed class BouncingVisual {
+			public GameObject Object { get; }
+			public MeshRenderer Renderer { get; }
+			public Material Material { get; }
+			public VideoPlayer VideoPlayer { get; set; }
+			public Vector2 Velocity { get; set; }
+
+			public BouncingVisual(GameObject visualObject, MeshRenderer renderer, Material material) {
+				Object = visualObject;
+				Renderer = renderer;
+				Material = material;
+			}
 		}
 
 		private readonly struct Bounds2D {
