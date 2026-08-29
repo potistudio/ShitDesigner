@@ -116,7 +116,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 		}
 
 		[UnityTest]
-		public IEnumerator RecursiveRectangles_ChildrenRevealInTheSameDirection() {
+		public IEnumerator RecursiveRectangles_ChildrenAlwaysRevealLeftToRight() {
 			RequireGraphicsDevice();
 			var material = CreateMaterial();
 			try {
@@ -139,6 +139,15 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 				Assert.That(halfway[row + 56], Is.EqualTo(root[row + 56]));
 				Assert.That(halfway[row + 8], Is.Not.EqualTo(root[row + 8]));
 				Assert.That(halfway[row + 40], Is.Not.EqualTo(root[row + 40]));
+
+				material.SetInt("_AxisMode", 1);
+				Color32[] verticalSplit = null;
+				yield return Render(material, 64, 8, result => verticalSplit = result);
+
+				Assert.That(verticalSplit[2 * 64 + 48], Is.EqualTo(root[2 * 64 + 48]));
+				Assert.That(verticalSplit[6 * 64 + 48], Is.EqualTo(root[6 * 64 + 48]));
+				Assert.That(verticalSplit[2 * 64 + 16], Is.Not.EqualTo(root[2 * 64 + 16]));
+				Assert.That(verticalSplit[6 * 64 + 16], Is.Not.EqualTo(root[6 * 64 + 16]));
 			}
 			finally { UnityEngine.Object.DestroyImmediate(material); }
 		}

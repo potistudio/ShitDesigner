@@ -188,8 +188,7 @@ Shader "Hidden/ShitDesigner/RecursiveRectangles"
 					{
 						float2 animatedMin = childMin;
 						float2 animatedMax = childMax;
-						if (axis == 0) animatedMax.x = lerp(childMin.x, childMax.x, eased);
-						else animatedMax.y = lerp(childMin.y, childMax.y, eased);
+						animatedMax.x = lerp(childMin.x, childMax.x, eased);
 						bool inside = localProgress > 0.0 && all(input.uv >= animatedMin) && all(input.uv <= animatedMax);
 						if (inside) color = PathColor(seed, childPath);
 						break;
