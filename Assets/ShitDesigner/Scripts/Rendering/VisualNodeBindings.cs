@@ -21,6 +21,7 @@ namespace ShitDesigner.Rendering {
 		public const string BeatPulse = "_SD_BeatPulse";
 		public const string BarPhase = "_SD_BarPhase";
 		public const string BeatIndex = "_SD_BeatIndex";
+		public const string BeatDuration = "_SD_BeatDuration";
 		public const string HasBeatClock = "_SD_HasBeatClock";
 		public const string Pointer = "_SD_Pointer";
 		// Family shader compatibility aliases.  The neutral runtime names
@@ -181,6 +182,8 @@ namespace ShitDesigner.Rendering {
 				material.SetFloat(ShaderFrameUniformNames.HasBeatClock, beat.IsAvailable ? 1f : 0f);
 				material.SetFloat(ShaderFrameUniformNames.BeatIndex,
 					beat.IsAvailable ? FiniteFloat(Math.Floor(beat.AdjustedTotalBeats)) : 0f);
+				material.SetFloat(ShaderFrameUniformNames.BeatDuration,
+					beat.IsAvailable ? 60f / beat.Bpm : 0f);
 			}
 			material.SetVector(ShaderFrameUniformNames.Pointer, Vector4.zero);
 			material.SetFloat(ShaderFrameUniformNames.VjVariant, binding.SourceVariant);

@@ -143,6 +143,36 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 		}
 
 		[UnityTest]
+		public IEnumerator RecursiveRectangles_SplitDurationControlsBeatSynchronizedSpeed() {
+			RequireGraphicsDevice();
+			var material = CreateMaterial();
+			try {
+				Configure(material);
+				material.SetInt("_StructureSeed", 5);
+				material.SetInt("_MaxDepth", 1);
+				material.SetInt("_AxisMode", 2);
+				material.SetFloat("_RatioMin", .5f);
+				material.SetFloat("_RatioMax", .5f);
+				material.SetFloat("_Gutter", 0f);
+				material.SetFloat("_BeatSync", 1f);
+				material.SetFloat("_SD_HasBeatClock", 1f);
+				material.SetFloat("_SD_BeatDuration", 1f);
+				material.SetFloat("_SD_BeatPhase", .5f);
+
+				material.SetFloat("_SplitDuration", .25f);
+				Color32[] fast = null;
+				yield return Render(material, 64, 8, result => fast = result);
+
+				material.SetFloat("_SplitDuration", 1f);
+				Color32[] slow = null;
+				yield return Render(material, 64, 8, result => slow = result);
+
+				Assert.That(fast.Count(pixel => pixel.a > 0), Is.GreaterThan(slow.Count(pixel => pixel.a > 0)));
+			}
+			finally { UnityEngine.Object.DestroyImmediate(material); }
+		}
+
+		[UnityTest]
 		public IEnumerator RecursiveRectangles_ChildrenAlwaysRevealLeftToRight() {
 			RequireGraphicsDevice();
 			var material = CreateMaterial();
