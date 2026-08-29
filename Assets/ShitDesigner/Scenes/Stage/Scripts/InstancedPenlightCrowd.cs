@@ -33,7 +33,7 @@ namespace ShitDesigner.Stage {
 
 		private readonly List<Batch> _batches = new();
 		private Mesh _mesh;
-		private double _totalBeats;
+		private double m_AdjustedTotalBeats;
 		private bool _usesExternalClock;
 
 		private void OnEnable() {
@@ -41,12 +41,12 @@ namespace ShitDesigner.Stage {
 		}
 
 		private void Update() {
-			if (!_usesExternalClock) _totalBeats += Time.unscaledDeltaTime * _previewBpm / 60d;
+			if (!_usesExternalClock) m_AdjustedTotalBeats += Time.unscaledDeltaTime * _previewBpm / 60d;
 			if (_batches.Count == 0) Rebuild();
 			if (_mesh == null || _material == null || !SystemInfo.supportsInstancing) return;
 
 			foreach (var batch in _batches) {
-				batch.Properties.SetFloat(BeatPositionId, (float)_totalBeats);
+				batch.Properties.SetFloat(BeatPositionId, (float)m_AdjustedTotalBeats);
 				Graphics.DrawMeshInstanced(
 					_mesh,
 					0,
@@ -82,7 +82,7 @@ namespace ShitDesigner.Stage {
 			if (double.IsNaN(frame.TotalBeats) || double.IsInfinity(frame.TotalBeats)) return;
 
 			_usesExternalClock = true;
-			_totalBeats = frame.TotalBeats;
+			m_AdjustedTotalBeats = frame.AdjustedTotalBeats;
 		}
 
 		private void OnDestroy() {

@@ -9,6 +9,7 @@ namespace ShitDesigner.Main {
 		LaunchPatch,
 		SetParameter,
 		SetBpm,
+		SetBeatOffset,
 		TriggerFlash
 	}
 
@@ -75,6 +76,9 @@ namespace ShitDesigner.Main {
 		public LiveParameterEnqueueResult EnqueueSetBpm(float bpm)
 			=> Enqueue(LiveParameterRequestKind.SetBpm, string.Empty, string.Empty, ParameterValue.FromFloat(bpm));
 
+		public LiveParameterEnqueueResult EnqueueSetBeatOffset(float milliseconds)
+			=> Enqueue(LiveParameterRequestKind.SetBeatOffset, string.Empty, string.Empty, ParameterValue.FromFloat(milliseconds));
+
 		public LiveParameterEnqueueResult EnqueueTriggerFlash(string patchId)
 			=> Enqueue(LiveParameterRequestKind.TriggerFlash, patchId, string.Empty, ParameterValue.FromFloat(0f));
 
@@ -88,7 +92,7 @@ namespace ShitDesigner.Main {
 
 		private LiveParameterEnqueueResult Enqueue(LiveParameterRequestKind kind, string patchId, string parameterId, ParameterValue value) {
 			if (_requests.Count >= Capacity) return LiveParameterEnqueueResult.Reject("The live parameter queue is full.");
-			if (kind != LiveParameterRequestKind.SetBpm && string.IsNullOrWhiteSpace(patchId)) return LiveParameterEnqueueResult.Reject("A patch ID is required.");
+			if (!IsGlobalRequest(kind) && string.IsNullOrWhiteSpace(patchId)) return LiveParameterEnqueueResult.Reject("A patch ID is required.");
 			if (kind == LiveParameterRequestKind.SetParameter && string.IsNullOrWhiteSpace(parameterId))
 				return LiveParameterEnqueueResult.Reject("A parameter ID is required.");
 
@@ -96,6 +100,9 @@ namespace ShitDesigner.Main {
 			_requests.Enqueue(new LiveParameterRequest(sequenceNumber, kind, patchId, parameterId, value));
 			return LiveParameterEnqueueResult.Accept(sequenceNumber);
 		}
+
+		private static bool IsGlobalRequest(LiveParameterRequestKind kind)
+			=> kind == LiveParameterRequestKind.SetBpm || kind == LiveParameterRequestKind.SetBeatOffset;
 
 		private ulong NextSequenceNumber() {
 			var sequenceNumber = _nextSequenceNumber++;

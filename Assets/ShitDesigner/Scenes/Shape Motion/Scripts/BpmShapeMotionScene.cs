@@ -21,7 +21,7 @@ namespace ShitDesigner.Scene {
 		private float _targetSize;
 		private float _startAngle;
 		private float _rotation;
-		private double _totalBeats;
+		private double m_AdjustedTotalBeats;
 		private long _configuredBeat = long.MinValue;
 		private bool _usesExternalClock;
 
@@ -31,7 +31,7 @@ namespace ShitDesigner.Scene {
 
 		private void Update() {
 			if (_usesExternalClock) return;
-			_totalBeats += Time.unscaledDeltaTime * _previewBpm / 60d;
+			m_AdjustedTotalBeats += Time.unscaledDeltaTime * _previewBpm / 60d;
 			ApplyAnimation();
 		}
 
@@ -49,7 +49,7 @@ namespace ShitDesigner.Scene {
 
 		public void SetBpmClock(BeatClockFrame frame) {
 			_usesExternalClock = true;
-			_totalBeats = frame.TotalBeats;
+			m_AdjustedTotalBeats = frame.AdjustedTotalBeats;
 			ApplyAnimation();
 		}
 
@@ -75,10 +75,10 @@ namespace ShitDesigner.Scene {
 
 		private void ApplyAnimation() {
 			if (_shape == null) return;
-			var beat = (long)Math.Floor(_totalBeats);
+			var beat = (long)Math.Floor(m_AdjustedTotalBeats);
 			if (beat != _configuredBeat) ConfigureBeat(beat);
 
-			var phase = Mathf.Clamp01((float)(_totalBeats - beat));
+			var phase = Mathf.Clamp01((float)(m_AdjustedTotalBeats - beat));
 			var progress = _easing == null || _easing.length == 0 ? phase : Mathf.Clamp01(_easing.Evaluate(phase));
 			var size = _targetSize * Mathf.Lerp(.85f, 1f, progress);
 			_shape.localPosition = Vector3.zero;

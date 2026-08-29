@@ -52,10 +52,10 @@ namespace ShitDesigner.Stage {
 		private void AdvanceToBeat(BeatClockFrame frame) {
 			if (!m_GraphClockDriven || !IsPosterizeTimeEnabled || frame.Bpm <= 0f
 				|| float.IsNaN(frame.Bpm) || float.IsInfinity(frame.Bpm)
-				|| double.IsNaN(frame.TotalBeats) || double.IsInfinity(frame.TotalBeats))
+				|| double.IsNaN(frame.AdjustedTotalBeats) || double.IsInfinity(frame.AdjustedTotalBeats))
 				return;
 
-			var beatPosition = frame.TotalBeats * m_PosterizeFramesPerBeat;
+			var beatPosition = frame.AdjustedTotalBeats * m_PosterizeFramesPerBeat;
 			if (double.IsNaN(beatPosition) || double.IsInfinity(beatPosition))
 				return;
 

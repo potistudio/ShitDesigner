@@ -25,6 +25,7 @@ namespace ShitDesigner.Main {
 		private VisualElement _parameterControls;
 		private VisualElement _tempoControls;
 		private TextField _bpmField;
+		private TextField m_BeatOffsetField;
 		private Button _bpmTapButton;
 		private Label _capabilityLabel;
 		private Label _diagnosticLabel;
@@ -44,6 +45,7 @@ namespace ShitDesigner.Main {
 		private bool _initialized;
 		private bool _updating;
 		private bool _editingBpm;
+		private bool m_EditingBeatOffset;
 
 		private const float PatchScrollWheelUnits = 48f;
 
@@ -64,6 +66,7 @@ namespace ShitDesigner.Main {
 			_parameterControls = Required<VisualElement>(root, "parameter-controls");
 			_tempoControls = Required<VisualElement>(root, "tempo-controls");
 			_bpmField = Required<TextField>(root, "bpm-field");
+			m_BeatOffsetField = Required<TextField>(root, "beat-offset-field");
 			_bpmTapButton = Required<Button>(root, "bpm-tap");
 			_capabilityLabel = Required<Label>(root, "capability-status");
 			_diagnosticLabel = Required<Label>(root, "diagnostic-status");
@@ -83,6 +86,9 @@ namespace ShitDesigner.Main {
 			_bpmField.RegisterValueChangedCallback(OnBpmInputChanged);
 			_bpmField.RegisterCallback<FocusInEvent>(OnBpmFocusIn);
 			_bpmField.RegisterCallback<FocusOutEvent>(OnBpmFocusOut);
+			m_BeatOffsetField.RegisterValueChangedCallback(OnBeatOffsetInputChanged);
+			m_BeatOffsetField.RegisterCallback<FocusInEvent>(OnBeatOffsetFocusIn);
+			m_BeatOffsetField.RegisterCallback<FocusOutEvent>(OnBeatOffsetFocusOut);
 			_bpmTapButton.clicked += TapBpm;
 			_outputButton.clicked += RequestOutputToggle;
 			_identifyButton.clicked += _output.IdentifyDisplay;
@@ -101,6 +107,11 @@ namespace ShitDesigner.Main {
 				_bpmField.UnregisterValueChangedCallback(OnBpmInputChanged);
 				_bpmField.UnregisterCallback<FocusInEvent>(OnBpmFocusIn);
 				_bpmField.UnregisterCallback<FocusOutEvent>(OnBpmFocusOut);
+			}
+			if (m_BeatOffsetField != null) {
+				m_BeatOffsetField.UnregisterValueChangedCallback(OnBeatOffsetInputChanged);
+				m_BeatOffsetField.UnregisterCallback<FocusInEvent>(OnBeatOffsetFocusIn);
+				m_BeatOffsetField.UnregisterCallback<FocusOutEvent>(OnBeatOffsetFocusOut);
 			}
 			if (_bpmTapButton != null) _bpmTapButton.clicked -= TapBpm;
 			if (_outputButton != null) _outputButton.clicked -= RequestOutputToggle;
@@ -378,6 +389,7 @@ namespace ShitDesigner.Main {
 		private void RefreshTempoControls(LiveUiReadModel model) {
 			_tempoControls.RemoveFromClassList("is-hidden");
 			if (!_editingBpm) _bpmField.SetValueWithoutNotify(FormatBpm(model.Bpm.Value));
+			if (!m_EditingBeatOffset) m_BeatOffsetField.SetValueWithoutNotify(FormatBeatOffset(model.BeatOffset.Value));
 		}
 
 		private void OnBpmInputChanged(ChangeEvent<string> change) {
@@ -392,6 +404,18 @@ namespace ShitDesigner.Main {
 		private void OnBpmFocusIn(FocusInEvent _) => _editingBpm = true;
 		private void OnBpmFocusOut(FocusOutEvent _) => _editingBpm = false;
 
+		private void OnBeatOffsetInputChanged(ChangeEvent<string> change) {
+			if (_updating) return;
+			if (!TryParseBeatOffset(change.newValue, out var milliseconds)) {
+				_diagnosticLabel.text = "Beat offset must be a finite number.";
+				return;
+			}
+			QueueBeatOffset(milliseconds);
+		}
+
+		private void OnBeatOffsetFocusIn(FocusInEvent _) => m_EditingBeatOffset = true;
+		private void OnBeatOffsetFocusOut(FocusOutEvent _) => m_EditingBeatOffset = false;
+
 		private void TapBpm() {
 			_host?.TapBpm(Time.unscaledTimeAsDouble);
 		}
@@ -402,12 +426,24 @@ namespace ShitDesigner.Main {
 			ShowEnqueueRejection(_host.ParameterQueue.EnqueueSetBpm(Mathf.Clamp(bpm, definition.Minimum, definition.Maximum)));
 		}
 
+		private void QueueBeatOffset(float milliseconds) {
+			if (_host?.ReadModel == null) return;
+			var definition = _host.ReadModel.BeatOffset;
+			ShowEnqueueRejection(_host.ParameterQueue.EnqueueSetBeatOffset(Mathf.Clamp(milliseconds, definition.Minimum, definition.Maximum)));
+		}
+
 		private static bool TryParseBpm(string text, out float bpm) {
 			if (float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out bpm) && bpm > 0f && !float.IsInfinity(bpm)) return true;
 			return float.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out bpm) && bpm > 0f && !float.IsInfinity(bpm);
 		}
 
+		private static bool TryParseBeatOffset(string text, out float milliseconds) {
+			if (float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out milliseconds) && !float.IsNaN(milliseconds) && !float.IsInfinity(milliseconds)) return true;
+			return float.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out milliseconds) && !float.IsNaN(milliseconds) && !float.IsInfinity(milliseconds);
+		}
+
 		private static string FormatBpm(float bpm) => bpm.ToString("0.##", CultureInfo.InvariantCulture);
+		private static string FormatBeatOffset(float milliseconds) => milliseconds.ToString("0.##", CultureInfo.InvariantCulture);
 
 		private static void ApplyPreviewTexture(VisualElement preview, RenderTexture texture) {
 			if (preview == null) return;

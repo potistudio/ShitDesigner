@@ -87,6 +87,21 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void SetBeatOffsetQueuesAGlobalRequestWithoutAPatchId() {
+			var queue = new LiveParameterQueue();
+
+			var result = queue.EnqueueSetBeatOffset(-12.5f);
+
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+			Assert.That(result.Accepted, Is.True);
+			Assert.That(requests, Has.Count.EqualTo(1));
+			Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.SetBeatOffset));
+			Assert.That(requests[0].PatchId, Is.Empty);
+			Assert.That(requests[0].Value, Is.EqualTo(-12.5f));
+		}
+
+		[Test]
 		public void FullQueueRejectsNewRequestsWithoutAssigningASequence() {
 			var queue = new LiveParameterQueue();
 			for (var index = 0; index < LiveParameterQueue.Capacity; index++)

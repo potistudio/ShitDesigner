@@ -19,7 +19,7 @@ namespace ShitDesigner.Scene {
 		private Vector3 _rotationAxis;
 		private float _rotationDegrees;
 		private float _rotationStartBeat;
-		private double _totalBeats;
+		private double m_AdjustedTotalBeats;
 		private int _nextRotationIndex;
 
 		private const int BeatsPerRotation = 2;
@@ -48,7 +48,7 @@ namespace ShitDesigner.Scene {
 		}
 
 		public void SetBpmClock(BeatClockFrame frame) {
-			_totalBeats = frame.TotalBeats;
+			m_AdjustedTotalBeats = frame.AdjustedTotalBeats;
 			ApplyAnimation();
 		}
 
@@ -96,7 +96,7 @@ namespace ShitDesigner.Scene {
 
 		private void ApplyAnimation() {
 			if (_generatedRoot == null) return;
-			var beats = (float)_totalBeats;
+			var beats = (float)m_AdjustedTotalBeats;
 			var currentRotationIndex = Mathf.FloorToInt(beats / BeatsPerRotation);
 			if (currentRotationIndex >= _nextRotationIndex) {
 				_rotationStart = _generatedRoot.localRotation;
