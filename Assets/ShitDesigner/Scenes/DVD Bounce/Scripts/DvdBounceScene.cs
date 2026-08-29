@@ -10,7 +10,7 @@ namespace ShitDesigner.Scene {
 		[Header("Visual")]
 		[SerializeField] private Texture2D m_Image;
 		[SerializeField] private VideoClip m_Video;
-		[Min(0.01f)][SerializeField] private Vector2 m_VisualSize = new Vector2(2.8f, 1.6f);
+		[Min(0.01f)][SerializeField] private float m_VisualSize = 1.6f;
 
 		[Header("Video")]
 		[Min(0f)][SerializeField] private float m_VideoPlaybackSpeed = 1f;
@@ -68,9 +68,7 @@ namespace ShitDesigner.Scene {
 		}
 
 		private void OnValidate() {
-			m_VisualSize.x = Mathf.Max(0.01f, m_VisualSize.x);
-			m_VisualSize.y = Mathf.Max(0.01f, m_VisualSize.y);
-			UpdateVisualSizeForSourceAspect();
+			m_VisualSize = Mathf.Max(0.01f, m_VisualSize);
 			m_VideoPlaybackSpeed = Mathf.Max(0f, m_VideoPlaybackSpeed);
 			m_Speed = Mathf.Max(0.01f, m_Speed);
 			if (m_InitialDirection.sqrMagnitude < 0.0001f)
@@ -128,13 +126,12 @@ namespace ShitDesigner.Scene {
 			m_Material.SetTexture(GetTexturePropertyName(m_Material), m_Image == null ? Texture2D.whiteTexture : m_Image);
 		}
 
-		private void UpdateVisualSizeForSourceAspect() {
-			m_VisualSize.x = GetSourceAspectRatio() * m_VisualSize.y;
-		}
-
 		private Vector2 GetVisualSize() {
-			var height = Mathf.Max(0.01f, m_VisualSize.y);
-			return new Vector2(GetSourceAspectRatio() * height, height);
+			var size = Mathf.Max(0.01f, m_VisualSize);
+			var aspectRatio = GetSourceAspectRatio();
+			return aspectRatio >= 1f
+				? new Vector2(size, size / aspectRatio)
+				: new Vector2(size * aspectRatio, size);
 		}
 
 		private float GetSourceAspectRatio() {
@@ -142,7 +139,7 @@ namespace ShitDesigner.Scene {
 				return (float)m_Video.width / m_Video.height;
 			if (m_Image != null && m_Image.width > 0 && m_Image.height > 0)
 				return (float)m_Image.width / m_Image.height;
-			return m_VisualSize.x / Mathf.Max(0.01f, m_VisualSize.y);
+			return 16f / 9f;
 		}
 
 		private static Vector3 ToScale(Vector2 size) {
