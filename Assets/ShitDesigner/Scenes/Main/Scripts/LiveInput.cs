@@ -53,7 +53,6 @@ namespace ShitDesigner.Main {
 			if (keyboard.downArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, 1);
 			if (keyboard.enterKey.wasPressedThisFrame) m_AssignSelectedPatch();
 			if (keyboard.spaceKey.wasPressedThisFrame) m_TapBpm(Time.unscaledTimeAsDouble);
-			if (keyboard.fKey.wasPressedThisFrame) m_Queue.EnqueueTriggerFlash(loadedPatchId);
 			QueuePatchKeyboardInputs(keyboard, loadedPatchId);
 		}
 
@@ -100,19 +99,16 @@ namespace ShitDesigner.Main {
 			m_PatchIds = patchIds;
 			m_PatchesById = patchesById;
 			m_Manager.InputReceived += OnInputReceived;
-			m_Manager.TriggerReceived += OnTriggerReceived;
 		}
 
 		public void SetSelectedPatch(string patchId) => m_LoadedPatchId = patchId ?? string.Empty;
 
 		public void Dispose() {
 			m_Manager.InputReceived -= OnInputReceived;
-			m_Manager.TriggerReceived -= OnTriggerReceived;
 		}
 
 		private void OnInputReceived(MidiInputEvent inputEvent) {
 			var control = inputEvent.Control;
-			if (m_Manager.IsTriggerBinding(control)) return;
 			if (control.Channel == PatchSelectionChannel && control.Kind == MidiControlKind.Note && inputEvent.RawValue > 0) {
 				var sceneIndex = control.Number - 36;
 				if (sceneIndex >= 0 && sceneIndex < m_PatchIds.Count) {
@@ -128,10 +124,6 @@ namespace ShitDesigner.Main {
 				return;
 			}
 			QueuePatchParameterInputs(inputEvent);
-		}
-
-		private void OnTriggerReceived(MidiLiveControlBinding binding) {
-			if (!string.IsNullOrWhiteSpace(m_LoadedPatchId)) m_Queue.EnqueueTriggerFlash(m_LoadedPatchId);
 		}
 
 		private void QueuePatchParameterInputs(MidiInputEvent inputEvent) {

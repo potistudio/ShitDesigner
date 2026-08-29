@@ -9,8 +9,7 @@ namespace ShitDesigner.Main {
 		LaunchPatch,
 		SetParameter,
 		SetBpm,
-		AlignBeat,
-		TriggerFlash
+		AlignBeat
 	}
 
 	public readonly struct LiveParameterRequest {
@@ -78,9 +77,6 @@ namespace ShitDesigner.Main {
 
 		public LiveParameterEnqueueResult EnqueueAlignBeat()
 			=> Enqueue(LiveParameterRequestKind.AlignBeat, string.Empty, string.Empty, ParameterValue.FromFloat(0f));
-
-		public LiveParameterEnqueueResult EnqueueTriggerFlash(string patchId)
-			=> Enqueue(LiveParameterRequestKind.TriggerFlash, patchId, string.Empty, ParameterValue.FromFloat(0f));
 
 		public int Drain(ICollection<LiveParameterRequest> destination) {
 			if (destination == null) throw new ArgumentNullException(nameof(destination));

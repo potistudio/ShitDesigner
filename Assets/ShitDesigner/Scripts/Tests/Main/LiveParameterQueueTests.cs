@@ -44,20 +44,6 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void FlashTriggerQueuesForTheLoadedPatch() {
-			var queue = new LiveParameterQueue();
-
-			var result = queue.EnqueueTriggerFlash("scene-a");
-
-			var requests = new List<LiveParameterRequest>();
-			queue.Drain(requests);
-			Assert.That(result.Accepted, Is.True);
-			Assert.That(requests, Has.Count.EqualTo(1));
-			Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.TriggerFlash));
-			Assert.That(requests[0].PatchId, Is.EqualTo("scene-a"));
-		}
-
-		[Test]
 		public void LaunchPatchQueuesAsOneAtomicRequest() {
 			var queue = new LiveParameterQueue();
 

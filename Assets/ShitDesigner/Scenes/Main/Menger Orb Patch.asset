@@ -14,9 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
   _id: menger-orb
   _displayName: Menger Orb
-  _flash:
-    _image: {fileID: 2800000, guid: 7811e043fc896e74592668a1a45cd6bc, type: 3}
-    _durationSeconds: 0.25
   _programGraph:
     _outputNodeId: menger_orb
     _nodes:

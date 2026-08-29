@@ -54,13 +54,11 @@ namespace ShitDesigner.Main {
 			ValidateDefinitions(definitions);
 			var programGraphs = definitions.ToDictionary(definition => definition.Id, BuildProgramGraph, StringComparer.Ordinal);
 			var shaderDefinitions = BuildProgramShaderDefinitions(programGraphs.Values);
-			var flashShader = Resources.Load<Shader>("LiveProgramFlash");
-			if (flashShader == null) throw new InvalidOperationException("The live Program flash shader is missing from Resources.");
 			var sceneManager = new SceneIsolationManager(renderSource: new UnityCameraRenderSource());
 			var renderPool = new RenderTexturePool();
 			try {
-				return new LiveGraph(sceneManager, renderPool, definitions, (patch, flashPatch, outputSize) =>
-					BuildOutput(sceneManager, renderPool, patch, programGraphs[patch.Id], shaderDefinitions, flashShader, flashPatch, outputSize));
+				return new LiveGraph(sceneManager, renderPool, definitions, (patch, outputSize) =>
+					BuildOutput(sceneManager, renderPool, patch, programGraphs[patch.Id], shaderDefinitions, outputSize));
 			}
 			catch {
 				sceneManager.Dispose();
@@ -91,22 +89,19 @@ namespace ShitDesigner.Main {
 		private LiveProgramOutput BuildOutput(SceneIsolationManager sceneManager, RenderTexturePool renderPool,
 			PatchDefinition patch, GraphDefinition programGraph,
 			IReadOnlyDictionary<NodeTypeId, LiveProgramShaderDefinition> shaderDefinitions,
-			Shader flashShader, PatchFlashDefinition flashPatch, LiveRenderSize renderSize) {
+			LiveRenderSize renderSize) {
 			var resourceSuffix = patch.Id + "." + renderSize.Width + "x" + renderSize.Height;
 			var programTexture = CreateTexture("ShitDesigner.Main.ProgramOutput." + resourceSuffix, renderSize, 0, RenderTextureFormat.ARGBHalf);
 			RenderTexture shaderGraphTexture = null;
 			LiveProgramGraph programGraphRuntime = null;
-			LiveProgramFlash flash = null;
 			try {
 				ClearTexture(programTexture);
 				shaderGraphTexture = CreateTexture("ShitDesigner.Main.ProgramGraphOutput." + resourceSuffix, renderSize, 0, RenderTextureFormat.ARGBHalf);
 				programGraphRuntime = BuildLiveProgramGraph(sceneManager, renderPool, shaderDefinitions, programGraph, patch.ProgramGraph,
 					resourceSuffix, renderSize);
-				flash = new LiveProgramFlash(flashShader);
-				return new LiveProgramOutput(programTexture, shaderGraphTexture, programGraphRuntime, flash, flashPatch);
+				return new LiveProgramOutput(programTexture, shaderGraphTexture, programGraphRuntime);
 			}
 			catch {
-				flash?.Dispose();
 				programGraphRuntime?.Dispose();
 				ReleaseTexture(shaderGraphTexture);
 				ReleaseTexture(programTexture);
