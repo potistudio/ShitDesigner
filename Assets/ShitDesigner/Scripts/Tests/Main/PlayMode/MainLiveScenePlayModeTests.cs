@@ -89,6 +89,12 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(ui.Q<Button>("patch-" + nextPatch.Id).ClassListContains("is-loaded"), Is.True);
 			var rememberedMainPatch = host.ReadModel.Patches.Last(patch => patch.Role == LivePatchRole.Main);
 			var rememberedOverlayPatch = host.ReadModel.Patches.First(patch => patch.Role == LivePatchRole.Overlay);
+			Assert.That(host.SelectSequencerLane(LiveSequencerKind.Overlay, 0).Accepted, Is.True);
+			yield return null;
+			Assert.That(ui.Q<Button>("sequencer-overlay-lane-label-0").ClassListContains("is-selecting"), Is.True);
+			Assert.That(host.AssignSelectedSequencerPatch(rememberedOverlayPatch.Id).Accepted, Is.True);
+			yield return null;
+			Assert.That(ui.Q<Button>("sequencer-overlay-lane-label-0").ClassListContains("is-assigned"), Is.True);
 			var selectedPatchSlotIndex = host.ReadModel.SelectedPatchSlotIndex;
 			Assert.That(host.AssignPatchToSelectedSlot(rememberedMainPatch.Id).Accepted, Is.True);
 			Assert.That(host.AssignPatchToSelectedSlot(rememberedOverlayPatch.Id).Accepted, Is.True);
@@ -100,6 +106,15 @@ namespace ShitDesigner.Main.Tests {
 			host.MoveCatalogSelection(0, 1);
 			yield return null;
 			Assert.That(host.ReadModel.SelectedCatalogPatchId, Is.EqualTo(rememberedOverlayPatch.Id));
+
+			Assert.That(host.ParameterQueue.EnqueueLaunchPatch(rememberedMainPatch.Id).Accepted, Is.True);
+			for (var frame = 0; frame < 60 && host.ReadModel.LoadedPatchId != rememberedMainPatch.Id; frame++) yield return null;
+			Assert.That(host.ReadModel.LoadedPatchId, Is.EqualTo(rememberedMainPatch.Id));
+			var overlaySequencer = host.ReadModel.Sequencers.Single(sequencer => sequencer.Kind == LiveSequencerKind.Overlay);
+			var triggerStep = (overlaySequencer.CurrentStep + 1) % LiveStepSequencer.StepCount;
+			Assert.That(host.ToggleSequencerStep(LiveSequencerKind.Overlay, 0, triggerStep).Accepted, Is.True);
+			for (var frame = 0; frame < 120 && host.ReadModel.LoadedPatchId != rememberedOverlayPatch.Id; frame++) yield return null;
+			Assert.That(host.ReadModel.LoadedPatchId, Is.EqualTo(rememberedOverlayPatch.Id));
 
 			var midi = (Component)typeof(ApplicationLiveHost).GetField("_midiInputManager", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(host);
 			host.Shutdown();

@@ -46,6 +46,7 @@ namespace ShitDesigner.Main {
 		private LivePatchRole m_SelectedPatchRole;
 		private int m_SelectedMainPatchIndex;
 		private int m_SelectedOverlayPatchIndex;
+		private long m_LastScheduledSequencerBeat;
 
 		public ApplicationLiveHostState State { get; private set; } = ApplicationLiveHostState.Cold;
 		public LiveUiReadModel ReadModel { get; private set; }
@@ -78,6 +79,7 @@ namespace ShitDesigner.Main {
 				m_SelectedPatchRole = m_MainPatchIds.Length > 0 ? LivePatchRole.Main : LivePatchRole.Overlay;
 				m_SelectedMainPatchIndex = 0;
 				m_SelectedOverlayPatchIndex = 0;
+				m_LastScheduledSequencerBeat = (long)Math.Floor(_runtime.BpmFrame.AdjustedTotalBeats);
 				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, slotIndex => { LaunchPatchSlot(slotIndex); }, slotIndex => { ClearPatchSlot(slotIndex); }, MoveCatalogSelection, () => { AssignSelectedCatalogPatch(); }, TapBpm);
 				_midiInputManager.InitializeForHostPolling();
 				_shutdown.Add(_midiInputManager.Shutdown);
@@ -110,9 +112,11 @@ namespace ShitDesigner.Main {
 			_keyboard.Poll(_runtime.LoadedPatchId);
 			_midi.SetSelectedPatch(_runtime.LoadedPatchId);
 			_midiInputManager.Poll();
-			ApplyRequests();
 			try {
 				var deltaSeconds = Math.Max(0d, Time.unscaledDeltaTime);
+				ApplyRequests();
+				ScheduleSequencerTriggers(_runtime.BpmFrame.AdjustedTotalBeats + deltaSeconds * _runtime.BpmFrame.Bpm / 60d);
+				ApplyRequests(clearResults: false);
 				_runtime.Evaluate(deltaSeconds);
 				_runtime.SceneUpdate(deltaSeconds);
 				var frames = _runtime.Render();
@@ -204,14 +208,44 @@ namespace ShitDesigner.Main {
 				: sequencer.Toggle(laneIndex, stepIndex);
 		}
 
-		private void ApplyRequests() {
+		public bool IsSelectingSequencerLane => m_Sequencers.Any(sequencer => sequencer.SelectedLaneIndex >= 0);
+
+		public LiveSequencerOperationResult SelectSequencerLane(LiveSequencerKind kind, int laneIndex) {
+			if (kind != LiveSequencerKind.Overlay) return LiveSequencerOperationResult.Reject("Scene assignment is available for the overlay sequencer.");
+			return m_Sequencers.First(sequencer => sequencer.Kind == kind).SelectLane(laneIndex);
+		}
+
+		public LiveSequencerOperationResult AssignSelectedSequencerPatch(string patchId) {
+			if (!m_OverlayPatchIds.Contains(patchId)) return LiveSequencerOperationResult.Reject("Select an overlay scene for this lane.");
+			var sequencer = m_Sequencers.FirstOrDefault(item => item.SelectedLaneIndex >= 0);
+			return sequencer == null
+				? LiveSequencerOperationResult.Reject("Select a sequencer lane first.")
+				: sequencer.AssignSelectedLane(patchId);
+		}
+
+		private void ApplyRequests(bool clearResults = true) {
 			_pendingRequests.Clear();
-			_requestResults.Clear();
+			if (clearResults) _requestResults.Clear();
 			_parameterQueue.Drain(_pendingRequests);
 			foreach (var request in _pendingRequests) {
 				try { _requestResults.Add(_runtime.Apply(request)); }
 				catch (Exception exception) { _requestResults.Add(new LiveParameterApplicationResult(request.SequenceNumber, false, exception.Message)); }
 			}
+		}
+
+		private void ScheduleSequencerTriggers(double adjustedTotalBeats) {
+			var targetBeat = (long)Math.Floor(adjustedTotalBeats);
+			if (targetBeat < m_LastScheduledSequencerBeat) {
+				m_LastScheduledSequencerBeat = targetBeat;
+				return;
+			}
+			for (var beat = m_LastScheduledSequencerBeat + 1; beat <= targetBeat; beat++) {
+				var stepIndex = (int)((beat % LiveStepSequencer.StepCount + LiveStepSequencer.StepCount) % LiveStepSequencer.StepCount);
+				foreach (var sequencer in m_Sequencers) {
+					foreach (var patchId in sequencer.GetTriggeredPatchIds(stepIndex)) _parameterQueue.EnqueueLaunchPatch(patchId);
+				}
+			}
+			m_LastScheduledSequencerBeat = targetBeat;
 		}
 
 		private void PublishReadModel(string diagnostic) {
