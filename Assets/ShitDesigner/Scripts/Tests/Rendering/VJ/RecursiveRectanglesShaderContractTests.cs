@@ -202,16 +202,13 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 		}
 
 		[UnityTest]
-		public IEnumerator RecursiveRectangles_ChildrenAlwaysRevealLeftToRight() {
+		public IEnumerator RecursiveRectangles_SquareChildrenAlwaysRevealLeftToRight() {
 			RequireGraphicsDevice();
 			var material = CreateMaterial();
 			try {
 				Configure(material);
 				material.SetInt("_StructureSeed", 5);
 				material.SetInt("_MaxDepth", 1);
-				material.SetInt("_AxisMode", 2);
-				material.SetFloat("_RatioMin", .5f);
-				material.SetFloat("_RatioMax", .5f);
 				material.SetFloat("_Gutter", 0f);
 				material.SetFloat("_RevealProgress", 0f);
 				Color32[] root = null;
@@ -222,26 +219,37 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 				yield return Render(material, 64, 8, result => halfway = result);
 
 				var row = 4 * 64;
-				Assert.That(halfway[row + 8], Is.EqualTo(root[row + 8]));
+				Assert.That(halfway[row + 8], Is.Not.EqualTo(root[row + 8]));
 				Assert.That(halfway[row + 24], Is.EqualTo(root[row + 24]));
-				Assert.That(halfway[row + 56], Is.EqualTo(root[row + 56]));
-				Assert.That(halfway[row + 40], Is.Not.EqualTo(root[row + 40]));
 
 				material.SetFloat("_RevealProgress", 1f);
 				Color32[] completed = null;
 				yield return Render(material, 64, 8, result => completed = result);
-				Assert.That(completed.Count(pixel => pixel.a > 0), Is.EqualTo(completed.Length / 2));
+				Assert.That(completed.Count(pixel => pixel.a > 0), Is.EqualTo(completed.Length / 4));
+			}
+			finally { UnityEngine.Object.DestroyImmediate(material); }
+		}
 
-				material.SetInt("_AxisMode", 1);
-				material.SetFloat("_RevealProgress", .5f);
-				Color32[] verticalSplit = null;
-				yield return Render(material, 64, 8, result => verticalSplit = result);
+		[UnityTest]
+		public IEnumerator RecursiveRectangles_SplitProbabilityProducesMixedSquareSizes() {
+			RequireGraphicsDevice();
+			var material = CreateMaterial();
+			try {
+				Configure(material);
+				material.SetInt("_StructureSeed", 193);
+				material.SetInt("_MaxDepth", 2);
+				material.SetFloat("_SplitProbability", .5f);
+				material.SetFloat("_Gutter", .03f);
+				material.SetColor("_ColorA", Color.clear);
+				material.SetColor("_LineColor", Color.white);
+				material.SetFloat("_SplitStagger", 0f);
+				material.SetFloat("_RevealProgress", 1f);
 
-				Assert.That(verticalSplit[2 * 64 + 48], Is.EqualTo(root[2 * 64 + 48]));
-				Assert.That(verticalSplit[6 * 64 + 48], Is.EqualTo(root[6 * 64 + 48]));
-				var lowerChildIsVisible = verticalSplit[2 * 64 + 16].a > 0;
-				var upperChildIsVisible = verticalSplit[6 * 64 + 16].a > 0;
-				Assert.That(lowerChildIsVisible, Is.Not.EqualTo(upperChildIsVisible));
+				Color32[] pixels = null;
+				yield return Render(material, 64, 64, result => pixels = result);
+
+				Assert.That(pixels[8 * 64 + 15].a, Is.GreaterThan(0));
+				Assert.That(pixels[56 * 64 + 47].a, Is.EqualTo(0));
 			}
 			finally { UnityEngine.Object.DestroyImmediate(material); }
 		}

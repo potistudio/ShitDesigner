@@ -104,9 +104,7 @@ Shader "Hidden/ShitDesigner/RecursiveRectangles"
 			float4 PathColor(uint seed, uint path)
 			{
 				if (path <= 1u) return float4(0.0, 0.0, 0.0, 0.0);
-				bool firstChild = (path & 1u) == 0u;
-				bool firstChildIsColored = Random01(seed, path >> 1, 47u) < 0.5;
-				return firstChild == firstChildIsColored ? _ColorA : float4(0.0, 0.0, 0.0, 0.0);
+				return Random01(seed, path, 47u) < 0.5 ? _ColorA : float4(0.0, 0.0, 0.0, 0.0);
 			}
 
 			float4 Premultiply(float4 color)
@@ -117,7 +115,7 @@ Shader "Hidden/ShitDesigner/RecursiveRectangles"
 
 			float4 frag(v2f input) : SV_Target
 			{
-				// The depth limit establishes the internal Leaf cap at 256.
+				// Each pixel follows one branch, so recursive square subdivision does not allocate the full tree.
 				const int InternalMaxDepth = 8;
 				int maxDepth = clamp(_MaxDepth, 0, InternalMaxDepth);
 				float minLeafSize = max(_MinLeafSize, 0.0);
@@ -145,47 +143,30 @@ Shader "Hidden/ShitDesigner/RecursiveRectangles"
 				{
 					if (depth >= maxDepth) break;
 					float2 size = boundsMax - boundsMin;
-					if (size.x < minLeafSize || size.y < minLeafSize) break;
-					int axis;
-					if (_AxisMode == 1) axis = 1;
-					else if (_AxisMode == 2) axis = 0;
-					else if (_AxisMode == 3) axis = Random01(seed, path, 23u) < 0.5 ? 0 : 1;
-					else axis = size.x >= size.y ? 0 : 1;
+					float2 childSize = size * 0.5;
+					if (childSize.x < minLeafSize || childSize.y < minLeafSize) break;
+					float splitProbability = saturate(_SplitProbability);
+					if (splitProbability <= 0.0 || (depth > 0 && Random01(seed, path, 11u) >= splitProbability)) break;
 
-					float axisSize = axis == 0 ? size.x : size.y;
-					float legalMin = max(_RatioMin, minLeafSize / max(axisSize, 0.000001));
-					float legalMax = min(_RatioMax, 1.0 - minLeafSize / max(axisSize, 0.000001));
-					if (legalMin > legalMax || Random01(seed, path, 11u) >= saturate(_SplitProbability)) break;
-
-					float ratio = lerp(legalMin, legalMax, Random01(seed, path, 31u));
-					float split = axis == 0
-						? lerp(boundsMin.x, boundsMax.x, ratio)
-						: lerp(boundsMin.y, boundsMax.y, ratio);
+					float2 split = (boundsMin + boundsMax) * 0.5;
 					float eventStart = depth * stagger;
 					float localProgress = saturate((progress - eventStart) / duration);
 					if (progress < eventStart) break;
 
-					bool firstChild = axis == 0 ? input.uv.x <= split : input.uv.y <= split;
-					uint childPath = path * 2u + (firstChild ? 0u : 1u);
-					float2 childMin = boundsMin;
-					float2 childMax = boundsMax;
-					if (axis == 0)
-					{
-						if (firstChild) childMax.x = split;
-						else childMin.x = split;
-					}
-					else
-					{
-						if (firstChild) childMax.y = split;
-						else childMin.y = split;
-					}
+					bool right = input.uv.x > split.x;
+					bool upper = input.uv.y > split.y;
+					uint quadrant = (right ? 1u : 0u) + (upper ? 2u : 0u);
+					uint childPath = path * 4u + quadrant;
+					float2 childMin = float2(right ? split.x : boundsMin.x, upper ? split.y : boundsMin.y);
+					float2 childMax = float2(right ? boundsMax.x : split.x, upper ? boundsMax.y : split.y);
 
 					float eased = Ease(localProgress);
 					if (_Gutter > 0.0)
 					{
-						float coordinate = axis == 0 ? input.uv.x : input.uv.y;
 						bool inParent = all(input.uv >= boundsMin) && all(input.uv <= boundsMax);
-						lineCoverage = max(lineCoverage, saturate(1.0 - abs(coordinate - split) / _Gutter) * eased * (inParent ? 1.0 : 0.0));
+						float verticalLine = saturate(1.0 - abs(input.uv.x - split.x) / _Gutter);
+						float horizontalLine = saturate(1.0 - abs(input.uv.y - split.y) / _Gutter);
+						lineCoverage = max(lineCoverage, max(verticalLine, horizontalLine) * eased * (inParent ? 1.0 : 0.0));
 					}
 
 					if (localProgress < 1.0)
