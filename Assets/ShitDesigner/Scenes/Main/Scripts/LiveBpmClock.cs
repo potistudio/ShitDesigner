@@ -11,19 +11,20 @@ namespace ShitDesigner.Main {
 		public const float MinimumBpm = 30f;
 		public const float MaximumBpm = 300f;
 		public const float DefaultBpm = 138f;
-		public const float MinimumBeatOffsetMilliseconds = -1000f;
-		public const float MaximumBeatOffsetMilliseconds = 1000f;
+		public const float MinimumBeatAlignmentMilliseconds = -1000f;
+		public const float MaximumBeatAlignmentMilliseconds = 1000f;
 
 		private float _beatsPerMinute;
-		private float m_BeatOffsetMilliseconds;
+		private float m_BeatAlignmentMilliseconds;
+		private double m_BeatAlignmentBeats;
 		private double _totalBeats;
 
 		public float BeatsPerMinute => _beatsPerMinute;
-		public float BeatOffsetMilliseconds => m_BeatOffsetMilliseconds;
+		public float BeatAlignmentMilliseconds => m_BeatAlignmentMilliseconds;
 		public double TotalBeats => _totalBeats;
 		public LiveParameterDefinition Definition => new LiveParameterDefinition("bpm", "BPM", MinimumBpm, MaximumBpm, _beatsPerMinute);
-		public LiveParameterDefinition BeatOffsetDefinition => new LiveParameterDefinition("beat-offset-ms", "Beat Offset (ms)", MinimumBeatOffsetMilliseconds, MaximumBeatOffsetMilliseconds, m_BeatOffsetMilliseconds);
-		public BeatClockFrame Frame => new BeatClockFrame(_beatsPerMinute, _totalBeats, TimingOffsetBeats);
+		public LiveParameterDefinition BeatAlignmentDefinition => new LiveParameterDefinition("beat-alignment-ms", "Beat Alignment (ms)", MinimumBeatAlignmentMilliseconds, MaximumBeatAlignmentMilliseconds, BeatAlignmentMilliseconds);
+		public BeatClockFrame Frame => new BeatClockFrame(_beatsPerMinute, _totalBeats, m_BeatAlignmentBeats);
 
 		public LiveBpmClock(float beatsPerMinute = DefaultBpm) {
 			if (!TrySetBpm(beatsPerMinute, out var rejectionReason)) throw new ArgumentOutOfRangeException(nameof(beatsPerMinute), rejectionReason);
@@ -40,12 +41,14 @@ namespace ShitDesigner.Main {
 			return true;
 		}
 
-		public bool TrySetBeatOffsetMilliseconds(float milliseconds, out string rejectionReason) {
+		public bool TrySetBeatAlignmentMilliseconds(float milliseconds, out string rejectionReason) {
 			if (float.IsNaN(milliseconds) || float.IsInfinity(milliseconds)) {
-				rejectionReason = "Beat offset must be finite.";
+				rejectionReason = "Beat alignment must be finite.";
 				return false;
 			}
-			m_BeatOffsetMilliseconds = Math.Min(MaximumBeatOffsetMilliseconds, Math.Max(MinimumBeatOffsetMilliseconds, milliseconds));
+			var clampedMilliseconds = Math.Min(MaximumBeatAlignmentMilliseconds, Math.Max(MinimumBeatAlignmentMilliseconds, milliseconds));
+			m_BeatAlignmentMilliseconds = clampedMilliseconds;
+			m_BeatAlignmentBeats = clampedMilliseconds * _beatsPerMinute / 60000d;
 			rejectionReason = string.Empty;
 			return true;
 		}
@@ -56,7 +59,5 @@ namespace ShitDesigner.Main {
 			_totalBeats += deltaSeconds * _beatsPerMinute / 60d;
 			ShaderBeatClock.Publish(Frame);
 		}
-
-		private double TimingOffsetBeats => m_BeatOffsetMilliseconds * _beatsPerMinute / 60000d;
 	}
 }

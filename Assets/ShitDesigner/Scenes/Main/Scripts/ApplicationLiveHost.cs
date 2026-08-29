@@ -188,7 +188,7 @@ namespace ShitDesigner.Main {
 				_runtime?.LoadedPatchId, _runtime?.PreloadedPatchId,
 				_runtime?.BpmDefinition ?? default, _runtime?.GetLoadedPatchParameterDefinitions(), _runtime?.CurrentFrames ?? default(LiveProgramFrames), _externalDisplay,
 				_capabilityMonitor != null ? _capabilityMonitor.Snapshot : default(LiveCapabilitySnapshot), diagnostic,
-				_requestResults.ToArray(), _runtime?.BeatOffsetDefinition ?? default);
+				_requestResults.ToArray(), _runtime?.BeatAlignmentDefinition ?? default);
 		}
 
 		private bool IsKnownPatch(string patchId) => !string.IsNullOrWhiteSpace(patchId) && _patchIds.Contains(patchId);
