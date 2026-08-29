@@ -326,7 +326,7 @@ namespace ShitDesigner.Scene {
 				var candy = m_Candies[index];
 				for (var fragmentIndex = layerIndex + 1; fragmentIndex < candy.Fragments.Length; fragmentIndex++) {
 					var fragment = candy.Fragments[fragmentIndex];
-					fragment.Segment.localPosition = Vector3.up * (fragment.BasePosition - mainBodyOffset);
+					fragment.Segment.localPosition = Vector3.up * (fragment.BasePosition + mainBodyOffset);
 				}
 			}
 			if (!Application.isPlaying)
