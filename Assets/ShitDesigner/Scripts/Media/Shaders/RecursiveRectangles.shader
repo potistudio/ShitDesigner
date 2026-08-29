@@ -124,7 +124,7 @@ Shader "Hidden/ShitDesigner/RecursiveRectangles"
 				float duration = max(_SplitDuration, 0.0001);
 				float stagger = max(_SplitStagger, 0.0);
 				float timeline = maxDepth > 0
-					? duration + (maxDepth - 1) * (duration + stagger)
+					? duration + (maxDepth - 1) * stagger
 					: duration;
 				bool synchronized = _BeatSync > 0.5 && _SD_HasBeatClock > 0.5;
 				float revealProgress = synchronized
@@ -161,7 +161,7 @@ Shader "Hidden/ShitDesigner/RecursiveRectangles"
 					float split = axis == 0
 						? lerp(boundsMin.x, boundsMax.x, ratio)
 						: lerp(boundsMin.y, boundsMax.y, ratio);
-					float eventStart = depth * (duration + stagger);
+					float eventStart = depth * stagger;
 					float localProgress = saturate((progress - eventStart) / duration);
 					if (progress < eventStart) break;
 
@@ -194,8 +194,7 @@ Shader "Hidden/ShitDesigner/RecursiveRectangles"
 						float2 animatedMax = childMax;
 						animatedMax.x = lerp(childMin.x, childMax.x, eased);
 						bool inside = localProgress > 0.0 && all(input.uv >= animatedMin) && all(input.uv <= animatedMax);
-						if (inside) color = PathColor(seed, childPath);
-						break;
+						if (!inside) break;
 					}
 
 					boundsMin = childMin;
