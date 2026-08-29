@@ -165,6 +165,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: BpmShapes::ShitDesigner.Scene.CenterRectangleExpansion
   m_PreviewBpm: 120
   m_BeatsPerExpansion: 1
+  m_MaxEasingSeconds: 1.4
   m_InitialScale: 0.02
   m_Loop: 1
   m_Easing:
