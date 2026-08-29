@@ -10,7 +10,7 @@ namespace ShitDesigner.Main {
 	/// <summary>Reflects the latest completed live frame and queues patch and parameter requests.</summary>
 	[DisallowMultipleComponent]
 	[DefaultExecutionOrder(1100)]
-	public sealed class LiveUiController : MonoBehaviour {
+	public sealed class PanelRenderer : MonoBehaviour {
 		[SerializeField] private UIDocument _document;
 
 		private ApplicationLiveHost _host;
