@@ -62,6 +62,7 @@ MonoBehaviour:
   m_CutterImpactWidth: 0.72
   m_CutPieceLength: 1.75
   m_SplitGap: 0.55
+  m_HorizontalImpulse: 0.18
   m_BladePosition: {x: 0, y: 0, z: -2.8}
   m_BladeLength: 17
   m_BladeThickness: 0.18

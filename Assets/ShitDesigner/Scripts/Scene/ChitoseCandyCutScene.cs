@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace ShitDesigner.Scene {
-	/// <summary>Generates a stylized field of candy sticks and animates a cutter across their decorated ends.</summary>
+	/// <summary>Generates a stylized field of candy sticks, cuts their decorated ends, and drops the split fragments.</summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
 	public sealed class ChitoseCandyCutScene : MonoBehaviour, ISceneGraphClockReceiver {
@@ -22,19 +22,29 @@ namespace ShitDesigner.Scene {
 			public Transform FrontSegment { get; }
 			public Transform RearCutFace { get; }
 			public Transform FrontCutFace { get; }
+			public Rigidbody RearBody { get; }
+			public Rigidbody FrontBody { get; }
 			public float RearBasePosition { get; }
 			public float FrontBasePosition { get; }
 			public float CutCoordinate { get; }
+			public Vector3 RearImpulse { get; }
+			public Vector3 FrontImpulse { get; }
+			public bool PhysicsActivated { get; set; }
 
 			public Candy(Transform rearSegment, Transform frontSegment, Transform rearCutFace, Transform frontCutFace,
-				float rearBasePosition, float frontBasePosition, float cutCoordinate) {
+				Rigidbody rearBody, Rigidbody frontBody, float rearBasePosition, float frontBasePosition,
+				float cutCoordinate, Vector3 rearImpulse, Vector3 frontImpulse) {
 				RearSegment = rearSegment;
 				FrontSegment = frontSegment;
 				RearCutFace = rearCutFace;
 				FrontCutFace = frontCutFace;
+				RearBody = rearBody;
+				FrontBody = frontBody;
 				RearBasePosition = rearBasePosition;
 				FrontBasePosition = frontBasePosition;
 				CutCoordinate = cutCoordinate;
+				RearImpulse = rearImpulse;
+				FrontImpulse = frontImpulse;
 			}
 		}
 
@@ -60,6 +70,7 @@ namespace ShitDesigner.Scene {
 		[Min(0.01f)] [SerializeField] private float m_CutterImpactWidth = 0.72f;
 		[Min(0.1f)] [SerializeField] private float m_CutPieceLength = 1.75f;
 		[Min(0f)] [SerializeField] private float m_SplitGap = 0.55f;
+		[Min(0f)] [SerializeField] private float m_HorizontalImpulse = 0.18f;
 
 		[Header("Cutter")]
 		[SerializeField] private Vector3 m_BladePosition = new Vector3(0f, 0f, -2.8f);
@@ -137,6 +148,7 @@ namespace ShitDesigner.Scene {
 			m_CutterImpactWidth = Mathf.Max(0.01f, m_CutterImpactWidth);
 			m_CutPieceLength = Mathf.Clamp(m_CutPieceLength, 0.1f, m_CandyLength - 0.1f);
 			m_SplitGap = Mathf.Max(0f, m_SplitGap);
+			m_HorizontalImpulse = Mathf.Max(0f, m_HorizontalImpulse);
 			m_BladeLength = Mathf.Max(1f, m_BladeLength);
 			m_BladeThickness = Mathf.Max(0.01f, m_BladeThickness);
 			m_BladeDepth = Mathf.Max(0.01f, m_BladeDepth);
@@ -177,6 +189,7 @@ namespace ShitDesigner.Scene {
 		[ContextMenu("Reset Chitose Candy Cut")]
 		public void ResetAnimation() {
 			m_AnimationTime = 0f;
+			ResetPhysicsState();
 			ApplyAnimationState();
 		}
 
@@ -184,7 +197,10 @@ namespace ShitDesigner.Scene {
 			if (deltaSeconds <= 0f || float.IsNaN(deltaSeconds) || float.IsInfinity(deltaSeconds))
 				return;
 
-			m_AnimationTime = Mathf.Repeat(m_AnimationTime + deltaSeconds * m_CutterSpeed, 1f);
+			var nextAnimationTime = m_AnimationTime + deltaSeconds * m_CutterSpeed;
+			m_AnimationTime = Mathf.Repeat(nextAnimationTime, 1f);
+			if (nextAnimationTime >= 1f)
+				ResetPhysicsState();
 			ApplyAnimationState();
 		}
 
@@ -239,6 +255,7 @@ namespace ShitDesigner.Scene {
 			rearSegment.localPosition = Vector3.up * rearBasePosition;
 			CreateMeshObject("Rear Candy", rearSegment, m_RearBodyMesh,
 				m_BodyMaterials[index % m_BodyMaterials.Length], Vector3.one);
+			var rearBody = AddPhysicsBody(rearSegment, m_RearPieceLength);
 
 			var frontSegment = new GameObject("Front Segment").transform;
 			frontSegment.gameObject.hideFlags = HideFlags.DontSave;
@@ -247,6 +264,7 @@ namespace ShitDesigner.Scene {
 			frontSegment.localPosition = Vector3.up * frontBasePosition;
 			CreateMeshObject("Front Candy", frontSegment, m_FrontBodyMesh,
 				m_BodyMaterials[index % m_BodyMaterials.Length], Vector3.one);
+			var frontBody = AddPhysicsBody(frontSegment, m_FrontPieceLength);
 
 			var cutFaceScale = new Vector3(m_CandyRadius * 0.76f, 0.028f, m_CandyRadius * 0.76f);
 			var rearCutFace = CreateMeshObject("Rear Cut Face", rearSegment, m_DiscMesh, m_FaceMaterial, cutFaceScale);
@@ -272,8 +290,29 @@ namespace ShitDesigner.Scene {
 				Vector3.one * (m_CandyRadius * 0.34f));
 			pattern.localPosition = Vector3.up * 0.064f;
 
-			return new Candy(rearSegment, frontSegment, rearCutFace, frontCutFace,
-				rearBasePosition, frontBasePosition, Vector3.Dot(frontPosition, m_CutterTravelDirection));
+			return new Candy(rearSegment, frontSegment, rearCutFace, frontCutFace, rearBody, frontBody,
+				rearBasePosition, frontBasePosition, Vector3.Dot(frontPosition, m_CutterTravelDirection),
+				CreateHorizontalImpulse(random), CreateHorizontalImpulse(random));
+		}
+
+		private Rigidbody AddPhysicsBody(Transform segment, float length) {
+			var rigidbody = segment.gameObject.AddComponent<Rigidbody>();
+			rigidbody.isKinematic = true;
+			rigidbody.useGravity = false;
+			rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
+			rigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+
+			var collider = segment.gameObject.AddComponent<CapsuleCollider>();
+			collider.direction = 1;
+			collider.radius = m_CandyRadius * 0.94f;
+			collider.height = Mathf.Max(length, collider.radius * 2f);
+			return rigidbody;
+		}
+
+		private Vector3 CreateHorizontalImpulse(System.Random random) {
+			var magnitude = NextFloat(random, m_HorizontalImpulse * 0.55f, m_HorizontalImpulse);
+			var direction = random.Next(2) == 0 ? -1f : 1f;
+			return new Vector3(direction * magnitude, 0f, 0f);
 		}
 
 		private void CreateBlade() {
@@ -306,15 +345,66 @@ namespace ShitDesigner.Scene {
 				var candy = m_Candies[index];
 				var cutProgress = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(
 					(travel - candy.CutCoordinate + m_CutterImpactWidth * 0.5f) / m_CutterImpactWidth));
-				var splitOffset = cutProgress * m_SplitGap * 0.5f;
-				candy.RearSegment.localPosition = Vector3.up * (candy.RearBasePosition - splitOffset);
-				candy.FrontSegment.localPosition = Vector3.up * (candy.FrontBasePosition + splitOffset);
-				var cutFaceVisible = cutProgress > 0.01f;
+				if (!candy.PhysicsActivated) {
+					var splitOffset = cutProgress * m_SplitGap * 0.5f;
+					candy.RearSegment.localPosition = Vector3.up * (candy.RearBasePosition - splitOffset);
+					candy.FrontSegment.localPosition = Vector3.up * (candy.FrontBasePosition + splitOffset);
+					if (cutProgress >= 0.999f)
+						ActivatePhysics(candy);
+				}
+				var cutFaceVisible = candy.PhysicsActivated || cutProgress > 0.01f;
 				if (candy.RearCutFace.gameObject.activeSelf != cutFaceVisible)
 					candy.RearCutFace.gameObject.SetActive(cutFaceVisible);
 				if (candy.FrontCutFace.gameObject.activeSelf != cutFaceVisible)
 					candy.FrontCutFace.gameObject.SetActive(cutFaceVisible);
 			}
+		}
+
+		private void ActivatePhysics(Candy candy) {
+			if (candy.PhysicsActivated)
+				return;
+
+			candy.PhysicsActivated = true;
+			Physics.SyncTransforms();
+			ActivatePhysics(candy.RearBody, candy.RearImpulse);
+			ActivatePhysics(candy.FrontBody, candy.FrontImpulse);
+		}
+
+		private static void ActivatePhysics(Rigidbody rigidbody, Vector3 horizontalImpulse) {
+			if (rigidbody == null)
+				return;
+
+			rigidbody.isKinematic = false;
+			rigidbody.useGravity = true;
+			rigidbody.collisionDetectionMode = CollisionDetectionMode.Continuous;
+			rigidbody.AddForce(horizontalImpulse, ForceMode.Impulse);
+		}
+
+		private void ResetPhysicsState() {
+			for (var index = 0; index < m_Candies.Count; index++) {
+				var candy = m_Candies[index];
+				ResetPhysics(candy.RearBody);
+				ResetPhysics(candy.FrontBody);
+				candy.PhysicsActivated = false;
+				candy.RearSegment.localPosition = Vector3.up * candy.RearBasePosition;
+				candy.FrontSegment.localPosition = Vector3.up * candy.FrontBasePosition;
+				candy.RearSegment.localRotation = Quaternion.identity;
+				candy.FrontSegment.localRotation = Quaternion.identity;
+				candy.RearCutFace.gameObject.SetActive(false);
+				candy.FrontCutFace.gameObject.SetActive(false);
+			}
+			Physics.SyncTransforms();
+		}
+
+		private static void ResetPhysics(Rigidbody rigidbody) {
+			if (rigidbody == null)
+				return;
+
+			rigidbody.linearVelocity = Vector3.zero;
+			rigidbody.angularVelocity = Vector3.zero;
+			rigidbody.isKinematic = true;
+			rigidbody.useGravity = false;
+			rigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
 		}
 
 		private Color[] ResolveCandyColors() {
