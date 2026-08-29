@@ -19,6 +19,7 @@ Shader "Hidden/ShitDesigner/RecursiveRectangles"
 		_Gutter ("Gutter", Range(0, 0.1)) = 0.004
 		_LineColor ("Line Color", Vector) = (0.01, 0.01, 0.01, 1)
 		_SD_BeatPhase ("Beat Phase", Float) = 0
+		_SD_BeatIndex ("Beat Index", Float) = 0
 		_SD_HasBeatClock ("Has Beat Clock", Float) = 0
 	}
 	SubShader
@@ -50,6 +51,7 @@ Shader "Hidden/ShitDesigner/RecursiveRectangles"
 			float _Gutter;
 			float4 _LineColor;
 			float _SD_BeatPhase;
+			float _SD_BeatIndex;
 			float _SD_HasBeatClock;
 
 			struct appdata
@@ -126,6 +128,8 @@ Shader "Hidden/ShitDesigner/RecursiveRectangles"
 					: saturate(_RevealProgress);
 				float progress = revealProgress * timeline;
 				uint seed = (uint)_StructureSeed;
+				if (_BeatSync > 0.5 && _SD_HasBeatClock > 0.5)
+					seed ^= MixBits((uint)_SD_BeatIndex + 0x9e3779b9u);
 				uint path = 1u;
 				float2 boundsMin = float2(0.0, 0.0);
 				float2 boundsMax = float2(1.0, 1.0);

@@ -115,6 +115,40 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 			finally { UnityEngine.Object.DestroyImmediate(material); }
 		}
 
+		[UnityTest]
+		public IEnumerator RecursiveRectangles_BeatIndexChangesOnlySynchronizedStructure() {
+			RequireGraphicsDevice();
+			var material = CreateMaterial();
+			try {
+				Configure(material);
+				material.SetFloat("_BeatSync", 1f);
+				material.SetFloat("_SD_HasBeatClock", 1f);
+				material.SetFloat("_SD_BeatPhase", .999f);
+				material.SetFloat("_SD_BeatIndex", 3f);
+				Color32[] firstBeat = null;
+				yield return Render(material, 48, 32, result => firstBeat = result);
+				Color32[] repeatedBeat = null;
+				yield return Render(material, 48, 32, result => repeatedBeat = result);
+
+				material.SetFloat("_SD_BeatIndex", 4f);
+				Color32[] nextBeat = null;
+				yield return Render(material, 48, 32, result => nextBeat = result);
+
+				Assert.That(repeatedBeat, Is.EqualTo(firstBeat));
+				Assert.That(nextBeat, Is.Not.EqualTo(firstBeat));
+
+				material.SetFloat("_BeatSync", 0f);
+				Color32[] manualAtFourthBeat = null;
+				yield return Render(material, 48, 32, result => manualAtFourthBeat = result);
+				material.SetFloat("_SD_BeatIndex", 5f);
+				Color32[] manualAtFifthBeat = null;
+				yield return Render(material, 48, 32, result => manualAtFifthBeat = result);
+
+				Assert.That(manualAtFifthBeat, Is.EqualTo(manualAtFourthBeat));
+			}
+			finally { UnityEngine.Object.DestroyImmediate(material); }
+		}
+
 		private static void RequireGraphicsDevice() {
 			if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
 				Assert.Ignore("A GPU graphics device is required for the recursive rectangle render probe.");
