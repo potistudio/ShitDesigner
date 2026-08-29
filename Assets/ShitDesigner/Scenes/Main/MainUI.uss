@@ -53,7 +53,7 @@
     flex-grow: 0;
     flex-shrink: 0;
     background-color: black;
-    -unity-background-scale-mode: scale-to-fit;
+    -unity-background-scale-mode: stretch-to-fill;
     border-width: 1px;
     border-color: rgb(48, 55, 65);
 }
