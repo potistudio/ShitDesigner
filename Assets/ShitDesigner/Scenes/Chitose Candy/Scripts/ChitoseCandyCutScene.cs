@@ -85,28 +85,33 @@ namespace ShitDesigner.Scene {
 		private bool m_RebuildRequested = true;
 		private double m_AdjustedTotalBeats;
 		private long m_LastProcessedBeat = long.MinValue;
-		private int m_LastActionFrame = -1;
 		private bool m_UsesExternalClock;
+		private bool m_WasPlaying;
 
 		private void OnEnable() {
-			m_AdjustedTotalBeats = 0d;
-			m_LastProcessedBeat = long.MinValue;
-			m_LastActionFrame = -1;
-			m_CutLayerIndex = 0;
-			m_PushPending = false;
-			m_UsesExternalClock = false;
+			ResetPlaybackState();
+			m_WasPlaying = Application.isPlaying;
 			Rebuild();
 		}
 
 		private void Update() {
+			var isPlaying = Application.isPlaying;
+			if (isPlaying && !m_WasPlaying) {
+				ResetPlaybackState();
+				Rebuild();
+			}
+			m_WasPlaying = isPlaying;
+
 			if (m_RebuildRequested) {
 				Rebuild();
 				return;
 			}
-			if (Application.isPlaying && !m_UsesExternalClock) {
+			if (!Application.isPlaying)
+				return;
+
+			if (!m_UsesExternalClock)
 				m_AdjustedTotalBeats += Time.unscaledDeltaTime * m_PreviewBpm / 60d;
-				ProcessBeatPosition(m_AdjustedTotalBeats);
-			}
+			ProcessBeatPosition(m_AdjustedTotalBeats);
 		}
 
 		public void SetBpmClock(BeatClockFrame frame) {
@@ -122,7 +127,6 @@ namespace ShitDesigner.Scene {
 
 			m_UsesExternalClock = true;
 			m_AdjustedTotalBeats = frame.AdjustedTotalBeats;
-			ProcessBeatPosition(frame.AdjustedTotalBeats);
 		}
 
 		private void OnDisable() {
@@ -151,7 +155,6 @@ namespace ShitDesigner.Scene {
 		public void Rebuild() {
 			m_RebuildRequested = false;
 			m_LastProcessedBeat = long.MinValue;
-			m_LastActionFrame = -1;
 			m_CutLayerIndex = 0;
 			m_PushPending = false;
 			ReleaseGeneratedContent();
@@ -171,6 +174,14 @@ namespace ShitDesigner.Scene {
 			m_PatternMeshes = BuildPatternMeshes();
 			CreateMaterials();
 			CreateCandies();
+		}
+
+		private void ResetPlaybackState() {
+			m_AdjustedTotalBeats = 0d;
+			m_LastProcessedBeat = long.MinValue;
+			m_CutLayerIndex = 0;
+			m_PushPending = false;
+			m_UsesExternalClock = false;
 		}
 
 		private void CreateMaterials() {
@@ -299,11 +310,7 @@ namespace ShitDesigner.Scene {
 			}
 
 			if (beatIndex > m_LastProcessedBeat) {
-				if (m_LastActionFrame == Time.frameCount)
-					return;
-
 				ProcessNextBeat();
-				m_LastActionFrame = Time.frameCount;
 			}
 			m_LastProcessedBeat = beatIndex;
 		}
