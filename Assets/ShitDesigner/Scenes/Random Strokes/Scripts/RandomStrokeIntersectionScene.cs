@@ -151,24 +151,22 @@ namespace ShitDesigner.Scene {
 		}
 
 		private StrokeLayout BuildLayout(int seed) {
-			List<StrokePath> paths = null;
-			List<PolygonFace> regions = null;
-			for (var attempt = 0; attempt < 4; attempt++) {
+			List<StrokePath> bestPaths = null;
+			var bestRegions = new List<PolygonFace>();
+			for (var attempt = 0; attempt < 32; attempt++) {
 				var pathRandom = new System.Random(unchecked(seed + attempt * 7919));
-				paths = BuildPaths(pathRandom);
-				regions = FindRegions(paths);
+				var paths = BuildPaths(pathRandom);
+				var regions = FindRegions(paths);
+				if (bestPaths == null || regions.Count > bestRegions.Count) {
+					bestPaths = paths;
+					bestRegions = regions;
+				}
 				if (regions.Count > 0)
 					break;
 			}
 
-			if (regions == null || regions.Count == 0) {
-				var fallbackRandom = new System.Random(seed);
-				paths = BuildPaths(fallbackRandom);
-				regions = FindRegions(paths);
-			}
-
-			Shuffle(regions, new System.Random(unchecked(seed ^ 0x5F3759DF)));
-			return new StrokeLayout(paths, regions);
+			Shuffle(bestRegions, new System.Random(unchecked(seed ^ 0x5F3759DF)));
+			return new StrokeLayout(bestPaths, bestRegions);
 		}
 
 		private void BeginTransition(long beat, int seed) {
@@ -492,23 +490,31 @@ namespace ShitDesigner.Scene {
 		}
 
 		private void ReplaceRegionRenderer(List<PolygonFace> regions) {
+			var fillCount = Mathf.Min(m_FilledRegionCount, regions == null ? 0 : regions.Count);
+			if (fillCount <= 0)
+				return;
+
+			var replacementMesh = BuildRegionMesh(regions, fillCount);
+			if (replacementMesh == null)
+				return;
+
 			if (m_RegionObject != null)
 				DestroyOwnedObject(m_RegionObject);
 			m_RegionObject = null;
 			if (m_RegionMesh != null)
 				DestroyOwnedObject(m_RegionMesh);
-			m_RegionMesh = null;
-
-			var fillCount = Mathf.Min(m_FilledRegionCount, regions == null ? 0 : regions.Count);
-			if (fillCount > 0)
-				CreateRegionRenderer(regions, fillCount);
+			m_RegionMesh = replacementMesh;
+			CreateRegionObject();
 		}
 
 		private void CreateRegionRenderer(List<PolygonFace> regions, int count) {
 			m_RegionMesh = BuildRegionMesh(regions, count);
 			if (m_RegionMesh == null)
 				return;
+			CreateRegionObject();
+		}
 
+		private void CreateRegionObject() {
 			var fillObject = new GameObject("Random Filled Regions") {
 				layer = gameObject.layer,
 				hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSave
