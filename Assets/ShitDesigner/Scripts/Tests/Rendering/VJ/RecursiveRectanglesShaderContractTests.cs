@@ -13,7 +13,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 		private const string ShaderPath = "Assets/ShitDesigner/Scripts/Media/Shaders/RecursiveRectangles.shader";
 
 		[UnityTest]
-		public IEnumerator RecursiveRectangles_RevealZeroIsTransparent() {
+		public IEnumerator RecursiveRectangles_RevealZeroShowsOnlyTheRootRegion() {
 			RequireGraphicsDevice();
 			var material = CreateMaterial();
 			try {
@@ -24,7 +24,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 				Color32[] pixels = null;
 				yield return Render(material, 32, 32, result => pixels = result);
 
-				Assert.That(pixels.All(pixel => pixel.a == 0), Is.True);
+				Assert.That(pixels.Distinct().Count(), Is.EqualTo(1));
 			}
 			finally { UnityEngine.Object.DestroyImmediate(material); }
 		}
@@ -92,6 +92,28 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 		}
 
 		[UnityTest]
+		public IEnumerator RecursiveRectangles_UsesOneFillColorAndTransparentVariation() {
+			RequireGraphicsDevice();
+			var material = CreateMaterial();
+			try {
+				Configure(material);
+				material.SetVector("_ColorA", new Vector4(1f, 0f, 0f, 1f));
+				material.SetFloat("_Gutter", 0f);
+
+				Color32[] pixels = null;
+				yield return Render(material, 48, 32, result => pixels = result);
+
+				Assert.That(pixels.Select(pixel => pixel.a).Distinct().Count(), Is.GreaterThan(1));
+				foreach (var pixel in pixels) {
+					Assert.That(pixel.r, Is.EqualTo(pixel.a).Within(1));
+					Assert.That(pixel.g, Is.EqualTo(0));
+					Assert.That(pixel.b, Is.EqualTo(0));
+				}
+			}
+			finally { UnityEngine.Object.DestroyImmediate(material); }
+		}
+
+		[UnityTest]
 		public IEnumerator RecursiveRectangles_BeatPhaseControlsRevealWhenClockIsAvailable() {
 			RequireGraphicsDevice();
 			var material = CreateMaterial();
@@ -108,8 +130,8 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 				Color32[] beatEnd = null;
 				yield return Render(material, 48, 32, result => beatEnd = result);
 
-				Assert.That(beatStart.All(pixel => pixel.a == 0), Is.True);
-				Assert.That(beatEnd.All(pixel => pixel.a > 0), Is.True);
+				Assert.That(beatStart.Distinct().Count(), Is.EqualTo(1));
+				Assert.That(beatEnd.Distinct().Count(), Is.GreaterThan(1));
 			}
 			finally { UnityEngine.Object.DestroyImmediate(material); }
 		}
@@ -134,10 +156,10 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 				yield return Render(material, 64, 8, result => halfway = result);
 
 				var row = 4 * 64;
-				Assert.That(halfway[row + 40], Is.EqualTo(root[row + 40]));
+				Assert.That(halfway[row + 24], Is.EqualTo(root[row + 24]));
 				Assert.That(halfway[row + 56], Is.EqualTo(root[row + 56]));
 				Assert.That(halfway[row + 8], Is.Not.EqualTo(root[row + 8]));
-				Assert.That(halfway[row + 24], Is.Not.EqualTo(root[row + 24]));
+				Assert.That(halfway[row + 40], Is.Not.EqualTo(root[row + 40]));
 
 				material.SetInt("_AxisMode", 1);
 				Color32[] verticalSplit = null;

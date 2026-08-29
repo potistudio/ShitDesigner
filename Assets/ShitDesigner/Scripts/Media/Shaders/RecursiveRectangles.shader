@@ -99,6 +99,13 @@ Shader "Hidden/ShitDesigner/RecursiveRectangles"
 				return value;
 			}
 
+			float4 PathColor(uint seed, uint path)
+			{
+				float4 color = _ColorA;
+				color.a *= 1.0 - Random01(seed, path, 47u);
+				return color;
+			}
+
 			float4 Premultiply(float4 color)
 			{
 				color.rgb *= color.a;
@@ -126,6 +133,7 @@ Shader "Hidden/ShitDesigner/RecursiveRectangles"
 				uint path = 1u;
 				float2 boundsMin = float2(0.0, 0.0);
 				float2 boundsMax = float2(1.0, 1.0);
+				float4 color = PathColor(seed, path);
 				float lineCoverage = 0.0;
 
 				[unroll]
@@ -176,17 +184,24 @@ Shader "Hidden/ShitDesigner/RecursiveRectangles"
 						lineCoverage = max(lineCoverage, saturate(1.0 - abs(coordinate - split) / _Gutter) * eased * (inParent ? 1.0 : 0.0));
 					}
 
-					if (localProgress < 1.0) break;
+					if (localProgress < 1.0)
+					{
+						float2 animatedMin = childMin;
+						float2 animatedMax = childMax;
+						animatedMax.x = lerp(childMin.x, childMax.x, eased);
+						bool inside = localProgress > 0.0 && all(input.uv >= animatedMin) && all(input.uv <= animatedMax);
+						if (inside) color = PathColor(seed, childPath);
+						break;
+					}
 
 					boundsMin = childMin;
 					boundsMax = childMax;
 					path = childPath;
+					color = PathColor(seed, path);
 				}
 
-				float wipeCoverage = step(input.uv.x, Ease(revealProgress));
-				float4 result = Premultiply(_ColorA) * wipeCoverage;
+				float4 result = Premultiply(color);
 				float4 lineColor = Premultiply(_LineColor);
-				lineCoverage *= wipeCoverage;
 				float lineAlpha = saturate(lineCoverage) * lineColor.a;
 				result.rgb = lineColor.rgb * saturate(lineCoverage) + result.rgb * (1.0 - lineAlpha);
 				result.a = lineAlpha + result.a * (1.0 - lineAlpha);
