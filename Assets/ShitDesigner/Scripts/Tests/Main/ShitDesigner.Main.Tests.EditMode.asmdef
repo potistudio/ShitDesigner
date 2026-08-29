@@ -19,6 +19,7 @@
   "allowUnsafeCode": false,
   "overrideReferences": true,
   "precompiledReferences": [
+    "CSharpFunctionalExtensions.dll",
     "nunit.framework.dll"
   ],
   "autoReferenced": false,
