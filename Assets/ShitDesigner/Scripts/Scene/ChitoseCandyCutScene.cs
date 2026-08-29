@@ -27,13 +27,12 @@ namespace ShitDesigner.Scene {
 			public float RearBasePosition { get; }
 			public float FrontBasePosition { get; }
 			public float CutCoordinate { get; }
-			public Vector3 RearImpulse { get; }
 			public Vector3 FrontImpulse { get; }
 			public bool PhysicsActivated { get; set; }
 
 			public Candy(Transform rearSegment, Transform frontSegment, Transform rearCutFace, Transform frontCutFace,
 				Rigidbody rearBody, Rigidbody frontBody, float rearBasePosition, float frontBasePosition,
-				float cutCoordinate, Vector3 rearImpulse, Vector3 frontImpulse) {
+				float cutCoordinate, Vector3 frontImpulse) {
 				RearSegment = rearSegment;
 				FrontSegment = frontSegment;
 				RearCutFace = rearCutFace;
@@ -43,7 +42,6 @@ namespace ShitDesigner.Scene {
 				RearBasePosition = rearBasePosition;
 				FrontBasePosition = frontBasePosition;
 				CutCoordinate = cutCoordinate;
-				RearImpulse = rearImpulse;
 				FrontImpulse = frontImpulse;
 			}
 		}
@@ -70,7 +68,7 @@ namespace ShitDesigner.Scene {
 		[Min(0.01f)] [SerializeField] private float m_CutterImpactWidth = 0.72f;
 		[Min(0.1f)] [SerializeField] private float m_CutPieceLength = 1.75f;
 		[Min(0f)] [SerializeField] private float m_SplitGap = 0.55f;
-		[Min(0f)] [SerializeField] private float m_HorizontalImpulse = 0.18f;
+		[Min(0f)] [SerializeField] private float m_HorizontalImpulse = 0.9f;
 
 		[Header("Cutter")]
 		[SerializeField] private Vector3 m_BladePosition = new Vector3(0f, 0f, -2.8f);
@@ -292,7 +290,7 @@ namespace ShitDesigner.Scene {
 
 			return new Candy(rearSegment, frontSegment, rearCutFace, frontCutFace, rearBody, frontBody,
 				rearBasePosition, frontBasePosition, Vector3.Dot(frontPosition, m_CutterTravelDirection),
-				CreateHorizontalImpulse(random), CreateHorizontalImpulse(random));
+				CreateHorizontalImpulse(random));
 		}
 
 		private Rigidbody AddPhysicsBody(Transform segment, float length) {
@@ -366,7 +364,6 @@ namespace ShitDesigner.Scene {
 
 			candy.PhysicsActivated = true;
 			Physics.SyncTransforms();
-			ActivatePhysics(candy.RearBody, candy.RearImpulse);
 			ActivatePhysics(candy.FrontBody, candy.FrontImpulse);
 		}
 
