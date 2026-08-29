@@ -64,8 +64,6 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(((Material)serializedPenlightCrowd.FindProperty("_material").objectReferenceValue).enableInstancing, Is.True);
 				var serializedGraph = new SerializedObject(graph);
 				Assert.That(serializedGraph.FindProperty("_shaderManifest").objectReferenceValue, Is.Not.Null);
-				Assert.That(graph.Patches.All(definition => definition.Flash != null && definition.Flash.Image != null), Is.True);
-
 				var serializedHost = new SerializedObject(host);
 				Assert.That(serializedHost.FindProperty("_graphBootstrap").objectReferenceValue, Is.SameAs(graph));
 				Assert.That(serializedHost.FindProperty("_midiInputManager").objectReferenceValue, Is.SameAs(midi));

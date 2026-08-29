@@ -19,7 +19,6 @@ namespace ShitDesigner.Editor {
 		private SerializedProperty _parameters;
 		private SerializedProperty m_KeyboardInputs;
 		private SerializedProperty m_MidiInputs;
-		private SerializedProperty _flash;
 
 		private void OnEnable() {
 			_id = serializedObject.FindProperty("_id");
@@ -28,7 +27,6 @@ namespace ShitDesigner.Editor {
 			_parameters = serializedObject.FindProperty("_parameters");
 			m_KeyboardInputs = serializedObject.FindProperty("m_KeyboardInputs");
 			m_MidiInputs = serializedObject.FindProperty("m_MidiInputs");
-			_flash = serializedObject.FindProperty("_flash");
 		}
 
 		public override void OnInspectorGUI() {
@@ -51,9 +49,6 @@ namespace ShitDesigner.Editor {
 
 			EditorGUILayout.Space(6f);
 			EditorGUILayout.PropertyField(m_MidiInputs, new GUIContent("MIDI Inputs", "Maps MIDI controls to published parameters while this patch is loaded."), true);
-
-			EditorGUILayout.Space(6f);
-			EditorGUILayout.PropertyField(_flash, new GUIContent("Flash"));
 
 			serializedObject.ApplyModifiedProperties();
 			DrawValidationMessage();

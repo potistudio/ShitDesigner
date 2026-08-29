@@ -68,11 +68,11 @@ namespace ShitDesigner.Main {
 	internal sealed class LiveGraph : IDisposable {
 		private readonly SceneIsolationManager _sceneManager;
 		private readonly RenderTexturePool _renderPool;
-		private readonly Func<PatchDefinition, PatchFlashDefinition, LiveRenderSize, LiveProgramOutput> _createOutput;
+		private readonly Func<PatchDefinition, LiveRenderSize, LiveProgramOutput> _createOutput;
 		public IReadOnlyList<PatchDefinition> PatchDefinitions { get; }
 
 		public LiveGraph(SceneIsolationManager sceneManager, RenderTexturePool renderPool, IEnumerable<PatchDefinition> patchDefinitions,
-			Func<PatchDefinition, PatchFlashDefinition, LiveRenderSize, LiveProgramOutput> createOutput) {
+			Func<PatchDefinition, LiveRenderSize, LiveProgramOutput> createOutput) {
 			_sceneManager = sceneManager ?? throw new ArgumentNullException(nameof(sceneManager));
 			_renderPool = renderPool ?? throw new ArgumentNullException(nameof(renderPool));
 			_createOutput = createOutput ?? throw new ArgumentNullException(nameof(createOutput));
@@ -80,8 +80,8 @@ namespace ShitDesigner.Main {
 			if (PatchDefinitions.Count == 0) throw new ArgumentException("A live graph requires patches.");
 		}
 
-		public LiveProgramOutput CreateOutput(PatchDefinition patch, PatchFlashDefinition flashPatch, LiveRenderSize renderSize)
-			=> _createOutput(patch, flashPatch, renderSize);
+		public LiveProgramOutput CreateOutput(PatchDefinition patch, LiveRenderSize renderSize)
+			=> _createOutput(patch, renderSize);
 
 		public void Dispose() {
 			_sceneManager.Dispose();
@@ -176,16 +176,12 @@ namespace ShitDesigner.Main {
 		public RenderTexture ProgramTexture { get; }
 		private readonly RenderTexture _shaderGraphTexture;
 		private readonly LiveProgramGraph _programGraph;
-		private readonly LiveProgramFlash _flash;
-		private readonly PatchFlashDefinition _flashPatch;
 
 		public LiveProgramOutput(RenderTexture programTexture, RenderTexture shaderGraphTexture,
-			LiveProgramGraph programGraph, LiveProgramFlash flash, PatchFlashDefinition flashPatch) {
+			LiveProgramGraph programGraph) {
 			ProgramTexture = programTexture ?? throw new ArgumentNullException(nameof(programTexture));
 			_shaderGraphTexture = shaderGraphTexture ?? throw new ArgumentNullException(nameof(shaderGraphTexture));
 			_programGraph = programGraph ?? throw new ArgumentNullException(nameof(programGraph));
-			_flash = flash ?? throw new ArgumentNullException(nameof(flash));
-			_flashPatch = flashPatch;
 		}
 
 		public void Evaluate(double deltaSeconds, BeatClockFrame bpmFrame) => _programGraph.Evaluate(deltaSeconds, bpmFrame);
@@ -194,13 +190,7 @@ namespace ShitDesigner.Main {
 
 		public void Render(double graphTime, ulong frameNumber) {
 			_programGraph.Render(_shaderGraphTexture, graphTime, frameNumber);
-			_flash.Render(_shaderGraphTexture, ProgramTexture, graphTime);
-		}
-
-		public void TriggerFlash(double graphTime) {
-			_flash.Trigger(graphTime);
-			if (_flashPatch?.Image == null) return;
-			_flash.TriggerAsset(graphTime, _flashPatch.Image, _flashPatch.DurationSeconds);
+			Graphics.Blit(_shaderGraphTexture, ProgramTexture);
 		}
 
 		public bool TrySetGraphParameter(string nodeId, string parameterId, ParameterValue value, out string rejectionReason)
@@ -210,7 +200,6 @@ namespace ShitDesigner.Main {
 			=> _programGraph.TryGetSceneParameter(nodeId, parameterId, out root, out definition);
 
 		public void Dispose() {
-			_flash.Dispose();
 			_programGraph.Dispose();
 			ReleaseTexture(_shaderGraphTexture);
 			ReleaseTexture(ProgramTexture);
@@ -762,10 +751,6 @@ namespace ShitDesigner.Main {
 			}
 			var patch = _preloadedPatch?.Definition == definition ? _preloadedPatch : _loadedPatch?.Definition == definition ? _loadedPatch : null;
 			if (patch == null) return Reject(request, "The requested patch is not loaded.");
-			if (request.Kind == LiveParameterRequestKind.TriggerFlash) {
-				patch.TriggerFlash(_graphTime);
-				return Accept(request);
-			}
 			return patch.TrySetParameter(request.ParameterId, request.ParameterValue, out var reason) ? Accept(request) : Reject(request, reason);
 		}
 
@@ -1024,13 +1009,13 @@ namespace ShitDesigner.Main {
 		public IReadOnlyList<LiveProgramOutput> Outputs { get; }
 
 		public LivePatch(PatchDefinition definition,
-			Func<PatchDefinition, PatchFlashDefinition, LiveRenderSize, LiveProgramOutput> createOutput,
+			Func<PatchDefinition, LiveRenderSize, LiveProgramOutput> createOutput,
 			LiveRenderSize renderSize) {
 			Definition = definition ?? throw new ArgumentNullException(nameof(definition));
 			if (createOutput == null) throw new ArgumentNullException(nameof(createOutput));
 			LiveProgramOutput output = null;
 			try {
-				output = createOutput(definition, definition.Flash, renderSize);
+				output = createOutput(definition, renderSize);
 				Outputs = new[] { output };
 				_parameters = definition.Parameters.ToDictionary(parameter => parameter.Id, parameter => {
 					var graphNode = definition.ProgramGraph.Nodes.FirstOrDefault(node => string.Equals(node.Id, parameter.NodeId, StringComparison.Ordinal));
@@ -1067,10 +1052,6 @@ namespace ShitDesigner.Main {
 			foreach (var parameter in _parameters.Values)
 				if (!parameter.TryApplyResolvedValue(frame, out var rejectionReason))
 					throw new InvalidOperationException("The resolved patch parameter could not be applied: " + rejectionReason);
-		}
-
-		public void TriggerFlash(double graphTime) {
-			foreach (var output in Outputs) output.TriggerFlash(graphTime);
 		}
 
 		public void Dispose() {

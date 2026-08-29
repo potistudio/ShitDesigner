@@ -14,9 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
   _id: shower
   _displayName: Shower
-  _flash:
-    _image: {fileID: 2800000, guid: 7a79d5930288fe04d88c8c8e472c3bfb, type: 3}
-    _durationSeconds: 0.25
   _programGraph:
     _outputNodeId: rgb
     _nodes:

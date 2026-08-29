@@ -99,64 +99,6 @@ namespace ShitDesigner.Main.Tests {
 			}
 		}
 
-		[Test]
-		public void MidiTriggerBindingQueuesFlashForTheLoadedPatch() {
-			var owner = new GameObject("MIDI");
-			var patch = CreatePatch("patch-a");
-			try {
-				var manager = owner.AddComponent<MidiInputManager>();
-				var source = new QueueMidiInputSource();
-				manager.SetBindings(new[] { new MidiLiveControlBinding(string.Empty, MidiControlKind.Note, 1, 36, output: MidiLiveControlBindingOutput.Trigger) });
-				manager.Configure(new NullMidiApplication(), new NullLiveControlApplication(), source);
-				var queue = new LiveParameterQueue();
-				using (var input = new LiveMidiInput(manager, queue, new[] { patch })) {
-					input.SetSelectedPatch("patch-a");
-					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.Note, 1, 36), 127));
-					manager.Poll();
-				}
-
-				var requests = new List<LiveParameterRequest>();
-				queue.Drain(requests);
-				Assert.That(requests, Has.Count.EqualTo(1));
-				Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.TriggerFlash));
-				Assert.That(requests[0].PatchId, Is.EqualTo("patch-a"));
-			}
-			finally {
-				Object.DestroyImmediate(owner);
-				Object.DestroyImmediate(patch);
-			}
-		}
-
-		[Test]
-		public void MidiTriggerBindingFiresOnlyOnTheRisingEdge() {
-			var owner = new GameObject("MIDI");
-			var patch = CreatePatch("patch-a");
-			try {
-				var manager = owner.AddComponent<MidiInputManager>();
-				var source = new QueueMidiInputSource();
-				manager.SetBindings(new[] { new MidiLiveControlBinding(string.Empty, MidiControlKind.Note, 1, 60, output: MidiLiveControlBindingOutput.Trigger) });
-				manager.Configure(new NullMidiApplication(), new NullLiveControlApplication(), source);
-				var queue = new LiveParameterQueue();
-				using (var input = new LiveMidiInput(manager, queue, new[] { patch })) {
-					input.SetSelectedPatch("patch-a");
-					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.Note, 1, 60), 127));
-					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.Note, 1, 60), 127));
-					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.Note, 1, 60), 0));
-					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.Note, 1, 60), 127));
-					manager.Poll();
-				}
-
-				var requests = new List<LiveParameterRequest>();
-				queue.Drain(requests);
-				Assert.That(requests, Has.Count.EqualTo(2));
-				Assert.That(requests, Has.All.Matches<LiveParameterRequest>(request => request.Kind == LiveParameterRequestKind.TriggerFlash));
-			}
-			finally {
-				Object.DestroyImmediate(owner);
-				Object.DestroyImmediate(patch);
-			}
-		}
-
 		private static PatchDefinition CreatePatch(string id, params PatchMidiInputBinding[] midiInputs) {
 			var patch = ScriptableObject.CreateInstance<PatchDefinition>();
 			var serialized = new SerializedObject(patch);

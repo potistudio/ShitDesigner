@@ -386,31 +386,11 @@ namespace ShitDesigner.Scene {
 			=> UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "scene"));
 	}
 
-	[Serializable]
-	public sealed class PatchFlashDefinition {
-		[SerializeField] private Texture2D _image;
-		[SerializeField, Min(.01f)] private float _durationSeconds = .25f;
-
-		public Texture2D Image => _image;
-		public float DurationSeconds => _durationSeconds;
-
-		public UnitResult<Diagnostic> Validate() {
-			if (_image == null) return Failure("patch.definition.flash.image", "A configured patch flash requires an image.");
-			if (float.IsNaN(_durationSeconds) || float.IsInfinity(_durationSeconds) || _durationSeconds <= 0f)
-				return Failure("patch.definition.flash.duration", "A configured patch flash requires a positive duration.");
-			return UnitResult.Success<Diagnostic>();
-		}
-
-		private static UnitResult<Diagnostic> Failure(string code, string message)
-			=> UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, module: "scene"));
-	}
-
 	/// <summary>Logical live patch composed from graph nodes and published controls.</summary>
 	[CreateAssetMenu(fileName = "PatchDefinition", menuName = "ShitDesigner/Patch Definition")]
 	public sealed class PatchDefinition : ScriptableObject {
 		[SerializeField] private string _id;
 		[SerializeField] private string _displayName;
-		[SerializeField] private PatchFlashDefinition _flash;
 		[SerializeField] private PatchProgramGraph _programGraph = new PatchProgramGraph();
 		[SerializeField] private List<PatchParameter> _parameters = new List<PatchParameter>();
 		[SerializeField] private List<PatchKeyboardInputBinding> m_KeyboardInputs = new List<PatchKeyboardInputBinding>();
@@ -418,7 +398,6 @@ namespace ShitDesigner.Scene {
 
 		public string Id => _id ?? string.Empty;
 		public string DisplayName => _displayName ?? string.Empty;
-		public PatchFlashDefinition Flash => _flash;
 		public PatchProgramGraph ProgramGraph => _programGraph;
 		public IReadOnlyList<PatchParameter> Parameters => _parameters ?? (IReadOnlyList<PatchParameter>)Array.Empty<PatchParameter>();
 		public IReadOnlyList<PatchKeyboardInputBinding> KeyboardInputs => m_KeyboardInputs ?? (IReadOnlyList<PatchKeyboardInputBinding>)Array.Empty<PatchKeyboardInputBinding>();
@@ -452,7 +431,6 @@ namespace ShitDesigner.Scene {
 			if (MidiInputs.Any(binding => binding == null || binding.Validate().IsFailure)) return Failure("patch.definition.midi_input", "Every patch MIDI input must be valid.");
 			if (MidiInputs.Any(binding => !Parameters.Any(parameter => parameter != null && string.Equals(parameter.Id, binding.ParameterId, StringComparison.Ordinal))))
 				return Failure("patch.definition.midi_input_parameter", "A patch MIDI input references an unknown published parameter.");
-			if (Flash != null && Flash.Validate().IsFailure) return Failure("patch.definition.flash", "A patch flash definition is invalid.");
 			return UnitResult.Success<Diagnostic>();
 		}
 

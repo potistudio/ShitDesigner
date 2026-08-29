@@ -5,8 +5,6 @@ using ShitDesigner.Core;
 using UnityEngine;
 
 namespace ShitDesigner.Input {
-	public enum MidiLiveControlBindingOutput { Value, Trigger }
-
 	public sealed class MidiLiveControlBindingState {
 		public bool IsValid { get; internal set; }
 		public string Error { get; internal set; } = string.Empty;
@@ -14,7 +12,6 @@ namespace ShitDesigner.Input {
 		public int LastRawValue { get; internal set; }
 		public float LastNormalizedValue { get; internal set; }
 		public long MatchCount { get; internal set; }
-		public bool IsActive { get; internal set; }
 
 		internal void Record(int rawValue, float normalizedValue) {
 			HasValue = true;
@@ -47,7 +44,6 @@ namespace ShitDesigner.Input {
 		[SerializeField] private int _rawMinimum;
 		[SerializeField] private int _rawMaximum = 127;
 		[SerializeField] private bool _invert;
-		[SerializeField] private MidiLiveControlBindingOutput _output;
 
 		public string LiveControlId => _liveControlId ?? string.Empty;
 		public MidiControlKind MessageType => _messageType;
@@ -56,11 +52,10 @@ namespace ShitDesigner.Input {
 		public int RawMinimum => _rawMinimum;
 		public int RawMaximum => _rawMaximum;
 		public bool Invert => _invert;
-		public MidiLiveControlBindingOutput Output => _output;
 
 		public MidiLiveControlBinding() { }
 
-		public MidiLiveControlBinding(string liveControlId, MidiControlKind messageType, int channel, int number, int rawMinimum = 0, int rawMaximum = 127, bool invert = false, MidiLiveControlBindingOutput output = MidiLiveControlBindingOutput.Value) {
+		public MidiLiveControlBinding(string liveControlId, MidiControlKind messageType, int channel, int number, int rawMinimum = 0, int rawMaximum = 127, bool invert = false) {
 			_liveControlId = liveControlId ?? string.Empty;
 			_messageType = messageType;
 			_channel = channel;
@@ -68,15 +63,12 @@ namespace ShitDesigner.Input {
 			_rawMinimum = rawMinimum;
 			_rawMaximum = rawMaximum;
 			_invert = invert;
-			_output = output;
 		}
 
 		public bool TryResolve(out LogicalControlId id, out string error) {
 			id = default(LogicalControlId);
-			if (Output == MidiLiveControlBindingOutput.Value) {
-				if (string.IsNullOrWhiteSpace(LiveControlId)) { error = "Select a Live Control."; return false; }
-				if (!LogicalControlId.TryParseUuidV4(LiveControlId, out id)) { error = "Live Control ID must be a UUID v4."; return false; }
-			}
+			if (string.IsNullOrWhiteSpace(LiveControlId)) { error = "Select a Live Control."; return false; }
+			if (!LogicalControlId.TryParseUuidV4(LiveControlId, out id)) { error = "Live Control ID must be a UUID v4."; return false; }
 			if (_channel < 1 || _channel > 16) { error = "MIDI channel must be between 1 and 16."; return false; }
 			if (_number < 0 || _number > 127) { error = "MIDI number must be between 0 and 127."; return false; }
 			if (_rawMinimum >= _rawMaximum) { error = "Raw Minimum must be less than Raw Maximum."; return false; }
@@ -146,7 +138,6 @@ namespace ShitDesigner.Input {
 		public bool HasLastEvent { get; private set; }
 		public MidiInputEvent LastEvent { get; private set; }
 		public event Action<MidiInputEvent> InputReceived;
-		public event Action<MidiLiveControlBinding> TriggerReceived;
 
 		public void SetBindings(IEnumerable<MidiLiveControlBinding> bindings) {
 			_bindings = new List<MidiLiveControlBinding>(bindings ?? Array.Empty<MidiLiveControlBinding>());
@@ -208,14 +199,7 @@ namespace ShitDesigner.Input {
 				state.LastRawValue = 0;
 				state.LastNormalizedValue = 0f;
 				state.MatchCount = 0;
-				state.IsActive = false;
 			}
-		}
-
-		public bool IsTriggerBinding(MidiControl control) {
-			foreach (var binding in _runtimeBindings)
-				if (binding.Definition.Output == MidiLiveControlBindingOutput.Trigger && binding.Definition.Matches(control)) return true;
-			return false;
 		}
 
 		private void OpenConfiguredDevice() {
@@ -274,12 +258,7 @@ namespace ShitDesigner.Input {
 					if (!binding.Definition.Matches(inputEvent.Control)) continue;
 					var normalizedValue = binding.Definition.Normalize(inputEvent.RawValue);
 					binding.State.Record(inputEvent.RawValue, normalizedValue);
-					if (binding.Definition.Output == MidiLiveControlBindingOutput.Trigger) {
-						var isActive = normalizedValue >= .5f;
-						if (isActive && !binding.State.IsActive) TriggerReceived?.Invoke(binding.Definition);
-						binding.State.IsActive = isActive;
-					}
-					else _liveControlApplication?.SetLiveControlValue(binding.LiveControlId, normalizedValue);
+					_liveControlApplication?.SetLiveControlValue(binding.LiveControlId, normalizedValue);
 					MatchedBindingCount++;
 					matches++;
 					handled = true;

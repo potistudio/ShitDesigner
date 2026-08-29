@@ -14,9 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
   _id: dvd_bounce
   _displayName: DVD Bounce
-  _flash:
-    _image: {fileID: 3749889489822762482, guid: 7923732e0c5622c4a9f726ef31392170, type: 2}
-    _durationSeconds: 0.25
   _programGraph:
     _outputNodeId: item
     _nodes:
