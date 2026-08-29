@@ -111,7 +111,15 @@ namespace ShitDesigner.Scene {
 			if (!frame.IsAvailable || double.IsNaN(frame.AdjustedTotalBeats) || double.IsInfinity(frame.AdjustedTotalBeats))
 				return;
 
+			if (!m_UsesExternalClock) {
+				m_UsesExternalClock = true;
+				m_AdjustedTotalBeats = frame.AdjustedTotalBeats;
+				m_LastProcessedBeat = GetBeatIndex(frame.AdjustedTotalBeats);
+				return;
+			}
+
 			m_UsesExternalClock = true;
+			m_AdjustedTotalBeats = frame.AdjustedTotalBeats;
 			ProcessBeatPosition(frame.AdjustedTotalBeats);
 		}
 
@@ -276,7 +284,7 @@ namespace ShitDesigner.Scene {
 			if (double.IsNaN(beatPosition) || double.IsInfinity(beatPosition))
 				return;
 
-			var beatIndex = (long)Math.Floor(beatPosition + 1e-9d);
+			var beatIndex = GetBeatIndex(beatPosition);
 			if (m_LastProcessedBeat == long.MinValue) {
 				m_LastProcessedBeat = beatIndex;
 				return;
@@ -292,6 +300,8 @@ namespace ShitDesigner.Scene {
 			}
 			m_LastProcessedBeat = beatIndex;
 		}
+
+		private static long GetBeatIndex(double beatPosition) => (long)Math.Floor(beatPosition + 1e-9d);
 
 		private void ProcessNextBeat() {
 			if (m_PushPending) {
