@@ -57,20 +57,9 @@ MonoBehaviour:
   - {r: 0.98, g: 0.91, b: 0.04, a: 1}
   - {r: 0.03, g: 0.86, b: 0.58, a: 1}
   - {r: 0.92, g: 0.17, b: 0.43, a: 1}
-  m_CutterSpeed: 0.62
-  m_CutterTravel: 8
-  m_CutterImpactWidth: 0.72
   m_CutPieceLength: 1.75
   m_SplitGap: 0.55
   m_HorizontalImpulse: 0.9
-  m_BladePosition: {x: 0, y: 0, z: -2.8}
-  m_BladeLength: 17
-  m_BladeThickness: 0.18
-  m_BladeDepth: 0.16
-  m_BladeAngle: 52
-  m_BladeEdgeThickness: 0.07
-  m_BladeColor: {r: 0.92, g: 0.98, b: 0.95, a: 1}
-  m_BladeEdgeColor: {r: 0.08, g: 0.25, b: 0.27, a: 1}
 --- !u!1 &1000000000000010010
 GameObject:
   m_ObjectHideFlags: 0
