@@ -27,6 +27,7 @@ namespace ShitDesigner.Scene {
 			public Rigidbody Body { get; }
 			public float BasePosition { get; }
 			public Vector3 Impulse { get; }
+			public Vector3 PushStartPosition { get; set; }
 
 			public CandyFragment(Transform segment, Transform rearCutFace, Transform frontCutFace,
 				Rigidbody body, float basePosition, Vector3 impulse) {
@@ -360,6 +361,7 @@ namespace ShitDesigner.Scene {
 				m_PushPending = false;
 				m_PushAnimating = true;
 				m_PushStartBeat = beatIndex;
+				CapturePushStartPositions();
 				PushCutLayers(0f);
 				return;
 			}
@@ -455,14 +457,27 @@ namespace ShitDesigner.Scene {
 				if (layerIndex < 0)
 					continue;
 
-				var mainBodyOffset = pushDistance * (layerIndex + clampedProgress);
 				for (var fragmentIndex = layerIndex + 1; fragmentIndex < candy.Fragments.Length; fragmentIndex++) {
 					var fragment = candy.Fragments[fragmentIndex];
-					fragment.Segment.localPosition = Vector3.up * (fragment.BasePosition + mainBodyOffset);
+					var targetPosition = Vector3.up * (fragment.BasePosition + pushDistance * (layerIndex + 1));
+					fragment.Segment.localPosition = Vector3.Lerp(
+						fragment.PushStartPosition, targetPosition, clampedProgress);
 				}
 			}
 			if (Application.isPlaying)
 				Physics.SyncTransforms();
+		}
+
+		private void CapturePushStartPositions() {
+			for (var index = 0; index < m_Candies.Count; index++) {
+				var candy = m_Candies[index];
+				var layerIndex = candy.PendingPushLayer;
+				if (layerIndex < 0)
+					continue;
+
+				for (var fragmentIndex = layerIndex + 1; fragmentIndex < candy.Fragments.Length; fragmentIndex++)
+					candy.Fragments[fragmentIndex].PushStartPosition = candy.Fragments[fragmentIndex].Segment.localPosition;
+			}
 		}
 
 		private static void ActivatePhysics(Rigidbody rigidbody, Vector3 impactImpulse) {
