@@ -86,8 +86,10 @@ LightmapSettings:
     m_PVRCulling: 1
     m_PVRFilteringGaussRadiusDirect: 1
     m_PVRFilteringGaussRadiusIndirect: 1
+    m_PVRFilteringGaussRadiusAO: 1
     m_PVRFilteringAtrousPositionSigmaDirect: 0.5
     m_PVRFilteringAtrousPositionSigmaIndirect: 2
+    m_PVRFilteringAtrousPositionSigmaAO: 1
     m_ExportTrainingData: 0
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
@@ -161,7 +163,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c26c68c5d794a1a8a4ed8e4c8fd5d2b, type: 3}
   m_Name:
   m_EditorClassIdentifier: BpmShapes::ShitDesigner.Scene.CenterRectangleExpansion
-  m_DurationSeconds: 1.4
+  m_PreviewBpm: 120
+  m_BeatsPerExpansion: 1
   m_InitialScale: 0.02
   m_Loop: 1
   m_Easing:
@@ -218,13 +221,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2000}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -10}
+  m_LocalRotation: {x: 1, y: 0, z: 0, w: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 180, y: 0, z: 0}
 --- !u!20 &2002
 Camera:
   m_ObjectHideFlags: 0
@@ -256,8 +259,8 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.3
-  far clip plane: 100
+  near clip plane: 0.5
+  far clip plane: 1.5
   field of view: 60
   orthographic: 1
   orthographic size: 4.5
@@ -309,6 +312,7 @@ MonoBehaviour:
   m_AllowHDROutput: 1
   m_UseScreenCoordOverride: 0
   m_ScreenSizeOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
   m_RequiresDepthTexture: 0
   m_RequiresColorTexture: 0
   m_TaaSettings:
@@ -323,5 +327,5 @@ MonoBehaviour:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 1000}
-  - {fileID: 2000}
+  - {fileID: 1001}
+  - {fileID: 2001}
