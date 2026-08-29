@@ -45,9 +45,11 @@ namespace ShitDesigner.Scene {
 
 			for (var index = 0; index < m_Visuals.Count; index++) {
 				var visual = m_Visuals[index];
-				var position = (Vector2)visual.Object.transform.position + visual.Velocity * Time.unscaledDeltaTime;
-				ReflectWithinBounds(ref position, ref visual.Velocity, GetMovementBounds(visual.Renderer));
+				var velocity = visual.Velocity;
+				var position = (Vector2)visual.Object.transform.position + velocity * Time.unscaledDeltaTime;
+				ReflectWithinBounds(ref position, ref velocity, GetMovementBounds(visual.Renderer));
 				visual.Object.transform.position = new Vector3(position.x, position.y, 0f);
+				visual.Velocity = velocity;
 			}
 		}
 
@@ -204,8 +206,10 @@ namespace ShitDesigner.Scene {
 
 		private void KeepWithinBounds(BouncingVisual visual) {
 			var position = (Vector2)visual.Object.transform.position;
-			ReflectWithinBounds(ref position, ref visual.Velocity, GetMovementBounds(visual.Renderer));
+			var velocity = visual.Velocity;
+			ReflectWithinBounds(ref position, ref velocity, GetMovementBounds(visual.Renderer));
 			visual.Object.transform.position = new Vector3(position.x, position.y, 0f);
+			visual.Velocity = velocity;
 		}
 
 		private static void ReflectWithinBounds(ref Vector2 position, ref Vector2 velocity, Bounds2D bounds) {
