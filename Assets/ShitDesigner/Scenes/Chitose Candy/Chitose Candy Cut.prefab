@@ -44,7 +44,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b9f18e39cf5947a49897091c17ca1808, type: 3}
   m_Name:
-  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.ChitoseCandyCutScene
+  m_EditorClassIdentifier: ChitoseCandy::ShitDesigner.Scene.ChitoseCandyCutScene
   m_CandyCount: 12
   m_CandyLength: 14
   m_CandyRadius: 0.68
