@@ -24,7 +24,7 @@ namespace ShitDesigner.Scene {
 			public Transform Segment { get; }
 			public Transform RearCutFace { get; }
 			public Transform FrontCutFace { get; }
-			public Rigidbody Body { get; private set; }
+			public Rigidbody Body { get; }
 			public float BasePosition { get; }
 			public Vector3 Impulse { get; }
 
@@ -37,8 +37,6 @@ namespace ShitDesigner.Scene {
 				BasePosition = basePosition;
 				Impulse = impulse;
 			}
-
-			public void SetBody(Rigidbody body) => Body = body;
 		}
 
 		private sealed class Candy {
@@ -226,7 +224,7 @@ namespace ShitDesigner.Scene {
 				fragment.localPosition = Vector3.up * basePosition;
 				CreateMeshObject("Fragment Candy Body", fragment, m_FragmentBodyMesh,
 					m_BodyMaterials[index % m_BodyMaterials.Length], Vector3.one);
-				var body = Application.isPlaying ? AddPhysicsBody(fragment, m_FragmentLength) : null;
+				var body = AddPhysicsBody(fragment, m_FragmentLength);
 
 				var rearCutFace = CreateMeshObject("Fragment Rear Cut Face", fragment, m_DiscMesh,
 					m_FaceMaterial, cutFaceScale);
@@ -266,30 +264,17 @@ namespace ShitDesigner.Scene {
 		}
 
 		private Rigidbody AddPhysicsBody(Transform segment, float length) {
-			var rigidbody = segment.GetComponent<Rigidbody>();
-			if (rigidbody == null)
-				rigidbody = segment.gameObject.AddComponent<Rigidbody>();
+			var rigidbody = segment.gameObject.AddComponent<Rigidbody>();
 			rigidbody.isKinematic = true;
 			rigidbody.useGravity = false;
 			rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
 			rigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
 
-			var collider = segment.GetComponent<CapsuleCollider>();
-			if (collider == null)
-				collider = segment.gameObject.AddComponent<CapsuleCollider>();
+			var collider = segment.gameObject.AddComponent<CapsuleCollider>();
 			collider.direction = 1;
 			collider.radius = m_CandyRadius * 0.94f;
 			collider.height = Mathf.Max(length, collider.radius * 2f);
 			return rigidbody;
-		}
-
-		private Rigidbody GetOrCreatePhysicsBody(CandyFragment fragment) {
-			if (fragment.Body != null)
-				return fragment.Body;
-
-			var body = AddPhysicsBody(fragment.Segment, m_FragmentLength);
-			fragment.SetBody(body);
-			return body;
 		}
 
 		private Vector3 CreateHorizontalImpulse(System.Random random) {
@@ -368,7 +353,7 @@ namespace ShitDesigner.Scene {
 			for (var index = 0; index < m_Candies.Count; index++) {
 				var candy = m_Candies[index];
 				var fragment = candy.Fragments[layerIndex];
-				ActivatePhysics(GetOrCreatePhysicsBody(fragment), fragment.Impulse);
+				ActivatePhysics(fragment.Body, fragment.Impulse);
 			}
 		}
 
