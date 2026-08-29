@@ -34,9 +34,9 @@
 }
 
 .output-previews {
-    width: 1288px;
+    width: 1280px;
     height: 360px;
-    min-width: 1288px;
+    min-width: 1280px;
     min-height: 360px;
     flex-direction: row;
     flex-shrink: 0;
@@ -56,10 +56,6 @@
     -unity-background-scale-mode: stretch-to-fill;
     border-width: 1px;
     border-color: rgb(48, 55, 65);
-}
-
-.output-preview-1 {
-    margin-right: 8px;
 }
 
 .output-preview-label {
