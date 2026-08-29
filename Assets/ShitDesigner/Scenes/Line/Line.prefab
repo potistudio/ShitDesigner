@@ -305,6 +305,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PerlinNoiseLineClockController
   m_ClockSpeedMultiplier: 1
+  m_BeatPulseAmount: 1
 --- !u!1 &5621820584538546032
 GameObject:
   m_ObjectHideFlags: 0
