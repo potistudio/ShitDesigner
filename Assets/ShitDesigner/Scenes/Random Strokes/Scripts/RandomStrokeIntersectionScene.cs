@@ -43,11 +43,8 @@ namespace ShitDesigner.Scene {
 		private GameObject m_RegionObject;
 		private readonly List<LineRenderer> m_StrokeRenderers = new List<LineRenderer>();
 		private List<PolygonFace> m_CurrentRegions;
-		private List<StrokePath> m_TransitionStartPaths;
 		private List<StrokePath> m_TransitionTargetPaths;
-		private List<PolygonFace> m_TransitionStartRegions;
 		private List<PolygonFace> m_TransitionTargetRegions;
-		private List<PolygonFace> m_TransitionCurrentRegions;
 		private readonly List<Vector3> m_RegionVertices = new List<Vector3>();
 		private readonly List<int> m_RegionTriangles = new List<int>();
 		private double m_TransitionStartBeat;
@@ -56,6 +53,7 @@ namespace ShitDesigner.Scene {
 		private long m_LastGeneratedBeat = long.MinValue;
 		private int m_GenerationSeed;
 		private float m_ContinuousRotationDegrees;
+		private bool m_TransitionRegenerated;
 		private bool m_UsesExternalClock;
 
 		private void OnEnable() {
@@ -159,7 +157,6 @@ namespace ShitDesigner.Scene {
 			ReleaseGeneratedContent();
 
 			var layout = BuildLayout(seed);
-			m_TransitionStartPaths = null;
 			m_TransitionTargetPaths = null;
 			m_TransitionTargetRegions = null;
 
@@ -204,63 +201,32 @@ namespace ShitDesigner.Scene {
 				return;
 			}
 
-			m_TransitionStartPaths = CaptureCurrentPaths();
 			m_TransitionTargetPaths = layout.Paths;
-			m_TransitionStartRegions = m_CurrentRegions ?? new List<PolygonFace>();
 			m_TransitionTargetRegions = SelectFilledRegions(layout.Regions);
 			m_TransitionStartBeat = beat;
-		}
-
-		private List<StrokePath> CaptureCurrentPaths() {
-			var paths = new List<StrokePath>(m_StrokeRenderers.Count);
-			for (var strokeIndex = 0; strokeIndex < m_StrokeRenderers.Count; strokeIndex++) {
-				var renderer = m_StrokeRenderers[strokeIndex];
-				var points = new Vector2[renderer.positionCount];
-				for (var pointIndex = 0; pointIndex < renderer.positionCount; pointIndex++) {
-					var point = renderer.GetPosition(pointIndex);
-					points[pointIndex] = new Vector2(point.x, point.y);
-				}
-
-				paths.Add(new StrokePath(points, renderer.startColor));
-			}
-
-			return paths;
+			m_TransitionRegenerated = false;
 		}
 
 		private void ApplyTransition(double beatPosition) {
-			if (m_TransitionStartPaths == null || m_TransitionTargetPaths == null
-				|| m_TransitionStartRegions == null || m_TransitionTargetRegions == null)
+			if (m_TransitionTargetPaths == null || m_TransitionTargetRegions == null)
 				return;
 
 			var phase = Mathf.Clamp01((float)(beatPosition - m_TransitionStartBeat));
-			var regenerationPhase = phase < 0.5f ? 0f : (phase - 0.5f) * 2f;
-			var easedPhase = 1f - Mathf.Pow(1f - regenerationPhase, 3f);
-			for (var strokeIndex = 0; strokeIndex < m_StrokeRenderers.Count; strokeIndex++) {
-				var renderer = m_StrokeRenderers[strokeIndex];
-				var startPoints = m_TransitionStartPaths[strokeIndex].Points;
-				var targetPoints = m_TransitionTargetPaths[strokeIndex].Points;
-				for (var pointIndex = 0; pointIndex < startPoints.Length; pointIndex++) {
-					var point = Vector2.Lerp(startPoints[pointIndex], targetPoints[pointIndex], easedPhase);
-					renderer.SetPosition(pointIndex, new Vector3(point.x, point.y, 0f));
-				}
-			}
+			if (phase >= 0.5f && !m_TransitionRegenerated) {
+				for (var strokeIndex = 0; strokeIndex < m_StrokeRenderers.Count; strokeIndex++)
+					m_StrokeRenderers[strokeIndex].SetPositions(ToVector3Array(m_TransitionTargetPaths[strokeIndex].Points));
 
-			m_TransitionCurrentRegions = InterpolateRegions(
-				m_TransitionStartRegions, m_TransitionTargetRegions, easedPhase);
-			m_CurrentRegions = m_TransitionCurrentRegions;
-			UpdateRegionRenderer(m_TransitionCurrentRegions);
+				m_CurrentRegions = m_TransitionTargetRegions;
+				UpdateRegionRenderer(m_CurrentRegions);
+				m_TransitionRegenerated = true;
+			}
 
 			if (phase < 1f)
 				return;
 
-			var targetRegions = m_TransitionTargetRegions;
-			m_TransitionStartPaths = null;
 			m_TransitionTargetPaths = null;
-			m_TransitionStartRegions = null;
-			m_TransitionCurrentRegions = null;
 			m_TransitionTargetRegions = null;
-			m_CurrentRegions = targetRegions;
-			UpdateRegionRenderer(m_CurrentRegions);
+			m_TransitionRegenerated = false;
 		}
 
 		private void AdvanceContinuousRotation(double beatPosition, float bpm) {
@@ -304,105 +270,6 @@ namespace ShitDesigner.Scene {
 			for (var index = 0; index < fillCount; index++)
 				selectedRegions.Add(regions[index]);
 			return selectedRegions;
-		}
-
-		private static List<PolygonFace> InterpolateRegions(
-			List<PolygonFace> startRegions, List<PolygonFace> targetRegions, float progress) {
-			var startCount = startRegions == null ? 0 : startRegions.Count;
-			var targetCount = targetRegions == null ? 0 : targetRegions.Count;
-			var regionCount = Mathf.Max(startCount, targetCount);
-			var interpolatedRegions = new List<PolygonFace>(regionCount);
-			for (var regionIndex = 0; regionIndex < regionCount; regionIndex++) {
-				var hasStartRegion = regionIndex < startCount;
-				var hasTargetRegion = regionIndex < targetCount;
-				var startSource = hasStartRegion ? startRegions[regionIndex].Points : targetRegions[regionIndex].Points;
-				var targetSource = hasTargetRegion ? targetRegions[regionIndex].Points : startRegions[regionIndex].Points;
-				var pointCount = Mathf.Max(3, Mathf.Max(startSource.Count, targetSource.Count));
-				var startPoints = hasStartRegion
-					? ResamplePolygon(startSource, pointCount)
-					: CreateCollapsedPolygon(startSource, pointCount);
-				var targetPoints = hasTargetRegion
-					? ResamplePolygon(targetSource, pointCount)
-					: CreateCollapsedPolygon(targetSource, pointCount);
-				targetPoints = AlignPolygon(startPoints, targetPoints);
-
-				var points = new List<Vector2>(pointCount);
-				for (var pointIndex = 0; pointIndex < pointCount; pointIndex++)
-					points.Add(Vector2.Lerp(startPoints[pointIndex], targetPoints[pointIndex], progress));
-				interpolatedRegions.Add(new PolygonFace(points));
-			}
-
-			return interpolatedRegions;
-		}
-
-		private static List<Vector2> ResamplePolygon(IList<Vector2> polygon, int pointCount) {
-			var result = new List<Vector2>(pointCount);
-			if (polygon == null || polygon.Count == 0)
-				return result;
-			if (polygon.Count == pointCount) {
-				for (var index = 0; index < polygon.Count; index++)
-					result.Add(polygon[index]);
-				return result;
-			}
-
-			var perimeter = 0f;
-			for (var index = 0; index < polygon.Count; index++)
-				perimeter += Vector2.Distance(polygon[index], polygon[(index + 1) % polygon.Count]);
-			if (perimeter <= 0.00001f)
-				return CreateCollapsedPolygon(polygon, pointCount);
-
-			for (var sampleIndex = 0; sampleIndex < pointCount; sampleIndex++) {
-				var distance = perimeter * sampleIndex / pointCount;
-				var traversed = 0f;
-				for (var edgeIndex = 0; edgeIndex < polygon.Count; edgeIndex++) {
-					var first = polygon[edgeIndex];
-					var second = polygon[(edgeIndex + 1) % polygon.Count];
-					var edgeLength = Vector2.Distance(first, second);
-					if (distance > traversed + edgeLength && edgeIndex < polygon.Count - 1) {
-						traversed += edgeLength;
-						continue;
-					}
-
-					var edgeProgress = edgeLength <= 0.00001f ? 0f : (distance - traversed) / edgeLength;
-					result.Add(Vector2.Lerp(first, second, Mathf.Clamp01(edgeProgress)));
-					break;
-				}
-			}
-
-			return result;
-		}
-
-		private static List<Vector2> CreateCollapsedPolygon(IList<Vector2> source, int pointCount) {
-			var center = CalculatePolygonCenter(source);
-			var collapsed = new List<Vector2>(pointCount);
-			for (var index = 0; index < pointCount; index++)
-				collapsed.Add(center);
-			return collapsed;
-		}
-
-		private static List<Vector2> AlignPolygon(IList<Vector2> reference, IList<Vector2> candidate) {
-			if (reference.Count != candidate.Count || candidate.Count == 0)
-				return new List<Vector2>(candidate);
-
-			var bestOffset = 0;
-			var bestDistance = float.PositiveInfinity;
-			for (var offset = 0; offset < candidate.Count; offset++) {
-				var distance = 0f;
-				for (var index = 0; index < candidate.Count; index++) {
-					var candidatePoint = candidate[(offset + index) % candidate.Count];
-					distance += (reference[index] - candidatePoint).sqrMagnitude;
-				}
-				if (distance >= bestDistance)
-					continue;
-
-				bestDistance = distance;
-				bestOffset = offset;
-			}
-
-			var aligned = new List<Vector2>(candidate.Count);
-			for (var index = 0; index < candidate.Count; index++)
-				aligned.Add(candidate[(bestOffset + index) % candidate.Count]);
-			return aligned;
 		}
 
 		private List<StrokePath> BuildPaths(System.Random random) {
@@ -641,16 +508,6 @@ namespace ShitDesigner.Scene {
 			return area * 0.5f;
 		}
 
-		private static Vector2 CalculatePolygonCenter(IList<Vector2> polygon) {
-			if (polygon == null || polygon.Count == 0)
-				return Vector2.zero;
-
-			var center = Vector2.zero;
-			for (var index = 0; index < polygon.Count; index++)
-				center += polygon[index];
-			return center / polygon.Count;
-		}
-
 		private void CreateStrokeRenderers(List<StrokePath> paths) {
 			m_StrokeRenderers.Clear();
 			for (var index = 0; index < paths.Count; index++) {
@@ -887,12 +744,10 @@ namespace ShitDesigner.Scene {
 			m_StrokeMaterial = null;
 			m_RegionMaterial = null;
 			m_StrokeRenderers.Clear();
-			m_TransitionStartPaths = null;
 			m_TransitionTargetPaths = null;
-			m_CurrentRegions = null;
-			m_TransitionStartRegions = null;
-			m_TransitionCurrentRegions = null;
 			m_TransitionTargetRegions = null;
+			m_CurrentRegions = null;
+			m_TransitionRegenerated = false;
 			m_RegionVertices.Clear();
 			m_RegionTriangles.Clear();
 		}
