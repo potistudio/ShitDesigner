@@ -67,6 +67,8 @@ namespace ShitDesigner.Scene {
 		[Range(30f, 300f)] [SerializeField] private float m_PreviewBpm = 138f;
 		[Min(0f)] [SerializeField] private float m_SplitGap = 0.55f;
 		[Min(0f)] [SerializeField] private float m_HorizontalImpulse = 0.9f;
+		[Tooltip("Easing applied while the body is pushed during one beat.")]
+		[SerializeField] private AnimationCurve m_PushEasing = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
 		private readonly List<Candy> m_Candies = new List<Candy>();
 		private readonly List<Material> m_GeneratedMaterials = new List<Material>();
@@ -82,6 +84,9 @@ namespace ShitDesigner.Scene {
 		private float m_FragmentLength;
 		private int m_CutLayerIndex;
 		private bool m_PushPending;
+		private bool m_PushAnimating;
+		private int m_PushLayerIndex;
+		private long m_PushStartBeat;
 		private bool m_RebuildRequested = true;
 		private double m_AdjustedTotalBeats;
 		private long m_LastProcessedBeat = long.MinValue;
@@ -111,6 +116,7 @@ namespace ShitDesigner.Scene {
 
 			if (!m_UsesExternalClock)
 				m_AdjustedTotalBeats += Time.unscaledDeltaTime * m_PreviewBpm / 60d;
+			UpdatePushAnimation(m_AdjustedTotalBeats);
 			ProcessBeatPosition(m_AdjustedTotalBeats);
 		}
 
@@ -157,6 +163,9 @@ namespace ShitDesigner.Scene {
 			m_LastProcessedBeat = long.MinValue;
 			m_CutLayerIndex = 0;
 			m_PushPending = false;
+			m_PushAnimating = false;
+			m_PushLayerIndex = -1;
+			m_PushStartBeat = long.MinValue;
 			ReleaseGeneratedContent();
 
 			m_GeneratedRoot = new GameObject("Generated Chitose Candy").transform;
@@ -181,6 +190,9 @@ namespace ShitDesigner.Scene {
 			m_LastProcessedBeat = long.MinValue;
 			m_CutLayerIndex = 0;
 			m_PushPending = false;
+			m_PushAnimating = false;
+			m_PushLayerIndex = -1;
+			m_PushStartBeat = long.MinValue;
 			m_UsesExternalClock = false;
 		}
 
@@ -310,17 +322,20 @@ namespace ShitDesigner.Scene {
 			}
 
 			if (beatIndex > m_LastProcessedBeat) {
-				ProcessNextBeat();
+				ProcessNextBeat(beatIndex);
 			}
 			m_LastProcessedBeat = beatIndex;
 		}
 
 		private static long GetBeatIndex(double beatPosition) => (long)Math.Floor(beatPosition + 1e-9d);
 
-		private void ProcessNextBeat() {
+		private void ProcessNextBeat(long beatIndex) {
 			if (m_PushPending) {
-				PushCutLayer(m_CutLayerIndex - 1);
 				m_PushPending = false;
+				m_PushAnimating = true;
+				m_PushLayerIndex = m_CutLayerIndex - 1;
+				m_PushStartBeat = beatIndex;
+				PushCutLayer(m_PushLayerIndex, 0f);
 				return;
 			}
 			if (m_CutLayerIndex >= CandyDivisionCount)
@@ -328,6 +343,19 @@ namespace ShitDesigner.Scene {
 
 			CutNextLayer();
 			m_PushPending = true;
+		}
+
+		private void UpdatePushAnimation(double beatPosition) {
+			if (!m_PushAnimating)
+				return;
+
+			var progress = Mathf.Clamp01((float)(beatPosition - m_PushStartBeat));
+			var easedProgress = m_PushEasing == null || m_PushEasing.length == 0
+				? progress
+				: Mathf.Clamp01(m_PushEasing.Evaluate(progress));
+			PushCutLayer(m_PushLayerIndex, easedProgress);
+			if (progress >= 1f)
+				m_PushAnimating = false;
 		}
 
 		private void CutNextLayer() {
@@ -353,9 +381,9 @@ namespace ShitDesigner.Scene {
 			}
 		}
 
-		private void PushCutLayer(int layerIndex) {
+		private void PushCutLayer(int layerIndex, float progress) {
 			var pushDistance = m_FragmentLength + m_SplitGap;
-			var mainBodyOffset = pushDistance * (layerIndex + 1);
+			var mainBodyOffset = pushDistance * (layerIndex + Mathf.Clamp01(progress));
 			for (var index = 0; index < m_Candies.Count; index++) {
 				var candy = m_Candies[index];
 				for (var fragmentIndex = layerIndex + 1; fragmentIndex < candy.Fragments.Length; fragmentIndex++) {
