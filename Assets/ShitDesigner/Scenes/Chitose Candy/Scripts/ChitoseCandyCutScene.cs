@@ -285,7 +285,7 @@ namespace ShitDesigner.Scene {
 					CreateOriginalCandyEnd(fragment, index, random);
 
 				fragments[fragmentIndex] = new CandyFragment(fragment, rearCutFace, frontCutFace,
-					body, basePosition, CreateHorizontalImpulse(random));
+					body, basePosition, CreateImpactImpulse(random));
 			}
 
 			return new Candy(candyRoot, entryRoot, fragments);
@@ -321,10 +321,10 @@ namespace ShitDesigner.Scene {
 			return rigidbody;
 		}
 
-		private Vector3 CreateHorizontalImpulse(System.Random random) {
+		private Vector3 CreateImpactImpulse(System.Random random) {
 			var magnitude = NextFloat(random, m_HorizontalImpulse * 0.55f, m_HorizontalImpulse);
 			var direction = random.Next(2) == 0 ? -1f : 1f;
-			return new Vector3(direction * magnitude, 0f, 0f);
+			return new Vector3(direction, 1f, 0f).normalized * magnitude;
 		}
 
 		private void ApplyBeatPosition(double beatPosition) {
@@ -465,14 +465,14 @@ namespace ShitDesigner.Scene {
 				Physics.SyncTransforms();
 		}
 
-		private static void ActivatePhysics(Rigidbody rigidbody, Vector3 horizontalImpulse) {
+		private static void ActivatePhysics(Rigidbody rigidbody, Vector3 impactImpulse) {
 			if (rigidbody == null)
 				return;
 
 			rigidbody.isKinematic = false;
 			rigidbody.useGravity = true;
 			rigidbody.collisionDetectionMode = CollisionDetectionMode.Continuous;
-			rigidbody.AddForce(horizontalImpulse, ForceMode.Impulse);
+			rigidbody.AddForce(impactImpulse, ForceMode.Impulse);
 		}
 
 		private Color[] ResolveCandyColors() {
