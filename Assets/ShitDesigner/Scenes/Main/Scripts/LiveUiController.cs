@@ -201,7 +201,7 @@ namespace ShitDesigner.Main {
 					for (var stepIndex = 0; stepIndex < LiveStepSequencer.StepCount; stepIndex++) {
 						var button = m_SequencerControls.Q<Button>(GetSequencerCellName(sequencer.Kind, laneIndex, stepIndex));
 						if (button == null) continue;
-						button.EnableInClassList("is-set", sequencer.ActiveLanes.Count > stepIndex && sequencer.ActiveLanes[stepIndex] == laneIndex);
+						button.EnableInClassList("is-set", sequencer.IsActive(laneIndex, stepIndex));
 						button.EnableInClassList("is-playhead", sequencer.CurrentStep == stepIndex);
 					}
 				}
