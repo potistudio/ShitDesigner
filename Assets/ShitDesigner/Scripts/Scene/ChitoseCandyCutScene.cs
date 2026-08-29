@@ -18,13 +18,22 @@ namespace ShitDesigner.Scene {
 		}
 
 		private sealed class Candy {
-			public Transform Slice { get; }
-			public float BaseSliceDistance { get; }
+			public Transform RearSegment { get; }
+			public Transform FrontSegment { get; }
+			public Transform RearCutFace { get; }
+			public Transform FrontCutFace { get; }
+			public float RearBasePosition { get; }
+			public float FrontBasePosition { get; }
 			public float CutCoordinate { get; }
 
-			public Candy(Transform slice, float baseSliceDistance, float cutCoordinate) {
-				Slice = slice;
-				BaseSliceDistance = baseSliceDistance;
+			public Candy(Transform rearSegment, Transform frontSegment, Transform rearCutFace, Transform frontCutFace,
+				float rearBasePosition, float frontBasePosition, float cutCoordinate) {
+				RearSegment = rearSegment;
+				FrontSegment = frontSegment;
+				RearCutFace = rearCutFace;
+				FrontCutFace = frontCutFace;
+				RearBasePosition = rearBasePosition;
+				FrontBasePosition = frontBasePosition;
 				CutCoordinate = cutCoordinate;
 			}
 		}
@@ -49,8 +58,8 @@ namespace ShitDesigner.Scene {
 		[Min(0.01f)] [SerializeField] private float m_CutterSpeed = 0.62f;
 		[Min(0.1f)] [SerializeField] private float m_CutterTravel = 8f;
 		[Min(0.01f)] [SerializeField] private float m_CutterImpactWidth = 0.72f;
-		[Min(0f)] [SerializeField] private float m_SliceSeparation = 0.42f;
-		[Range(0f, 30f)] [SerializeField] private float m_SliceRotation = 9f;
+		[Min(0.1f)] [SerializeField] private float m_CutPieceLength = 1.75f;
+		[Min(0f)] [SerializeField] private float m_SplitGap = 0.55f;
 
 		[Header("Cutter")]
 		[SerializeField] private Vector3 m_BladePosition = new Vector3(0f, 0f, -2.8f);
@@ -66,7 +75,8 @@ namespace ShitDesigner.Scene {
 		private readonly List<Material> m_GeneratedMaterials = new List<Material>();
 		private Transform m_GeneratedRoot;
 		private Transform m_Blade;
-		private Mesh m_BodyMesh;
+		private Mesh m_RearBodyMesh;
+		private Mesh m_FrontBodyMesh;
 		private Mesh m_DiscMesh;
 		private Mesh[] m_PatternMeshes = Array.Empty<Mesh>();
 		private Material[] m_BodyMaterials = Array.Empty<Material>();
@@ -77,6 +87,8 @@ namespace ShitDesigner.Scene {
 		private Material m_BladeEdgeMaterial;
 		private Vector3 m_CandyAxisRuntime;
 		private Vector3 m_CutterTravelDirection;
+		private float m_RearPieceLength;
+		private float m_FrontPieceLength;
 		private float m_AnimationTime;
 		private bool m_RebuildRequested = true;
 		private bool m_GraphClockDriven;
@@ -123,7 +135,8 @@ namespace ShitDesigner.Scene {
 			m_CutterSpeed = Mathf.Max(0.01f, m_CutterSpeed);
 			m_CutterTravel = Mathf.Max(0.1f, m_CutterTravel);
 			m_CutterImpactWidth = Mathf.Max(0.01f, m_CutterImpactWidth);
-			m_SliceSeparation = Mathf.Max(0f, m_SliceSeparation);
+			m_CutPieceLength = Mathf.Clamp(m_CutPieceLength, 0.1f, m_CandyLength - 0.1f);
+			m_SplitGap = Mathf.Max(0f, m_SplitGap);
 			m_BladeLength = Mathf.Max(1f, m_BladeLength);
 			m_BladeThickness = Mathf.Max(0.01f, m_BladeThickness);
 			m_BladeDepth = Mathf.Max(0.01f, m_BladeDepth);
@@ -149,7 +162,10 @@ namespace ShitDesigner.Scene {
 				? Vector3.right
 				: projectedAxis.normalized;
 
-			m_BodyMesh = BuildBeveledCylinderMesh(m_CandyLength, m_CandyRadius, 18);
+			m_FrontPieceLength = Mathf.Clamp(m_CutPieceLength, 0.1f, m_CandyLength - 0.1f);
+			m_RearPieceLength = m_CandyLength - m_FrontPieceLength;
+			m_RearBodyMesh = BuildCylinderMesh(m_RearPieceLength, m_CandyRadius, 18);
+			m_FrontBodyMesh = BuildCylinderMesh(m_FrontPieceLength, m_CandyRadius, 18);
 			m_DiscMesh = BuildCylinderMesh(1f, 1f, 24);
 			m_PatternMeshes = BuildPatternMeshes();
 			CreateMaterials();
@@ -204,41 +220,65 @@ namespace ShitDesigner.Scene {
 				y += NextFloat(random, -0.16f, 0.16f);
 				var frontPosition = new Vector3(x, y, NextFloat(random, -0.18f, 0.18f));
 				var axis = Quaternion.AngleAxis(NextFloat(random, -2.5f, 2.5f), Vector3.forward) * m_CandyAxisRuntime;
-				var candy = CreateCandy(index, frontPosition, axis.normalized, colors[index % colors.Length], random);
+				var candy = CreateCandy(index, frontPosition, axis.normalized, random);
 				m_Candies.Add(candy);
 			}
 		}
 
-		private Candy CreateCandy(int index, Vector3 frontPosition, Vector3 axis, Color bodyColor, System.Random random) {
+		private Candy CreateCandy(int index, Vector3 frontPosition, Vector3 axis, System.Random random) {
 			var candyRoot = new GameObject($"Candy {index + 1:00}").transform;
+			candyRoot.gameObject.hideFlags = HideFlags.DontSave;
 			candyRoot.SetParent(m_GeneratedRoot, false);
 			candyRoot.localPosition = frontPosition - axis * (m_CandyLength * 0.5f);
 			candyRoot.localRotation = Quaternion.FromToRotation(Vector3.up, axis);
 
-			CreateMeshObject("Stick", candyRoot, m_BodyMesh, m_BodyMaterials[index % m_BodyMaterials.Length], Vector3.one);
+			var rearSegment = new GameObject("Rear Segment").transform;
+			rearSegment.gameObject.hideFlags = HideFlags.DontSave;
+			rearSegment.SetParent(candyRoot, false);
+			var rearBasePosition = -m_FrontPieceLength * 0.5f;
+			rearSegment.localPosition = Vector3.up * rearBasePosition;
+			CreateMeshObject("Rear Candy", rearSegment, m_RearBodyMesh,
+				m_BodyMaterials[index % m_BodyMaterials.Length], Vector3.one);
 
-			var slice = new GameObject("Cut Slice").transform;
-			slice.SetParent(candyRoot, false);
-			var baseSliceDistance = m_CandyLength * 0.5f + m_CandyRadius * 0.02f;
-			slice.localPosition = Vector3.up * baseSliceDistance;
+			var frontSegment = new GameObject("Front Segment").transform;
+			frontSegment.gameObject.hideFlags = HideFlags.DontSave;
+			frontSegment.SetParent(candyRoot, false);
+			var frontBasePosition = m_CandyLength * 0.5f - m_FrontPieceLength * 0.5f;
+			frontSegment.localPosition = Vector3.up * frontBasePosition;
+			CreateMeshObject("Front Candy", frontSegment, m_FrontBodyMesh,
+				m_BodyMaterials[index % m_BodyMaterials.Length], Vector3.one);
 
-			CreateMeshObject("Pale Rim", slice, m_DiscMesh, m_RimMaterial,
+			var cutFaceScale = new Vector3(m_CandyRadius * 0.76f, 0.028f, m_CandyRadius * 0.76f);
+			var rearCutFace = CreateMeshObject("Rear Cut Face", rearSegment, m_DiscMesh, m_FaceMaterial, cutFaceScale);
+			rearCutFace.localPosition = Vector3.up * (m_RearPieceLength * 0.5f + 0.018f);
+			rearCutFace.gameObject.SetActive(false);
+			var frontCutFace = CreateMeshObject("Front Cut Face", frontSegment, m_DiscMesh, m_FaceMaterial, cutFaceScale);
+			frontCutFace.localPosition = Vector3.up * (-m_FrontPieceLength * 0.5f - 0.018f);
+			frontCutFace.gameObject.SetActive(false);
+
+			var originalEnd = new GameObject("Original Candy End").transform;
+			originalEnd.gameObject.hideFlags = HideFlags.DontSave;
+			originalEnd.SetParent(frontSegment, false);
+			originalEnd.localPosition = Vector3.up * (m_FrontPieceLength * 0.5f + m_CandyRadius * 0.02f);
+			CreateMeshObject("Pale Rim", originalEnd, m_DiscMesh, m_RimMaterial,
 				new Vector3(m_CandyRadius * 0.94f, 0.055f, m_CandyRadius * 0.94f));
-			var face = CreateMeshObject("Cut Face", slice, m_DiscMesh, m_FaceMaterial,
+			var face = CreateMeshObject("Original Cut Face", originalEnd, m_DiscMesh, m_FaceMaterial,
 				new Vector3(m_CandyRadius * 0.76f, 0.028f, m_CandyRadius * 0.76f));
 			face.localPosition = Vector3.up * 0.04f;
 
 			var patternType = (PatternType)random.Next((int)PatternType.Count);
-			var pattern = CreateMeshObject("Candy Pattern", slice, m_PatternMeshes[(int)patternType],
+			var pattern = CreateMeshObject("Candy Pattern", originalEnd, m_PatternMeshes[(int)patternType],
 				m_PatternMaterials[(index + 1) % m_PatternMaterials.Length],
 				Vector3.one * (m_CandyRadius * 0.34f));
 			pattern.localPosition = Vector3.up * 0.064f;
 
-			return new Candy(slice, baseSliceDistance, Vector3.Dot(frontPosition, m_CutterTravelDirection));
+			return new Candy(rearSegment, frontSegment, rearCutFace, frontCutFace,
+				rearBasePosition, frontBasePosition, Vector3.Dot(frontPosition, m_CutterTravelDirection));
 		}
 
 		private void CreateBlade() {
 			m_Blade = new GameObject("Cutter Blade").transform;
+			m_Blade.gameObject.hideFlags = HideFlags.DontSave;
 			m_Blade.SetParent(m_GeneratedRoot, false);
 			m_Blade.localRotation = Quaternion.Euler(0f, 0f, m_BladeAngle);
 
@@ -265,12 +305,16 @@ namespace ShitDesigner.Scene {
 
 			for (var index = 0; index < m_Candies.Count; index++) {
 				var candy = m_Candies[index];
-				var distance = Mathf.Abs(candy.CutCoordinate - travel);
-				var impact = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(distance / m_CutterImpactWidth));
-				var separation = impact * impact * m_SliceSeparation;
-				var lean = Mathf.Sign(candy.CutCoordinate - travel) * impact * m_SliceRotation;
-				candy.Slice.localPosition = Vector3.up * (candy.BaseSliceDistance + separation);
-				candy.Slice.localRotation = Quaternion.AngleAxis(lean, Vector3.forward);
+				var cutProgress = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(
+					(travel - candy.CutCoordinate + m_CutterImpactWidth * 0.5f) / m_CutterImpactWidth));
+				var splitOffset = cutProgress * m_SplitGap * 0.5f;
+				candy.RearSegment.localPosition = Vector3.up * (candy.RearBasePosition - splitOffset);
+				candy.FrontSegment.localPosition = Vector3.up * (candy.FrontBasePosition + splitOffset);
+				var cutFaceVisible = cutProgress > 0.01f;
+				if (candy.RearCutFace.gameObject.activeSelf != cutFaceVisible)
+					candy.RearCutFace.gameObject.SetActive(cutFaceVisible);
+				if (candy.FrontCutFace.gameObject.activeSelf != cutFaceVisible)
+					candy.FrontCutFace.gameObject.SetActive(cutFaceVisible);
 			}
 		}
 
@@ -377,52 +421,6 @@ namespace ShitDesigner.Scene {
 			return mesh;
 		}
 
-		private static Mesh BuildBeveledCylinderMesh(float length, float radius, int segments) {
-			var halfLength = length * 0.5f;
-			var bevel = Mathf.Min(radius * 0.38f, length * 0.08f);
-			var ringPositions = new[] { -halfLength, -halfLength + bevel, halfLength - bevel, halfLength };
-			var ringRadii = new[] { radius * 0.62f, radius, radius, radius * 0.62f };
-			var vertices = new Vector3[ringPositions.Length * segments + 2];
-			for (var ring = 0; ring < ringPositions.Length; ring++) {
-				for (var segment = 0; segment < segments; segment++) {
-					var angle = Mathf.PI * 2f * segment / segments;
-					vertices[ring * segments + segment] = new Vector3(
-						Mathf.Cos(angle) * ringRadii[ring], ringPositions[ring], Mathf.Sin(angle) * ringRadii[ring]);
-				}
-			}
-			var bottomCenter = vertices.Length - 2;
-			var topCenter = vertices.Length - 1;
-			vertices[bottomCenter] = new Vector3(0f, -halfLength, 0f);
-			vertices[topCenter] = new Vector3(0f, halfLength, 0f);
-
-			var triangles = new int[(ringPositions.Length - 1) * segments * 6 + segments * 6];
-			var triangleIndex = 0;
-			for (var ring = 0; ring < ringPositions.Length - 1; ring++) {
-				for (var segment = 0; segment < segments; segment++) {
-					var next = (segment + 1) % segments;
-					var lower = ring * segments + segment;
-					var lowerNext = ring * segments + next;
-					var upper = (ring + 1) * segments + segment;
-					var upperNext = (ring + 1) * segments + next;
-					AddTriangle(triangles, ref triangleIndex, lower, upper, lowerNext);
-					AddTriangle(triangles, ref triangleIndex, lowerNext, upper, upperNext);
-				}
-			}
-			for (var segment = 0; segment < segments; segment++) {
-				var next = (segment + 1) % segments;
-				AddTriangle(triangles, ref triangleIndex, bottomCenter, segment, next);
-				var topStart = (ringPositions.Length - 1) * segments;
-				AddTriangle(triangles, ref triangleIndex, topCenter, topStart + next, topStart + segment);
-			}
-
-			var mesh = new Mesh { name = "Chitose Candy Stick", hideFlags = HideFlags.HideAndDontSave };
-			mesh.vertices = vertices;
-			mesh.triangles = triangles;
-			mesh.RecalculateNormals();
-			mesh.RecalculateBounds();
-			return mesh;
-		}
-
 		private static Mesh BuildCylinderMesh(float length, float radius, int segments) {
 			var halfLength = length * 0.5f;
 			var vertices = new Vector3[segments * 2 + 2];
@@ -514,9 +512,11 @@ namespace ShitDesigner.Scene {
 			m_Blade = null;
 			m_Candies.Clear();
 
-			DestroyOwnedObject(m_BodyMesh);
+			DestroyOwnedObject(m_RearBodyMesh);
+			DestroyOwnedObject(m_FrontBodyMesh);
 			DestroyOwnedObject(m_DiscMesh);
-			m_BodyMesh = null;
+			m_RearBodyMesh = null;
+			m_FrontBodyMesh = null;
 			m_DiscMesh = null;
 			for (var index = 0; index < m_PatternMeshes.Length; index++)
 				DestroyOwnedObject(m_PatternMeshes[index]);
