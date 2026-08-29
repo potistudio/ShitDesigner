@@ -9,6 +9,8 @@ namespace ShitDesigner.Scene {
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
 	public sealed class ChitoseCandyCutScene : MonoBehaviour, IBpmClockReceiver {
+		private const int CandyDivisionCount = 10;
+
 		private enum PatternType {
 			Dot,
 			Star,
@@ -38,11 +40,9 @@ namespace ShitDesigner.Scene {
 		}
 
 		private sealed class Candy {
-			public Transform RemainingCutFace { get; }
 			public CandyFragment[] Fragments { get; }
 
-			public Candy(Transform remainingCutFace, CandyFragment[] fragments) {
-				RemainingCutFace = remainingCutFace;
+			public Candy(CandyFragment[] fragments) {
 				Fragments = fragments;
 			}
 		}
@@ -65,15 +65,12 @@ namespace ShitDesigner.Scene {
 
 		[Header("Cut")]
 		[Range(30f, 300f)] [SerializeField] private float m_PreviewBpm = 138f;
-		[Tooltip("Length of each small fragment released from the decorated end on a beat.")]
-		[Min(0.1f)] [SerializeField] private float m_CutPieceLength = 1.75f;
 		[Min(0f)] [SerializeField] private float m_SplitGap = 0.55f;
 		[Min(0f)] [SerializeField] private float m_HorizontalImpulse = 0.9f;
 
 		private readonly List<Candy> m_Candies = new List<Candy>();
 		private readonly List<Material> m_GeneratedMaterials = new List<Material>();
 		private Transform m_GeneratedRoot;
-		private Mesh m_RemainingBodyMesh;
 		private Mesh m_FragmentBodyMesh;
 		private Mesh m_DiscMesh;
 		private Mesh[] m_PatternMeshes = Array.Empty<Mesh>();
@@ -83,8 +80,6 @@ namespace ShitDesigner.Scene {
 		private Material m_FaceMaterial;
 		private Vector3 m_CandyAxisRuntime;
 		private float m_FragmentLength;
-		private float m_RemainingPieceLength;
-		private int m_CuttablePieceCount;
 		private int m_CutLayerIndex;
 		private bool m_RebuildRequested = true;
 		private double m_AdjustedTotalBeats;
@@ -135,7 +130,6 @@ namespace ShitDesigner.Scene {
 			if (m_CandyAxis.sqrMagnitude < 0.0001f)
 				m_CandyAxis = new Vector3(0.57f, -0.37f, -0.73f);
 			m_PreviewBpm = Mathf.Clamp(m_PreviewBpm, 30f, 300f);
-			m_CutPieceLength = Mathf.Clamp(m_CutPieceLength, 0.1f, m_CandyLength - 0.1f);
 			m_SplitGap = Mathf.Max(0f, m_SplitGap);
 			m_HorizontalImpulse = Mathf.Max(0f, m_HorizontalImpulse);
 			m_RebuildRequested = true;
@@ -157,14 +151,7 @@ namespace ShitDesigner.Scene {
 				? new Vector3(0.57f, -0.37f, -0.73f).normalized
 				: m_CandyAxis.normalized;
 
-			m_FragmentLength = Mathf.Clamp(m_CutPieceLength, 0.1f, m_CandyLength - 0.1f);
-			m_CuttablePieceCount = Mathf.Max(1, Mathf.FloorToInt((m_CandyLength - 0.1f) / m_FragmentLength));
-			m_RemainingPieceLength = m_CandyLength - m_CuttablePieceCount * m_FragmentLength;
-			if (m_RemainingPieceLength < 0.1f) {
-				m_CuttablePieceCount = Mathf.Max(1, m_CuttablePieceCount - 1);
-				m_RemainingPieceLength = m_CandyLength - m_CuttablePieceCount * m_FragmentLength;
-			}
-			m_RemainingBodyMesh = BuildCylinderMesh(m_RemainingPieceLength, m_CandyRadius, 18);
+			m_FragmentLength = m_CandyLength / CandyDivisionCount;
 			m_FragmentBodyMesh = BuildCylinderMesh(m_FragmentLength, m_CandyRadius, 18);
 			m_DiscMesh = BuildCylinderMesh(1f, 1f, 24);
 			m_PatternMeshes = BuildPatternMeshes();
@@ -213,22 +200,8 @@ namespace ShitDesigner.Scene {
 			candyRoot.localPosition = frontPosition - axis * (m_CandyLength * 0.5f);
 			candyRoot.localRotation = Quaternion.FromToRotation(Vector3.up, axis);
 
-			var remainingSegment = new GameObject("Remaining Candy").transform;
-			remainingSegment.gameObject.hideFlags = HideFlags.DontSave;
-			remainingSegment.SetParent(candyRoot, false);
-			var remainingBasePosition = -m_CandyLength * 0.5f + m_RemainingPieceLength * 0.5f;
-			remainingSegment.localPosition = Vector3.up * remainingBasePosition;
-			CreateMeshObject("Remaining Candy Body", remainingSegment, m_RemainingBodyMesh,
-				m_BodyMaterials[index % m_BodyMaterials.Length], Vector3.one);
-			AddPhysicsBody(remainingSegment, m_RemainingPieceLength);
-
 			var cutFaceScale = new Vector3(m_CandyRadius * 0.76f, 0.028f, m_CandyRadius * 0.76f);
-			var remainingCutFace = CreateMeshObject("Remaining Cut Face", remainingSegment, m_DiscMesh,
-				m_FaceMaterial, cutFaceScale);
-			remainingCutFace.localPosition = Vector3.up * (m_RemainingPieceLength * 0.5f + 0.018f);
-			remainingCutFace.gameObject.SetActive(false);
-
-			var fragments = new CandyFragment[m_CuttablePieceCount];
+			var fragments = new CandyFragment[CandyDivisionCount];
 			for (var fragmentIndex = 0; fragmentIndex < fragments.Length; fragmentIndex++) {
 				var fragment = new GameObject($"Cut Fragment {fragmentIndex + 1:00}").transform;
 				fragment.gameObject.hideFlags = HideFlags.DontSave;
@@ -255,7 +228,7 @@ namespace ShitDesigner.Scene {
 					body, basePosition, CreateHorizontalImpulse(random));
 			}
 
-			return new Candy(remainingCutFace, fragments);
+			return new Candy(fragments);
 		}
 
 		private void CreateOriginalCandyEnd(Transform frontFragment, int index, System.Random random) {
@@ -319,7 +292,7 @@ namespace ShitDesigner.Scene {
 		}
 
 		private void CutNextLayer() {
-			if (m_CutLayerIndex >= m_CuttablePieceCount)
+			if (m_CutLayerIndex >= CandyDivisionCount)
 				return;
 
 			var layerIndex = m_CutLayerIndex++;
@@ -331,8 +304,6 @@ namespace ShitDesigner.Scene {
 				fragment.RearCutFace.gameObject.SetActive(true);
 				if (layerIndex + 1 < candy.Fragments.Length)
 					candy.Fragments[layerIndex + 1].FrontCutFace.gameObject.SetActive(true);
-				else
-					candy.RemainingCutFace.gameObject.SetActive(true);
 			}
 			if (!Application.isPlaying)
 				return;
@@ -531,10 +502,8 @@ namespace ShitDesigner.Scene {
 			m_GeneratedRoot = null;
 			m_Candies.Clear();
 
-			DestroyOwnedObject(m_RemainingBodyMesh);
 			DestroyOwnedObject(m_FragmentBodyMesh);
 			DestroyOwnedObject(m_DiscMesh);
-			m_RemainingBodyMesh = null;
 			m_FragmentBodyMesh = null;
 			m_DiscMesh = null;
 			for (var index = 0; index < m_PatternMeshes.Length; index++)
