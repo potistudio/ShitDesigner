@@ -69,9 +69,12 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(identifyButton.parent.parent, Is.SameAs(topBar));
 			var patchRoleLabels = ui.Q<VisualElement>("patch-role-labels");
 			var patchControls = ui.Q<VisualElement>("patch-controls");
+			var patchDock = ui.Q<VisualElement>(className: "patch-dock");
 			var mainPatchControls = ui.Q<ScrollView>("main-patch-controls");
 			var overlayPatchControls = ui.Q<ScrollView>("overlay-patch-controls");
 			Assert.That(patchRoleLabels, Is.Not.Null);
+			Assert.That(patchDock, Is.Not.Null);
+			Assert.That(patchDock.resolvedStyle.height, Is.EqualTo(64f));
 			Assert.That(mainPatchControls, Is.Not.Null);
 			Assert.That(overlayPatchControls, Is.Not.Null);
 			Assert.That(patchRoleLabels.parent, Is.SameAs(patchControls));
