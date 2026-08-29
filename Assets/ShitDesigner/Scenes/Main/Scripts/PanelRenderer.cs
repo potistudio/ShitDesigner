@@ -510,11 +510,11 @@ namespace ShitDesigner.Main {
 		private void OnOverlayPatchSelectionWheel(WheelEvent change) => ScrollPatchRow(m_OverlayPatchControls, change);
 
 		private static void ScrollPatchRow(ScrollView controls, WheelEvent change) {
-			var viewportWidth = controls.contentViewport.layout.width;
-			var maximum = Mathf.Max(0f, controls.contentContainer.layout.width - viewportWidth);
+			var maximum = Mathf.Max(0f, controls.horizontalScroller.highValue);
 			if (maximum <= 0f) return;
 			var delta = Mathf.Abs(change.delta.x) > Mathf.Epsilon ? change.delta.x : change.delta.y;
-			controls.scrollOffset = new Vector2(Mathf.Clamp(controls.scrollOffset.x + delta * PatchScrollWheelUnits, 0f, maximum), 0f);
+			if (Mathf.Abs(delta) <= Mathf.Epsilon) return;
+			controls.scrollOffset = new Vector2(Mathf.Clamp(controls.scrollOffset.x + delta * PatchScrollWheelUnits, 0f, maximum), controls.scrollOffset.y);
 			change.StopPropagation();
 		}
 
@@ -529,7 +529,7 @@ namespace ShitDesigner.Main {
 				var selectedCenter = selected.ChangeCoordinatesTo(controls.contentContainer,
 					new Vector2(selected.layout.width * 0.5f, selected.layout.height * 0.5f));
 				var offset = selectedCenter.x - viewportWidth * 0.5f;
-				var maximum = Mathf.Max(0f, controls.contentContainer.layout.width - viewportWidth);
+				var maximum = Mathf.Max(0f, controls.horizontalScroller.highValue);
 				controls.scrollOffset = new Vector2(Mathf.Clamp(offset, 0f, maximum), controls.scrollOffset.y);
 			}).StartingIn(0);
 		}
