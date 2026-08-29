@@ -226,10 +226,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.RandomStrokeIntersectionScene
   m_CanvasSize: {x: 10, y: 6}
   m_StrokeCount: 8
-  m_PointsPerStroke: 11
   m_StrokeWidth: 0.08
-  m_Wobble: 0.35
-  m_PointJitter: 0.1
   m_FilledRegionCount: 8
   m_RandomizeOnPlay: 1
   m_Seed: 8127
