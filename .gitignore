@@ -51,3 +51,6 @@ refs/
 # Locally imported third-party assets
 /Assets/External/
 /Assets/External.meta
+
+# Python caches
+__pycache__/
