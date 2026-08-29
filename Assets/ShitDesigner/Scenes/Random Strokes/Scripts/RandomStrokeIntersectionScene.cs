@@ -23,7 +23,7 @@ namespace ShitDesigner.Scene {
 		[Range(30f, 300f)][SerializeField] private float m_PreviewBpm = 120f;
 
 		[Header("Motion")]
-		[Min(0f)][SerializeField] private float m_ContinuousRotationDegreesPerSecond = 2f;
+		[Min(0.01f)][SerializeField] private float m_ContinuousRotationDegreesPerSecond = 2f;
 		[Min(0f)][SerializeField] private float m_BeatRotationDegrees = 8f;
 
 		[Header("Randomness")]
@@ -69,6 +69,7 @@ namespace ShitDesigner.Scene {
 
 		private void Start() {
 			m_GenerationSeed = GetGenerationSeed();
+			m_LastRotationBeat = m_AdjustedTotalBeats;
 			m_LastGeneratedBeat = 0L;
 			GenerateWithSeed(GetBeatSeed(0L));
 		}
@@ -99,7 +100,7 @@ namespace ShitDesigner.Scene {
 			m_StrokeWidth = Mathf.Max(0.005f, m_StrokeWidth);
 			m_FilledRegionCount = Mathf.Clamp(m_FilledRegionCount, 0, 128);
 			m_PreviewBpm = Mathf.Clamp(m_PreviewBpm, 30f, 300f);
-			m_ContinuousRotationDegreesPerSecond = Mathf.Max(0f, m_ContinuousRotationDegreesPerSecond);
+			m_ContinuousRotationDegreesPerSecond = Mathf.Max(0.01f, m_ContinuousRotationDegreesPerSecond);
 			m_BeatRotationDegrees = Mathf.Max(0f, m_BeatRotationDegrees);
 
 			if (!Application.isPlaying && isActiveAndEnabled)
@@ -254,14 +255,16 @@ namespace ShitDesigner.Scene {
 
 		private float GetBeatRotationDegrees(float phase) {
 			var halfRotation = m_BeatRotationDegrees * 0.5f;
+			const float linearRotationFraction = 0.2f;
 			if (phase < 0.5f) {
 				var upPhase = phase * 2f;
-				return halfRotation * upPhase * upPhase * upPhase;
+				var easedInPhase = upPhase * upPhase * upPhase;
+				return halfRotation * Mathf.Lerp(easedInPhase, upPhase, linearRotationFraction);
 			}
 
 			var outPhase = (phase - 0.5f) * 2f;
 			var easedOutPhase = 1f - Mathf.Pow(1f - outPhase, 3f);
-			return halfRotation + halfRotation * easedOutPhase;
+			return halfRotation + halfRotation * Mathf.Lerp(easedOutPhase, outPhase, linearRotationFraction);
 		}
 
 		private List<PolygonFace> SelectFilledRegions(List<PolygonFace> regions) {
