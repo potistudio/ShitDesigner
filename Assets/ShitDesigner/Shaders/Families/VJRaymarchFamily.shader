@@ -92,8 +92,12 @@ Shader "Hidden/ShitDesigner/VJ/RaymarchFamily"
 
 			float4 VJRaymarchFragment(VJRaymarchVaryings input) : SV_Target
 			{
-				float2 centered = input.uv * 2.0 - 1.0;
 				float4 graphResolution = VJFinite4(_SD_Resolution);
+				int variant = clamp((int)floor(_Variant + 0.5), 0, 29);
+				if (variant == 11)
+					return VJMengerOrbEvaluate(input.uv, graphResolution.xy, VJFiniteScalar(_SD_Time) * 6.0, _Steps, _FarDistance);
+
+				float2 centered = input.uv * 2.0 - 1.0;
 				float aspect = max(graphResolution.x / max(graphResolution.y, 1.0), 1.0e-4);
 				centered.x *= aspect;
 				float3 camera = VJFinite3(_CameraPosition.xyz);
@@ -104,7 +108,6 @@ Shader "Hidden/ShitDesigner/VJ/RaymarchFamily"
 				float3 up = VJRaymarchNormalize(cross(right, forward), float3(0.0, 1.0, 0.0));
 				float tangent = tan(radians(clamp(_Fov, 10.0, 160.0)) * 0.5);
 				float3 direction = VJRaymarchNormalize(forward + right * centered.x * tangent + up * centered.y * tangent, forward);
-				int variant = clamp((int)floor(_Variant + 0.5), 0, 29);
 				VJRaymarchHit hit = VJRaymarchTrace(variant, camera, direction, (int)floor(_Steps + 0.5), _Epsilon,
 				_FarDistance, _AudioRms, VJFiniteScalar(_SD_Time) + VJFiniteScalar(_SD_Frame) * 0.0);
 				float3 background = lerp(float3(0.004, 0.006, 0.012), float3(0.03, 0.06, 0.12), saturate(centered.y * 0.5 + 0.5));
