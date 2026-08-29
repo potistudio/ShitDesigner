@@ -67,11 +67,12 @@ namespace ShitDesigner.Scene {
 		private void OnValidate() {
 			m_VisualSize.x = Mathf.Max(0.01f, m_VisualSize.x);
 			m_VisualSize.y = Mathf.Max(0.01f, m_VisualSize.y);
+			UpdateVisualSizeForSourceAspect();
 			m_Speed = Mathf.Max(0.01f, m_Speed);
 			if (m_InitialDirection.sqrMagnitude < 0.0001f)
 				m_InitialDirection = new Vector2(1f, 0.63f);
 			if (m_VisualObject != null) {
-				m_VisualObject.transform.localScale = new Vector3(m_VisualSize.x, m_VisualSize.y, 1f);
+				m_VisualObject.transform.localScale = ToScale(GetVisualSize());
 				ApplyImage();
 				ApplyColor();
 			}
@@ -82,7 +83,7 @@ namespace ShitDesigner.Scene {
 			m_VisualObject = GameObject.CreatePrimitive(PrimitiveType.Quad);
 			m_VisualObject.name = "Bouncing Visual";
 			m_VisualObject.transform.SetParent(transform, false);
-			m_VisualObject.transform.localScale = new Vector3(m_VisualSize.x, m_VisualSize.y, 1f);
+			m_VisualObject.transform.localScale = ToScale(GetVisualSize());
 			var collider = m_VisualObject.GetComponent<Collider>();
 			if (collider != null)
 				Destroy(collider);
@@ -118,6 +119,27 @@ namespace ShitDesigner.Scene {
 				return;
 
 			m_Material.SetTexture(GetTexturePropertyName(m_Material), m_Image == null ? Texture2D.whiteTexture : m_Image);
+		}
+
+		private void UpdateVisualSizeForSourceAspect() {
+			m_VisualSize.x = GetSourceAspectRatio() * m_VisualSize.y;
+		}
+
+		private Vector2 GetVisualSize() {
+			var height = Mathf.Max(0.01f, m_VisualSize.y);
+			return new Vector2(GetSourceAspectRatio() * height, height);
+		}
+
+		private float GetSourceAspectRatio() {
+			if (m_Video != null && m_Video.width > 0 && m_Video.height > 0)
+				return (float)m_Video.width / m_Video.height;
+			if (m_Image != null && m_Image.width > 0 && m_Image.height > 0)
+				return (float)m_Image.width / m_Image.height;
+			return m_VisualSize.x / Mathf.Max(0.01f, m_VisualSize.y);
+		}
+
+		private static Vector3 ToScale(Vector2 size) {
+			return new Vector3(size.x, size.y, 1f);
 		}
 
 		private Vector2 GetInitialVelocity() {
