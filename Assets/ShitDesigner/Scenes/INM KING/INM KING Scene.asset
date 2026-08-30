@@ -1,0 +1,16 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b73c2fe9c0640209cbb8ec673291db0, type: 3}
+  m_Name: INM KING Scene
+  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.Scene3DDefinition
+  _id: b0939ebb-6ed1-471d-b91b-c95d248e691d
+  _prefab: {fileID: 7278292172862599781, guid: 4b4c166629d991e4f9661d32b1e2d299, type: 3}
