@@ -1,11 +1,13 @@
 using System;
+using ShitDesigner.Core;
+using ShitDesigner.Scene;
 using UnityEngine;
 using UnityEngine.VFX;
 
 namespace ShitDesigner.Stage {
 	[DisallowMultipleComponent]
 	[RequireComponent(typeof(VisualEffect))]
-	public sealed class StageImpactBurst : MonoBehaviour {
+	public sealed class StageImpactBurst : MonoBehaviour, IBpmClockReceiver {
 		private static readonly int PlayEventId = Shader.PropertyToID("OnPlay");
 		private static readonly int ImpactTextureId = Shader.PropertyToID("Impact Texture");
 
@@ -13,9 +15,31 @@ namespace ShitDesigner.Stage {
 
 		private VisualEffect m_VisualEffect;
 		private Texture2D m_CurrentTexture;
+		private double m_LastBeatIndex = double.NaN;
 
 		private void Awake() {
 			m_VisualEffect = GetComponent<VisualEffect>();
+		}
+
+		private void OnEnable() {
+			m_LastBeatIndex = double.NaN;
+		}
+
+		public void SetBpmClock(BeatClockFrame frame) {
+			if (!frame.IsAvailable || double.IsNaN(frame.AdjustedTotalBeats) || double.IsInfinity(frame.AdjustedTotalBeats))
+				return;
+
+			var beatIndex = Math.Floor(frame.AdjustedTotalBeats + 1e-9d);
+			if (double.IsNaN(m_LastBeatIndex) || beatIndex < m_LastBeatIndex) {
+				m_LastBeatIndex = beatIndex;
+				return;
+			}
+
+			if (beatIndex <= m_LastBeatIndex)
+				return;
+
+			m_LastBeatIndex = beatIndex;
+			Fire();
 		}
 
 		public void Fire() {
