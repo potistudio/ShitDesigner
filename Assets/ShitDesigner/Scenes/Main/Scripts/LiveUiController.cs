@@ -449,10 +449,8 @@ namespace ShitDesigner.Main {
 		}
 
 		private void RefreshPatchControls(LiveUiReadModel model) {
-			if (m_RenderedPatchCount != model.Patches.Count) {
+			if (m_RenderedPatchCount != model.Patches.Count)
 				RebuildPatchControls(model);
-				m_CenteredPatchId = string.Empty;
-			}
 			SelectSidebarTab(model.SelectedCatalogRole);
 			foreach (var patch in model.Patches) {
 				var button = m_PatchControls.Q<Button>("patch-" + patch.Id);
@@ -478,6 +476,7 @@ namespace ShitDesigner.Main {
 			m_MainPatchControls.scrollOffset = Vector2.zero;
 			m_OverlayPatchControls.scrollOffset = Vector2.zero;
 			m_EffectPatchControls.scrollOffset = Vector2.zero;
+			m_CenteredPatchId = model.SelectedCatalogPatchId;
 			m_PendingCenteredPatchId = string.Empty;
 			m_RenderedPatchCount = model.Patches.Count;
 		}
