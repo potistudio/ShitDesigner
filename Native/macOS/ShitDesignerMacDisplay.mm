@@ -1,4 +1,5 @@
 #import <AppKit/AppKit.h>
+#import <CoreGraphics/CGDirectDisplay.h>
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
 
@@ -112,7 +113,7 @@ bool CreateOutputOnMainThread(int displayIndex) {
     return false;
   window.releasedWhenClosed = NO;
   [window setFrame:frame display:NO];
-  window.level = NSNormalWindowLevel;
+  window.level = CGShieldingWindowLevel();
   window.opaque = YES;
   window.hasShadow = NO;
   window.ignoresMouseEvents = YES;
