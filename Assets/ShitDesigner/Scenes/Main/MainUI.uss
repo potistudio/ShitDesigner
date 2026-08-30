@@ -336,6 +336,8 @@
 }
 
 .patch-button.is-selected {
+    color: rgb(255, 255, 255);
+    background-color: rgb(47, 111, 179);
     border-color: rgb(88, 166, 255);
 }
 
@@ -346,11 +348,6 @@
 .patch-list-controls.is-scene-selecting {
     border-width: 1px;
     border-color: rgb(255, 190, 74);
-}
-
-.patch-button.is-loaded {
-    color: rgb(255, 255, 255);
-    background-color: rgb(47, 111, 179);
 }
 
 .tempo-controls {
