@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
+using UnityEngine.UIElements;
 
 namespace ShitDesigner.Tests.Scene {
 	public sealed class SceneIsolationPlayModeTests {
@@ -67,6 +68,7 @@ namespace ShitDesigner.Tests.Scene {
 		[Test]
 		public void PrefabValidation_RequiresOneCameraRecursiveLayerAndCanvasCamera() {
 			var root = new GameObject("ScenePrefabRoot");
+			PanelSettings panelSettings = null;
 			try {
 				var child = new GameObject("Child");
 				child.transform.SetParent(root.transform, false);
@@ -105,8 +107,21 @@ namespace ShitDesigner.Tests.Scene {
 				canvas.renderMode = RenderMode.ScreenSpaceCamera;
 				canvas.worldCamera = camera;
 				Assert.That(SceneIsolationManager.ValidatePrefab(root, SceneNodeKind.ThreeD, 12, camera).IsSuccess, Is.True);
+
+				var panelObject = new GameObject("Panel");
+				panelObject.transform.SetParent(root.transform, false);
+				var panelRenderer = panelObject.AddComponent<PanelRenderer>();
+				panelSettings = ScriptableObject.CreateInstance<PanelSettings>();
+				panelRenderer.panelSettings = panelSettings;
+				SceneIsolationManager.AssignLayerRecursively(root, 12);
+				var screenSpacePanel = SceneIsolationManager.ValidatePrefab(root, SceneNodeKind.ThreeD, 12, camera);
+				Assert.That(screenSpacePanel.IsFailure, Is.True);
+				Assert.That(screenSpacePanel.Error.Code.Value, Is.EqualTo("scene.prefab.overlay_panel"));
+				panelSettings.renderMode = PanelRenderMode.WorldSpace;
+				Assert.That(SceneIsolationManager.ValidatePrefab(root, SceneNodeKind.ThreeD, 12, camera).IsSuccess, Is.True);
 			}
 			finally {
+				if (panelSettings != null) Object.DestroyImmediate(panelSettings);
 				Object.DestroyImmediate(root);
 			}
 		}

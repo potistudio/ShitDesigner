@@ -8,6 +8,7 @@ using ShitDesigner.Runtime;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
 
 namespace ShitDesigner.Scene {
 	public enum SceneNodeKind {
@@ -475,6 +476,9 @@ namespace ShitDesigner.Scene {
 				if (canvas.renderMode == RenderMode.ScreenSpaceCamera && canvas.worldCamera != cameras[0])
 					return Failure("scene.prefab.canvas_camera", "Screen Space - Camera Canvas must use the Scene camera.");
 			}
+			foreach (var panelRenderer in root.GetComponentsInChildren<PanelRenderer>(true))
+				if (panelRenderer.panelSettings == null || panelRenderer.panelSettings.renderMode != PanelRenderMode.WorldSpace)
+					return Failure("scene.prefab.overlay_panel", "UI Toolkit panels in an isolated Scene must use World Space rendering.");
 			return UnitResult.Success<Diagnostic>();
 		}
 
