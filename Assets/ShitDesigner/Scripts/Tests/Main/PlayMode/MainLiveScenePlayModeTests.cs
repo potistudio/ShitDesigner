@@ -91,6 +91,7 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(overlayPatchControls.Query<Button>().ToList().Count, Is.EqualTo(host.ReadModel.Patches.Count(patch => patch.Role == LivePatchRole.Overlay)));
 			Assert.That(effectPatchControls.Query<Button>().ToList().Count, Is.EqualTo(host.ReadModel.Patches.Count(patch => patch.Role == LivePatchRole.Effect)));
 			var firstMainButton = mainPatchControls.Query<Button>().First();
+			Assert.That(firstMainButton.worldBound.yMin, Is.EqualTo(mainPatchControls.contentViewport.worldBound.yMin).Within(0.5f));
 			var initialMainListTop = firstMainButton.worldBound.yMin;
 			host.MoveCatalogSelection(0, 1);
 			yield return null;

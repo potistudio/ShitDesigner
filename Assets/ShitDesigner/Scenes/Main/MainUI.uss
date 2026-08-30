@@ -302,10 +302,20 @@
     flex-grow: 1;
     min-width: 0;
     min-height: 0;
+    justify-content: flex-start;
+    align-items: stretch;
+}
+
+.patch-list-controls .unity-scroll-view__content-viewport {
+    justify-content: flex-start;
+    align-items: stretch;
 }
 
 .patch-list-controls .unity-scroll-view__content-container {
+    flex-grow: 0;
     flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
     padding: 0;
 }
 
