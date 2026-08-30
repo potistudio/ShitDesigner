@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using ShitDesigner.Core;
+using ShitDesigner.Runtime;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 
 namespace ShitDesigner.Main {
@@ -28,6 +30,7 @@ namespace ShitDesigner.Main {
 		private VisualElement _parameterControls;
 		private VisualElement _tempoControls;
 		private Button[] m_SidebarTabButtons = Array.Empty<Button>();
+		private Button[] m_InstantEffectCueButtons = Array.Empty<Button>();
 		private VisualElement[] m_SidebarTabContents = Array.Empty<VisualElement>();
 		private TextField _bpmField;
 		private Button _bpmTapButton;
@@ -111,6 +114,9 @@ namespace ShitDesigner.Main {
 				m_OverlayPatchControls,
 				m_EffectNodeControls
 			};
+			m_InstantEffectCueButtons = Enumerable.Range(1, InstantEffectTriggerContract.TriggerCount)
+				.Select(index => Required<Button>(root, "instant-effect-cue-" + index))
+				.ToArray();
 			for (var tabIndex = 0; tabIndex < m_SidebarTabButtons.Length; tabIndex++) {
 				m_SidebarTabButtons[tabIndex].userData = (LiveCatalogRole)tabIndex;
 				m_SidebarTabButtons[tabIndex].RegisterCallback<ClickEvent>(OnSidebarTabClicked);
@@ -149,6 +155,7 @@ namespace ShitDesigner.Main {
 			foreach (var button in m_SidebarTabButtons) button.UnregisterCallback<ClickEvent>(OnSidebarTabClicked);
 			m_SidebarTabButtons = Array.Empty<Button>();
 			m_SidebarTabContents = Array.Empty<VisualElement>();
+			m_InstantEffectCueButtons = Array.Empty<Button>();
 			if (_bpmField != null) {
 				_bpmField.UnregisterValueChangedCallback(OnBpmInputChanged);
 				_bpmField.UnregisterCallback<FocusInEvent>(OnBpmFocusIn);
@@ -168,7 +175,9 @@ namespace ShitDesigner.Main {
 
 		private void LateUpdate() {
 			m_OutputMenu?.Tick();
-			if (!_initialized || _host.ReadModel == null) return;
+			if (!_initialized) return;
+			RefreshInstantEffectCueHighlights();
+			if (_host.ReadModel == null) return;
 			var model = _host.ReadModel;
 			_updating = true;
 			try {
@@ -183,6 +192,29 @@ namespace ShitDesigner.Main {
 				else RefreshParameterValues(model);
 			}
 			finally { _updating = false; }
+		}
+
+		private void RefreshInstantEffectCueHighlights() {
+			var keyboard = Keyboard.current;
+			for (var index = 0; index < m_InstantEffectCueButtons.Length; index++)
+				m_InstantEffectCueButtons[index].EnableInClassList("is-keyboard-active", IsInstantEffectCueKeyPressed(keyboard, index));
+		}
+
+		private static bool IsInstantEffectCueKeyPressed(Keyboard keyboard, int index) {
+			if (keyboard == null) return false;
+			switch (index) {
+				case 0: return keyboard.qKey.isPressed;
+				case 1: return keyboard.wKey.isPressed;
+				case 2: return keyboard.eKey.isPressed;
+				case 3: return keyboard.rKey.isPressed;
+				case 4: return keyboard.tKey.isPressed;
+				case 5: return keyboard.yKey.isPressed;
+				case 6: return keyboard.uKey.isPressed;
+				case 7: return keyboard.iKey.isPressed;
+				case 8: return keyboard.oKey.isPressed;
+				case 9: return keyboard.pKey.isPressed;
+				default: return false;
+			}
 		}
 
 		private void OnSidebarTabClicked(ClickEvent click) {
