@@ -31,6 +31,62 @@
     border-top-color: rgb(48, 55, 65);
 }
 
+.instant-effect-cues {
+    height: 40px;
+    min-height: 40px;
+    max-height: 40px;
+    min-width: 0;
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-direction: row;
+}
+
+.instant-effect-cue-title {
+    width: 88px;
+    min-width: 88px;
+    max-width: 88px;
+    height: 40px;
+    margin: 0;
+    padding: 0;
+    color: rgb(117, 128, 142);
+    background-color: rgb(21, 24, 29);
+    border-right-width: 1px;
+    border-color: rgb(48, 55, 65);
+    font-size: 9px;
+    letter-spacing: 0.8px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+.instant-effect-cue-button {
+    height: 40px;
+    min-width: 0;
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin: 0;
+    padding: 0;
+    color: rgb(232, 236, 242);
+    background-color: rgb(29, 34, 41);
+    border-left-width: 0;
+    border-top-width: 0;
+    border-right-width: 1px;
+    border-bottom-width: 0;
+    border-color: rgb(48, 55, 65);
+    border-radius: 0;
+    font-size: 12px;
+    -unity-font-style: bold;
+}
+
+.instant-effect-cue-button:hover {
+    background-color: rgb(36, 43, 52);
+    border-color: rgb(88, 166, 255);
+}
+
+.instant-effect-cue-button:active {
+    color: rgb(13, 15, 18);
+    background-color: rgb(88, 166, 255);
+}
+
 .inspector-column {
     width: 320px;
     min-width: 320px;

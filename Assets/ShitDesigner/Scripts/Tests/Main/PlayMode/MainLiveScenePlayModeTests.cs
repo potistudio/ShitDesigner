@@ -71,6 +71,10 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(ui.Q<Button>("output-toggle"), Is.Null);
 			Assert.That(ui.Q<Button>("identify-display"), Is.Null);
 			Assert.That(ui.Q<VisualElement>("output-confirm-overlay"), Is.Null);
+			var instantEffectCues = ui.Q<VisualElement>("instant-effect-cues");
+			Assert.That(instantEffectCues, Is.Not.Null);
+			Assert.That(instantEffectCues.Query<Button>(className: "instant-effect-cue-button").ToList().Select(button => button.text),
+				Is.EqualTo(new[] { "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P" }));
 			var patchControls = ui.Q<VisualElement>("patch-controls");
 			var mainPatchControls = ui.Q<ScrollView>("main-patch-controls");
 			var overlayPatchControls = ui.Q<ScrollView>("overlay-patch-controls");
