@@ -148,6 +148,23 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void MainUiDefinesTwoCueSlotsBelowOutputOne() {
+			var asset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/ShitDesigner/Scenes/Main/MainUI.uxml");
+			Assert.That(asset, Is.Not.Null);
+			var root = new VisualElement();
+			asset.CloneTree(root);
+
+			var outputOne = root.Q<VisualElement>("program-monitor");
+			var cueSlots = root.Q<VisualElement>("cue-slots");
+			var slots = cueSlots.Query<VisualElement>(className: "cue-slot").ToList();
+
+			Assert.That(cueSlots.parent, Is.SameAs(outputOne.parent));
+			Assert.That(cueSlots.parent.IndexOf(cueSlots), Is.EqualTo(cueSlots.parent.IndexOf(outputOne) + 1));
+			Assert.That(slots.Select(slot => slot.name), Is.EqualTo(new[] { "cue-slot-1", "cue-slot-2" }));
+			Assert.That(slots.Select(slot => slot.Q<Label>()?.text), Is.EqualTo(new[] { "Cue Slot 1", "Cue Slot 2" }));
+		}
+
+		[Test]
 		public void MainUiDefinesInstantEffectCueRowInKeyboardOrder() {
 			var asset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/ShitDesigner/Scenes/Main/MainUI.uxml");
 			Assert.That(asset, Is.Not.Null);
