@@ -131,6 +131,7 @@ namespace ShitDesigner.Main.Tests {
 			yield return null;
 			Assert.That(host.ReadModel.SelectedCatalogRole, Is.EqualTo(LivePatchRole.Main));
 			Assert.That(host.ReadModel.SelectedCatalogPatchId, Is.EqualTo(rememberedMainPatch.Id));
+			Assert.That(host.AssignSelectedOverlayPatchToLane(7).Accepted, Is.False);
 			Assert.That(ui.Q<Button>("main-tab").ClassListContains("is-selected"), Is.True);
 			host.MoveCatalogSelection(1, 0);
 			yield return null;
@@ -148,6 +149,9 @@ namespace ShitDesigner.Main.Tests {
 			yield return null;
 			Assert.That(host.ReadModel.SelectedCatalogRole, Is.EqualTo(LivePatchRole.Overlay));
 			Assert.That(host.ReadModel.SelectedCatalogPatchId, Is.EqualTo(nextOverlayPatch.Id));
+			Assert.That(host.AssignSelectedOverlayPatchToLane(7).Accepted, Is.True);
+			yield return null;
+			Assert.That(host.ReadModel.Sequencers.Single(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).LanePatchIds[7], Is.EqualTo(nextOverlayPatch.Id));
 
 			Assert.That(host.ParameterQueue.EnqueueLaunchPatch(rememberedMainPatch.Id).Accepted, Is.True);
 			for (var frame = 0; frame < 60 && host.ReadModel.LoadedPatchId != rememberedMainPatch.Id; frame++) yield return null;

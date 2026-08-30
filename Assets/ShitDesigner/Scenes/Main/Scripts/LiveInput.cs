@@ -11,11 +11,12 @@ namespace ShitDesigner.Main {
 	public sealed class LiveKeyboardInput {
 		private readonly LiveParameterQueue m_Queue;
 		private readonly IReadOnlyDictionary<string, PatchDefinition> m_PatchesById;
+		private readonly Action<int> m_AssignOverlayLane;
 		private readonly Action<int, int> m_MoveCatalogSelection;
 		private readonly Action m_LaunchSelectedPatch;
 		private readonly Action<double> m_TapBpm;
 
-		public LiveKeyboardInput(LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches, Action<int, int> moveCatalogSelection, Action launchSelectedPatch, Action<double> tapBpm) {
+		public LiveKeyboardInput(LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches, Action<int> assignOverlayLane, Action<int, int> moveCatalogSelection, Action launchSelectedPatch, Action<double> tapBpm) {
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));
 
@@ -25,6 +26,7 @@ namespace ShitDesigner.Main {
 				if (!patchesById.TryAdd(patch.Id, patch)) throw new ArgumentException("Live patch IDs must be unique.", nameof(patches));
 			}
 			m_PatchesById = patchesById;
+			m_AssignOverlayLane = assignOverlayLane ?? throw new ArgumentNullException(nameof(assignOverlayLane));
 			m_MoveCatalogSelection = moveCatalogSelection ?? throw new ArgumentNullException(nameof(moveCatalogSelection));
 			m_LaunchSelectedPatch = launchSelectedPatch ?? throw new ArgumentNullException(nameof(launchSelectedPatch));
 			m_TapBpm = tapBpm ?? throw new ArgumentNullException(nameof(tapBpm));
@@ -34,6 +36,14 @@ namespace ShitDesigner.Main {
 			var keyboard = Keyboard.current;
 			if (keyboard == null || string.IsNullOrWhiteSpace(loadedPatchId)) return;
 
+			if (keyboard.digit1Key.wasPressedThisFrame) m_AssignOverlayLane(0);
+			if (keyboard.digit2Key.wasPressedThisFrame) m_AssignOverlayLane(1);
+			if (keyboard.digit3Key.wasPressedThisFrame) m_AssignOverlayLane(2);
+			if (keyboard.digit4Key.wasPressedThisFrame) m_AssignOverlayLane(3);
+			if (keyboard.digit5Key.wasPressedThisFrame) m_AssignOverlayLane(4);
+			if (keyboard.digit6Key.wasPressedThisFrame) m_AssignOverlayLane(5);
+			if (keyboard.digit7Key.wasPressedThisFrame) m_AssignOverlayLane(6);
+			if (keyboard.digit8Key.wasPressedThisFrame) m_AssignOverlayLane(7);
 			if (keyboard.leftArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(-1, 0);
 			if (keyboard.rightArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(1, 0);
 			if (keyboard.upArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, -1);

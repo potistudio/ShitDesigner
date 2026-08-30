@@ -81,7 +81,7 @@ namespace ShitDesigner.Main {
 				m_SelectedOverlayPatchIndex = 0;
 				m_SelectedEffectPatchIndex = 0;
 				UpdateOverlayComposition(_runtime.BpmFrame.AdjustedTotalBeats);
-				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, MoveCatalogSelection, () => { LaunchSelectedCatalogPatch(); }, TapBpm);
+				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, laneIndex => { AssignSelectedOverlayPatchToLane(laneIndex); }, MoveCatalogSelection, () => { LaunchSelectedCatalogPatch(); }, TapBpm);
 				_midiInputManager.InitializeForHostPolling();
 				_shutdown.Add(_midiInputManager.Shutdown);
 				_midi = new LiveMidiInput(_midiInputManager, _parameterQueue, _runtime.Patches);
@@ -194,6 +194,13 @@ namespace ShitDesigner.Main {
 			return sequencer == null
 				? LiveSequencerOperationResult.Reject("Select a sequencer lane first.")
 				: sequencer.AssignSelectedLane(patchId);
+		}
+
+		public LiveSequencerOperationResult AssignSelectedOverlayPatchToLane(int laneIndex) {
+			var patchId = m_SelectedPatchRole == LivePatchRole.Overlay ? SelectedCatalogPatchId : string.Empty;
+			return string.IsNullOrEmpty(patchId)
+				? LiveSequencerOperationResult.Reject("Select an overlay scene first.")
+				: m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).AssignLane(laneIndex, patchId);
 		}
 
 		private void ApplyRequests(bool clearResults = true) {

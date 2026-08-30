@@ -135,9 +135,15 @@ namespace ShitDesigner.Main {
 
 		public LiveSequencerOperationResult AssignSelectedLane(string patchId) {
 			if (SelectedLaneIndex < 0) return LiveSequencerOperationResult.Reject("Select a sequencer lane first.");
+			var result = AssignLane(SelectedLaneIndex, patchId);
+			if (result.Accepted) SelectedLaneIndex = -1;
+			return result;
+		}
+
+		public LiveSequencerOperationResult AssignLane(int laneIndex, string patchId) {
+			if (laneIndex < 0 || laneIndex >= LaneCount) return LiveSequencerOperationResult.Reject("The sequencer lane does not exist.");
 			if (string.IsNullOrWhiteSpace(patchId)) return LiveSequencerOperationResult.Reject("An overlay scene ID is required.");
-			m_LanePatchIds[SelectedLaneIndex] = patchId;
-			SelectedLaneIndex = -1;
+			m_LanePatchIds[laneIndex] = patchId;
 			return LiveSequencerOperationResult.Accept();
 		}
 

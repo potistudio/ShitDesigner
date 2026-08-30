@@ -80,6 +80,18 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void AssigningASceneDirectlyUpdatesTheRequestedLaneWithoutChangingSelection() {
+			var sequencer = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
+			sequencer.SelectLane(2);
+
+			Assert.That(sequencer.AssignLane(7, "overlay-h").Accepted, Is.True);
+
+			var readModel = sequencer.CreateReadModel(0d);
+			Assert.That(readModel.SelectedLaneIndex, Is.EqualTo(2));
+			Assert.That(readModel.LanePatchIds[7], Is.EqualTo("overlay-h"));
+		}
+
+		[Test]
 		public void ActiveLayersContainAssignedScenesModesAndLaneOrder() {
 			var sequencer = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
 			sequencer.SelectLane(2);
