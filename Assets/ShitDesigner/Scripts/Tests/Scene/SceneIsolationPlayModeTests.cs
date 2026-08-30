@@ -159,6 +159,8 @@ namespace ShitDesigner.Tests.Scene {
 			var created = manager.Create(new SceneCreateRequest(Node(8), SceneNodeKind.ThreeD, "SceneIsolation.Prefab", prefab: prefab));
 			Assert.That(created.IsSuccess, Is.True);
 			Assert.That(created.Value.Root.GetComponentsInChildren<Camera>(true).Length, Is.EqualTo(1));
+			Assert.That(created.Value.Camera.enabled, Is.False,
+				"Isolated cameras must render only through explicit render requests, never to the display back buffer.");
 			foreach (var transform in created.Value.Root.GetComponentsInChildren<Transform>(true))
 				Assert.That(transform.gameObject.layer, Is.EqualTo(created.Value.Layer));
 			created.Value.Dispose();
