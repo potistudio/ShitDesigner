@@ -171,7 +171,7 @@ namespace ShitDesigner.Scene {
 	}
 
 	/// <summary>Rendering is kept outside Scene. Bootstrap may provide a URP
-	/// StandardRequest implementation, while tests can use a recording source.</summary>
+	/// SingleCameraRequest implementation, while tests can use a recording source.</summary>
 	public interface ISceneRenderSource {
 		Result<SceneRenderResult, Diagnostic> Render(SceneRenderRequest request);
 	}
