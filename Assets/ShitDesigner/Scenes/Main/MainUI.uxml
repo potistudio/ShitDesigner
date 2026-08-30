@@ -38,7 +38,6 @@
                 <ui:VisualElement name="sequencer-controls" class="sequencer-controls">
                     <ui:VisualElement name="overlay-sequencer" class="sequencer"/>
                     <ui:VisualElement name="effect-sequencer" class="sequencer"/>
-                    <ui:VisualElement name="compositing-mode-sequencer" class="sequencer"/>
                 </ui:VisualElement>
                 <ui:VisualElement class="live-fader-panel">
                     <ui:VisualElement name="parameter-controls" class="parameter-controls"/>

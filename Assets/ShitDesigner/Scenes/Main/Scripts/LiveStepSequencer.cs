@@ -4,8 +4,17 @@ using System.Collections.Generic;
 namespace ShitDesigner.Main {
 	public enum LiveSequencerKind {
 		Overlay,
-		Effect,
-		CompositingMode
+		Effect
+	}
+
+	public enum LiveSequencerCellMode {
+		Off,
+		Normal,
+		Add,
+		Multiply,
+		Subtract,
+		Difference,
+		Invert
 	}
 
 	public readonly struct LiveSequencerOperationResult {
@@ -24,6 +33,7 @@ namespace ShitDesigner.Main {
 	public readonly struct LiveSequencerReadModel {
 		private readonly int[] m_ActiveLaneMasks;
 		private readonly string[] m_LanePatchIds;
+		private readonly LiveSequencerCellMode[] m_CellModes;
 
 		public LiveSequencerKind Kind { get; }
 		public string DisplayName { get; }
@@ -32,28 +42,38 @@ namespace ShitDesigner.Main {
 		public IReadOnlyList<int> ActiveLaneMasks => m_ActiveLaneMasks ?? Array.Empty<int>();
 		public IReadOnlyList<string> LanePatchIds => m_LanePatchIds ?? Array.Empty<string>();
 
-		internal LiveSequencerReadModel(LiveSequencerKind kind, string displayName, int currentStep, int selectedLaneIndex, int[] activeLaneMasks, string[] lanePatchIds) {
+		internal LiveSequencerReadModel(LiveSequencerKind kind, string displayName, int currentStep, int selectedLaneIndex, int[] activeLaneMasks,
+			string[] lanePatchIds, LiveSequencerCellMode[] cellModes) {
 			Kind = kind;
 			DisplayName = displayName;
 			CurrentStep = currentStep;
 			SelectedLaneIndex = selectedLaneIndex;
 			m_ActiveLaneMasks = activeLaneMasks ?? Array.Empty<int>();
 			m_LanePatchIds = lanePatchIds ?? Array.Empty<string>();
+			m_CellModes = cellModes ?? Array.Empty<LiveSequencerCellMode>();
 		}
 
 		public bool IsActive(int laneIndex, int stepIndex) {
 			if (laneIndex < 0 || laneIndex >= LiveStepSequencer.LaneCount || stepIndex < 0 || stepIndex >= LiveStepSequencer.StepCount) return false;
 			return ActiveLaneMasks.Count > stepIndex && (ActiveLaneMasks[stepIndex] & (1 << laneIndex)) != 0;
 		}
+
+		public LiveSequencerCellMode GetCellMode(int laneIndex, int stepIndex) {
+			if (laneIndex < 0 || laneIndex >= LiveStepSequencer.LaneCount || stepIndex < 0 || stepIndex >= LiveStepSequencer.StepCount)
+				return LiveSequencerCellMode.Off;
+			var index = laneIndex * LiveStepSequencer.StepCount + stepIndex;
+			return m_CellModes != null && index < m_CellModes.Length ? m_CellModes[index] : LiveSequencerCellMode.Off;
+		}
 	}
 
-	/// <summary>Stores independent lane selections for each step in an eight-beat sequence.</summary>
+	/// <summary>Stores an independent compositing mode for every lane and step in an eight-beat sequence.</summary>
 	public sealed class LiveStepSequencer {
 		public const int LaneCount = 4;
 		public const int StepCount = 8;
 
 		private readonly int[] m_ActiveLaneMasks = new int[StepCount];
 		private readonly string[] m_LanePatchIds = new string[LaneCount];
+		private readonly LiveSequencerCellMode[] m_CellModes = new LiveSequencerCellMode[LaneCount * StepCount];
 
 		public LiveSequencerKind Kind { get; }
 		public string DisplayName { get; }
@@ -65,14 +85,16 @@ namespace ShitDesigner.Main {
 			DisplayName = displayName;
 		}
 
-		public LiveSequencerOperationResult Toggle(int laneIndex, int stepIndex) {
+		public LiveSequencerOperationResult CycleCellMode(int laneIndex, int stepIndex) {
 			if (laneIndex < 0 || laneIndex >= LaneCount) return LiveSequencerOperationResult.Reject("The sequencer lane does not exist.");
 			if (stepIndex < 0 || stepIndex >= StepCount) return LiveSequencerOperationResult.Reject("The sequencer step does not exist.");
-			if (Kind == LiveSequencerKind.CompositingMode) {
-				m_ActiveLaneMasks[stepIndex] = 1 << laneIndex;
-				return LiveSequencerOperationResult.Accept();
-			}
-			m_ActiveLaneMasks[stepIndex] ^= 1 << laneIndex;
+			var cellIndex = laneIndex * StepCount + stepIndex;
+			var nextMode = m_CellModes[cellIndex] == LiveSequencerCellMode.Invert
+				? LiveSequencerCellMode.Off
+				: (LiveSequencerCellMode)((int)m_CellModes[cellIndex] + 1);
+			m_CellModes[cellIndex] = nextMode;
+			if (nextMode == LiveSequencerCellMode.Off) m_ActiveLaneMasks[stepIndex] &= ~(1 << laneIndex);
+			else m_ActiveLaneMasks[stepIndex] |= 1 << laneIndex;
 			return LiveSequencerOperationResult.Accept();
 		}
 
@@ -105,7 +127,8 @@ namespace ShitDesigner.Main {
 				throw new ArgumentOutOfRangeException(nameof(adjustedTotalBeats), "Sequencer timing must be finite.");
 			var beat = (long)Math.Floor(adjustedTotalBeats);
 			var currentStep = (int)((beat % StepCount + StepCount) % StepCount);
-			return new LiveSequencerReadModel(Kind, DisplayName, currentStep, SelectedLaneIndex, (int[])m_ActiveLaneMasks.Clone(), (string[])m_LanePatchIds.Clone());
+			return new LiveSequencerReadModel(Kind, DisplayName, currentStep, SelectedLaneIndex, (int[])m_ActiveLaneMasks.Clone(),
+				(string[])m_LanePatchIds.Clone(), (LiveSequencerCellMode[])m_CellModes.Clone());
 		}
 	}
 }

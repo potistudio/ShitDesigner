@@ -107,7 +107,7 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void MainUiDefinesThreeSequencerHosts() {
+		public void MainUiDefinesOverlayAndEffectSequencerHosts() {
 			var asset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/ShitDesigner/Scenes/Main/MainUI.uxml");
 			Assert.That(asset, Is.Not.Null);
 			var root = new VisualElement();
@@ -116,12 +116,12 @@ namespace ShitDesigner.Main.Tests {
 			var controls = root.Q<VisualElement>("sequencer-controls");
 
 			Assert.That(controls, Is.Not.Null);
-			Assert.That(controls.childCount, Is.EqualTo(3));
+			Assert.That(controls.childCount, Is.EqualTo(2));
 			Assert.That(controls.parent.ClassListContains("preview-stack"), Is.True);
 			Assert.That(controls.parent.ClassListContains("inspector-column"), Is.False);
 			Assert.That(root.Q<VisualElement>("overlay-sequencer"), Is.Not.Null);
 			Assert.That(root.Q<VisualElement>("effect-sequencer"), Is.Not.Null);
-			Assert.That(root.Q<VisualElement>("compositing-mode-sequencer"), Is.Not.Null);
+			Assert.That(root.Q<VisualElement>("compositing-mode-sequencer"), Is.Null);
 		}
 
 		[Test]
