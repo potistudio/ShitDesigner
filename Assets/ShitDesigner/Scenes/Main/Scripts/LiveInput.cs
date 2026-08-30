@@ -9,14 +9,18 @@ using UnityEngine.InputSystem;
 namespace ShitDesigner.Main {
 	/// <summary>Maps live keyboard controls to live requests without owning a PlayerLoop.</summary>
 	public sealed class LiveKeyboardInput {
+		private static readonly Key[] m_InstantEffectKeys = {
+			Key.Q, Key.W, Key.E, Key.R, Key.T, Key.Y, Key.U, Key.I, Key.O, Key.P
+		};
 		private readonly LiveParameterQueue m_Queue;
 		private readonly IReadOnlyDictionary<string, PatchDefinition> m_PatchesById;
 		private readonly Action<int> m_AssignOverlayLane;
+		private readonly Action<int> m_TriggerInstantEffect;
 		private readonly Action<int, int> m_MoveCatalogSelection;
 		private readonly Action m_LaunchSelectedPatch;
 		private readonly Action<double> m_TapBpm;
 
-		public LiveKeyboardInput(LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches, Action<int> assignOverlayLane, Action<int, int> moveCatalogSelection, Action launchSelectedPatch, Action<double> tapBpm) {
+		public LiveKeyboardInput(LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches, Action<int> assignOverlayLane, Action<int> triggerInstantEffect, Action<int, int> moveCatalogSelection, Action launchSelectedPatch, Action<double> tapBpm) {
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));
 
@@ -27,6 +31,7 @@ namespace ShitDesigner.Main {
 			}
 			m_PatchesById = patchesById;
 			m_AssignOverlayLane = assignOverlayLane ?? throw new ArgumentNullException(nameof(assignOverlayLane));
+			m_TriggerInstantEffect = triggerInstantEffect ?? throw new ArgumentNullException(nameof(triggerInstantEffect));
 			m_MoveCatalogSelection = moveCatalogSelection ?? throw new ArgumentNullException(nameof(moveCatalogSelection));
 			m_LaunchSelectedPatch = launchSelectedPatch ?? throw new ArgumentNullException(nameof(launchSelectedPatch));
 			m_TapBpm = tapBpm ?? throw new ArgumentNullException(nameof(tapBpm));
@@ -34,7 +39,12 @@ namespace ShitDesigner.Main {
 
 		public void Poll(string loadedPatchId) {
 			var keyboard = Keyboard.current;
-			if (keyboard == null || string.IsNullOrWhiteSpace(loadedPatchId)) return;
+			if (keyboard == null) return;
+
+			for (var effectIndex = 0; effectIndex < m_InstantEffectKeys.Length; effectIndex++)
+				if (keyboard[m_InstantEffectKeys[effectIndex]].wasPressedThisFrame) m_TriggerInstantEffect(effectIndex);
+
+			if (string.IsNullOrWhiteSpace(loadedPatchId)) return;
 
 			if (keyboard.digit1Key.wasPressedThisFrame) m_AssignOverlayLane(0);
 			if (keyboard.digit2Key.wasPressedThisFrame) m_AssignOverlayLane(1);
@@ -57,13 +67,15 @@ namespace ShitDesigner.Main {
 			if (!m_PatchesById.TryGetValue(loadedPatchId, out var patch)) return;
 
 			foreach (var key in keyboard.allKeys) {
-				if (!key.wasPressedThisFrame) continue;
+				if (!key.wasPressedThisFrame || IsInstantEffectKey(key.keyCode)) continue;
 				foreach (var binding in patch.KeyboardInputs) {
 					if (binding == null || !binding.Matches(key.keyCode)) continue;
 					m_Queue.EnqueueSetParameter(loadedPatchId, binding.ParameterId, binding.Value());
 				}
 			}
 		}
+
+		private static bool IsInstantEffectKey(Key key) => Array.IndexOf(m_InstantEffectKeys, key) >= 0;
 
 	}
 
