@@ -27,6 +27,8 @@ namespace ShitDesigner.Main {
 		private VisualElement m_SequencerControls;
 		private VisualElement _parameterControls;
 		private VisualElement _tempoControls;
+		private Button[] m_SidebarTabButtons = Array.Empty<Button>();
+		private VisualElement[] m_SidebarTabContents = Array.Empty<VisualElement>();
 		private TextField _bpmField;
 		private Button _bpmTapButton;
 		private Button m_BeatAlignmentButton;
@@ -104,6 +106,21 @@ namespace ShitDesigner.Main {
 			m_SequencerControls = Required<VisualElement>(root, "sequencer-controls");
 			_parameterControls = Required<VisualElement>(root, "parameter-controls");
 			_tempoControls = Required<VisualElement>(root, "tempo-controls");
+			m_SidebarTabButtons = new[] {
+				Required<Button>(root, "inspector-tab"),
+				Required<Button>(root, "logical-controls-tab"),
+				Required<Button>(root, "diagnostics-tab")
+			};
+			m_SidebarTabContents = new[] {
+				Required<VisualElement>(root, "inspector-tab-content"),
+				Required<VisualElement>(root, "logical-controls-tab-content"),
+				Required<VisualElement>(root, "diagnostics-tab-content")
+			};
+			for (var tabIndex = 0; tabIndex < m_SidebarTabButtons.Length; tabIndex++) {
+				m_SidebarTabButtons[tabIndex].userData = tabIndex;
+				m_SidebarTabButtons[tabIndex].RegisterCallback<ClickEvent>(OnSidebarTabClicked);
+			}
+			SelectSidebarTab(0);
 			_bpmField = Required<TextField>(root, "bpm-field");
 			_bpmTapButton = Required<Button>(root, "bpm-tap");
 			m_BeatAlignmentButton = Required<Button>(root, "beat-alignment-button");
@@ -139,6 +156,9 @@ namespace ShitDesigner.Main {
 			if (m_MainPatchControls != null) m_MainPatchControls.UnregisterCallback<WheelEvent>(OnMainPatchSelectionWheel, TrickleDown.TrickleDown);
 			if (m_OverlayPatchControls != null) m_OverlayPatchControls.UnregisterCallback<WheelEvent>(OnOverlayPatchSelectionWheel, TrickleDown.TrickleDown);
 			if (m_SequencerControls != null) m_SequencerControls.UnregisterCallback<ClickEvent>(OnSequencerCellClicked);
+			foreach (var button in m_SidebarTabButtons) button.UnregisterCallback<ClickEvent>(OnSidebarTabClicked);
+			m_SidebarTabButtons = Array.Empty<Button>();
+			m_SidebarTabContents = Array.Empty<VisualElement>();
 			if (_bpmField != null) {
 				_bpmField.UnregisterValueChangedCallback(OnBpmInputChanged);
 				_bpmField.UnregisterCallback<FocusInEvent>(OnBpmFocusIn);
@@ -172,6 +192,19 @@ namespace ShitDesigner.Main {
 				else RefreshParameterValues(model);
 			}
 			finally { _updating = false; }
+		}
+
+		private void OnSidebarTabClicked(ClickEvent click) {
+			if (click.currentTarget is not Button button || button.userData is not int tabIndex) return;
+			SelectSidebarTab(tabIndex);
+		}
+
+		private void SelectSidebarTab(int selectedIndex) {
+			for (var tabIndex = 0; tabIndex < m_SidebarTabButtons.Length; tabIndex++) {
+				var isSelected = tabIndex == selectedIndex;
+				m_SidebarTabButtons[tabIndex].EnableInClassList("is-selected", isSelected);
+				m_SidebarTabContents[tabIndex].EnableInClassList("is-hidden", !isSelected);
+			}
 		}
 
 		private void BuildSequencers(VisualElement root) {
