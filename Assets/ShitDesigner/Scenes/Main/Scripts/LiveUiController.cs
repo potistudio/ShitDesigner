@@ -32,20 +32,11 @@ namespace ShitDesigner.Main {
 		private Button m_BeatAlignmentButton;
 		private Label _capabilityLabel;
 		private Label _diagnosticLabel;
-		private Button _outputButton;
-		private Button _identifyButton;
-		private Button _confirmationCancelButton;
-		private Button _confirmationConfirmButton;
-		private Label _confirmationDisplaySelector;
-		private Label _confirmationTitle;
-		private Label _confirmationMessage;
-		private VisualElement _confirmationOverlay;
+		private LiveOutputMenuController m_OutputMenu;
 		private Coroutine m_ReloadRoutine;
 		private string _renderedPatchId = string.Empty;
 		private string _centeredPatchId = string.Empty;
 		private int m_RenderedPatchCount = -1;
-		private bool _pendingOutputActive;
-		private bool _showingOutputError;
 		private bool _initialized;
 		private bool _updating;
 		private bool _editingBpm;
@@ -78,6 +69,8 @@ namespace ShitDesigner.Main {
 			_host = host ?? throw new ArgumentNullException(nameof(host));
 			_output = output ?? throw new ArgumentNullException(nameof(output));
 			if (m_PanelRenderer == null) throw new InvalidOperationException("A dedicated live PanelRenderer is required.");
+			m_OutputMenu?.Dispose();
+			m_OutputMenu = new LiveOutputMenuController(output);
 			m_PanelRenderer.RegisterUIReloadCallback(OnUiReload);
 			m_ReloadRoutine = StartCoroutine(ReloadUiAfterPanelInitialization());
 		}
@@ -116,15 +109,6 @@ namespace ShitDesigner.Main {
 			m_BeatAlignmentButton = Required<Button>(root, "beat-alignment-button");
 			_capabilityLabel = Required<Label>(root, "capability-status");
 			_diagnosticLabel = Required<Label>(root, "diagnostic-status");
-			_outputButton = Required<Button>(root, "output-toggle");
-			_identifyButton = Required<Button>(root, "identify-display");
-			_confirmationCancelButton = Required<Button>(root, "output-confirm-cancel");
-			_confirmationConfirmButton = Required<Button>(root, "output-confirm-accept");
-			_confirmationDisplaySelector = Required<Label>(root, "output-confirm-display-selector");
-			_confirmationTitle = Required<Label>(root, "output-confirm-title");
-			_confirmationMessage = Required<Label>(root, "output-confirm-message");
-			_confirmationOverlay = Required<VisualElement>(root, "output-confirm-overlay");
-			m_Root.RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit, TrickleDown.TrickleDown);
 			m_MainPatchControls.RegisterCallback<WheelEvent>(OnMainPatchSelectionWheel, TrickleDown.TrickleDown);
 			m_OverlayPatchControls.RegisterCallback<WheelEvent>(OnOverlayPatchSelectionWheel, TrickleDown.TrickleDown);
 			m_SequencerControls.RegisterCallback<ClickEvent>(OnSequencerCellClicked);
@@ -134,11 +118,6 @@ namespace ShitDesigner.Main {
 			_bpmField.RegisterCallback<FocusOutEvent>(OnBpmFocusOut);
 			_bpmTapButton.clicked += TapBpm;
 			m_BeatAlignmentButton.clicked += AlignBeat;
-			_outputButton.clicked += RequestOutputToggle;
-			_identifyButton.clicked += _output.IdentifyDisplay;
-			_confirmationCancelButton.clicked += HideOutputConfirmation;
-			_confirmationConfirmButton.clicked += ConfirmOutputToggle;
-			HideOutputConfirmation();
 			_initialized = true;
 		}
 
@@ -149,12 +128,13 @@ namespace ShitDesigner.Main {
 			}
 			if (m_PanelRenderer != null) m_PanelRenderer.UnregisterUIReloadCallback(OnUiReload);
 			UnbindVisualTree();
+			m_OutputMenu?.Dispose();
+			m_OutputMenu = null;
 			_host = null;
 			_output = null;
 		}
 
 		private void UnbindVisualTree() {
-			if (m_Root != null) m_Root.UnregisterCallback<NavigationSubmitEvent>(OnNavigationSubmit, TrickleDown.TrickleDown);
 			if (_patchSlotControls != null) _patchSlotControls.UnregisterCallback<ClickEvent>(OnPatchSlotClicked);
 			if (m_MainPatchControls != null) m_MainPatchControls.UnregisterCallback<WheelEvent>(OnMainPatchSelectionWheel, TrickleDown.TrickleDown);
 			if (m_OverlayPatchControls != null) m_OverlayPatchControls.UnregisterCallback<WheelEvent>(OnOverlayPatchSelectionWheel, TrickleDown.TrickleDown);
@@ -166,10 +146,6 @@ namespace ShitDesigner.Main {
 			}
 			if (_bpmTapButton != null) _bpmTapButton.clicked -= TapBpm;
 			if (m_BeatAlignmentButton != null) m_BeatAlignmentButton.clicked -= AlignBeat;
-			if (_outputButton != null) _outputButton.clicked -= RequestOutputToggle;
-			if (_identifyButton != null && _output != null) _identifyButton.clicked -= _output.IdentifyDisplay;
-			if (_confirmationCancelButton != null) _confirmationCancelButton.clicked -= HideOutputConfirmation;
-			if (_confirmationConfirmButton != null) _confirmationConfirmButton.clicked -= ConfirmOutputToggle;
 			_initialized = false;
 			m_Root = null;
 			_renderedPatchId = string.Empty;
@@ -179,6 +155,7 @@ namespace ShitDesigner.Main {
 		}
 
 		private void LateUpdate() {
+			m_OutputMenu?.Tick();
 			if (!_initialized || _host.ReadModel == null) return;
 			var model = _host.ReadModel;
 			_updating = true;
@@ -189,7 +166,6 @@ namespace ShitDesigner.Main {
 				RefreshPatchControls(model);
 				RefreshSequencers(model);
 				RefreshTempoControls(model);
-				_outputButton.text = model.IsDisplayOutputActive ? "STOP OUTPUT" : "START OUTPUT";
 				_capabilityLabel.text = $"MIDI: {(model.Capabilities.MidiAvailable ? "READY" : "UNAVAILABLE")}  DISPLAY: {(model.Capabilities.ExternalDisplayAvailable ? "READY" : "UNAVAILABLE")}  FRAME: {model.ProgramFrameNumber}";
 				_diagnosticLabel.text = ResolveDiagnostic(model);
 				if (_renderedPatchId != model.LoadedPatchId) RebuildParameters(model);
@@ -605,61 +581,6 @@ namespace ShitDesigner.Main {
 				? StyleKeyword.None
 				: new StyleBackground(Background.FromRenderTexture(texture));
 		}
-
-		private void RequestOutputToggle() {
-			if (_output == null) return;
-			_showingOutputError = false;
-			_confirmationCancelButton.RemoveFromClassList("is-hidden");
-			_pendingOutputActive = !_output.IsOutputActive;
-			PrepareConfirmationDisplaySelector();
-			if (_pendingOutputActive && !_output.IsAvailable) {
-				ShowOutputError(UnityEngine.Application.isEditor
-					? "External Display output requires a standalone Player."
-					: "No external Display is connected.");
-				return;
-			}
-
-			_confirmationTitle.text = _pendingOutputActive ? "START LIVE OUTPUT?" : "STOP LIVE OUTPUT?";
-			_confirmationMessage.text = _pendingOutputActive
-				? $"Send Program output to {_output.DisplayIdentity}."
-				: "Stop Program output on all external Displays.";
-			_confirmationConfirmButton.text = _pendingOutputActive ? "START" : "STOP";
-			_confirmationConfirmButton.EnableInClassList("is-stop", !_pendingOutputActive);
-			_confirmationOverlay.RemoveFromClassList("is-hidden");
-		}
-
-		private void OnNavigationSubmit(NavigationSubmitEvent change) {
-			if (!ReferenceEquals(change.target, _outputButton)) return;
-			change.StopImmediatePropagation();
-		}
-
-		private void PrepareConfirmationDisplaySelector() {
-			var labels = Enumerable.Range(2, Math.Max(0, _output.ConnectedDisplayCount - 1)).Select(number => "Display " + number).ToList();
-			if (labels.Count == 0) labels.Add("No external Display");
-			_confirmationDisplaySelector.text = "OUTPUT DISPLAYS: " + string.Join(", ", labels);
-		}
-
-		private void ConfirmOutputToggle() {
-			if (_output == null) return;
-			if (_showingOutputError) {
-				HideOutputConfirmation();
-				return;
-			}
-			if (_output.SetOutputActive(_pendingOutputActive)) HideOutputConfirmation();
-			else ShowOutputError(_output.LastError);
-		}
-
-		private void ShowOutputError(string message) {
-			_showingOutputError = true;
-			_confirmationCancelButton.AddToClassList("is-hidden");
-			_confirmationTitle.text = "OUTPUT UNAVAILABLE";
-			_confirmationMessage.text = message;
-			_confirmationConfirmButton.text = "CLOSE";
-			_confirmationConfirmButton.RemoveFromClassList("is-stop");
-			_confirmationOverlay.RemoveFromClassList("is-hidden");
-		}
-
-		private void HideOutputConfirmation() => _confirmationOverlay?.AddToClassList("is-hidden");
 
 		private void ShowEnqueueRejection(LiveParameterEnqueueResult result) {
 			if (!result.Accepted && _diagnosticLabel != null) _diagnosticLabel.text = result.RejectionReason;
