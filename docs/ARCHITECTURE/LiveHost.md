@@ -25,6 +25,13 @@
 - ライブ用ノードグラフのノード、接続および初期パラメーターは `PatchDefinition` に保持する。
 - 3Dシーンの構成はライブ用ノードグラフに含める。
 
+### 2026-08-30: Overlayシーケンサーは既存ノードRuntimeでProgramへ合成する
+
+- Overlayシーケンサーの4レーンは、割り当てられたOverlayパッチのRuntimeをレーンごとに保持する。セルがOffでも割り当てが変わるまでRuntimeを維持する。
+- 現在ステップで有効なレーンを0から3の順にMain Textureへ合成し、後のレーンを前面として扱う。
+- Normal、Add、Multiply、SubtractおよびDifferenceはShader Manifestの既存Blendノードを使用する。Invertは既存Invertノードの結果をNormal Alpha Overで合成する。
+- シーケンサーの拍進行はLoaded Patchを切り替えない。合成後の単一TextureをProgram映像として外部DisplayとProgram Monitorへ提示する。
+
 ### 2026-08-26: 操作UIは専用オブジェクトが描画する
 
 - 操作UIは専用GameObjectに配置する。

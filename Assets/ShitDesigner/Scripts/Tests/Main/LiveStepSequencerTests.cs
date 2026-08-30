@@ -1,3 +1,4 @@
+using System.Linq;
 using NUnit.Framework;
 
 namespace ShitDesigner.Main.Tests {
@@ -11,7 +12,7 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(sequencer.CycleCellMode(2, 3).Accepted, Is.True);
 
 			var readModel = sequencer.CreateReadModel(3d);
-			Assert.That(readModel.ActiveLaneMasks, Has.Count.EqualTo(LiveStepSequencer.StepCount));
+			Assert.That(readModel.ActiveLaneMasks.Count, Is.EqualTo(LiveStepSequencer.StepCount));
 			Assert.That(readModel.IsActive(1, 3), Is.True);
 			Assert.That(readModel.IsActive(2, 3), Is.True);
 		}
@@ -68,19 +69,22 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void EveryHighlightedLaneWithAnAssignedSceneTriggersAtTheStep() {
+		public void ActiveLayersContainAssignedScenesModesAndLaneOrder() {
 			var sequencer = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
-			sequencer.SelectLane(0);
-			sequencer.AssignSelectedLane("overlay-a");
 			sequencer.SelectLane(2);
 			sequencer.AssignSelectedLane("overlay-c");
-			sequencer.CycleCellMode(0, 5);
+			sequencer.SelectLane(0);
+			sequencer.AssignSelectedLane("overlay-a");
 			sequencer.CycleCellMode(2, 5);
+			sequencer.CycleCellMode(2, 5);
+			sequencer.CycleCellMode(0, 5);
 
-			var triggered = sequencer.GetTriggeredPatchIds(5);
+			var layers = sequencer.CreateReadModel(5d).GetActiveLayers();
 
-			Assert.That(triggered, Is.EqualTo(new[] { "overlay-a", "overlay-c" }));
-			Assert.That(sequencer.GetTriggeredPatchIds(4), Is.Empty);
+			Assert.That(layers.Select(layer => layer.LaneIndex), Is.EqualTo(new[] { 0, 2 }));
+			Assert.That(layers.Select(layer => layer.PatchId), Is.EqualTo(new[] { "overlay-a", "overlay-c" }));
+			Assert.That(layers.Select(layer => layer.Mode), Is.EqualTo(new[] { LiveSequencerCellMode.Normal, LiveSequencerCellMode.Add }));
+			Assert.That(sequencer.CreateReadModel(4d).GetActiveLayers(), Is.Empty);
 		}
 	}
 }
