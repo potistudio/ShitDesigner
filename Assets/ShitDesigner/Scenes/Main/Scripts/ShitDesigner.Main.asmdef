@@ -10,7 +10,8 @@
     "ShitDesigner.Input",
     "ShitDesigner.Nodes",
     "ShitDesigner.Rendering",
-    "Unity.InputSystem"
+    "Unity.InputSystem",
+    "Unity.ugui"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

@@ -7,6 +7,7 @@ using ShitDesigner.Scene;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
@@ -135,20 +136,24 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void ExternalProgramDisplayCamera_UsesAnUrpRenderableSurface() {
-			var host = new GameObject("External Program Display Camera Test");
+		public void ExternalProgramDisplayCanvas_FillsTheTargetWithoutACamera() {
+			var host = new GameObject("External Program Display Canvas Test");
 			var source = new RenderTexture(4, 4, 0, RenderTextureFormat.ARGB32);
 			try {
 				Assert.That(source.Create(), Is.True);
-				var camera = host.AddComponent<Camera>();
-				var presenter = host.AddComponent<LiveProgramDisplayCamera>();
+				var canvas = host.AddComponent<Canvas>();
+				canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+				var presenter = host.AddComponent<LiveProgramDisplayCanvas>();
 
-				presenter.Initialize(camera, source);
+				presenter.Initialize(canvas, source);
 
-				Assert.That(camera.cullingMask, Is.EqualTo(1 << 31));
-				var renderer = host.GetComponentInChildren<MeshRenderer>();
-				Assert.That(renderer, Is.Not.Null);
-				Assert.That(renderer.sharedMaterial.shader.name, Is.EqualTo("Hidden/ShitDesigner/ProgramDisplay"));
+				Assert.That(host.GetComponent<Camera>(), Is.Null);
+				Assert.That(presenter.Source, Is.SameAs(source));
+				var image = (RectTransform)presenter.transform.GetChild(0);
+				Assert.That(image.anchorMin, Is.EqualTo(Vector2.zero));
+				Assert.That(image.anchorMax, Is.EqualTo(Vector2.one));
+				Assert.That(image.offsetMin, Is.EqualTo(Vector2.zero));
+				Assert.That(image.offsetMax, Is.EqualTo(Vector2.zero));
 			}
 			finally {
 				source.Release();
