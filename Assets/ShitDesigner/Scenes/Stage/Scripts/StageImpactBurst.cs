@@ -22,7 +22,6 @@ namespace ShitDesigner.Stage {
 			if (m_VisualEffect == null) m_VisualEffect = GetComponent<VisualEffect>();
 			if (m_VisualEffect == null || !m_VisualEffect.enabled || m_VisualEffect.visualEffectAsset == null) return;
 
-			m_VisualEffect.Reinit();
 			var texture = SelectTexture();
 			if (texture != null) {
 				m_CurrentTexture = texture;
