@@ -17,6 +17,7 @@ xcrun clang++ \
   -arch x86_64 \
   -mmacosx-version-min=12.0 \
   -framework AppKit \
+  -framework CoreGraphics \
   -framework Metal \
   -framework QuartzCore \
   -framework Foundation \
