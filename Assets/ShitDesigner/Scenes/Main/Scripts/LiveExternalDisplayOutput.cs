@@ -12,7 +12,7 @@ using UnityEngine;
 namespace ShitDesigner.Main {
 	/// <summary>Owns external Display activation, display transform, and Program frame presentation.</summary>
 	[DisallowMultipleComponent]
-	public sealed class LiveExternalDisplayOutput : MonoBehaviour {
+	public sealed class LiveExternalDisplayOutput : MonoBehaviour, ILiveOutputMenuTarget {
 		[SerializeField] private Shader _displayTransformShader;
 
 		private DisplayTransformPass _displayTransform;
