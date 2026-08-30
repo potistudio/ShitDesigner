@@ -16,7 +16,6 @@
                     <ui:VisualElement name="effect-sequencer" class="sequencer"/>
                 </ui:VisualElement>
                 <ui:VisualElement name="instant-effect-cues" class="instant-effect-cues">
-                    <ui:Label text="INSTANT FX" class="instant-effect-cue-title"/>
                     <ui:Button name="instant-effect-cue-1" text="Q" tooltip="Instant Effect Trigger 1" class="instant-effect-cue-button"/>
                     <ui:Button name="instant-effect-cue-2" text="W" tooltip="Instant Effect Trigger 2" class="instant-effect-cue-button"/>
                     <ui:Button name="instant-effect-cue-3" text="E" tooltip="Instant Effect Trigger 3" class="instant-effect-cue-button"/>
