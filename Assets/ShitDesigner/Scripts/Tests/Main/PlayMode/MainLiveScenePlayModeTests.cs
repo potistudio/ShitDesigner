@@ -67,6 +67,12 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(identifyButton, Is.Not.Null);
 			Assert.That(outputButton.parent.parent, Is.SameAs(topBar));
 			Assert.That(identifyButton.parent.parent, Is.SameAs(topBar));
+			var outputConfirmation = ui.Q<VisualElement>("output-confirm-overlay");
+			Assert.That(outputConfirmation.ClassListContains("is-hidden"), Is.True);
+			outputButton.Focus();
+			yield return null;
+			using (var submit = NavigationSubmitEvent.GetPooled()) outputButton.SendEvent(submit);
+			Assert.That(outputConfirmation.ClassListContains("is-hidden"), Is.True);
 			var patchRoleLabels = ui.Q<VisualElement>("patch-role-labels");
 			var patchControls = ui.Q<VisualElement>("patch-controls");
 			var patchDock = ui.Q<VisualElement>(className: "patch-dock");

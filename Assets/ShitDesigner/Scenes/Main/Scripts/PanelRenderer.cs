@@ -13,6 +13,7 @@ namespace ShitDesigner.Main {
 	public sealed class PanelRenderer : MonoBehaviour {
 		[SerializeField] private UIDocument _document;
 
+		private VisualElement m_Root;
 		private ApplicationLiveHost _host;
 		private LiveExternalDisplayOutput _output;
 		private VisualElement _programMonitor;
@@ -75,8 +76,9 @@ namespace ShitDesigner.Main {
 			_host = host ?? throw new ArgumentNullException(nameof(host));
 			_output = output ?? throw new ArgumentNullException(nameof(output));
 			if (_document == null) throw new InvalidOperationException("A dedicated live UIDocument is required.");
-			var root = _document.rootVisualElement;
-			if (root == null) throw new InvalidOperationException("The live UIDocument has no visual tree.");
+			m_Root = _document.rootVisualElement;
+			if (m_Root == null) throw new InvalidOperationException("The live UIDocument has no visual tree.");
+			var root = m_Root;
 
 			_programMonitor = Required<VisualElement>(root, "program-monitor");
 			m_Output2Preview = Required<VisualElement>(root, "output-2-preview");
@@ -105,6 +107,7 @@ namespace ShitDesigner.Main {
 			_confirmationTitle = Required<Label>(root, "output-confirm-title");
 			_confirmationMessage = Required<Label>(root, "output-confirm-message");
 			_confirmationOverlay = Required<VisualElement>(root, "output-confirm-overlay");
+			m_Root.RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit, TrickleDown.TrickleDown);
 			m_MainPatchControls.RegisterCallback<WheelEvent>(OnMainPatchSelectionWheel, TrickleDown.TrickleDown);
 			m_OverlayPatchControls.RegisterCallback<WheelEvent>(OnOverlayPatchSelectionWheel, TrickleDown.TrickleDown);
 			m_SequencerControls.RegisterCallback<ClickEvent>(OnSequencerCellClicked);
@@ -123,6 +126,7 @@ namespace ShitDesigner.Main {
 		}
 
 		public void Shutdown() {
+			if (m_Root != null) m_Root.UnregisterCallback<NavigationSubmitEvent>(OnNavigationSubmit, TrickleDown.TrickleDown);
 			if (_patchSlotControls != null) _patchSlotControls.UnregisterCallback<ClickEvent>(OnPatchSlotClicked);
 			if (m_MainPatchControls != null) m_MainPatchControls.UnregisterCallback<WheelEvent>(OnMainPatchSelectionWheel, TrickleDown.TrickleDown);
 			if (m_OverlayPatchControls != null) m_OverlayPatchControls.UnregisterCallback<WheelEvent>(OnOverlayPatchSelectionWheel, TrickleDown.TrickleDown);
@@ -139,6 +143,7 @@ namespace ShitDesigner.Main {
 			if (_confirmationCancelButton != null) _confirmationCancelButton.clicked -= HideOutputConfirmation;
 			if (_confirmationConfirmButton != null) _confirmationConfirmButton.clicked -= ConfirmOutputToggle;
 			_initialized = false;
+			m_Root = null;
 			_host = null;
 			_output = null;
 			_renderedPatchId = string.Empty;
@@ -595,6 +600,11 @@ namespace ShitDesigner.Main {
 			_confirmationConfirmButton.text = _pendingOutputActive ? "START" : "STOP";
 			_confirmationConfirmButton.EnableInClassList("is-stop", !_pendingOutputActive);
 			_confirmationOverlay.RemoveFromClassList("is-hidden");
+		}
+
+		private void OnNavigationSubmit(NavigationSubmitEvent change) {
+			if (!ReferenceEquals(change.target, _outputButton)) return;
+			change.StopImmediatePropagation();
 		}
 
 		private void PrepareConfirmationDisplaySelector() {
