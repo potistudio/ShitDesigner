@@ -4,8 +4,18 @@
         <ui:VisualElement class="workspace">
             <ui:VisualElement class="preview-stack">
                 <ui:VisualElement class="output-previews">
-                    <ui:VisualElement name="program-monitor" class="output-preview output-preview-1">
-                        <ui:Label text="Output 1" class="output-preview-label"/>
+                    <ui:VisualElement class="output-preview-column">
+                        <ui:VisualElement name="program-monitor" class="output-preview output-preview-1">
+                            <ui:Label text="Output 1" class="output-preview-label"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="cue-slots" class="cue-slots">
+                            <ui:VisualElement name="cue-slot-1" class="cue-slot">
+                                <ui:Label text="Cue Slot 1" class="output-preview-label"/>
+                            </ui:VisualElement>
+                            <ui:VisualElement name="cue-slot-2" class="cue-slot">
+                                <ui:Label text="Cue Slot 2" class="output-preview-label"/>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
                     </ui:VisualElement>
                     <ui:VisualElement name="output-2-preview" class="output-preview output-preview-2">
                         <ui:Label text="Output 2" class="output-preview-label"/>

@@ -132,11 +132,22 @@
 
 .output-previews {
     width: 1280px;
-    height: 360px;
+    height: 540px;
     min-width: 1280px;
-    min-height: 360px;
+    min-height: 540px;
     flex-direction: row;
     align-items: flex-start;
+    flex-shrink: 0;
+}
+
+.output-preview-column {
+    width: 640px;
+    min-width: 640px;
+    max-width: 640px;
+    height: 540px;
+    min-height: 540px;
+    max-height: 540px;
+    flex-grow: 0;
     flex-shrink: 0;
 }
 
@@ -168,6 +179,33 @@
     padding-bottom: 3px;
     font-size: 11px;
     -unity-font-style: bold;
+}
+
+.cue-slots {
+    width: 640px;
+    min-width: 640px;
+    max-width: 640px;
+    height: 180px;
+    min-height: 180px;
+    max-height: 180px;
+    flex-direction: row;
+    flex-grow: 0;
+    flex-shrink: 0;
+}
+
+.cue-slot {
+    position: relative;
+    width: 320px;
+    min-width: 320px;
+    max-width: 320px;
+    height: 180px;
+    min-height: 180px;
+    max-height: 180px;
+    flex-grow: 0;
+    flex-shrink: 0;
+    background-color: black;
+    border-width: 1px;
+    border-color: rgb(48, 55, 65);
 }
 
 .control-panel {
