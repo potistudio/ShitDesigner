@@ -40,7 +40,7 @@ struct VertexOutput {
 
 vertex VertexOutput vertex_main(uint vertexId [[vertex_id]]) {
   const float2 positions[3] = {float2(-1.0, -1.0), float2(3.0, -1.0), float2(-1.0, 3.0)};
-  const float2 uvs[3] = {float2(0.0, 1.0), float2(2.0, 1.0), float2(0.0, -1.0)};
+  const float2 uvs[3] = {float2(0.0, 0.0), float2(2.0, 0.0), float2(0.0, 2.0)};
   VertexOutput output;
   output.position = float4(positions[vertexId], 0.0, 1.0);
   output.uv = uvs[vertexId];
