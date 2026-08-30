@@ -70,6 +70,8 @@ namespace ShitDesigner.Bootstrap {
 
 			var catalogManifest = _nodeTypeCatalog.ValidateManifest();
 			if (catalogManifest.IsFailure) return catalogManifest;
+			if (_nodeTypeCatalog.BitonicPixelSorter == null)
+				return PreflightFailure("bootstrap.preflight.pixel_sort_missing", "The generated NodeTypeCatalog requires the Pixel Sort ComputeShader reference.");
 			var catalogShaders = _nodeTypeCatalog.ValidateLegacyShaderReferences(_shaderGenerator, _shaderEffect, _shaderBlend2);
 			if (catalogShaders.IsFailure) return catalogShaders;
 
@@ -142,6 +144,7 @@ namespace ShitDesigner.Bootstrap {
 				conversion,
 				graphics,
 				pool,
+				bitonicPixelSorter: _nodeTypeCatalog.BitonicPixelSorter,
 				projectContextSetter: (document, root) => {
 					context.Document = document;
 					context.ProjectRoot = root ?? string.Empty;

@@ -23,6 +23,7 @@ namespace ShitDesigner.Nodes.Editor {
 		private const string SpatialLedgerPath = "Assets/ShitDesigner/Shaders/Manifests/spatial-variants.json";
 		private const string CompositingLedgerPath = "Assets/ShitDesigner/Shaders/Manifests/compositing-temporal-variants.json";
 		private const string AudioLedgerPath = "Assets/ShitDesigner/Shaders/Manifests/audio-raymarch-utility-variants.json";
+		private const string BitonicPixelSorterPath = "Assets/ShitDesigner/Scripts/Modules/Media/Shaders/BitonicPixelSorter.compute";
 
 		private static readonly IReadOnlyDictionary<string, string> FamilyShaderPaths =
 			new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -98,6 +99,9 @@ namespace ShitDesigner.Nodes.Editor {
 			}
 			catalog.SetShaderManifest(manifestAsset);
 			catalog.ReplaceManifest(runtime.Entries);
+			var pixelSorter = AssetDatabase.LoadAssetAtPath<ComputeShader>(BitonicPixelSorterPath);
+			var pixelSorterConfigured = catalog.ConfigureBitonicPixelSorter(pixelSorter);
+			if (pixelSorterConfigured.IsFailure) return Result.Failure<int, Diagnostic>(pixelSorterConfigured.Error);
 			foreach (var pair in shaderByType) {
 				var configured = catalog.ConfigureShaderReference(pair.Key, pair.Value);
 				if (configured.IsFailure) return Result.Failure<int, Diagnostic>(configured.Error);

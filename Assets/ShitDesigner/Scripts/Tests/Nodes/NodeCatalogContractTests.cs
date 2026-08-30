@@ -42,6 +42,22 @@ namespace ShitDesigner.Nodes.Tests {
 		}
 
 		[Test]
+		public void PixelSortDefinition_ExposesOnlyPortedControls() {
+			var pixelSort = NodeDefinitionCatalog.CreateInitial().Entries.Single(
+				x => x.TypeId.Value == BitonicPixelSortContract.NodeTypeId);
+			Assert.That(pixelSort.Category, Is.EqualTo("Effect/Glitch"));
+			Assert.That(pixelSort.Ports.Select(x => x.Id.Value), Is.EqualTo(new[] { "input", "image" }));
+			Assert.That(pixelSort.Ports.Single(x => x.Id.Value == "input").Required, Is.True);
+			Assert.That(pixelSort.Parameters.Select(x => x.Id.Value), Is.EqualTo(new[] {
+				"direction", "ascending", "threshold_min", "threshold_max"
+			}));
+			Assert.That(pixelSort.Parameters.Single(x => x.Id.Value == "direction").EnumOptions,
+				Is.EqualTo(new[] { "horizontal", "vertical" }));
+			Assert.That(pixelSort.Parameters.Single(x => x.Id.Value == "threshold_min").DefaultValue.AsFloat(), Is.EqualTo(.4f));
+			Assert.That(pixelSort.Parameters.Single(x => x.Id.Value == "threshold_max").DefaultValue.AsFloat(), Is.EqualTo(.6f));
+		}
+
+		[Test]
 		public void InstantEffectTriggerDefinition_ExposesTenBooleanOutputsInKeyboardOrder() {
 			var triggers = NodeDefinitionCatalog.CreateInitial().Entries.Single(x => x.TypeId.Value == InstantEffectTriggerContract.NodeTypeId);
 			Assert.That(triggers.Category, Is.EqualTo("Input"));
@@ -92,6 +108,7 @@ namespace ShitDesigner.Nodes.Tests {
 
 			var asset = AssetDatabase.LoadAssetAtPath<NodeTypeCatalog>("Assets/ShitDesigner/Scripts/Modules/Nodes/NodeTypeCatalog.asset");
 			Assert.That(asset, Is.Not.Null);
+			Assert.That(asset.BitonicPixelSorter, Is.Not.Null);
 			Assert.That(asset.ValidateManifest().IsSuccess, Is.True);
 			var runtime = asset.BuildRuntimeCatalog();
 			Assert.That(runtime.IsSuccess, Is.True);

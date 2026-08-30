@@ -84,7 +84,7 @@ namespace ShitDesigner.Bootstrap {
 		void SetProjectContext(ProjectDocument document, string projectRoot);
 	}
 
-	/// <summary>Builds the seven required bindings from explicit shader,
+	/// <summary>Builds the required bindings from explicit shader, compute,
 	/// prefab, Scene and Media services. It never calls Shader.Find,
 	/// Resources.FindObjectsOfTypeAll or a project-wide object search.</summary>
 	public sealed class ExplicitVisualBindingProvider : IVisualBindingProvider, IVisualBindingOwnershipProvider, IVisualBindingPerformanceHealthProvider, IVisualBindingPolicy, IVisualBindingPoolAware, IProjectContextAware, IDisposable {
@@ -99,6 +99,7 @@ namespace ShitDesigner.Bootstrap {
 		private readonly IVideoFrameAdapter _videoFrameAdapter;
 		private readonly IVideoGraphicsCapabilities _videoGraphics;
 		private readonly RenderTexturePool _pool;
+		private readonly ComputeShader m_BitonicPixelSorter;
 		private readonly Func<SceneNodeRuntime, FrameSnapshot, Action> _sceneParameterApplier;
 		private IRuntimeOutputFormatPolicy _formatPolicy = new RuntimeOutputFormatPolicy(RuntimeDynamicRange.Hdr);
 		private readonly Action<ProjectDocument, string> _projectContextSetter;
@@ -120,7 +121,8 @@ namespace ShitDesigner.Bootstrap {
 			Func<SceneNodeRuntime, FrameSnapshot, Action> sceneParameterApplier = null,
 			Action<ProjectDocument, string> projectContextSetter = null,
 			IEnumerable<IDisposable> applicationResources = null,
-			Func<RuntimeNodeCreateInfo, GameObject> scene3dPrefabResolver = null) {
+			Func<RuntimeNodeCreateInfo, GameObject> scene3dPrefabResolver = null,
+			ComputeShader bitonicPixelSorter = null) {
 			_sceneManagerFactory = sceneManagerFactory;
 			_scene3dPrefab = scene3dPrefab;
 			_scene3dPrefabResolver = scene3dPrefabResolver;
@@ -132,6 +134,7 @@ namespace ShitDesigner.Bootstrap {
 			_videoFrameAdapter = videoFrameAdapter;
 			_videoGraphics = videoGraphics;
 			_pool = pool;
+			m_BitonicPixelSorter = bitonicPixelSorter;
 			_sceneParameterApplier = sceneParameterApplier;
 			_projectContextSetter = projectContextSetter;
 			_applicationResources = new ReadOnlyCollection<IDisposable>((applicationResources ?? Enumerable.Empty<IDisposable>()).Where(x => x != null).ToList());
@@ -198,6 +201,7 @@ namespace ShitDesigner.Bootstrap {
 					bindings.Add(new ShaderVisualNodeBinding(new NodeTypeId("shitdesigner.shader.effect"), "builtin.shader.effect", _shaders));
 					bindings.Add(new ShaderVisualNodeBinding(new NodeTypeId("shitdesigner.shader.blend2"), "builtin.shader.blend2", _shaders, blend: true));
 				}
+				bindings.Add(new BitonicPixelSortVisualNodeBinding(m_BitonicPixelSorter, _pool, sessionId));
 				bindings.Add(new VideoPlayerVisualNodeBinding(_videoBackends, _videoFrameAdapter, _videoResolver, _videoGraphics));
 				bindings.Add(new AssetFlashVisualNodeBinding(_assetFlashResolver, _videoBackends, _videoFrameAdapter, _videoGraphics));
 				var feedback = new FeedbackVisualNodeBinding(_pool, sessionId, _formatPolicy);

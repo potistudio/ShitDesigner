@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: ShitDesigner.Nodes::ShitDesigner.Nodes.NodeTypeCatalog
   catalogSchemaVersion: 1
   shaderManifest: {fileID: 11400000, guid: efc5dd0248d5c714783f13454b2c4b04, type: 2}
+  m_BitonicPixelSorter: {fileID: 7200000, guid: acf1186317574e2c818db8f205fbe32c, type: 3}
   entries:
   - typeId: system.program_output
     schemaVersion: 1
@@ -150682,6 +150683,120 @@ MonoBehaviour:
       variantId: utility.sdr_hdr_display_transform_preview
       outputRole: image
       requiredFeatures: 0
+  - typeId: shitdesigner.effect.pixel_sort
+    schemaVersion: 1
+    displayName: Pixel Sort
+    category: Effect/Glitch
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - input
+    - image
+    parameterIds:
+    - direction
+    - ascending
+    - threshold_min
+    - threshold_max
+    ports:
+    - id: input
+      displayName: Input
+      direction: 0
+      type: 0
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: image
+      displayName: Image
+      direction: 1
+      type: 0
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters:
+    - id: direction
+      displayName: Direction
+      type: 8
+      defaultValue: enum:horizontal
+      hasMinimum: 0
+      minimumValue:
+      hasMaximum: 0
+      maximumValue:
+      runtimeStateful: 0
+      enumOptions:
+      - horizontal
+      - vertical
+      group: Sort
+      displayOrder: 0
+      description:
+      unit:
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: ascending
+      displayName: Ascending
+      type: 2
+      defaultValue: bool:true
+      hasMinimum: 0
+      minimumValue:
+      hasMaximum: 0
+      maximumValue:
+      runtimeStateful: 0
+      enumOptions: []
+      group: Sort
+      displayOrder: 1
+      description:
+      unit:
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: threshold_min
+      displayName: Threshold Min
+      type: 0
+      defaultValue: float:0.4
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      group: Threshold
+      displayOrder: 0
+      description:
+      unit:
+      step: 0.01
+      isReadOnly: 0
+      isHidden: 0
+    - id: threshold_max
+      displayName: Threshold Max
+      type: 0
+      defaultValue: float:0.6
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      group: Threshold
+      displayOrder: 1
+      description:
+      unit:
+      step: 0.01
+      isReadOnly: 0
+      isHidden: 0
+    shaderKey:
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    outputPass: 0
+    shaderFamily: 13
+    shaderVariantId:
+    shaderSourceVariant: 0
+    shaderRequiredFeatures: 0
+    shaderStateful: 0
+    shaderHistorySlots: 0
+    shaderAliases: []
+    shaderInputs: []
+    shaderParameters: []
+    shaderPasses: []
   - typeId: shitdesigner.video.player
     schemaVersion: 1
     displayName: VideoPlayer
