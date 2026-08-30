@@ -10,7 +10,7 @@ using UnityEngine.TestTools;
 
 namespace ShitDesigner.Rendering.Tests.VJ {
 	public sealed class RecursiveRectanglesShaderContractTests {
-		private const string ShaderPath = "Assets/ShitDesigner/Scripts/Media/Shaders/RecursiveRectangles.shader";
+		private const string ShaderPath = "Assets/ShitDesigner/Scripts/Modules/Media/Shaders/RecursiveRectangles.shader";
 
 		[UnityTest]
 		public IEnumerator RecursiveRectangles_RevealZeroIsTransparent() {

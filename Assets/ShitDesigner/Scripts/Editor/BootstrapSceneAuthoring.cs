@@ -18,14 +18,14 @@ namespace ShitDesigner.Bootstrap.Editor {
 	public static class BootstrapSceneAuthoring {
 		private const string ScenePath = "Assets/ShitDesigner/Scenes/ShitDesignerBootstrap.unity";
 		private const string PanelPath = "Assets/ShitDesigner/Scripts/Bootstrap/ShitDesignerPanelSettings.asset";
-		private const string ThemePath = "Assets/ShitDesigner/Scripts/Presentation/Resources/PresentationTheme.uss";
-		private const string UiFontSourcePath = "Assets/ShitDesigner/Scripts/Presentation/Resources/Fonts/NotoSans.ttf";
-		private const string MonoFontSourcePath = "Assets/ShitDesigner/Scripts/Presentation/Resources/Fonts/NotoSansMono.ttf";
-		private const string JapaneseFontSourcePath = "Assets/ShitDesigner/Scripts/Presentation/Resources/Fonts/NotoSansJP.ttf";
-		private const string UiFontAssetPath = "Assets/ShitDesigner/Scripts/Presentation/Resources/NotoSans.asset";
-		private const string MonoFontAssetPath = "Assets/ShitDesigner/Scripts/Presentation/Resources/NotoSansMono.asset";
-		private const string JapaneseFontAssetPath = "Assets/ShitDesigner/Scripts/Presentation/Resources/NotoSansJP.asset";
-		private const string DisplayTransformShaderPath = "Assets/ShitDesigner/Scripts/Rendering/DisplayTransform.shader";
+		private const string ThemePath = "Assets/ShitDesigner/Scripts/Modules/Presentation/Resources/PresentationTheme.uss";
+		private const string UiFontSourcePath = "Assets/ShitDesigner/Scripts/Modules/Presentation/Resources/Fonts/NotoSans.ttf";
+		private const string MonoFontSourcePath = "Assets/ShitDesigner/Scripts/Modules/Presentation/Resources/Fonts/NotoSansMono.ttf";
+		private const string JapaneseFontSourcePath = "Assets/ShitDesigner/Scripts/Modules/Presentation/Resources/Fonts/NotoSansJP.ttf";
+		private const string UiFontAssetPath = "Assets/ShitDesigner/Scripts/Modules/Presentation/Resources/NotoSans.asset";
+		private const string MonoFontAssetPath = "Assets/ShitDesigner/Scripts/Modules/Presentation/Resources/NotoSansMono.asset";
+		private const string JapaneseFontAssetPath = "Assets/ShitDesigner/Scripts/Modules/Presentation/Resources/NotoSansJP.asset";
+		private const string DisplayTransformShaderPath = "Assets/ShitDesigner/Scripts/Modules/Rendering/DisplayTransform.shader";
 
 		public static void Ensure() {
 			EnsurePresentationFonts();

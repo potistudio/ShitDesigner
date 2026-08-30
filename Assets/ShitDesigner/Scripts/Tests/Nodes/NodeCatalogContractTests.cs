@@ -78,7 +78,7 @@ namespace ShitDesigner.Nodes.Tests {
 			var duplicate = new NodeDefinitionCatalog(initial.Entries.Concat(new[] { initial.Entries[0] }));
 			Assert.That(duplicate.Validate().IsFailure, Is.True);
 
-			var asset = AssetDatabase.LoadAssetAtPath<NodeTypeCatalog>("Assets/ShitDesigner/Scripts/Nodes/NodeTypeCatalog.asset");
+			var asset = AssetDatabase.LoadAssetAtPath<NodeTypeCatalog>("Assets/ShitDesigner/Scripts/Modules/Nodes/NodeTypeCatalog.asset");
 			Assert.That(asset, Is.Not.Null);
 			Assert.That(asset.ValidateManifest().IsSuccess, Is.True);
 			var runtime = asset.BuildRuntimeCatalog();
@@ -89,7 +89,7 @@ namespace ShitDesigner.Nodes.Tests {
 
 		[Test]
 		public void CatalogAsset_MatchesCompletePortAndParameterDescriptors() {
-			var asset = AssetDatabase.LoadAssetAtPath<NodeTypeCatalog>("Assets/ShitDesigner/Scripts/Nodes/NodeTypeCatalog.asset");
+			var asset = AssetDatabase.LoadAssetAtPath<NodeTypeCatalog>("Assets/ShitDesigner/Scripts/Modules/Nodes/NodeTypeCatalog.asset");
 			Assert.That(asset, Is.Not.Null);
 			var runtime = asset.BuildRuntimeCatalog();
 			Assert.That(runtime.IsSuccess, Is.True, runtime.IsFailure ? runtime.Error.Message : string.Empty);
@@ -100,7 +100,7 @@ namespace ShitDesigner.Nodes.Tests {
 
 		[Test]
 		public void CatalogAsset_DoesNotSerializeScenePrefabReferences() {
-			var asset = AssetDatabase.LoadAssetAtPath<NodeTypeCatalog>("Assets/ShitDesigner/Scripts/Nodes/NodeTypeCatalog.asset");
+			var asset = AssetDatabase.LoadAssetAtPath<NodeTypeCatalog>("Assets/ShitDesigner/Scripts/Modules/Nodes/NodeTypeCatalog.asset");
 			Assert.That(asset, Is.Not.Null);
 			var serialized = new SerializedObject(asset);
 			var entries = serialized.FindProperty("entries");

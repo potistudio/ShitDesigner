@@ -23,7 +23,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 	/// the integration command; it is not a shortened fixture loop.
 	/// </summary>
 	public sealed class C29RandomGraphSoakTests {
-		private const string ManifestPath = "Assets/ShitDesigner/Scripts/Nodes/ShaderNodeManifest.asset";
+		private const string ManifestPath = "Assets/ShitDesigner/Scripts/Modules/Nodes/ShaderNodeManifest.asset";
 		private const double SoakSeconds = 1800d;
 		private const int Seed = 0xC290438;
 
