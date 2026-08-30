@@ -148,6 +148,22 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void MainUiDefinesInstantEffectCueRowInKeyboardOrder() {
+			var asset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/ShitDesigner/Scenes/Main/MainUI.uxml");
+			Assert.That(asset, Is.Not.Null);
+			var root = new VisualElement();
+			asset.CloneTree(root);
+
+			var cues = root.Q<VisualElement>("instant-effect-cues");
+			var buttons = cues.Query<Button>(className: "instant-effect-cue-button").ToList();
+
+			Assert.That(cues.parent.ClassListContains("bottom-bar"), Is.True);
+			Assert.That(buttons.Select(button => button.name), Is.EqualTo(Enumerable.Range(1, ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount)
+				.Select(index => "instant-effect-cue-" + index)));
+			Assert.That(buttons.Select(button => button.text), Is.EqualTo(new[] { "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P" }));
+		}
+
+		[Test]
 		public void MainUiDefinesSceneCatalogSidebarTabs() {
 			var asset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/ShitDesigner/Scenes/Main/MainUI.uxml");
 			Assert.That(asset, Is.Not.Null);
