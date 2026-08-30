@@ -8,6 +8,7 @@ using AOT;
 #endif
 using ShitDesigner.Rendering;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace ShitDesigner.Main {
 	/// <summary>Owns external Display activation, display transform, and Program frame presentation.</summary>
@@ -110,31 +111,30 @@ namespace ShitDesigner.Main {
 				var display = Display.displays[displayNumber - 1];
 				var output = CreateOutput(displayNumber);
 				if (!display.active) ActivateDisplay(display, output.WindowController);
-				output.Camera.targetDisplay = displayNumber - 1;
 				_outputs.Add(displayNumber, output);
 			}
 		}
 
 		private DisplayOutput CreateOutput(int displayNumber) {
-			var cameraObject = new GameObject($"Live External Display Camera {displayNumber}");
-			cameraObject.transform.SetParent(transform, false);
-			var camera = cameraObject.AddComponent<Camera>();
-			camera.clearFlags = CameraClearFlags.SolidColor;
-			camera.backgroundColor = Color.black;
-			camera.enabled = false;
+			var canvasObject = new GameObject($"Live External Display Canvas {displayNumber}");
+			canvasObject.transform.SetParent(transform, false);
+			var canvas = canvasObject.AddComponent<Canvas>();
+			canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+			canvas.targetDisplay = displayNumber - 1;
+			canvas.enabled = false;
 			var displayTexture = new RenderTexture(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight, 0, RenderTextureFormat.ARGB32) {
 				name = "ShitDesigner.Main.ExternalDisplay." + displayNumber,
 				useMipMap = false,
 				autoGenerateMips = false
 			};
 			if (!displayTexture.Create()) {
-				DestroyUnityObject(cameraObject);
+				DestroyUnityObject(canvasObject);
 				throw new InvalidOperationException("An external Display texture could not be created.");
 			}
 			ClearTexture(displayTexture);
-			var presenter = cameraObject.AddComponent<LiveProgramDisplayCamera>();
-			presenter.Initialize(camera, displayTexture);
-			return new DisplayOutput(camera, cameraObject.AddComponent<WindowsDisplayWindowController>(), displayTexture);
+			var presenter = canvasObject.AddComponent<LiveProgramDisplayCanvas>();
+			presenter.Initialize(canvas, displayTexture);
+			return new DisplayOutput(canvas, canvasObject.AddComponent<WindowsDisplayWindowController>(), displayTexture);
 		}
 
 		private bool OutputsDoNotMatchConnectedDisplays() {
@@ -170,12 +170,12 @@ namespace ShitDesigner.Main {
 		}
 
 		private readonly struct DisplayOutput {
-			public Camera Camera { get; }
+			public Canvas Canvas { get; }
 			public WindowsDisplayWindowController WindowController { get; }
 			public RenderTexture Texture { get; }
 
-			public DisplayOutput(Camera camera, WindowsDisplayWindowController windowController, RenderTexture texture) {
-				Camera = camera;
+			public DisplayOutput(Canvas canvas, WindowsDisplayWindowController windowController, RenderTexture texture) {
+				Canvas = canvas;
 				WindowController = windowController;
 				Texture = texture;
 			}
@@ -184,7 +184,7 @@ namespace ShitDesigner.Main {
 				// Unity cannot deactivate a Display after Activate(). On macOS,
 				// keep rendering the cleared black texture so the secondary Metal
 				// surface cannot retain or expose the control-window backbuffer.
-				Camera.enabled = visible || UnityEngine.Application.platform == RuntimePlatform.OSXPlayer;
+				Canvas.enabled = visible || UnityEngine.Application.platform == RuntimePlatform.OSXPlayer;
 				WindowController.SetOutputVisible(visible);
 			}
 
@@ -193,7 +193,7 @@ namespace ShitDesigner.Main {
 			public void Dispose() {
 				Texture.Release();
 				DestroyUnityObject(Texture);
-				DestroyUnityObject(Camera.gameObject);
+				DestroyUnityObject(Canvas.gameObject);
 			}
 		}
 	}
@@ -421,68 +421,24 @@ namespace ShitDesigner.Main {
 	}
 
 	[AddComponentMenu("")]
-	public sealed class LiveProgramDisplayCamera : MonoBehaviour {
-		private const int DisplayLayer = 31;
-		private const string ShaderName = "Hidden/ShitDesigner/ProgramDisplay";
-		private static readonly int MainTextureId = Shader.PropertyToID("_MainTex");
+	public sealed class LiveProgramDisplayCanvas : MonoBehaviour {
+		private RawImage m_Image;
 
-		private Camera _camera;
-		private GameObject _surface;
-		private Material _material;
-		private Mesh _mesh;
+		public Texture Source => m_Image == null ? null : m_Image.texture;
 
-		public void Initialize(Camera camera, RenderTexture source) {
-			if (camera == null) throw new ArgumentNullException(nameof(camera));
-			_camera = camera;
-			_camera.cullingMask = 1 << DisplayLayer;
-			_camera.orthographic = true;
-			_camera.orthographicSize = 1f;
-			_camera.nearClipPlane = 0.01f;
-			_camera.farClipPlane = 10f;
-
-			var shader = Resources.Load<Shader>("ProgramDisplay") ?? Shader.Find(ShaderName);
-			if (shader == null) throw new InvalidOperationException("Program display shader is not available.");
-			_material = new Material(shader) { name = "ShitDesigner.Main.ExternalProgramDisplay" };
-			_material.SetTexture(MainTextureId, source != null && source.IsCreated() ? source : Texture2D.blackTexture);
-			_mesh = CreateFullscreenMesh();
-			_surface = new GameObject("Live External Program Display Surface") { layer = DisplayLayer };
-			_surface.transform.SetParent(transform, false);
-			_surface.transform.localPosition = new Vector3(0f, 0f, 1f);
-			var filter = _surface.AddComponent<MeshFilter>();
-			filter.sharedMesh = _mesh;
-			var renderer = _surface.AddComponent<MeshRenderer>();
-			renderer.sharedMaterial = _material;
-			renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-			renderer.receiveShadows = false;
-		}
-
-		private void LateUpdate() {
-			if (_camera == null || _surface == null) return;
-			_surface.transform.localScale = new Vector3(_camera.aspect, 1f, 1f);
-		}
-
-		private void OnDestroy() {
-			ReleaseRuntimeObject(_material);
-			ReleaseRuntimeObject(_mesh);
-		}
-
-		private static Mesh CreateFullscreenMesh() {
-			var mesh = new Mesh { name = "ShitDesigner.Main.ExternalProgramDisplayMesh" };
-			mesh.vertices = new[] {
-				new Vector3(-1f, -1f, 0f), new Vector3(1f, -1f, 0f),
-				new Vector3(1f, 1f, 0f), new Vector3(-1f, 1f, 0f)
-			};
-			mesh.uv = new[] {
-				new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f)
-			};
-			mesh.triangles = new[] { 0, 1, 2, 0, 2, 3 };
-			mesh.UploadMeshData(true);
-			return mesh;
-		}
-
-		private static void ReleaseRuntimeObject(UnityEngine.Object instance) {
-			if (instance == null) return;
-			if (UnityEngine.Application.isPlaying) Destroy(instance); else DestroyImmediate(instance);
+		public void Initialize(Canvas canvas, RenderTexture source) {
+			if (canvas == null) throw new ArgumentNullException(nameof(canvas));
+			var imageObject = new GameObject("Live External Program Display Image", typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage));
+			imageObject.transform.SetParent(canvas.transform, false);
+			var rectTransform = (RectTransform)imageObject.transform;
+			rectTransform.anchorMin = Vector2.zero;
+			rectTransform.anchorMax = Vector2.one;
+			rectTransform.offsetMin = Vector2.zero;
+			rectTransform.offsetMax = Vector2.zero;
+			m_Image = imageObject.GetComponent<RawImage>();
+			m_Image.texture = source != null && source.IsCreated() ? source : Texture2D.blackTexture;
+			m_Image.color = Color.white;
+			m_Image.raycastTarget = false;
 		}
 	}
 }
