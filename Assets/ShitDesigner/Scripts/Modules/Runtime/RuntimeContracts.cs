@@ -8,6 +8,18 @@ using ShitDesigner.Graph;
 using ShitDesigner.Project;
 
 namespace ShitDesigner.Runtime {
+	public static class InstantEffectTriggerContract {
+		public const string NodeTypeId = "shitdesigner.input.instant_effect_triggers";
+		public const int TriggerCount = 10;
+
+		public static string PortId(int triggerNumber) => "trigger_" + Validate(triggerNumber);
+
+		public static int Validate(int triggerNumber) {
+			if (triggerNumber < 1 || triggerNumber > TriggerCount) throw new ArgumentOutOfRangeException(nameof(triggerNumber));
+			return triggerNumber;
+		}
+	}
+
 	/// <summary>Optional node-local scalar health seam. Runtime aggregates
 	/// without depending on Media or other concrete node modules.</summary>
 	public interface IRuntimePerformanceHealthNode {
@@ -629,9 +641,11 @@ namespace ShitDesigner.Runtime {
 
 	public sealed class FrameSnapshot {
 		private static readonly IReadOnlyList<OutputDemand> EmptyOutputDemands = new ReadOnlyCollection<OutputDemand>(new List<OutputDemand>());
+		private static readonly IReadOnlyCollection<int> m_EmptyInstantEffectTriggers = new ReadOnlyCollection<int>(new List<int>());
 		private readonly IReadOnlyDictionary<ParameterKey, ParameterValue> _effectiveValues;
 		private readonly IReadOnlyDictionary<LogicalControlId, float> _controlValues;
 		private readonly IReadOnlyList<OutputDemand> _demands;
+		private readonly IReadOnlyCollection<int> m_InstantEffectTriggers;
 		public ulong FrameNumber { get; }
 		public double GraphClockTime { get; }
 		public bool IsGraphClockPaused { get; }
@@ -641,23 +655,31 @@ namespace ShitDesigner.Runtime {
 		public IReadOnlyDictionary<ParameterKey, ParameterValue> EffectiveValues => _effectiveValues;
 		public IReadOnlyDictionary<LogicalControlId, float> ControlValues => _controlValues;
 		public IReadOnlyList<OutputDemand> OutputDemands => _demands;
+		public IReadOnlyCollection<int> InstantEffectTriggers => m_InstantEffectTriggers;
 
-		internal FrameSnapshot(ulong frameNumber, double graphClockTime, bool paused, long documentRevision, long graphRevision, RuntimeOutputResolutionProjection resolutionProjection, IDictionary<ParameterKey, ParameterValue> effectiveValues, IDictionary<LogicalControlId, float> controlValues, IEnumerable<OutputDemand> demands) {
+		internal FrameSnapshot(ulong frameNumber, double graphClockTime, bool paused, long documentRevision, long graphRevision, RuntimeOutputResolutionProjection resolutionProjection, IDictionary<ParameterKey, ParameterValue> effectiveValues, IDictionary<LogicalControlId, float> controlValues, IEnumerable<OutputDemand> demands, IEnumerable<int> instantEffectTriggers = null) {
 			FrameNumber = frameNumber; GraphClockTime = graphClockTime; IsGraphClockPaused = paused; DocumentRevision = documentRevision; GraphRevision = graphRevision; ResolutionProjection = resolutionProjection;
 			_effectiveValues = new ReadOnlyDictionary<ParameterKey, ParameterValue>(new Dictionary<ParameterKey, ParameterValue>(effectiveValues ?? new Dictionary<ParameterKey, ParameterValue>()));
 			_controlValues = new ReadOnlyDictionary<LogicalControlId, float>(new Dictionary<LogicalControlId, float>(controlValues ?? new Dictionary<LogicalControlId, float>()));
 			_demands = new ReadOnlyCollection<OutputDemand>((demands ?? Enumerable.Empty<OutputDemand>()).ToList());
+			m_InstantEffectTriggers = SnapshotInstantEffectTriggers(instantEffectTriggers);
 		}
 
 		/// <summary>Runtime-internal fast path. ParameterFrameValues are
 		/// immutable copy-on-write ParameterStore snapshots; OutputDemands
 		/// deliberately remain copied because Phase 4 can rebuild the plan.</summary>
-		internal FrameSnapshot(ulong frameNumber, double graphClockTime, bool paused, long documentRevision, long graphRevision, RuntimeOutputResolutionProjection resolutionProjection, ParameterFrameValues parameterValues, IReadOnlyList<OutputDemand> demands) {
+		internal FrameSnapshot(ulong frameNumber, double graphClockTime, bool paused, long documentRevision, long graphRevision, RuntimeOutputResolutionProjection resolutionProjection, ParameterFrameValues parameterValues, IReadOnlyList<OutputDemand> demands, IEnumerable<int> instantEffectTriggers = null) {
 			if (parameterValues == null) throw new ArgumentNullException(nameof(parameterValues));
 			FrameNumber = frameNumber; GraphClockTime = graphClockTime; IsGraphClockPaused = paused; DocumentRevision = documentRevision; GraphRevision = graphRevision; ResolutionProjection = resolutionProjection;
 			_effectiveValues = parameterValues.EffectiveValues;
 			_controlValues = parameterValues.ControlValues;
 			_demands = demands ?? EmptyOutputDemands;
+			m_InstantEffectTriggers = SnapshotInstantEffectTriggers(instantEffectTriggers);
+		}
+
+		private static IReadOnlyCollection<int> SnapshotInstantEffectTriggers(IEnumerable<int> triggers) {
+			if (triggers == null) return m_EmptyInstantEffectTriggers;
+			return new ReadOnlyCollection<int>(triggers.Select(InstantEffectTriggerContract.Validate).Distinct().OrderBy(value => value).ToList());
 		}
 	}
 

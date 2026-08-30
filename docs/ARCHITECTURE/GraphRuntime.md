@@ -248,6 +248,13 @@ Scene生成、動画準備およびTexture Lease取得はNodeExecutionContextか
 
 各NodeをEvaluateする直前に、固定Port定義と当該フレームの上流結果からInput Setを作る。
 
+### グローバルインスタントエフェクト入力
+
+- `Instant Effect Triggers` は `QWERTYUIOP` に対応する10個のBool出力を持つInputノードとする。
+- キー押下は対応する出力を1評価フレームだけtrueにし、押し続けても再発火しない。
+- 入力ノード自身はFXを定義または起動しない。FXノードのTrigger入力へグラフ上で配線された出力だけが発火する。
+- 未配線の出力は何も変更しない。パッチのロード、選択または切替へ変換しない。
+
 ### Required
 
 - 未接続、Broken Edge、上流Blocked、Faulted、PreparingまたはConversionFaultのいずれでも入力不可とする。

@@ -392,6 +392,7 @@ namespace ShitDesigner.Application {
 	/// only after the candidate has been fully validated and persisted.
 	/// </summary>
 	public sealed class ProjectApplication : IProjectApplicationReadPort, IProjectApplicationCommandPort, IApplicationCommandPort, IKeyboardInputApplicationPort, IMidiInputApplicationPort, ILiveControlApplicationPort, IApplicationShortcutCommandPort, IDisposable {
+		private static readonly string[] m_InstantEffectPhysicalKeys = { "q", "w", "e", "r", "t", "y", "u", "i", "o", "p" };
 		// Terminal command results are UI feedback, not an unbounded audit
 		// log. Keep a bounded public history so the completion snapshot is
 		// observable without making sustained input grow every frame.
@@ -1329,6 +1330,8 @@ namespace ShitDesigner.Application {
 			if (_learningControl.HasValue) {
 				if (string.Equals(key.PhysicalId, "escape", StringComparison.OrdinalIgnoreCase) || string.Equals(key.PhysicalId, "esc", StringComparison.OrdinalIgnoreCase)) return CancelKeyboardLearn();
 				if (key.IsModifierOnly || !pressed) return ApplicationCommandResult.Ignored(_sessionId);
+				if (TryGetInstantEffectTrigger(key, out _))
+					return Complete(BeginRequest(Guid.Empty), ApplicationCommandStatus.Rejected, Failure("application.input.key_reserved", "QWERTYUIOP are reserved for global instant effect triggers."), _state);
 				var mapping = new ControlMappingRecord(PhysicalInputKind.Keyboard, key.PhysicalId, key.ControlPath);
 				var learned = SetLogicalControlMappings(_learningControl.Value, new[] { mapping });
 				if (learned.IsSuccess) _learningControl = null;
@@ -1337,6 +1340,13 @@ namespace ShitDesigner.Application {
 
 			var request = BeginRequest(Guid.Empty);
 			if (_frames == null || _document == null) return Complete(request, ApplicationCommandStatus.Rejected, Failure("application.project.missing", "There is no current project."), _state);
+			if (TryGetInstantEffectTrigger(key, out var instantEffectTrigger)) {
+				if (!pressed) return Complete(request, ApplicationCommandStatus.Applied, null, _state);
+				var queued = _frames.EnqueueInstantEffectTrigger(instantEffectTrigger);
+				return queued.IsFailure
+					? Complete(request, ApplicationCommandStatus.Rejected, queued.Error, _state)
+					: Complete(request, ApplicationCommandStatus.Applied, null, _state);
+			}
 			var matched = _document.LogicalControls.SelectMany(control => control.Mappings
 				.Where(mapping => mapping.Kind == PhysicalInputKind.Keyboard && (string.Equals(mapping.PhysicalId, key.PhysicalId, StringComparison.Ordinal) || string.Equals(mapping.ControlPath, key.ControlPath, StringComparison.Ordinal)))
 				.Select(mapping => new { Control = control, Mapping = mapping })).ToList();
@@ -1355,6 +1365,12 @@ namespace ShitDesigner.Application {
 			// pending state; the high-rate physical-input path publishes its
 			// correlated terminal results at the frame boundary instead.
 			return matched.Count == 0 ? Complete(request, ApplicationCommandStatus.Applied, null, _state) : AcceptedWithoutPublication(request);
+		}
+
+		private static bool TryGetInstantEffectTrigger(PhysicalKey key, out int triggerNumber) {
+			var index = Array.FindIndex(m_InstantEffectPhysicalKeys, candidate => string.Equals(candidate, key.PhysicalId, StringComparison.OrdinalIgnoreCase));
+			triggerNumber = index + 1;
+			return index >= 0;
 		}
 
 		/// <summary>Consumes a decoded channel-voice MIDI event. Unmapped MIDI

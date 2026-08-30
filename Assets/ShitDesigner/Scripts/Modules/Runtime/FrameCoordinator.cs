@@ -115,6 +115,7 @@ namespace ShitDesigner.Runtime {
 		private readonly RuntimeQueue<GraphEditCommand> _graphQueue = new RuntimeQueue<GraphEditCommand>(QueueCapacity);
 		private readonly RuntimeQueue<RuntimeParameterEvent> _parameterQueue = new RuntimeQueue<RuntimeParameterEvent>(QueueCapacity);
 		private readonly RuntimeQueue<RuntimeCommand> _runtimeQueue = new RuntimeQueue<RuntimeCommand>(QueueCapacity);
+		private readonly RuntimeQueue<int> m_InstantEffectTriggerQueue = new RuntimeQueue<int>(QueueCapacity);
 		private bool _ticking;
 		private ulong _frameNumber;
 		private readonly List<UnitResult<Diagnostic>> _graphCommandResults = new List<UnitResult<Diagnostic>>();
@@ -148,6 +149,12 @@ namespace ShitDesigner.Runtime {
 			return _runtimeQueue.TryEnqueue(command) ? UnitResult.Success<Diagnostic>() : QueueFull("runtime");
 		}
 
+		public UnitResult<Diagnostic> EnqueueInstantEffectTrigger(int triggerNumber) {
+			try { InstantEffectTriggerContract.Validate(triggerNumber); }
+			catch (ArgumentOutOfRangeException) { return UnitResult.Failure<Diagnostic>(Failure("runtime.instant_effect.trigger_invalid", "Instant effect trigger number is outside the supported range.")); }
+			return m_InstantEffectTriggerQueue.TryEnqueue(triggerNumber) ? UnitResult.Success<Diagnostic>() : QueueFull("instant effect trigger");
+		}
+
 		public FrameExecutionReport Tick() {
 			return Tick(_clock == null ? 0d : double.NaN);
 		}
@@ -166,6 +173,7 @@ namespace ShitDesigner.Runtime {
 			var graphCommands = _graphQueue.Drain();
 			var parameterEvents = _parameterQueue.Drain();
 			var runtimeCommands = _runtimeQueue.Drain();
+			var instantEffectTriggers = m_InstantEffectTriggerQueue.Drain();
 			var completions = _session.DrainCompletions();
 			var demandRequests = _session.DrainDemandRequests();
 			// Phase 0 reads the source exactly once. Graph time itself is
@@ -195,7 +203,7 @@ namespace ShitDesigner.Runtime {
 				_clock.Update(frameMonotonicTime);
 				var effective = _session.Parameters.EvaluateEffective(_session.GraphEditor.State, _session.Document, _session.Diagnostics);
 				if (effective.IsFailure) diagnostics.Add(effective.Error);
-				snapshot = new FrameSnapshot(frame, _clock.Time, _clock.IsPaused, _session.Document.DocumentRevision, _session.Plan == null ? _session.GraphEditor.State.Revision : _session.Plan.SourceRevision, _session.ResolutionProjection, _session.Parameters.FrameValues, _session.OutputDemandSnapshot);
+				snapshot = new FrameSnapshot(frame, _clock.Time, _clock.IsPaused, _session.Document.DocumentRevision, _session.Plan == null ? _session.GraphEditor.State.Revision : _session.Plan.SourceRevision, _session.ResolutionProjection, _session.Parameters.FrameValues, _session.OutputDemandSnapshot, instantEffectTriggers);
 
 				phases.Add(RuntimePhase.OutputDemand);
 				evaluation = ProcessOutputDemandPhase(snapshot, demandRequests, frame, diagnostics);

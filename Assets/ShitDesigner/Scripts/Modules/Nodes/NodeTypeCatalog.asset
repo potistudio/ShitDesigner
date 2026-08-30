@@ -146349,6 +146349,110 @@ MonoBehaviour:
     shaderInputs: []
     shaderParameters: []
     shaderPasses: []
+  - typeId: shitdesigner.input.instant_effect_triggers
+    schemaVersion: 1
+    displayName: Instant Effect Triggers
+    category: Input
+    systemOwned: 0
+    userAddable: 1
+    portIds:
+    - trigger_1
+    - trigger_2
+    - trigger_3
+    - trigger_4
+    - trigger_5
+    - trigger_6
+    - trigger_7
+    - trigger_8
+    - trigger_9
+    - trigger_10
+    parameterIds: []
+    ports:
+    - id: trigger_1
+      displayName: Trigger 1 (Q)
+      direction: 1
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_2
+      displayName: Trigger 2 (W)
+      direction: 1
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_3
+      displayName: Trigger 3 (E)
+      direction: 1
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_4
+      displayName: Trigger 4 (R)
+      direction: 1
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_5
+      displayName: Trigger 5 (T)
+      direction: 1
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_6
+      displayName: Trigger 6 (Y)
+      direction: 1
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_7
+      displayName: Trigger 7 (U)
+      direction: 1
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_8
+      displayName: Trigger 8 (I)
+      direction: 1
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_9
+      displayName: Trigger 9 (O)
+      direction: 1
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_10
+      displayName: Trigger 10 (P)
+      direction: 1
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters: []
+    shaderKey:
+    shader: {fileID: 0}
+    templateMaterial: {fileID: 0}
+    outputPass: 0
+    shaderFamily: 13
+    shaderVariantId:
+    shaderSourceVariant: 0
+    shaderRequiredFeatures: 0
+    shaderStateful: 0
+    shaderHistorySlots: 0
+    shaderAliases: []
+    shaderInputs: []
+    shaderParameters: []
+    shaderPasses: []
   - typeId: shitdesigner.media.asset_flash
     schemaVersion: 1
     displayName: Asset Flash

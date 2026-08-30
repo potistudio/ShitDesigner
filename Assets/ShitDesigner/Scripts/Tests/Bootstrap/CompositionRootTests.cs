@@ -149,10 +149,10 @@ namespace ShitDesigner.Bootstrap.Tests {
 		[Test]
 		public void BootstrapCatalogContainsAllInitialNodeDefinitions() {
 			var catalog = NodeDefinitionCatalog.CreateInitial();
-			Assert.That(catalog.Entries.Count, Is.EqualTo(24));
+			Assert.That(catalog.Entries.Count, Is.EqualTo(25));
 			var registry = new NodeTypeRegistry();
 			Assert.That(NodeCatalogBootstrap.EnsureDefinitions(catalog, registry).IsSuccess, Is.True);
-			Assert.That(registry.Definitions.Count, Is.EqualTo(24));
+			Assert.That(registry.Definitions.Count, Is.EqualTo(25));
 		}
 
 		[Test]
