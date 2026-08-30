@@ -61,6 +61,7 @@ MonoBehaviour:
   - {fileID: 8926484042661614756}
   - {fileID: 8926484042661614775}
   - {fileID: 8926484042661614975}
+  - {fileID: 8926484042661614977}
   m_UIPosition: {x: 0, y: 0}
   m_UICollapsed: 1
   m_UISuperCollapsed: 0
@@ -88,7 +89,7 @@ VisualEffectResource:
     m_UpdateMode: 0
     m_PreWarmDeltaTime: 0.05
     m_PreWarmStepCount: 0
-    m_InitialEventName: OnPlay
+    m_InitialEventName: __Disabled
     m_InstancingMode: 0
     m_InstancingCapacity: 64
 --- !u!114 &8926484042661614700
@@ -116,14 +117,16 @@ MonoBehaviour:
   m_Label: Spawn system
   m_Data: {fileID: 8926484042661614702}
   m_InputFlowSlot:
-  - link: []
+  - link:
+    - context: {fileID: 8926484042661614977}
+      slotIndex: 0
   - link: []
   m_OutputFlowSlot:
   - link:
     - context: {fileID: 8926484042661614707}
       slotIndex: 0
   loopDuration: 1
-  loopCount: 0
+  loopCount: 1
   delayBeforeLoop: 0
   delayAfterLoop: 0
 --- !u!114 &8926484042661614702
@@ -2757,3 +2760,31 @@ MonoBehaviour:
   m_Direction: 1
   m_LinkedSlots:
   - {fileID: 8926484042661614776}
+--- !u!114 &8926484042661614977
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2461f61b3c026d54db1951a4e17ab20e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  m_UIIgnoredErrors: []
+  m_Parent: {fileID: 114350483966674976}
+  m_Children: []
+  m_UIPosition: {x: 24, y: 354}
+  m_UICollapsed: 0
+  m_UISuperCollapsed: 0
+  m_InputSlots: []
+  m_OutputSlots: []
+  m_Label: Manual trigger
+  m_Data: {fileID: 0}
+  m_InputFlowSlot: []
+  m_OutputFlowSlot:
+  - link:
+    - context: {fileID: 8926484042661614700}
+      slotIndex: 0
+  eventName: OnPlay
