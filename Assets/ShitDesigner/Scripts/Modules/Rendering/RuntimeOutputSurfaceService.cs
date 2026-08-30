@@ -76,7 +76,7 @@ namespace ShitDesigner.Rendering {
 					controller = new OutputPortController(_pool, owner);
 					_outputs.Add(key, controller);
 				}
-				// URP 17.5's StandardRequest accepts only one destination
+				// URP 17.5's SingleCameraRequest accepts only one destination
 				// RenderTexture.  Scene cameras therefore require the
 				// pooled Image output itself to carry a depth attachment;
 				// a separate depth lease cannot be supplied to that API.
@@ -100,7 +100,7 @@ namespace ShitDesigner.Rendering {
 
 		private static GraphicsFormat DepthStencilFormatFor(NodeTypeId typeId) {
 			// These are the only production nodes that submit an isolated
-			// Camera through RenderPipeline.StandardRequest.  Other visual
+			// Camera through UniversalRenderPipeline.SingleCameraRequest.  Other visual
 			// nodes render fullscreen passes and must retain their current
 			// colour-only descriptors.
 			return typeId.Value == "shitdesigner.scene.3d" || typeId.Value == "shitdesigner.scene.2d"
