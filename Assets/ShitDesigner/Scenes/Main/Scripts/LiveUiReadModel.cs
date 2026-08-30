@@ -5,7 +5,8 @@ using UnityEngine;
 namespace ShitDesigner.Main {
 	public enum LivePatchRole {
 		Main,
-		Overlay
+		Overlay,
+		Effect
 	}
 
 	public readonly struct LivePatchReadModel {
@@ -26,6 +27,7 @@ namespace ShitDesigner.Main {
 		public IReadOnlyList<LivePatchSlotReadModel> PatchSlots { get; }
 		public IReadOnlyList<RenderTexture> PatchSlotPreviews { get; }
 		public int SelectedPatchSlotIndex { get; }
+		public LivePatchRole SelectedCatalogRole { get; }
 		public string SelectedCatalogPatchId { get; }
 		public string LoadedPatchId { get; }
 		public string PreloadedPatchId { get; }
@@ -44,7 +46,7 @@ namespace ShitDesigner.Main {
 		public IReadOnlyList<LiveParameterApplicationResult> RequestResults { get; }
 
 		public LiveUiReadModel(ulong frameNumber, IReadOnlyList<LivePatchReadModel> patches, IReadOnlyList<LivePatchSlotReadModel> patchSlots, IReadOnlyList<RenderTexture> patchSlotPreviews,
-			int selectedPatchSlotIndex, string selectedCatalogPatchId,
+			int selectedPatchSlotIndex, LivePatchRole selectedCatalogRole, string selectedCatalogPatchId,
 			string loadedPatchId, string preloadedPatchId,
 			LiveParameterDefinition bpm, IReadOnlyList<LiveParameterDefinition> parameters, IReadOnlyList<LiveSequencerReadModel> sequencers, LiveProgramFrames programFrames, LiveExternalDisplayOutput output,
 			LiveCapabilitySnapshot capabilities, string diagnostic, IReadOnlyList<LiveParameterApplicationResult> requestResults) {
@@ -53,6 +55,7 @@ namespace ShitDesigner.Main {
 			PatchSlots = patchSlots ?? Array.Empty<LivePatchSlotReadModel>();
 			PatchSlotPreviews = patchSlotPreviews ?? Array.Empty<RenderTexture>();
 			SelectedPatchSlotIndex = selectedPatchSlotIndex;
+			SelectedCatalogRole = selectedCatalogRole;
 			SelectedCatalogPatchId = selectedCatalogPatchId ?? string.Empty;
 			LoadedPatchId = loadedPatchId ?? string.Empty;
 			PreloadedPatchId = preloadedPatchId ?? string.Empty;

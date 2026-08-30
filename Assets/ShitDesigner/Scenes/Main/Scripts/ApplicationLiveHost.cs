@@ -40,11 +40,13 @@ namespace ShitDesigner.Main {
 		private LivePatchReadModel[] _patches = Array.Empty<LivePatchReadModel>();
 		private string[] m_MainPatchIds = Array.Empty<string>();
 		private string[] m_OverlayPatchIds = Array.Empty<string>();
+		private string[] m_EffectPatchIds = Array.Empty<string>();
 		private ulong _tickFrameNumber;
 		private int _selectedPatchSlotIndex;
 		private LivePatchRole m_SelectedPatchRole;
 		private int m_SelectedMainPatchIndex;
 		private int m_SelectedOverlayPatchIndex;
+		private int m_SelectedEffectPatchIndex;
 
 		public ApplicationLiveHostState State { get; private set; } = ApplicationLiveHostState.Cold;
 		public LiveUiReadModel ReadModel { get; private set; }
@@ -70,13 +72,17 @@ namespace ShitDesigner.Main {
 				_shutdown.Add(() => { _runtime?.Dispose(); _runtime = null; });
 				_patchIds = _runtime.Patches.Select(patch => patch.Id).ToArray();
 				var mainPatchIds = new HashSet<string>(_graphBootstrap.MainPatches.Where(patch => patch != null).Select(patch => patch.Id), StringComparer.Ordinal);
+				var overlayPatchIds = new HashSet<string>(_graphBootstrap.OverlayPatches.Where(patch => patch != null).Select(patch => patch.Id), StringComparer.Ordinal);
 				_patches = _runtime.Patches.Select(patch => new LivePatchReadModel(patch.Id, patch.DisplayName,
-					mainPatchIds.Contains(patch.Id) ? LivePatchRole.Main : LivePatchRole.Overlay)).ToArray();
+					mainPatchIds.Contains(patch.Id) ? LivePatchRole.Main : overlayPatchIds.Contains(patch.Id) ? LivePatchRole.Overlay : LivePatchRole.Effect)).ToArray();
 				m_MainPatchIds = _patches.Where(patch => patch.Role == LivePatchRole.Main).Select(patch => patch.Id).ToArray();
 				m_OverlayPatchIds = _patches.Where(patch => patch.Role == LivePatchRole.Overlay).Select(patch => patch.Id).ToArray();
-				m_SelectedPatchRole = m_MainPatchIds.Length > 0 ? LivePatchRole.Main : LivePatchRole.Overlay;
+				m_EffectPatchIds = _patches.Where(patch => patch.Role == LivePatchRole.Effect).Select(patch => patch.Id).ToArray();
+				m_SelectedPatchRole = m_MainPatchIds.Length > 0 ? LivePatchRole.Main
+					: m_OverlayPatchIds.Length > 0 ? LivePatchRole.Overlay : LivePatchRole.Effect;
 				m_SelectedMainPatchIndex = 0;
 				m_SelectedOverlayPatchIndex = 0;
+				m_SelectedEffectPatchIndex = 0;
 				UpdateOverlayComposition(_runtime.BpmFrame.AdjustedTotalBeats);
 				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, slotIndex => { LaunchPatchSlot(slotIndex); }, slotIndex => { ClearPatchSlot(slotIndex); }, MoveCatalogSelection, () => { AssignSelectedCatalogPatch(); }, TapBpm);
 				_midiInputManager.InitializeForHostPolling();
@@ -170,20 +176,19 @@ namespace ShitDesigner.Main {
 
 		public void MoveCatalogSelection(int horizontalDirection, int verticalDirection) {
 			if (_patches.Length == 0 || (horizontalDirection == 0 && verticalDirection == 0)) return;
-			if (verticalDirection < 0 && m_MainPatchIds.Length > 0) {
-				m_SelectedPatchRole = LivePatchRole.Main;
-				return;
+			if (horizontalDirection != 0) {
+				var nextRoleIndex = Mathf.Clamp((int)m_SelectedPatchRole + Math.Sign(horizontalDirection), (int)LivePatchRole.Main, (int)LivePatchRole.Effect);
+				m_SelectedPatchRole = (LivePatchRole)nextRoleIndex;
 			}
-			if (verticalDirection > 0 && m_OverlayPatchIds.Length > 0) {
-				m_SelectedPatchRole = LivePatchRole.Overlay;
-				return;
-			}
-			if (horizontalDirection == 0) return;
+			if (verticalDirection == 0) return;
 
-			if (m_SelectedPatchRole == LivePatchRole.Main)
-				m_SelectedMainPatchIndex = MoveWithinRow(m_SelectedMainPatchIndex, horizontalDirection, m_MainPatchIds.Length);
-			else
-				m_SelectedOverlayPatchIndex = MoveWithinRow(m_SelectedOverlayPatchIndex, horizontalDirection, m_OverlayPatchIds.Length);
+			SetSelectedPatchIndex(m_SelectedPatchRole,
+				MoveWithinList(GetSelectedPatchIndex(m_SelectedPatchRole), verticalDirection, GetPatchIds(m_SelectedPatchRole).Length));
+		}
+
+		public void SelectCatalogRole(LivePatchRole role) {
+			if (role < LivePatchRole.Main || role > LivePatchRole.Effect) throw new ArgumentOutOfRangeException(nameof(role));
+			m_SelectedPatchRole = role;
 		}
 
 		public LivePatchSlotOperationResult AssignSelectedCatalogPatch() {
@@ -209,7 +214,9 @@ namespace ShitDesigner.Main {
 
 		public LiveSequencerOperationResult SelectSequencerLane(LiveSequencerKind kind, int laneIndex) {
 			if (kind != LiveSequencerKind.Overlay) return LiveSequencerOperationResult.Reject("Scene assignment is available for the overlay sequencer.");
-			return m_Sequencers.First(sequencer => sequencer.Kind == kind).SelectLane(laneIndex);
+			var result = m_Sequencers.First(sequencer => sequencer.Kind == kind).SelectLane(laneIndex);
+			if (result.Accepted) m_SelectedPatchRole = LivePatchRole.Overlay;
+			return result;
 		}
 
 		public LiveSequencerOperationResult AssignSelectedSequencerPatch(string patchId) {
@@ -237,7 +244,7 @@ namespace ShitDesigner.Main {
 		}
 
 		private void PublishReadModel(string diagnostic) {
-			ReadModel = new LiveUiReadModel(_tickFrameNumber, _patches, _patchSlots.ReadModel, _runtime?.SlotPreviewTextures, _selectedPatchSlotIndex, SelectedCatalogPatchId,
+			ReadModel = new LiveUiReadModel(_tickFrameNumber, _patches, _patchSlots.ReadModel, _runtime?.SlotPreviewTextures, _selectedPatchSlotIndex, m_SelectedPatchRole, SelectedCatalogPatchId,
 				_runtime?.LoadedPatchId, _runtime?.PreloadedPatchId,
 				_runtime?.BpmDefinition ?? default, _runtime?.GetLoadedPatchParameterDefinitions(), CreateSequencerReadModels(), _runtime?.CurrentFrames ?? default(LiveProgramFrames), _externalDisplay,
 				_capabilityMonitor != null ? _capabilityMonitor.Snapshot : default(LiveCapabilitySnapshot), diagnostic,
@@ -253,8 +260,8 @@ namespace ShitDesigner.Main {
 
 		private string SelectedCatalogPatchId {
 			get {
-				var patchIds = m_SelectedPatchRole == LivePatchRole.Main ? m_MainPatchIds : m_OverlayPatchIds;
-				var selectedIndex = m_SelectedPatchRole == LivePatchRole.Main ? m_SelectedMainPatchIndex : m_SelectedOverlayPatchIndex;
+				var patchIds = GetPatchIds(m_SelectedPatchRole);
+				var selectedIndex = GetSelectedPatchIndex(m_SelectedPatchRole);
 				return selectedIndex >= 0 && selectedIndex < patchIds.Length ? patchIds[selectedIndex] : string.Empty;
 			}
 		}
@@ -268,12 +275,46 @@ namespace ShitDesigner.Main {
 			}
 
 			var overlayIndex = Array.IndexOf(m_OverlayPatchIds, patchId);
-			if (overlayIndex < 0) return;
-			m_SelectedPatchRole = LivePatchRole.Overlay;
-			m_SelectedOverlayPatchIndex = overlayIndex;
+			if (overlayIndex >= 0) {
+				m_SelectedPatchRole = LivePatchRole.Overlay;
+				m_SelectedOverlayPatchIndex = overlayIndex;
+				return;
+			}
+
+			var effectIndex = Array.IndexOf(m_EffectPatchIds, patchId);
+			if (effectIndex < 0) return;
+			m_SelectedPatchRole = LivePatchRole.Effect;
+			m_SelectedEffectPatchIndex = effectIndex;
 		}
 
-		private static int MoveWithinRow(int selectedIndex, int direction, int patchCount) {
+		private string[] GetPatchIds(LivePatchRole role) {
+			switch (role) {
+				case LivePatchRole.Main: return m_MainPatchIds;
+				case LivePatchRole.Overlay: return m_OverlayPatchIds;
+				case LivePatchRole.Effect: return m_EffectPatchIds;
+				default: throw new ArgumentOutOfRangeException(nameof(role), role, null);
+			}
+		}
+
+		private int GetSelectedPatchIndex(LivePatchRole role) {
+			switch (role) {
+				case LivePatchRole.Main: return m_SelectedMainPatchIndex;
+				case LivePatchRole.Overlay: return m_SelectedOverlayPatchIndex;
+				case LivePatchRole.Effect: return m_SelectedEffectPatchIndex;
+				default: throw new ArgumentOutOfRangeException(nameof(role), role, null);
+			}
+		}
+
+		private void SetSelectedPatchIndex(LivePatchRole role, int index) {
+			switch (role) {
+				case LivePatchRole.Main: m_SelectedMainPatchIndex = index; break;
+				case LivePatchRole.Overlay: m_SelectedOverlayPatchIndex = index; break;
+				case LivePatchRole.Effect: m_SelectedEffectPatchIndex = index; break;
+				default: throw new ArgumentOutOfRangeException(nameof(role), role, null);
+			}
+		}
+
+		private static int MoveWithinList(int selectedIndex, int direction, int patchCount) {
 			if (patchCount <= 0) return 0;
 			return Mathf.Clamp(selectedIndex + Math.Sign(direction), 0, patchCount - 1);
 		}

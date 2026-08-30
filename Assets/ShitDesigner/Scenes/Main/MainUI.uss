@@ -142,7 +142,7 @@
     flex-grow: 1;
     min-width: 0;
     min-height: 0;
-    padding: 8px;
+    padding: 0;
     background-color: rgb(21, 24, 29);
     border-width: 1px;
     border-color: rgb(48, 55, 65);
@@ -294,62 +294,24 @@
 .patch-controls {
     flex-grow: 1;
     min-width: 0;
-    flex-direction: row;
-}
-
-.patch-scroll-rows {
-    flex-grow: 1;
-    min-width: 0;
+    min-height: 0;
     flex-direction: column;
 }
 
-.patch-row-controls {
-    height: 32px;
-    min-height: 32px;
-    max-height: 32px;
-    flex-grow: 0;
+.patch-list-controls {
+    flex-grow: 1;
     min-width: 0;
+    min-height: 0;
 }
 
-.patch-row-controls .unity-scroll-view__content-container {
-    flex-direction: row;
-    padding-left: 50%;
-    padding-right: 50%;
+.patch-list-controls .unity-scroll-view__content-container {
+    flex-direction: column;
+    padding: 0;
 }
 
-.patch-role-labels {
-    width: 56px;
-    min-width: 56px;
-    max-width: 56px;
-    flex-shrink: 0;
-}
-
-.patch-role-label {
-    height: 32px;
-    min-height: 32px;
-    flex-shrink: 0;
-    margin: 0;
-    padding-top: 0;
-    padding-right: 0;
-    padding-bottom: 0;
-    padding-left: 0;
-    color: rgb(157, 167, 180);
-    background-color: rgb(21, 24, 29);
-    border-width: 1px;
-    border-color: rgb(48, 55, 65);
-    font-size: 9px;
-    -unity-font-style: bold;
-    -unity-text-align: middle-center;
-}
-
-.patch-dock {
-    height: 64px;
-    min-height: 64px;
-    max-height: 64px;
+.sidebar-status {
     flex-grow: 0;
     flex-shrink: 0;
-    padding: 0;
-    background-color: rgb(21, 24, 29);
     border-top-width: 1px;
     border-top-color: rgb(48, 55, 65);
 }
@@ -425,18 +387,23 @@
 }
 
 .patch-button {
-    height: 32px;
-    color: rgb(232, 236, 242);
-    background-color: rgb(13, 15, 18);
-    border-width: 1px;
-    border-color: rgb(48, 55, 65);
-    font-size: 10px;
-}
-
-.patch-button {
+    width: 100%;
+    min-width: 0;
+    height: 40px;
+    min-height: 40px;
     flex-grow: 0;
     flex-shrink: 0;
-    min-width: 160px;
+    margin: 0;
+    padding: 0;
+    color: rgb(232, 236, 242);
+    background-color: rgb(13, 15, 18);
+    border-left-width: 0;
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 1px;
+    border-color: rgb(48, 55, 65);
+    border-radius: 0;
+    font-size: 10px;
 }
 
 .patch-button.is-preloaded {
@@ -451,9 +418,8 @@
     border-color: rgb(255, 190, 74);
 }
 
-.patch-row-controls.is-scene-selecting {
-    border-top-width: 1px;
-    border-bottom-width: 1px;
+.patch-list-controls.is-scene-selecting {
+    border-width: 1px;
     border-color: rgb(255, 190, 74);
 }
 
@@ -546,8 +512,8 @@
 }
 
 .live-fader-panel {
-    height: 224px;
-    min-height: 224px;
+    height: 288px;
+    min-height: 288px;
     background-color: rgb(21, 24, 29);
     border-width: 1px;
     border-color: rgb(48, 55, 65);

@@ -21,9 +21,10 @@ namespace ShitDesigner.Main {
 		private VisualElement m_Output2Preview;
 		private VisualElement _patchSlotControls;
 		private readonly RenderTexture[] m_PatchSlotPreviewTextures = new RenderTexture[LivePatchSlots.Capacity];
-		private VisualElement _patchControls;
+		private VisualElement m_PatchControls;
 		private ScrollView m_MainPatchControls;
 		private ScrollView m_OverlayPatchControls;
+		private ScrollView m_EffectPatchControls;
 		private VisualElement m_SequencerControls;
 		private VisualElement _parameterControls;
 		private VisualElement _tempoControls;
@@ -37,13 +38,11 @@ namespace ShitDesigner.Main {
 		private LiveOutputMenuController m_OutputMenu;
 		private Coroutine m_ReloadRoutine;
 		private string _renderedPatchId = string.Empty;
-		private string _centeredPatchId = string.Empty;
+		private string m_CenteredPatchId = string.Empty;
 		private int m_RenderedPatchCount = -1;
 		private bool _initialized;
 		private bool _updating;
 		private bool _editingBpm;
-
-		private const float PatchScrollWheelUnits = 48f;
 
 		private readonly struct SequencerCellAddress {
 			public LiveSequencerKind Kind { get; }
@@ -100,34 +99,33 @@ namespace ShitDesigner.Main {
 				button.userData = slotIndex;
 			}
 			_patchSlotControls.RegisterCallback<ClickEvent>(OnPatchSlotClicked);
-			_patchControls = Required<VisualElement>(root, "patch-controls");
+			m_PatchControls = Required<VisualElement>(root, "patch-controls");
 			m_MainPatchControls = Required<ScrollView>(root, "main-patch-controls");
 			m_OverlayPatchControls = Required<ScrollView>(root, "overlay-patch-controls");
+			m_EffectPatchControls = Required<ScrollView>(root, "effect-patch-controls");
 			m_SequencerControls = Required<VisualElement>(root, "sequencer-controls");
 			_parameterControls = Required<VisualElement>(root, "parameter-controls");
 			_tempoControls = Required<VisualElement>(root, "tempo-controls");
 			m_SidebarTabButtons = new[] {
-				Required<Button>(root, "inspector-tab"),
-				Required<Button>(root, "logical-controls-tab"),
-				Required<Button>(root, "diagnostics-tab")
+				Required<Button>(root, "main-tab"),
+				Required<Button>(root, "overlay-tab"),
+				Required<Button>(root, "effect-tab")
 			};
 			m_SidebarTabContents = new[] {
-				Required<VisualElement>(root, "inspector-tab-content"),
-				Required<VisualElement>(root, "logical-controls-tab-content"),
-				Required<VisualElement>(root, "diagnostics-tab-content")
+				m_MainPatchControls,
+				m_OverlayPatchControls,
+				m_EffectPatchControls
 			};
 			for (var tabIndex = 0; tabIndex < m_SidebarTabButtons.Length; tabIndex++) {
-				m_SidebarTabButtons[tabIndex].userData = tabIndex;
+				m_SidebarTabButtons[tabIndex].userData = (LivePatchRole)tabIndex;
 				m_SidebarTabButtons[tabIndex].RegisterCallback<ClickEvent>(OnSidebarTabClicked);
 			}
-			SelectSidebarTab(0);
+			SelectSidebarTab(LivePatchRole.Main);
 			_bpmField = Required<TextField>(root, "bpm-field");
 			_bpmTapButton = Required<Button>(root, "bpm-tap");
 			m_BeatAlignmentButton = Required<Button>(root, "beat-alignment-button");
 			_capabilityLabel = Required<Label>(root, "capability-status");
 			_diagnosticLabel = Required<Label>(root, "diagnostic-status");
-			m_MainPatchControls.RegisterCallback<WheelEvent>(OnMainPatchSelectionWheel, TrickleDown.TrickleDown);
-			m_OverlayPatchControls.RegisterCallback<WheelEvent>(OnOverlayPatchSelectionWheel, TrickleDown.TrickleDown);
 			m_SequencerControls.RegisterCallback<ClickEvent>(OnSequencerCellClicked);
 			BuildSequencers(root);
 			_bpmField.RegisterValueChangedCallback(OnBpmInputChanged);
@@ -153,8 +151,6 @@ namespace ShitDesigner.Main {
 
 		private void UnbindVisualTree() {
 			if (_patchSlotControls != null) _patchSlotControls.UnregisterCallback<ClickEvent>(OnPatchSlotClicked);
-			if (m_MainPatchControls != null) m_MainPatchControls.UnregisterCallback<WheelEvent>(OnMainPatchSelectionWheel, TrickleDown.TrickleDown);
-			if (m_OverlayPatchControls != null) m_OverlayPatchControls.UnregisterCallback<WheelEvent>(OnOverlayPatchSelectionWheel, TrickleDown.TrickleDown);
 			if (m_SequencerControls != null) m_SequencerControls.UnregisterCallback<ClickEvent>(OnSequencerCellClicked);
 			foreach (var button in m_SidebarTabButtons) button.UnregisterCallback<ClickEvent>(OnSidebarTabClicked);
 			m_SidebarTabButtons = Array.Empty<Button>();
@@ -169,7 +165,7 @@ namespace ShitDesigner.Main {
 			_initialized = false;
 			m_Root = null;
 			_renderedPatchId = string.Empty;
-			_centeredPatchId = string.Empty;
+			m_CenteredPatchId = string.Empty;
 			m_RenderedPatchCount = -1;
 			Array.Clear(m_PatchSlotPreviewTextures, 0, m_PatchSlotPreviewTextures.Length);
 		}
@@ -195,13 +191,14 @@ namespace ShitDesigner.Main {
 		}
 
 		private void OnSidebarTabClicked(ClickEvent click) {
-			if (click.currentTarget is not Button button || button.userData is not int tabIndex) return;
-			SelectSidebarTab(tabIndex);
+			if (click.currentTarget is not Button button || button.userData is not LivePatchRole role) return;
+			_host?.SelectCatalogRole(role);
+			SelectSidebarTab(role);
 		}
 
-		private void SelectSidebarTab(int selectedIndex) {
+		private void SelectSidebarTab(LivePatchRole selectedRole) {
 			for (var tabIndex = 0; tabIndex < m_SidebarTabButtons.Length; tabIndex++) {
-				var isSelected = tabIndex == selectedIndex;
+				var isSelected = tabIndex == (int)selectedRole;
 				m_SidebarTabButtons[tabIndex].EnableInClassList("is-selected", isSelected);
 				m_SidebarTabContents[tabIndex].EnableInClassList("is-hidden", !isSelected);
 			}
@@ -452,10 +449,11 @@ namespace ShitDesigner.Main {
 		private void RefreshPatchControls(LiveUiReadModel model) {
 			if (m_RenderedPatchCount != model.Patches.Count) {
 				RebuildPatchControls(model);
-				_centeredPatchId = string.Empty;
+				m_CenteredPatchId = string.Empty;
 			}
+			SelectSidebarTab(model.SelectedCatalogRole);
 			foreach (var patch in model.Patches) {
-				var button = _patchControls.Q<Button>("patch-" + patch.Id);
+				var button = m_PatchControls.Q<Button>("patch-" + patch.Id);
 				if (button == null) continue;
 				button.EnableInClassList("is-loaded", patch.Id == model.LoadedPatchId);
 				button.EnableInClassList("is-preloaded", patch.Id == model.PreloadedPatchId);
@@ -464,8 +462,8 @@ namespace ShitDesigner.Main {
 				button.EnableInClassList("is-assignment-option", _host.IsSelectingSequencerLane && patch.Role == LivePatchRole.Overlay);
 			}
 			var selectedPatchId = string.IsNullOrEmpty(model.SelectedCatalogPatchId) ? model.LoadedPatchId : model.SelectedCatalogPatchId;
-			if (_centeredPatchId != selectedPatchId) {
-				_centeredPatchId = selectedPatchId;
+			if (m_CenteredPatchId != selectedPatchId) {
+				m_CenteredPatchId = selectedPatchId;
 				CenterPatchSelection(selectedPatchId);
 			}
 		}
@@ -473,8 +471,10 @@ namespace ShitDesigner.Main {
 		private void RebuildPatchControls(LiveUiReadModel model) {
 			m_MainPatchControls.Clear();
 			m_OverlayPatchControls.Clear();
+			m_EffectPatchControls.Clear();
 			AddPatchButtons(m_MainPatchControls, model.Patches.Where(patch => patch.Role == LivePatchRole.Main));
 			AddPatchButtons(m_OverlayPatchControls, model.Patches.Where(patch => patch.Role == LivePatchRole.Overlay));
+			AddPatchButtons(m_EffectPatchControls, model.Patches.Where(patch => patch.Role == LivePatchRole.Effect));
 			m_RenderedPatchCount = model.Patches.Count;
 		}
 
@@ -487,8 +487,17 @@ namespace ShitDesigner.Main {
 					userData = patchId
 				};
 				button.AddToClassList("patch-button");
-				button.AddToClassList(patch.Role == LivePatchRole.Main ? "patch-main-button" : "patch-overlay-button");
+				button.AddToClassList(GetPatchRoleClass(patch.Role));
 				controls.Add(button);
+			}
+		}
+
+		private static string GetPatchRoleClass(LivePatchRole role) {
+			switch (role) {
+				case LivePatchRole.Main: return "patch-main-button";
+				case LivePatchRole.Overlay: return "patch-overlay-button";
+				case LivePatchRole.Effect: return "patch-effect-button";
+				default: throw new ArgumentOutOfRangeException(nameof(role), role, null);
 			}
 		}
 
@@ -540,33 +549,26 @@ namespace ShitDesigner.Main {
 			return "SLOT " + (slot.Index + 1) + " · " + patchName;
 		}
 
-		private void OnMainPatchSelectionWheel(WheelEvent change) => ScrollPatchRow(m_MainPatchControls, change);
-
-		private void OnOverlayPatchSelectionWheel(WheelEvent change) => ScrollPatchRow(m_OverlayPatchControls, change);
-
-		private static void ScrollPatchRow(ScrollView controls, WheelEvent change) {
-			var maximum = Mathf.Max(0f, controls.horizontalScroller.highValue);
-			if (maximum <= 0f) return;
-			var delta = Mathf.Abs(change.delta.x) > Mathf.Epsilon ? change.delta.x : change.delta.y;
-			if (Mathf.Abs(delta) <= Mathf.Epsilon) return;
-			controls.scrollOffset = new Vector2(Mathf.Clamp(controls.scrollOffset.x + delta * PatchScrollWheelUnits, 0f, maximum), controls.scrollOffset.y);
-			change.StopPropagation();
-		}
-
 		private void CenterPatchSelection(string patchId) {
 			if (string.IsNullOrWhiteSpace(patchId)) return;
-			_patchControls.schedule.Execute(() => {
-				var selected = _patchControls.Q<Button>("patch-" + patchId);
+			m_PatchControls.schedule.Execute(() => {
+				var selected = m_PatchControls.Q<Button>("patch-" + patchId);
 				if (selected == null) return;
-				var controls = selected.ClassListContains("patch-main-button") ? m_MainPatchControls : m_OverlayPatchControls;
-				var viewportWidth = controls.contentViewport.layout.width;
-				if (viewportWidth <= 0f) return;
+				var controls = GetPatchControls(selected);
+				var viewportHeight = controls.contentViewport.layout.height;
+				if (viewportHeight <= 0f) return;
 				var selectedCenter = selected.ChangeCoordinatesTo(controls.contentContainer,
 					new Vector2(selected.layout.width * 0.5f, selected.layout.height * 0.5f));
-				var offset = selectedCenter.x - viewportWidth * 0.5f;
-				var maximum = Mathf.Max(0f, controls.horizontalScroller.highValue);
-				controls.scrollOffset = new Vector2(Mathf.Clamp(offset, 0f, maximum), controls.scrollOffset.y);
+				var offset = selectedCenter.y - viewportHeight * 0.5f;
+				var maximum = Mathf.Max(0f, controls.verticalScroller.highValue);
+				controls.scrollOffset = new Vector2(controls.scrollOffset.x, Mathf.Clamp(offset, 0f, maximum));
 			}).StartingIn(0);
+		}
+
+		private ScrollView GetPatchControls(VisualElement patchButton) {
+			if (patchButton.ClassListContains("patch-main-button")) return m_MainPatchControls;
+			if (patchButton.ClassListContains("patch-overlay-button")) return m_OverlayPatchControls;
+			return m_EffectPatchControls;
 		}
 
 		private void RefreshTempoControls(LiveUiReadModel model) {

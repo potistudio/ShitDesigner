@@ -43,7 +43,7 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void KeyboardArrowsMoveCatalogWithinRowsAndBetweenMainAndOverlay() {
+		public void KeyboardArrowsMoveCatalogBetweenTabsAndWithinLists() {
 			var patch = CreatePatch("patch-a");
 			Keyboard keyboard = null;
 			try {
