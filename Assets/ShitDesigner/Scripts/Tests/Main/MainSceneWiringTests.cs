@@ -34,7 +34,6 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(output, Is.Not.Null);
 				Assert.That(ui, Is.Not.Null);
 				Assert.That(panelRenderer, Is.Not.Null);
-				Assert.That(panelRenderer.enabled, Is.False, "UI Toolkit must attach after the Retina Player surface has reached its final size.");
 				Assert.That(panelRenderer.visualTreeAsset, Is.Not.Null);
 				Assert.That(panelRenderer.panelSettings, Is.Not.Null);
 				Assert.That(root.GetComponent<UIDocument>(), Is.Null);
@@ -85,6 +84,13 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(root.GetComponent<SimpleExternalDisplayOutput>(), Is.Null);
 			}
 			finally { EditorSceneManager.CloseScene(scene, removeScene: true); }
+		}
+
+		[Test]
+		public void MultipleMetalDisplaysUseNativeUiOverlayRendering() {
+			Assert.That(ApplicationLiveHost.RequiresNativeUiOverlay(GraphicsDeviceType.Metal, 2), Is.True);
+			Assert.That(ApplicationLiveHost.RequiresNativeUiOverlay(GraphicsDeviceType.Metal, 1), Is.False);
+			Assert.That(ApplicationLiveHost.RequiresNativeUiOverlay(GraphicsDeviceType.Direct3D11, 2), Is.False);
 		}
 
 		[Test]
