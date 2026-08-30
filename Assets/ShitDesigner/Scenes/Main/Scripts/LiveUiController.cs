@@ -20,6 +20,7 @@ namespace ShitDesigner.Main {
 		private VisualElement _programMonitor;
 		private VisualElement m_Output2Preview;
 		private VisualElement m_PatchControls;
+		private readonly RenderTexture[] m_OverlayLanePreviewTextures = new RenderTexture[LiveStepSequencer.OverlayLaneCount];
 		private ScrollView m_MainPatchControls;
 		private ScrollView m_OverlayPatchControls;
 		private ScrollView m_EffectPatchControls;
@@ -160,6 +161,7 @@ namespace ShitDesigner.Main {
 			m_CenteredPatchId = string.Empty;
 			m_PendingCenteredPatchId = string.Empty;
 			m_RenderedPatchCount = -1;
+			Array.Clear(m_OverlayLanePreviewTextures, 0, m_OverlayLanePreviewTextures.Length);
 		}
 
 		private void LateUpdate() {
@@ -253,6 +255,14 @@ namespace ShitDesigner.Main {
 					if (laneLabel != null) {
 						var patchId = sequencer.LanePatchIds.Count > laneIndex ? sequencer.LanePatchIds[laneIndex] : string.Empty;
 						var patch = model.Patches.FirstOrDefault(candidate => candidate.Id == patchId);
+						if (sequencer.Kind == LiveSequencerKind.Overlay) {
+							var preview = laneIndex < model.OverlayLanePreviews.Count ? model.OverlayLanePreviews[laneIndex] : null;
+							if (m_OverlayLanePreviewTextures[laneIndex] != preview) {
+								m_OverlayLanePreviewTextures[laneIndex] = preview;
+								ApplyPreviewTexture(laneLabel, preview);
+							}
+							laneLabel.EnableInClassList("has-preview", preview != null);
+						}
 						laneLabel.tooltip = string.IsNullOrEmpty(patchId)
 							? "LANE " + (laneIndex + 1) + " · SELECT OVERLAY SCENE"
 							: "LANE " + (laneIndex + 1) + " · " + (string.IsNullOrEmpty(patch.Name) ? patchId : patch.Name);
