@@ -264,7 +264,7 @@ namespace ShitDesigner.Nodes {
 	public sealed class NodeDefinitionCatalog {
 		public static IReadOnlyList<string> SpecializedNodeTypeIds => new ReadOnlyCollection<string>(new[] { "shitdesigner.scene.3d", "shitdesigner.scene.2d" }
 			.Concat(ShaderNodeManifest.CreateBuiltIn().Entries.Select(x => x.TypeId.Value))
-			.Concat(new[] { "shitdesigner.video.player", "system.feedback" })
+			.Concat(new[] { BitonicPixelSortContract.NodeTypeId, "shitdesigner.video.player", "system.feedback" })
 			.Distinct(StringComparer.Ordinal)
 			.ToList());
 		private readonly IReadOnlyList<NodeCatalogEntry> _entries;
@@ -348,7 +348,7 @@ namespace ShitDesigner.Nodes {
 			bindings = bindings ?? new NodeFactoryBindings();
 			var specialized = new[] { "shitdesigner.scene.3d", "shitdesigner.scene.2d" }
 				.Concat(shaderManifest.Entries.Select(x => x.TypeId.Value))
-				.Concat(new[] { "shitdesigner.video.player", "system.feedback" });
+				.Concat(new[] { BitonicPixelSortContract.NodeTypeId, "shitdesigner.video.player", "system.feedback" });
 			return new NodeDefinitionCatalog(InitialNodeDefinitions.Create(shaderManifest).Select(definition => {
 				var creator = bindings.Resolve(definition.TypeId);
 				var placeholder = creator == null;
@@ -515,6 +515,7 @@ namespace ShitDesigner.Nodes {
 				new NodeDefinition(new NodeTypeId("shitdesigner.scene.2d"), 1, "2D", "2D", new[] { ImageOut })
 			};
 			definitions.AddRange(shaderManifest.Entries.Select(x => x.ToNodeDefinition()));
+			definitions.Add(BitonicPixelSort());
 			definitions.Add(new NodeDefinition(new NodeTypeId("shitdesigner.video.player"), 1, "VideoPlayer", "Video", new[] { ImageOut }, VideoParameters()));
 			definitions.Add(InstantEffectTriggers());
 			definitions.Add(AssetFlash());
@@ -524,6 +525,29 @@ namespace ShitDesigner.Nodes {
 		public static ShaderNodeBinding ShaderBinding(NodeTypeId id) => ShaderBinding(ShaderNodeManifest.CreateBuiltIn(), id);
 		public static ShaderNodeBinding ShaderBinding(ShaderNodeManifest manifest, NodeTypeId id) => manifest?.Find(id)?.ToShaderBinding();
 		private static NodeParameterDefinition PreviewMode() => new NodeParameterDefinition(new ParameterId("display.mode"), "Display Mode", ParameterType.Enum, ParameterValue.FromEnum("fit"), enumOptions: new[] { "fit", "fill", "stretch" });
+		private static NodeDefinition BitonicPixelSort() => new NodeDefinition(
+			new NodeTypeId(BitonicPixelSortContract.NodeTypeId),
+			1,
+			"Pixel Sort",
+			"Effect/Glitch",
+			new[] {
+				new NodePortDefinition(new PortId(BitonicPixelSortContract.InputPortId), "Input", NodePortDirection.Input, NodePortType.ImageFrame, true),
+				ImageOut
+			},
+			new[] {
+				new NodeParameterDefinition(new ParameterId(BitonicPixelSortContract.DirectionParameterId), "Direction", ParameterType.Enum,
+					ParameterValue.FromEnum(BitonicPixelSortContract.HorizontalDirection),
+					enumOptions: new[] { BitonicPixelSortContract.HorizontalDirection, BitonicPixelSortContract.VerticalDirection },
+					group: "Sort", displayOrder: 0),
+				new NodeParameterDefinition(new ParameterId(BitonicPixelSortContract.AscendingParameterId), "Ascending", ParameterType.Bool,
+					ParameterValue.FromBool(true), group: "Sort", displayOrder: 1),
+				new NodeParameterDefinition(new ParameterId(BitonicPixelSortContract.ThresholdMinParameterId), "Threshold Min", ParameterType.Float,
+					ParameterValue.FromFloat(.4f), ParameterValue.FromFloat(0f), ParameterValue.FromFloat(1f),
+					group: "Threshold", displayOrder: 0, step: .01d),
+				new NodeParameterDefinition(new ParameterId(BitonicPixelSortContract.ThresholdMaxParameterId), "Threshold Max", ParameterType.Float,
+					ParameterValue.FromFloat(.6f), ParameterValue.FromFloat(0f), ParameterValue.FromFloat(1f),
+					group: "Threshold", displayOrder: 1, step: .01d)
+			});
 		private static IEnumerable<NodeParameterDefinition> VideoParameters() => new[] { new NodeParameterDefinition(new ParameterId("transport.media_asset"), "Media Asset", ParameterType.MediaAssetReference, ParameterValue.Default(ParameterType.MediaAssetReference)), new NodeParameterDefinition(new ParameterId("transport.playing"), "Playing", ParameterType.Bool, ParameterValue.FromBool(true)), new NodeParameterDefinition(new ParameterId("transport.playhead_seconds"), "Playhead", ParameterType.Float, ParameterValue.FromFloat(0), ParameterValue.FromFloat(0), ParameterValue.FromFloat(float.MaxValue), true), new NodeParameterDefinition(new ParameterId("transport.speed"), "Speed", ParameterType.Float, ParameterValue.FromFloat(1), ParameterValue.FromFloat(0), ParameterValue.FromFloat(4)), new NodeParameterDefinition(new ParameterId("transport.loop"), "Loop", ParameterType.Bool, ParameterValue.FromBool(true)) };
 		private static NodeDefinition InstantEffectTriggers() {
 			var keys = new[] { "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P" };

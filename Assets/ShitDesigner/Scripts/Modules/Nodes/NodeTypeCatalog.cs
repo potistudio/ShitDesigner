@@ -398,9 +398,11 @@ namespace ShitDesigner.Nodes {
 	public sealed class NodeTypeCatalog : ScriptableObject {
 		[SerializeField] private int catalogSchemaVersion = 1;
 		[SerializeField] private ShaderNodeManifestAsset shaderManifest;
+		[SerializeField] private ComputeShader m_BitonicPixelSorter;
 		[SerializeField] private List<NodeTypeCatalogRecord> entries = new List<NodeTypeCatalogRecord>();
 		public int CatalogSchemaVersion => catalogSchemaVersion;
 		public ShaderNodeManifestAsset ShaderManifest => shaderManifest;
+		public ComputeShader BitonicPixelSorter => m_BitonicPixelSorter;
 		public IReadOnlyList<NodeTypeCatalogRecord> Entries => entries ?? (IReadOnlyList<NodeTypeCatalogRecord>)Array.Empty<NodeTypeCatalogRecord>();
 
 		public UnitResult<Diagnostic> ValidateManifest() {
@@ -456,6 +458,12 @@ namespace ShitDesigner.Nodes {
 
 		public void SetShaderManifest(ShaderNodeManifestAsset manifest) {
 			shaderManifest = manifest;
+		}
+
+		public UnitResult<Diagnostic> ConfigureBitonicPixelSorter(ComputeShader computeShader) {
+			if (computeShader == null) return Failure("nodes.catalog.compute_missing", "The Pixel Sort ComputeShader reference is required.");
+			m_BitonicPixelSorter = computeShader;
+			return UnitResult.Success<Diagnostic>();
 		}
 
 		public UnitResult<Diagnostic> ConfigureShaderReference(string typeId, Shader shader) {

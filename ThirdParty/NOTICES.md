@@ -1,5 +1,9 @@
 # Third-party notices
 
+- `BitonicPixelSorter.compute` is ported from
+  [ruccho/BitonicPixelSorter](https://github.com/ruccho/BitonicPixelSorter),
+  copyright (c) 2020 ruccho, under the MIT license. The complete license is in
+  `BitonicPixelSorter-LICENSE.txt`.
 - `System.IO.Hashing` 8.0.0 is used only by `Tools/HapFixtures` to calculate
   the required XXH3-128 fixture fingerprints. It is distributed by Microsoft
   under the MIT license: https://github.com/dotnet/runtime/blob/main/src/libraries/System.IO.Hashing/LICENSE.txt
