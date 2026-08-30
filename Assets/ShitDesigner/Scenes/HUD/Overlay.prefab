@@ -256,7 +256,7 @@ PanelRenderer:
   m_SortingOrder: 10
   m_MaskInteraction: 0
   serializedVersion: 1
-  m_PanelSettings: {fileID: 11400000, guid: acdb4ed592be84c4b8cf01d5947806f1, type: 2}
+  m_PanelSettings: {fileID: 11400000, guid: f21b3c8d9e0741faab65d2146c0378e9, type: 2}
   sourceAsset: {fileID: 0}
   m_ParentUI: {fileID: 0}
   m_WorldSpaceSizeMode: 1
