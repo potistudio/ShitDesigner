@@ -7,7 +7,6 @@ using ShitDesigner.Scene;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
@@ -88,16 +87,19 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void MultipleMetalDisplaysUseNativeUiOverlayRendering() {
-			Assert.That(ApplicationLiveHost.RequiresNativeUiOverlay(GraphicsDeviceType.Metal, 2), Is.True);
-			Assert.That(ApplicationLiveHost.RequiresNativeUiOverlay(GraphicsDeviceType.Metal, 1), Is.False);
-			Assert.That(ApplicationLiveHost.RequiresNativeUiOverlay(GraphicsDeviceType.Direct3D11, 2), Is.False);
-		}
-
-		[Test]
 		public void MainIsTheFirstEnabledBuildScene() {
 			var first = EditorBuildSettings.scenes.First(scene => scene.enabled);
 			Assert.That(first.path, Is.EqualTo("Assets/ShitDesigner/Scenes/Main/Main.unity"));
+		}
+
+		[Test]
+		public void MacExternalDisplayPluginIsIncludedInMacPlayers() {
+			const string path = "Assets/ShitDesigner/Plugins/macOS/shitdesigner_mac_display.dylib";
+			var importer = AssetImporter.GetAtPath(path) as PluginImporter;
+
+			Assert.That(importer, Is.Not.Null);
+			Assert.That(importer.GetCompatibleWithPlatform(BuildTarget.StandaloneOSX), Is.True);
+			Assert.That(importer.GetCompatibleWithPlatform(BuildTarget.StandaloneWindows64), Is.False);
 		}
 
 		[Test]
