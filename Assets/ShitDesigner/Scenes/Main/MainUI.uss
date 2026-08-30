@@ -85,7 +85,8 @@
     border-color: rgb(88, 166, 255);
 }
 
-.instant-effect-cue-button:active {
+.instant-effect-cue-button:active,
+.instant-effect-cue-button.is-keyboard-active {
     color: rgb(13, 15, 18);
     background-color: rgb(88, 166, 255);
 }
