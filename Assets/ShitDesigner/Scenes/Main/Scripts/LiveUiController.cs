@@ -19,8 +19,6 @@ namespace ShitDesigner.Main {
 		private LiveExternalDisplayOutput _output;
 		private VisualElement _programMonitor;
 		private VisualElement m_Output2Preview;
-		private VisualElement _patchSlotControls;
-		private readonly RenderTexture[] m_PatchSlotPreviewTextures = new RenderTexture[LivePatchSlots.Capacity];
 		private VisualElement m_PatchControls;
 		private ScrollView m_MainPatchControls;
 		private ScrollView m_OverlayPatchControls;
@@ -94,12 +92,6 @@ namespace ShitDesigner.Main {
 
 			_programMonitor = Required<VisualElement>(root, "program-monitor");
 			m_Output2Preview = Required<VisualElement>(root, "output-2-preview");
-			_patchSlotControls = Required<VisualElement>(root, "patch-slot-controls");
-			for (var slotIndex = 0; slotIndex < LivePatchSlots.Capacity; slotIndex++) {
-				var button = Required<Button>(root, "patch-slot-" + slotIndex);
-				button.userData = slotIndex;
-			}
-			_patchSlotControls.RegisterCallback<ClickEvent>(OnPatchSlotClicked);
 			m_PatchControls = Required<VisualElement>(root, "patch-controls");
 			m_MainPatchControls = Required<ScrollView>(root, "main-patch-controls");
 			m_OverlayPatchControls = Required<ScrollView>(root, "overlay-patch-controls");
@@ -151,7 +143,6 @@ namespace ShitDesigner.Main {
 		}
 
 		private void UnbindVisualTree() {
-			if (_patchSlotControls != null) _patchSlotControls.UnregisterCallback<ClickEvent>(OnPatchSlotClicked);
 			if (m_SequencerControls != null) m_SequencerControls.UnregisterCallback<ClickEvent>(OnSequencerCellClicked);
 			foreach (var button in m_SidebarTabButtons) button.UnregisterCallback<ClickEvent>(OnSidebarTabClicked);
 			m_SidebarTabButtons = Array.Empty<Button>();
@@ -169,7 +160,6 @@ namespace ShitDesigner.Main {
 			m_CenteredPatchId = string.Empty;
 			m_PendingCenteredPatchId = string.Empty;
 			m_RenderedPatchCount = -1;
-			Array.Clear(m_PatchSlotPreviewTextures, 0, m_PatchSlotPreviewTextures.Length);
 		}
 
 		private void LateUpdate() {
@@ -180,7 +170,6 @@ namespace ShitDesigner.Main {
 			try {
 				ApplyPreviewTexture(_programMonitor, model.ProgramFrames.Count > 0 ? model.ProgramFrames[0].Texture : null);
 				ApplyPreviewTexture(m_Output2Preview, model.ProgramFrames.Count > 1 ? model.ProgramFrames[1].Texture : null);
-				RefreshPatchSlotControls(model);
 				RefreshPatchControls(model);
 				RefreshSequencers(model);
 				RefreshTempoControls(model);
@@ -225,7 +214,7 @@ namespace ShitDesigner.Main {
 				}
 				container.Add(header);
 
-				for (var laneIndex = 0; laneIndex < LiveStepSequencer.LaneCount; laneIndex++) {
+				for (var laneIndex = 0; laneIndex < sequencer.LaneCount; laneIndex++) {
 					var lane = new VisualElement();
 					lane.AddToClassList("sequencer-lane");
 					VisualElement laneLabel;
@@ -259,7 +248,7 @@ namespace ShitDesigner.Main {
 
 		private void RefreshSequencers(LiveUiReadModel model) {
 			foreach (var sequencer in model.Sequencers) {
-				for (var laneIndex = 0; laneIndex < LiveStepSequencer.LaneCount; laneIndex++) {
+				for (var laneIndex = 0; laneIndex < sequencer.LaneCount; laneIndex++) {
 					var laneLabel = m_SequencerControls.Q<VisualElement>(GetSequencerLaneName(sequencer.Kind, laneIndex));
 					if (laneLabel != null) {
 						var patchId = sequencer.LanePatchIds.Count > laneIndex ? sequencer.LanePatchIds[laneIndex] : string.Empty;
@@ -456,8 +445,6 @@ namespace ShitDesigner.Main {
 				var button = m_PatchControls.Q<Button>("patch-" + patch.Id);
 				if (button == null) continue;
 				button.EnableInClassList("is-loaded", patch.Id == model.LoadedPatchId);
-				button.EnableInClassList("is-preloaded", patch.Id == model.PreloadedPatchId);
-				button.EnableInClassList("is-queued", model.PatchSlots.Any(slot => slot.PatchId == patch.Id));
 				button.EnableInClassList("is-selected", patch.Id == model.SelectedCatalogPatchId);
 				button.EnableInClassList("is-assignment-option", _host.IsSelectingSequencerLane && patch.Role == LivePatchRole.Overlay);
 			}
@@ -510,46 +497,7 @@ namespace ShitDesigner.Main {
 				ShowSequencerRejection(_host.AssignSelectedSequencerPatch(patchId));
 				return;
 			}
-			AssignPatchToSelectedSlot(patchId);
-		}
-
-		private void RefreshPatchSlotControls(LiveUiReadModel model) {
-			foreach (var slot in model.PatchSlots) {
-				if (!LivePatchSlots.IsValidSlotIndex(slot.Index)) continue;
-				var button = _patchSlotControls.Q<Button>("patch-slot-" + slot.Index);
-				if (button == null) continue;
-				var preview = slot.Index >= 0 && slot.Index < model.PatchSlotPreviews.Count ? model.PatchSlotPreviews[slot.Index] : null;
-				if (m_PatchSlotPreviewTextures[slot.Index] != preview) {
-					m_PatchSlotPreviewTextures[slot.Index] = preview;
-					ApplyPreviewTexture(button, preview);
-				}
-				button.tooltip = FormatPatchSlot(slot, model.Patches);
-				button.EnableInClassList("is-selected", slot.Index == model.SelectedPatchSlotIndex);
-				button.EnableInClassList("is-cued", !slot.IsEmpty && slot.PatchId == model.PreloadedPatchId);
-				button.EnableInClassList("is-playing", !slot.IsEmpty && slot.PatchId == model.LoadedPatchId);
-			}
-
-		}
-
-		private void OnPatchSlotClicked(ClickEvent change) {
-			if (!(change.target is Button button) || !(button.userData is int slotIndex)) return;
-			SelectPatchSlot(slotIndex);
-		}
-
-		private void SelectPatchSlot(int slotIndex) {
-			if (_host == null) return;
-			ShowSlotRejection(_host.SelectPatchSlot(slotIndex));
-		}
-
-		private void AssignPatchToSelectedSlot(string patchId) {
-			if (_host == null) return;
-			ShowSlotRejection(_host.AssignPatchToSelectedSlot(patchId));
-		}
-
-		private static string FormatPatchSlot(LivePatchSlotReadModel slot, IReadOnlyList<LivePatchReadModel> patches) {
-			var patch = patches.FirstOrDefault(candidate => candidate.Id == slot.PatchId);
-			var patchName = slot.IsEmpty ? "EMPTY" : (string.IsNullOrEmpty(patch.Name) ? "UNKNOWN" : patch.Name);
-			return "SLOT " + (slot.Index + 1) + " · " + patchName;
+			ShowEnqueueRejection(_host.LaunchCatalogPatch(patchId));
 		}
 
 		private void CenterPatchSelection(string patchId) {
@@ -631,10 +579,6 @@ namespace ShitDesigner.Main {
 		}
 
 		private void ShowEnqueueRejection(LiveParameterEnqueueResult result) {
-			if (!result.Accepted && _diagnosticLabel != null) _diagnosticLabel.text = result.RejectionReason;
-		}
-
-		private void ShowSlotRejection(LivePatchSlotOperationResult result) {
 			if (!result.Accepted && _diagnosticLabel != null) _diagnosticLabel.text = result.RejectionReason;
 		}
 

@@ -11,13 +11,11 @@ namespace ShitDesigner.Main {
 	public sealed class LiveKeyboardInput {
 		private readonly LiveParameterQueue m_Queue;
 		private readonly IReadOnlyDictionary<string, PatchDefinition> m_PatchesById;
-		private readonly Action<int> m_LaunchPatchSlot;
-		private readonly Action<int> m_ClearPatchSlot;
 		private readonly Action<int, int> m_MoveCatalogSelection;
-		private readonly Action m_AssignSelectedPatch;
+		private readonly Action m_LaunchSelectedPatch;
 		private readonly Action<double> m_TapBpm;
 
-		public LiveKeyboardInput(LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches, Action<int> launchPatchSlot, Action<int> clearPatchSlot, Action<int, int> moveCatalogSelection, Action assignSelectedPatch, Action<double> tapBpm) {
+		public LiveKeyboardInput(LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches, Action<int, int> moveCatalogSelection, Action launchSelectedPatch, Action<double> tapBpm) {
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));
 
@@ -27,10 +25,8 @@ namespace ShitDesigner.Main {
 				if (!patchesById.TryAdd(patch.Id, patch)) throw new ArgumentException("Live patch IDs must be unique.", nameof(patches));
 			}
 			m_PatchesById = patchesById;
-			m_LaunchPatchSlot = launchPatchSlot ?? throw new ArgumentNullException(nameof(launchPatchSlot));
-			m_ClearPatchSlot = clearPatchSlot ?? throw new ArgumentNullException(nameof(clearPatchSlot));
 			m_MoveCatalogSelection = moveCatalogSelection ?? throw new ArgumentNullException(nameof(moveCatalogSelection));
-			m_AssignSelectedPatch = assignSelectedPatch ?? throw new ArgumentNullException(nameof(assignSelectedPatch));
+			m_LaunchSelectedPatch = launchSelectedPatch ?? throw new ArgumentNullException(nameof(launchSelectedPatch));
 			m_TapBpm = tapBpm ?? throw new ArgumentNullException(nameof(tapBpm));
 		}
 
@@ -38,27 +34,13 @@ namespace ShitDesigner.Main {
 			var keyboard = Keyboard.current;
 			if (keyboard == null || string.IsNullOrWhiteSpace(loadedPatchId)) return;
 
-			var clearSlot = keyboard.shiftKey.isPressed;
-			if (keyboard.digit1Key.wasPressedThisFrame) HandleSlotKey(0, clearSlot);
-			if (keyboard.digit2Key.wasPressedThisFrame) HandleSlotKey(1, clearSlot);
-			if (keyboard.digit3Key.wasPressedThisFrame) HandleSlotKey(2, clearSlot);
-			if (keyboard.digit4Key.wasPressedThisFrame) HandleSlotKey(3, clearSlot);
-			if (keyboard.digit5Key.wasPressedThisFrame) HandleSlotKey(4, clearSlot);
-			if (keyboard.digit6Key.wasPressedThisFrame) HandleSlotKey(5, clearSlot);
-			if (keyboard.digit7Key.wasPressedThisFrame) HandleSlotKey(6, clearSlot);
-			if (keyboard.digit8Key.wasPressedThisFrame) HandleSlotKey(7, clearSlot);
 			if (keyboard.leftArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(-1, 0);
 			if (keyboard.rightArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(1, 0);
 			if (keyboard.upArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, -1);
 			if (keyboard.downArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, 1);
-			if (keyboard.enterKey.wasPressedThisFrame) m_AssignSelectedPatch();
+			if (keyboard.enterKey.wasPressedThisFrame) m_LaunchSelectedPatch();
 			if (keyboard.spaceKey.wasPressedThisFrame) m_TapBpm(Time.unscaledTimeAsDouble);
 			QueuePatchKeyboardInputs(keyboard, loadedPatchId);
-		}
-
-		private void HandleSlotKey(int slotIndex, bool clearSlot) {
-			if (clearSlot) m_ClearPatchSlot(slotIndex);
-			else m_LaunchPatchSlot(slotIndex);
 		}
 
 		private void QueuePatchKeyboardInputs(Keyboard keyboard, string loadedPatchId) {

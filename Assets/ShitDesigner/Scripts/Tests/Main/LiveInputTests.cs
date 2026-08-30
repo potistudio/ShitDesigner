@@ -20,7 +20,7 @@ namespace ShitDesigner.Main.Tests {
 				keyboard = InputSystem.AddDevice<Keyboard>();
 				keyboard.MakeCurrent();
 				var queue = new LiveParameterQueue();
-				var input = new LiveKeyboardInput(queue, new[] { patch }, _ => { }, _ => { }, (_, _) => { }, () => { }, _ => { });
+				var input = new LiveKeyboardInput(queue, new[] { patch }, (_, _) => { }, () => { }, _ => { });
 
 				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.A));
 				InputSystem.Update();
@@ -50,7 +50,7 @@ namespace ShitDesigner.Main.Tests {
 				keyboard = InputSystem.AddDevice<Keyboard>();
 				keyboard.MakeCurrent();
 				var movements = new List<(int Horizontal, int Vertical)>();
-				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, _ => { }, _ => { },
+				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch },
 					(horizontal, vertical) => movements.Add((horizontal, vertical)), () => { }, _ => { });
 
 				PollKey(input, keyboard, Key.LeftArrow);
@@ -59,6 +59,26 @@ namespace ShitDesigner.Main.Tests {
 				PollKey(input, keyboard, Key.DownArrow);
 
 				Assert.That(movements, Is.EqualTo(new[] { (-1, 0), (1, 0), (0, -1), (0, 1) }));
+			}
+			finally {
+				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
+				Object.DestroyImmediate(patch);
+			}
+		}
+
+		[Test]
+		public void KeyboardEnterLaunchesSelectedCatalogPatch() {
+			var patch = CreatePatch("patch-a");
+			Keyboard keyboard = null;
+			try {
+				keyboard = InputSystem.AddDevice<Keyboard>();
+				keyboard.MakeCurrent();
+				var launched = false;
+				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, (_, _) => { }, () => { launched = true; }, _ => { });
+
+				PollKey(input, keyboard, Key.Enter);
+
+				Assert.That(launched, Is.True);
 			}
 			finally {
 				if (keyboard != null) InputSystem.RemoveDevice(keyboard);

@@ -24,13 +24,9 @@ namespace ShitDesigner.Main {
 	public sealed class LiveUiReadModel {
 		public ulong FrameNumber { get; }
 		public IReadOnlyList<LivePatchReadModel> Patches { get; }
-		public IReadOnlyList<LivePatchSlotReadModel> PatchSlots { get; }
-		public IReadOnlyList<RenderTexture> PatchSlotPreviews { get; }
-		public int SelectedPatchSlotIndex { get; }
 		public LivePatchRole SelectedCatalogRole { get; }
 		public string SelectedCatalogPatchId { get; }
 		public string LoadedPatchId { get; }
-		public string PreloadedPatchId { get; }
 		public LiveParameterDefinition Bpm { get; }
 		public IReadOnlyList<LiveParameterDefinition> Parameters { get; }
 		public IReadOnlyList<LiveSequencerReadModel> Sequencers { get; }
@@ -45,20 +41,15 @@ namespace ShitDesigner.Main {
 		public string Diagnostic { get; }
 		public IReadOnlyList<LiveParameterApplicationResult> RequestResults { get; }
 
-		public LiveUiReadModel(ulong frameNumber, IReadOnlyList<LivePatchReadModel> patches, IReadOnlyList<LivePatchSlotReadModel> patchSlots, IReadOnlyList<RenderTexture> patchSlotPreviews,
-			int selectedPatchSlotIndex, LivePatchRole selectedCatalogRole, string selectedCatalogPatchId,
-			string loadedPatchId, string preloadedPatchId,
+		public LiveUiReadModel(ulong frameNumber, IReadOnlyList<LivePatchReadModel> patches, LivePatchRole selectedCatalogRole, string selectedCatalogPatchId,
+			string loadedPatchId,
 			LiveParameterDefinition bpm, IReadOnlyList<LiveParameterDefinition> parameters, IReadOnlyList<LiveSequencerReadModel> sequencers, LiveProgramFrames programFrames, LiveExternalDisplayOutput output,
 			LiveCapabilitySnapshot capabilities, string diagnostic, IReadOnlyList<LiveParameterApplicationResult> requestResults) {
 			FrameNumber = frameNumber;
 			Patches = patches ?? Array.Empty<LivePatchReadModel>();
-			PatchSlots = patchSlots ?? Array.Empty<LivePatchSlotReadModel>();
-			PatchSlotPreviews = patchSlotPreviews ?? Array.Empty<RenderTexture>();
-			SelectedPatchSlotIndex = selectedPatchSlotIndex;
 			SelectedCatalogRole = selectedCatalogRole;
 			SelectedCatalogPatchId = selectedCatalogPatchId ?? string.Empty;
 			LoadedPatchId = loadedPatchId ?? string.Empty;
-			PreloadedPatchId = preloadedPatchId ?? string.Empty;
 			Bpm = bpm;
 			Parameters = parameters ?? Array.Empty<LiveParameterDefinition>();
 			Sequencers = sequencers ?? Array.Empty<LiveSequencerReadModel>();

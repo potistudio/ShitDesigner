@@ -24,7 +24,6 @@ namespace ShitDesigner.Main {
 		[SerializeField] private bool _bootOnAwake = true;
 
 		private readonly LiveParameterQueue _parameterQueue = new LiveParameterQueue();
-		private readonly LivePatchSlots _patchSlots = new LivePatchSlots();
 		private readonly LiveBpmTap _bpmTap = new LiveBpmTap();
 		private readonly LiveStepSequencer[] m_Sequencers = {
 			new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY"),
@@ -42,7 +41,6 @@ namespace ShitDesigner.Main {
 		private string[] m_OverlayPatchIds = Array.Empty<string>();
 		private string[] m_EffectPatchIds = Array.Empty<string>();
 		private ulong _tickFrameNumber;
-		private int _selectedPatchSlotIndex;
 		private LivePatchRole m_SelectedPatchRole;
 		private int m_SelectedMainPatchIndex;
 		private int m_SelectedOverlayPatchIndex;
@@ -51,7 +49,6 @@ namespace ShitDesigner.Main {
 		public ApplicationLiveHostState State { get; private set; } = ApplicationLiveHostState.Cold;
 		public LiveUiReadModel ReadModel { get; private set; }
 		public LiveParameterQueue ParameterQueue => _parameterQueue;
-		public LivePatchSlots PatchSlots => _patchSlots;
 		public string LastDiagnostic { get; private set; } = string.Empty;
 		public IReadOnlyList<LiveStepSequencer> Sequencers => m_Sequencers;
 
@@ -84,7 +81,7 @@ namespace ShitDesigner.Main {
 				m_SelectedOverlayPatchIndex = 0;
 				m_SelectedEffectPatchIndex = 0;
 				UpdateOverlayComposition(_runtime.BpmFrame.AdjustedTotalBeats);
-				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, slotIndex => { LaunchPatchSlot(slotIndex); }, slotIndex => { ClearPatchSlot(slotIndex); }, MoveCatalogSelection, () => { AssignSelectedCatalogPatch(); }, TapBpm);
+				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, MoveCatalogSelection, () => { LaunchSelectedCatalogPatch(); }, TapBpm);
 				_midiInputManager.InitializeForHostPolling();
 				_shutdown.Add(_midiInputManager.Shutdown);
 				_midi = new LiveMidiInput(_midiInputManager, _parameterQueue, _runtime.Patches);
@@ -123,7 +120,6 @@ namespace ShitDesigner.Main {
 				_runtime.Evaluate(deltaSeconds);
 				_runtime.SceneUpdate(deltaSeconds);
 				var frames = _runtime.Render();
-				_runtime.RenderSlotPreviews(_patchSlots.ReadModel, deltaSeconds);
 				_externalDisplay.Present(frames);
 				LastDiagnostic = string.Empty;
 				PublishReadModel(string.Empty);
@@ -138,40 +134,6 @@ namespace ShitDesigner.Main {
 			if (State == ApplicationLiveHostState.Cold || State == ApplicationLiveHostState.Offline) return;
 			ShutdownStartedComponents();
 			State = ApplicationLiveHostState.Offline;
-		}
-
-		public LivePatchSlotOperationResult AssignPatchToSelectedSlot(string patchId) {
-			if (!IsKnownPatch(patchId)) return LivePatchSlotOperationResult.Reject("The requested patch does not exist.");
-			SelectCatalogPatch(patchId);
-			return _patchSlots.Assign(_selectedPatchSlotIndex, patchId);
-		}
-
-		public LivePatchSlotOperationResult SelectPatchSlot(int slotIndex) {
-			if (!LivePatchSlots.IsValidSlotIndex(slotIndex)) return LivePatchSlotOperationResult.Reject("The patch slot does not exist.");
-			_selectedPatchSlotIndex = slotIndex;
-			return LivePatchSlotOperationResult.Accept(slotIndex);
-		}
-
-		public LivePatchSlotOperationResult ClearSelectedPatchSlot() {
-			return _patchSlots.Clear(_selectedPatchSlotIndex);
-		}
-
-		public LivePatchSlotOperationResult ClearPatchSlot(int slotIndex) {
-			var selection = SelectPatchSlot(slotIndex);
-			return selection.Accepted ? ClearSelectedPatchSlot() : selection;
-		}
-
-		public LiveParameterEnqueueResult LaunchSelectedPatchSlot() {
-			if (!_patchSlots.TryGetPatchId(_selectedPatchSlotIndex, out var patchId))
-				return LiveParameterEnqueueResult.Reject("The selected patch slot is empty.");
-			return _runtime != null && _runtime.PreloadedPatchId == patchId
-				? _parameterQueue.EnqueueLoadPatch(patchId)
-				: _parameterQueue.EnqueueLaunchPatch(patchId);
-		}
-
-		public LiveParameterEnqueueResult LaunchPatchSlot(int slotIndex) {
-			var selection = SelectPatchSlot(slotIndex);
-			return selection.Accepted ? LaunchSelectedPatchSlot() : LiveParameterEnqueueResult.Reject(selection.RejectionReason);
 		}
 
 		public void MoveCatalogSelection(int horizontalDirection, int verticalDirection) {
@@ -191,11 +153,17 @@ namespace ShitDesigner.Main {
 			m_SelectedPatchRole = role;
 		}
 
-		public LivePatchSlotOperationResult AssignSelectedCatalogPatch() {
+		public LiveParameterEnqueueResult LaunchSelectedCatalogPatch() {
 			var patchId = SelectedCatalogPatchId;
 			return string.IsNullOrEmpty(patchId)
-				? LivePatchSlotOperationResult.Reject("The patch catalog is empty.")
-				: AssignPatchToSelectedSlot(patchId);
+				? LiveParameterEnqueueResult.Reject("The patch catalog is empty.")
+				: _parameterQueue.EnqueueLaunchPatch(patchId);
+		}
+
+		public LiveParameterEnqueueResult LaunchCatalogPatch(string patchId) {
+			if (!IsKnownPatch(patchId)) return LiveParameterEnqueueResult.Reject("The requested patch does not exist.");
+			SelectCatalogPatch(patchId);
+			return _parameterQueue.EnqueueLaunchPatch(patchId);
 		}
 
 		public void TapBpm(double time) {
@@ -244,8 +212,7 @@ namespace ShitDesigner.Main {
 		}
 
 		private void PublishReadModel(string diagnostic) {
-			ReadModel = new LiveUiReadModel(_tickFrameNumber, _patches, _patchSlots.ReadModel, _runtime?.SlotPreviewTextures, _selectedPatchSlotIndex, m_SelectedPatchRole, SelectedCatalogPatchId,
-				_runtime?.LoadedPatchId, _runtime?.PreloadedPatchId,
+			ReadModel = new LiveUiReadModel(_tickFrameNumber, _patches, m_SelectedPatchRole, SelectedCatalogPatchId, _runtime?.LoadedPatchId,
 				_runtime?.BpmDefinition ?? default, _runtime?.GetLoadedPatchParameterDefinitions(), CreateSequencerReadModels(), _runtime?.CurrentFrames ?? default(LiveProgramFrames), _externalDisplay,
 				_capabilityMonitor != null ? _capabilityMonitor.Snapshot : default(LiveCapabilitySnapshot), diagnostic,
 				_requestResults.ToArray());

@@ -51,6 +51,7 @@ namespace ShitDesigner.Main {
 		public string DisplayName { get; }
 		public int CurrentStep { get; }
 		public int SelectedLaneIndex { get; }
+		public int LaneCount => m_LanePatchIds?.Length ?? 0;
 		public IReadOnlyList<int> ActiveLaneMasks => m_ActiveLaneMasks ?? Array.Empty<int>();
 		public IReadOnlyList<string> LanePatchIds => m_LanePatchIds ?? Array.Empty<string>();
 
@@ -66,12 +67,12 @@ namespace ShitDesigner.Main {
 		}
 
 		public bool IsActive(int laneIndex, int stepIndex) {
-			if (laneIndex < 0 || laneIndex >= LiveStepSequencer.LaneCount || stepIndex < 0 || stepIndex >= LiveStepSequencer.StepCount) return false;
+			if (laneIndex < 0 || laneIndex >= LaneCount || stepIndex < 0 || stepIndex >= LiveStepSequencer.StepCount) return false;
 			return ActiveLaneMasks.Count > stepIndex && (ActiveLaneMasks[stepIndex] & (1 << laneIndex)) != 0;
 		}
 
 		public LiveSequencerCellMode GetCellMode(int laneIndex, int stepIndex) {
-			if (laneIndex < 0 || laneIndex >= LiveStepSequencer.LaneCount || stepIndex < 0 || stepIndex >= LiveStepSequencer.StepCount)
+			if (laneIndex < 0 || laneIndex >= LaneCount || stepIndex < 0 || stepIndex >= LiveStepSequencer.StepCount)
 				return LiveSequencerCellMode.Off;
 			var index = laneIndex * LiveStepSequencer.StepCount + stepIndex;
 			return m_CellModes != null && index < m_CellModes.Length ? m_CellModes[index] : LiveSequencerCellMode.Off;
@@ -79,7 +80,7 @@ namespace ShitDesigner.Main {
 
 		public IReadOnlyList<LiveSequencerLayer> GetActiveLayers() {
 			var layers = new List<LiveSequencerLayer>();
-			for (var laneIndex = 0; laneIndex < LiveStepSequencer.LaneCount; laneIndex++) {
+			for (var laneIndex = 0; laneIndex < LaneCount; laneIndex++) {
 				var mode = GetCellMode(laneIndex, CurrentStep);
 				var patchId = LanePatchIds.Count > laneIndex ? LanePatchIds[laneIndex] : string.Empty;
 				if (mode == LiveSequencerCellMode.Off || string.IsNullOrEmpty(patchId)) continue;
@@ -91,21 +92,26 @@ namespace ShitDesigner.Main {
 
 	/// <summary>Stores an independent compositing mode for every lane and step in an eight-beat sequence.</summary>
 	public sealed class LiveStepSequencer {
-		public const int LaneCount = 4;
+		public const int OverlayLaneCount = 8;
+		public const int EffectLaneCount = 4;
 		public const int StepCount = 8;
 
 		private readonly int[] m_ActiveLaneMasks = new int[StepCount];
-		private readonly string[] m_LanePatchIds = new string[LaneCount];
-		private readonly LiveSequencerCellMode[] m_CellModes = new LiveSequencerCellMode[LaneCount * StepCount];
+		private readonly string[] m_LanePatchIds;
+		private readonly LiveSequencerCellMode[] m_CellModes;
 
 		public LiveSequencerKind Kind { get; }
 		public string DisplayName { get; }
+		public int LaneCount { get; }
 		public int SelectedLaneIndex { get; private set; } = -1;
 
 		public LiveStepSequencer(LiveSequencerKind kind, string displayName) {
 			if (string.IsNullOrWhiteSpace(displayName)) throw new ArgumentException("A sequencer display name is required.", nameof(displayName));
 			Kind = kind;
 			DisplayName = displayName;
+			LaneCount = kind == LiveSequencerKind.Overlay ? OverlayLaneCount : EffectLaneCount;
+			m_LanePatchIds = new string[LaneCount];
+			m_CellModes = new LiveSequencerCellMode[LaneCount * StepCount];
 		}
 
 		public LiveSequencerOperationResult CycleCellMode(int laneIndex, int stepIndex) {

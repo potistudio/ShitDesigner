@@ -38,10 +38,10 @@ namespace ShitDesigner.Main.Tests {
 			var nextPatch = host.ReadModel.Patches.First(patch => patch.Id != loadedPatchId);
 			var preload = host.ParameterQueue.EnqueuePreloadPatch(nextPatch.Id);
 			Assert.That(preload.Accepted, Is.True);
-			for (var frame = 0; frame < 60 && host.ReadModel.PreloadedPatchId != nextPatch.Id; frame++) yield return null;
+			for (var frame = 0; frame < 60 && runtime.PreloadedPatchId != nextPatch.Id; frame++) yield return null;
 
 			Assert.That(host.ReadModel.LoadedPatchId, Is.EqualTo(loadedPatchId));
-			Assert.That(host.ReadModel.PreloadedPatchId, Is.EqualTo(nextPatch.Id));
+			Assert.That(runtime.PreloadedPatchId, Is.EqualTo(nextPatch.Id));
 			Assert.That(host.ReadModel.RequestResults.Any(result => result.SequenceNumber == preload.SequenceNumber && result.Applied), Is.True);
 			var load = host.ParameterQueue.EnqueueLoadPatch(nextPatch.Id);
 			Assert.That(load.Accepted, Is.True);
@@ -99,7 +99,10 @@ namespace ShitDesigner.Main.Tests {
 			host.MoveCatalogSelection(0, -1);
 			yield return null;
 			var sequencerControls = ui.Q<VisualElement>("sequencer-controls");
-			Assert.That(sequencerControls.Query<Button>(className: "sequencer-step").ToList(), Has.Count.EqualTo(2 * LiveStepSequencer.LaneCount * LiveStepSequencer.StepCount));
+			Assert.That(sequencerControls.Query<Button>(className: "sequencer-step").ToList(),
+				Has.Count.EqualTo((LiveStepSequencer.OverlayLaneCount + LiveStepSequencer.EffectLaneCount) * LiveStepSequencer.StepCount));
+			Assert.That(ui.Q<Button>("sequencer-overlay-lane-label-7"), Is.Not.Null);
+			Assert.That(ui.Q<VisualElement>("patch-slot-controls"), Is.Null);
 			var effectCell = ui.Q<Button>("sequencer-effect-lane-2-step-4");
 			using (var click = ClickEvent.GetPooled()) effectCell.SendEvent(click);
 			Assert.That(host.CycleSequencerCellMode(LiveSequencerKind.Effect, 1, 4).Accepted, Is.True);
@@ -117,13 +120,8 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(host.AssignSelectedSequencerPatch(rememberedOverlayPatch.Id).Accepted, Is.True);
 			yield return null;
 			Assert.That(ui.Q<Button>("sequencer-overlay-lane-label-0").ClassListContains("is-assigned"), Is.True);
-			var selectedPatchSlotIndex = host.ReadModel.SelectedPatchSlotIndex;
-			Assert.That(host.AssignPatchToSelectedSlot(rememberedMainPatch.Id).Accepted, Is.True);
-			Assert.That(host.AssignPatchToSelectedSlot(rememberedOverlayPatch.Id).Accepted, Is.True);
 			host.MoveCatalogSelection(-1, 0);
 			yield return null;
-			Assert.That(host.ReadModel.SelectedPatchSlotIndex, Is.EqualTo(selectedPatchSlotIndex));
-			Assert.That(host.ReadModel.PatchSlots[selectedPatchSlotIndex].PatchId, Is.EqualTo(rememberedOverlayPatch.Id));
 			Assert.That(host.ReadModel.SelectedCatalogRole, Is.EqualTo(LivePatchRole.Main));
 			Assert.That(host.ReadModel.SelectedCatalogPatchId, Is.EqualTo(rememberedMainPatch.Id));
 			Assert.That(ui.Q<Button>("main-tab").ClassListContains("is-selected"), Is.True);

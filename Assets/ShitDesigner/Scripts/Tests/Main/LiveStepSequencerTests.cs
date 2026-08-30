@@ -50,9 +50,20 @@ namespace ShitDesigner.Main.Tests {
 		public void InvalidLaneAndStepAreRejectedWithoutChangingState() {
 			var sequencer = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
 
-			Assert.That(sequencer.CycleCellMode(LiveStepSequencer.LaneCount, 0).Accepted, Is.False);
+			Assert.That(sequencer.CycleCellMode(sequencer.LaneCount, 0).Accepted, Is.False);
 			Assert.That(sequencer.CycleCellMode(0, LiveStepSequencer.StepCount).Accepted, Is.False);
 			Assert.That(sequencer.CreateReadModel(0d).ActiveLaneMasks, Is.All.Zero);
+		}
+
+		[Test]
+		public void OverlayHasEightLanesAndEffectKeepsFour() {
+			var overlay = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
+			var effect = new LiveStepSequencer(LiveSequencerKind.Effect, "EFFECT");
+
+			Assert.That(overlay.LaneCount, Is.EqualTo(8));
+			Assert.That(effect.LaneCount, Is.EqualTo(4));
+			Assert.That(overlay.SelectLane(7).Accepted, Is.True);
+			Assert.That(effect.SelectLane(7).Accepted, Is.False);
 		}
 
 		[Test]
