@@ -39,6 +39,7 @@ namespace ShitDesigner.Main {
 		private Coroutine m_ReloadRoutine;
 		private string _renderedPatchId = string.Empty;
 		private string m_CenteredPatchId = string.Empty;
+		private string m_PendingCenteredPatchId = string.Empty;
 		private int m_RenderedPatchCount = -1;
 		private bool _initialized;
 		private bool _updating;
@@ -166,6 +167,7 @@ namespace ShitDesigner.Main {
 			m_Root = null;
 			_renderedPatchId = string.Empty;
 			m_CenteredPatchId = string.Empty;
+			m_PendingCenteredPatchId = string.Empty;
 			m_RenderedPatchCount = -1;
 			Array.Clear(m_PatchSlotPreviewTextures, 0, m_PatchSlotPreviewTextures.Length);
 		}
@@ -461,11 +463,9 @@ namespace ShitDesigner.Main {
 				button.EnableInClassList("is-selected", patch.Id == model.SelectedCatalogPatchId);
 				button.EnableInClassList("is-assignment-option", _host.IsSelectingSequencerLane && patch.Role == LivePatchRole.Overlay);
 			}
-			var selectedPatchId = string.IsNullOrEmpty(model.SelectedCatalogPatchId) ? model.LoadedPatchId : model.SelectedCatalogPatchId;
-			if (m_CenteredPatchId != selectedPatchId) {
-				m_CenteredPatchId = selectedPatchId;
+			var selectedPatchId = model.SelectedCatalogPatchId;
+			if (m_CenteredPatchId != selectedPatchId && m_PendingCenteredPatchId != selectedPatchId)
 				CenterPatchSelection(selectedPatchId);
-			}
 		}
 
 		private void RebuildPatchControls(LiveUiReadModel model) {
@@ -475,6 +475,10 @@ namespace ShitDesigner.Main {
 			AddPatchButtons(m_MainPatchControls, model.Patches.Where(patch => patch.Role == LivePatchRole.Main));
 			AddPatchButtons(m_OverlayPatchControls, model.Patches.Where(patch => patch.Role == LivePatchRole.Overlay));
 			AddPatchButtons(m_EffectPatchControls, model.Patches.Where(patch => patch.Role == LivePatchRole.Effect));
+			m_MainPatchControls.scrollOffset = Vector2.zero;
+			m_OverlayPatchControls.scrollOffset = Vector2.zero;
+			m_EffectPatchControls.scrollOffset = Vector2.zero;
+			m_PendingCenteredPatchId = string.Empty;
 			m_RenderedPatchCount = model.Patches.Count;
 		}
 
@@ -551,17 +555,27 @@ namespace ShitDesigner.Main {
 
 		private void CenterPatchSelection(string patchId) {
 			if (string.IsNullOrWhiteSpace(patchId)) return;
+			m_PendingCenteredPatchId = patchId;
 			m_PatchControls.schedule.Execute(() => {
+				if (m_PendingCenteredPatchId != patchId) return;
 				var selected = m_PatchControls.Q<Button>("patch-" + patchId);
-				if (selected == null) return;
+				if (selected == null) {
+					m_PendingCenteredPatchId = string.Empty;
+					return;
+				}
 				var controls = GetPatchControls(selected);
 				var viewportHeight = controls.contentViewport.layout.height;
-				if (viewportHeight <= 0f) return;
+				if (float.IsNaN(viewportHeight) || viewportHeight <= 0f) {
+					m_PendingCenteredPatchId = string.Empty;
+					return;
+				}
 				var selectedCenter = selected.ChangeCoordinatesTo(controls.contentContainer,
 					new Vector2(selected.layout.width * 0.5f, selected.layout.height * 0.5f));
 				var offset = selectedCenter.y - viewportHeight * 0.5f;
 				var maximum = Mathf.Max(0f, controls.verticalScroller.highValue);
 				controls.scrollOffset = new Vector2(controls.scrollOffset.x, Mathf.Clamp(offset, 0f, maximum));
+				m_CenteredPatchId = patchId;
+				m_PendingCenteredPatchId = string.Empty;
 			}).StartingIn(0);
 		}
 

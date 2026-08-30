@@ -90,6 +90,13 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(mainPatchControls.Query<Button>().ToList().Count, Is.EqualTo(host.ReadModel.Patches.Count(patch => patch.Role == LivePatchRole.Main)));
 			Assert.That(overlayPatchControls.Query<Button>().ToList().Count, Is.EqualTo(host.ReadModel.Patches.Count(patch => patch.Role == LivePatchRole.Overlay)));
 			Assert.That(effectPatchControls.Query<Button>().ToList().Count, Is.EqualTo(host.ReadModel.Patches.Count(patch => patch.Role == LivePatchRole.Effect)));
+			var firstMainButton = mainPatchControls.Query<Button>().First();
+			var initialMainListTop = firstMainButton.worldBound.yMin;
+			host.MoveCatalogSelection(0, 1);
+			yield return null;
+			Assert.That(firstMainButton.worldBound.yMin, Is.EqualTo(initialMainListTop).Within(0.5f));
+			host.MoveCatalogSelection(0, -1);
+			yield return null;
 			var sequencerControls = ui.Q<VisualElement>("sequencer-controls");
 			Assert.That(sequencerControls.Query<Button>(className: "sequencer-step").ToList(), Has.Count.EqualTo(2 * LiveStepSequencer.LaneCount * LiveStepSequencer.StepCount));
 			var effectCell = ui.Q<Button>("sequencer-effect-lane-2-step-4");
