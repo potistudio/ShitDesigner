@@ -30,8 +30,8 @@
                             <ui:Label text="OVERLAY" class="patch-role-label"/>
                         </ui:VisualElement>
                         <ui:VisualElement class="patch-scroll-rows">
-                            <ui:ScrollView name="main-patch-controls" class="patch-row-controls" mode="Horizontal" horizontal-scroller-visibility="Auto" vertical-scroller-visibility="Hidden"/>
-                            <ui:ScrollView name="overlay-patch-controls" class="patch-row-controls" mode="Horizontal" horizontal-scroller-visibility="Auto" vertical-scroller-visibility="Hidden"/>
+                            <ui:ScrollView name="main-patch-controls" class="patch-row-controls" mode="Horizontal" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden"/>
+                            <ui:ScrollView name="overlay-patch-controls" class="patch-row-controls" mode="Horizontal" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden"/>
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:VisualElement>
