@@ -3,11 +3,12 @@ using CSharpFunctionalExtensions;
 using ShitDesigner.Core;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 namespace ShitDesigner.Scene {
 	/// <summary>Default Unity render source for an isolated Scene node. The
 	/// camera target and RenderTexture.active are borrowed only for the
-	/// built-in synchronous Camera.Render path. URP StandardRequest owns its
+	/// built-in synchronous Camera.Render path. URP SingleCameraRequest owns its
 	/// destination and leaves the camera state untouched.</summary>
 	public sealed class UnityCameraRenderSource : ISceneRenderSource {
 		public Result<SceneRenderResult, Diagnostic> Render(SceneRenderRequest request) {
@@ -37,9 +38,9 @@ namespace ShitDesigner.Scene {
 					request.Camera.Render();
 				}
 				else {
-					var renderRequest = new RenderPipeline.StandardRequest { destination = target };
+					var renderRequest = new UniversalRenderPipeline.SingleCameraRequest { destination = target };
 					if (!RenderPipeline.SupportsRenderRequest(request.Camera, renderRequest))
-						return Failure("scene.render.request_unsupported", "The active render pipeline does not support StandardRequest for this Scene camera.");
+						return Failure("scene.render.request_unsupported", "The active render pipeline does not support SingleCameraRequest for this Scene camera.");
 					RenderPipeline.SubmitRenderRequest(request.Camera, renderRequest);
 				}
 				return Result.Success<SceneRenderResult, Diagnostic>(SceneRenderResult.Success());
@@ -48,7 +49,7 @@ namespace ShitDesigner.Scene {
 				return Result.Failure<SceneRenderResult, Diagnostic>(new Diagnostic(new DiagnosticCode("scene.render.exception"), Severity.Error, exception.Message, nodeId: request.NodeId, generationId: request.GenerationId, module: "scene", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 			finally {
-				// URP's StandardRequest owns its destination and temporarily
+				// URP's SingleCameraRequest owns its destination and temporarily
 				// borrows the camera target internally.  Do not pre-populate
 				// targetTexture or RenderTexture.active for the SRP path:
 				// doing so makes the camera carry an unrelated target into

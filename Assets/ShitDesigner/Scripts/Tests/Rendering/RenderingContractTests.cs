@@ -213,7 +213,7 @@ namespace ShitDesigner.Rendering.Tests {
 						Assert.That(prepared.IsSuccess, Is.True, prepared.IsFailure ? prepared.Error.Message : string.Empty);
 						var texture = prepared.Value.NativeSurface as RenderTexture;
 						Assert.That(texture, Is.Not.Null);
-						Assert.That(texture.descriptor.depthStencilFormat, Is.EqualTo(GraphicsFormat.D32_SFloat), sceneTypeId + " must provide URP StandardRequest with a depth-attached destination.");
+						Assert.That(texture.descriptor.depthStencilFormat, Is.EqualTo(GraphicsFormat.D32_SFloat), sceneTypeId + " must provide URP SingleCameraRequest with a depth-attached destination.");
 
 						var entry = pool.CaptureOwnershipSnapshot().Entries.Single(x => x.LeaseId.Value == prepared.Value.LeaseId);
 						Assert.That(entry.Descriptor.DepthStencilFormat, Is.EqualTo(GraphicsFormat.D32_SFloat));

@@ -721,9 +721,9 @@ namespace ShitDesigner.Bootstrap.Tests {
 					Assert.That(rendered3d.IsSuccess, Is.True, rendered3d.IsFailure ? rendered3d.Error.Message : string.Empty);
 					Assert.That(rendered2d.IsSuccess, Is.True, rendered2d.IsFailure ? rendered2d.Error.Message : string.Empty);
 					Assert.That(node3d.Value.Camera.targetTexture, Is.Null,
-						"SRP StandardRequest must own its destination without leaving a camera target override.");
+						"SRP SingleCameraRequest must own its destination without leaving a camera target override.");
 					Assert.That(node2d.Value.Camera.targetTexture, Is.Null,
-						"SRP StandardRequest must own its destination without leaving a camera target override.");
+						"SRP SingleCameraRequest must own its destination without leaving a camera target override.");
 					Assert.That(node3d.Value.Camera.overrideSceneCullingMask, Is.EqualTo(ulong.MaxValue),
 						"The isolated 3D camera must include its runtime additive Scene in scene culling.");
 					Assert.That(node2d.Value.Camera.overrideSceneCullingMask, Is.EqualTo(ulong.MaxValue),
