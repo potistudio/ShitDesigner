@@ -17,10 +17,10 @@ namespace ShitDesigner.Nodes.Editor {
 	/// failure; none of these checks are test skips.</summary>
 	public sealed class NodeTypeCatalogBuildValidator : IPreprocessBuildWithReport {
 		public int callbackOrder => 0;
-		private const string AssetPath = "Assets/ShitDesigner/Scripts/Nodes/NodeTypeCatalog.asset";
-		private const string GeneratorShaderPath = "Assets/ShitDesigner/Scripts/Media/Shaders/BuiltinGenerator.shader";
-		private const string EffectShaderPath = "Assets/ShitDesigner/Scripts/Media/Shaders/BuiltinEffect.shader";
-		private const string BlendShaderPath = "Assets/ShitDesigner/Scripts/Media/Shaders/BuiltinBlend2.shader";
+		private const string AssetPath = "Assets/ShitDesigner/Scripts/Modules/Nodes/NodeTypeCatalog.asset";
+		private const string GeneratorShaderPath = "Assets/ShitDesigner/Scripts/Modules/Media/Shaders/BuiltinGenerator.shader";
+		private const string EffectShaderPath = "Assets/ShitDesigner/Scripts/Modules/Media/Shaders/BuiltinEffect.shader";
+		private const string BlendShaderPath = "Assets/ShitDesigner/Scripts/Modules/Media/Shaders/BuiltinBlend2.shader";
 		private const string WindowsNativePath = "Assets/Plugins/x86_64/ShitDesignerHapNative/shitdesigner_hap.dll";
 		private const string MacNativePath = "Assets/Plugins/macOS/ShitDesignerHapNative/shitdesigner_hap.dylib";
 

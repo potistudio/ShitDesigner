@@ -52,7 +52,7 @@ $environment = Read-Source 'Tools/UnityProcessEnvironment.ps1'
 $cmd = Read-Source 'Tools/RunStandaloneHarness.cmd'
 $build = Read-Source 'Assets/ShitDesigner/Scripts/Editor/StandaloneHarnessBuild.cs'
 $bootstrapAuthoring = Read-Source 'Assets/ShitDesigner/Scripts/Editor/BootstrapSceneAuthoring.cs'
-$presentationTheme = Read-Source 'Assets/ShitDesigner/Scripts/Presentation/Resources/PresentationTheme.uss'
+$presentationTheme = Read-Source 'Assets/ShitDesigner/Scripts/Modules/Presentation/Resources/PresentationTheme.uss'
 $projectSettings = Read-Source 'ProjectSettings/ProjectSettings.asset'
 $harnessAsmDef = (Read-Source 'Assets/ShitDesigner/Scripts/TestHarness/ShitDesigner.TestHarness.asmdef' | ConvertFrom-Json)
 $harnessTestsAsmDef = (Read-Source 'Assets/ShitDesigner/Scripts/TestHarness/Tests/ShitDesigner.TestHarness.Tests.EditMode.asmdef' | ConvertFrom-Json)
@@ -63,8 +63,8 @@ $acceptanceHarnessSource = Read-Source 'Assets/ShitDesigner/Scripts/TestHarness/
 $acceptanceContractsSource = Read-Source 'Assets/ShitDesigner/Scripts/TestHarness/StandaloneAcceptanceContracts.cs'
 $harnessArtifactSource = Read-Source 'Assets/ShitDesigner/Scripts/TestHarness/HarnessContracts.cs'
 $performanceHarnessSource = Read-Source 'Assets/ShitDesigner/Scripts/TestHarness/StandalonePerformanceHarness.cs'
-$productionCompositionSource = Read-Source 'Assets/ShitDesigner/Scripts/Bootstrap/ProductionCompositionRoot.cs'
-$persistenceSource = Read-Source 'Assets/ShitDesigner/Scripts/Persistence/ProjectPersistence.cs'
+$productionCompositionSource = Read-Source 'Assets/ShitDesigner/Scripts/Bootstrap/CompositionRoot.cs'
+$persistenceSource = Read-Source 'Assets/ShitDesigner/Scripts/Modules/Persistence/ProjectPersistence.cs'
 
 Assert-Contract ($process -match '\.WaitForExit\(\)') 'Runner must wait for the root Unity/Player process.'
 Assert-Contract ($runner -notmatch '(?im)^\s*Start-Process[^\r\n]*-Wait') 'Runner must not delegate waiting to Start-Process -Wait.'
@@ -104,7 +104,7 @@ Assert-Contract ($artifactValidator -match 'projectRoot' -and $artifactValidator
 Assert-Contract ($runner -match '\$playerLogPath' -and $runner -match '-logFile.*playerLogPath' -and $runner -match 'ApplicationLogPath') 'Player application logs must be written into and validated from the run directory.'
 Assert-Contract ($build -match 'BootstrapSceneAuthoring\.Ensure\(\)' -and $bootstrapAuthoring -match 'EnsurePresentationFonts' -and $bootstrapAuthoring -match 'NotoSansJP\.ttf' -and $bootstrapAuthoring -match 'fallbacks\s*==\s*null' -and $bootstrapAuthoring -match 'fallbackFontAssetTable\s*=\s*fallbacks' -and $bootstrapAuthoring -match 'new\s+List<FontAsset>' -and $bootstrapAuthoring -match 'PersistFontSubassets' -and $bootstrapAuthoring -match 'AssetDatabase\.AddObjectToAsset\(texture,\s*asset\)' -and $bootstrapAuthoring -match 'AssetDatabase\.AddObjectToAsset\(asset\.material,\s*asset\)') 'Harness builds must generate the bundled Noto TextCore FontAssets, including initialized fallback tables and persisted atlas/material subassets, before copying the production scene.'
 Assert-Contract ($presentationTheme -match 'resource\("NotoSans"\)' -and $presentationTheme -match 'resource\("NotoSansMono"\)') 'The live Resources theme must use the bundled Noto Sans and Noto Sans Mono TextCore FontAssets.'
-Assert-Contract ((Test-Path -LiteralPath (Join-Path $root 'Assets/ShitDesigner/Scripts/Presentation/Resources/Fonts/NotoSans.ttf')) -and (Test-Path -LiteralPath (Join-Path $root 'Assets/ShitDesigner/Scripts/Presentation/Resources/Fonts/NotoSansMono.ttf')) -and (Test-Path -LiteralPath (Join-Path $root 'Assets/ShitDesigner/Scripts/Presentation/Resources/Fonts/NotoSansJP.ttf'))) 'The required Noto source fonts must be bundled in Resources.'
+Assert-Contract ((Test-Path -LiteralPath (Join-Path $root 'Assets/ShitDesigner/Scripts/Modules/Presentation/Resources/Fonts/NotoSans.ttf')) -and (Test-Path -LiteralPath (Join-Path $root 'Assets/ShitDesigner/Scripts/Modules/Presentation/Resources/Fonts/NotoSansMono.ttf')) -and (Test-Path -LiteralPath (Join-Path $root 'Assets/ShitDesigner/Scripts/Modules/Presentation/Resources/Fonts/NotoSansJP.ttf'))) 'The required Noto source fonts must be bundled in Resources.'
 Assert-Contract (Test-Path -LiteralPath (Join-Path $root 'ThirdParty/NotoFonts-OFL-1.1.txt')) 'The bundled Noto source fonts must retain their SIL Open Font License 1.1 text.'
 
 Assert-Contract ($acceptanceRunner -match 'Invoke-PlayerStage' -and $acceptanceRunner -match "'Initial'" -and $acceptanceRunner -match "'Reopen'" -and $acceptanceRunner -match "'Recovery'") 'Acceptance runner must execute all three stages.'

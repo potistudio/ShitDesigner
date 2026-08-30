@@ -36,7 +36,7 @@ The C29 soak used the deterministic seed `0xC290438`, random manifest graphs and
 | P0 references | 162 reference PNGs plus `contact-sheet.png` |
 | VJ presets | 10 |
 
-All ledger family variant numbers are contiguous from zero with no gaps or duplicate values. Audio and Raymarch remain `formalPriority: unclassified`; Utility has exactly 12 `phase1Support` entries. The old paths `Assets/ShitDesigner/Shaders/VJ`, `Assets/ShitDesigner/Media/Shaders`, and `Assets/ShitDesigner/Scripts/Rendering/VJ/Shaders` are absent. The temporary `SHITDESIGNER_TEST_HARNESS` define is absent from `ProjectSettings/ProjectSettings.asset` after acceptance.
+All ledger family variant numbers are contiguous from zero with no gaps or duplicate values. Audio and Raymarch remain `formalPriority: unclassified`; Utility has exactly 12 `phase1Support` entries. The old paths `Assets/ShitDesigner/Shaders/VJ`, `Assets/ShitDesigner/Media/Shaders`, and `Assets/ShitDesigner/Scripts/Modules/Rendering/VJ/Shaders` are absent. The temporary `SHITDESIGNER_TEST_HARNESS` define is absent from `ProjectSettings/ProjectSettings.asset` after acceptance.
 
 ## Evidence paths
 
@@ -60,7 +60,7 @@ The repository-relative test and implementation evidence is in:
 
 - `Assets/ShitDesigner/Scripts/Tests/Rendering/VJ/VJAllVariantRenderProbeTests.cs`
 - `Assets/ShitDesigner/Scripts/Tests/Rendering/VJ/C29RandomGraphSoakTests.cs`
-- `Assets/ShitDesigner/Scripts/Rendering/ShaderPassGraphRuntimeNode.cs`
+- `Assets/ShitDesigner/Scripts/Modules/Rendering/ShaderPassGraphRuntimeNode.cs`
 - `Assets/ShitDesigner/Shaders/Manifests/spatial-variants.json`
 - `Assets/ShitDesigner/Shaders/Manifests/compositing-temporal-variants.json`
 - `Assets/ShitDesigner/Shaders/Manifests/audio-raymarch-utility-variants.json`

@@ -262,7 +262,7 @@ namespace ShitDesigner.Editor {
 
 	[CustomPropertyDrawer(typeof(PatchGraphNode))]
 	public sealed class PatchGraphNodeDrawer : PropertyDrawer {
-		private const string ManifestAssetPath = "Assets/ShitDesigner/Scripts/Nodes/ShaderNodeManifest.asset";
+		private const string ManifestAssetPath = "Assets/ShitDesigner/Scripts/Modules/Nodes/ShaderNodeManifest.asset";
 		private const string VideoPlayerTypeId = "shitdesigner.video.player";
 		private const float LineSpacing = 2f;
 		private static ShaderNodeManifestAsset _manifest;

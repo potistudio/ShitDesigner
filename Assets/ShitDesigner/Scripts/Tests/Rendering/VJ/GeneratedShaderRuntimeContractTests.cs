@@ -12,8 +12,8 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 	/// three authoritative ledgers and probes the actual family Material
 	/// properties used by the runtime uniform bridge.</summary>
 	public sealed class GeneratedShaderRuntimeContractTests {
-		private const string ManifestPath = "Assets/ShitDesigner/Scripts/Nodes/ShaderNodeManifest.asset";
-		private const string CatalogPath = "Assets/ShitDesigner/Scripts/Nodes/NodeTypeCatalog.asset";
+		private const string ManifestPath = "Assets/ShitDesigner/Scripts/Modules/Nodes/ShaderNodeManifest.asset";
+		private const string CatalogPath = "Assets/ShitDesigner/Scripts/Modules/Nodes/NodeTypeCatalog.asset";
 
 		[Test]
 		public void GeneratedManifestAsset_ContainsAll438LedgerEntriesAndDirectShaders() {

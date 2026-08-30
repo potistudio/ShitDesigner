@@ -18,8 +18,8 @@ namespace ShitDesigner.Nodes.Editor {
 	/// by the neutral node schema or its family Shader.
 	/// </summary>
 	public static class ShaderNodeManifestAssetGenerator {
-		public const string ManifestAssetPath = "Assets/ShitDesigner/Scripts/Nodes/ShaderNodeManifest.asset";
-		public const string CatalogAssetPath = "Assets/ShitDesigner/Scripts/Nodes/NodeTypeCatalog.asset";
+		public const string ManifestAssetPath = "Assets/ShitDesigner/Scripts/Modules/Nodes/ShaderNodeManifest.asset";
+		public const string CatalogAssetPath = "Assets/ShitDesigner/Scripts/Modules/Nodes/NodeTypeCatalog.asset";
 		private const string SpatialLedgerPath = "Assets/ShitDesigner/Shaders/Manifests/spatial-variants.json";
 		private const string CompositingLedgerPath = "Assets/ShitDesigner/Shaders/Manifests/compositing-temporal-variants.json";
 		private const string AudioLedgerPath = "Assets/ShitDesigner/Shaders/Manifests/audio-raymarch-utility-variants.json";
@@ -45,10 +45,10 @@ namespace ShitDesigner.Nodes.Editor {
 		private static readonly IReadOnlyDictionary<string, string> LegacyShaderPaths =
 			new Dictionary<string, string>(StringComparer.Ordinal)
 			{
-				{ "builtin.shader.generator", "Assets/ShitDesigner/Scripts/Media/Shaders/BuiltinGenerator.shader" },
-				{ "builtin.shader.effect", "Assets/ShitDesigner/Scripts/Media/Shaders/BuiltinEffect.shader" },
-				{ "builtin.shader.blend2", "Assets/ShitDesigner/Scripts/Media/Shaders/BuiltinBlend2.shader" },
-				{ "builtin.shader.generator.recursive-rectangles", "Assets/ShitDesigner/Scripts/Media/Shaders/RecursiveRectangles.shader" }
+				{ "builtin.shader.generator", "Assets/ShitDesigner/Scripts/Modules/Media/Shaders/BuiltinGenerator.shader" },
+				{ "builtin.shader.effect", "Assets/ShitDesigner/Scripts/Modules/Media/Shaders/BuiltinEffect.shader" },
+				{ "builtin.shader.blend2", "Assets/ShitDesigner/Scripts/Modules/Media/Shaders/BuiltinBlend2.shader" },
+				{ "builtin.shader.generator.recursive-rectangles", "Assets/ShitDesigner/Scripts/Modules/Media/Shaders/RecursiveRectangles.shader" }
 			};
 
 		[MenuItem("ShitDesigner/VJ Shader Pack/Generate Manifest and Node Catalog")]

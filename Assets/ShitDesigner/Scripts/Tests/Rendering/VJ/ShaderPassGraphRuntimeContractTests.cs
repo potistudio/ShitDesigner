@@ -14,7 +14,7 @@ using UnityEngine.TestTools;
 
 namespace ShitDesigner.Rendering.Tests.VJ {
 	public sealed class ShaderPassGraphRuntimeContractTests {
-		private const string ManifestPath = "Assets/ShitDesigner/Scripts/Nodes/ShaderNodeManifest.asset";
+		private const string ManifestPath = "Assets/ShitDesigner/Scripts/Modules/Nodes/ShaderNodeManifest.asset";
 
 		[Test]
 		public void GeneratedGraphMatrix_DeclaresRequiredPassCountsAndHistoryPolicies() {
