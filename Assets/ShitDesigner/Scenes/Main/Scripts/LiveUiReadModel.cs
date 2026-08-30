@@ -27,6 +27,7 @@ namespace ShitDesigner.Main {
 		public LivePatchRole SelectedCatalogRole { get; }
 		public string SelectedCatalogPatchId { get; }
 		public string LoadedPatchId { get; }
+		public IReadOnlyList<RenderTexture> OverlayLanePreviews { get; }
 		public LiveParameterDefinition Bpm { get; }
 		public IReadOnlyList<LiveParameterDefinition> Parameters { get; }
 		public IReadOnlyList<LiveSequencerReadModel> Sequencers { get; }
@@ -42,7 +43,7 @@ namespace ShitDesigner.Main {
 		public IReadOnlyList<LiveParameterApplicationResult> RequestResults { get; }
 
 		public LiveUiReadModel(ulong frameNumber, IReadOnlyList<LivePatchReadModel> patches, LivePatchRole selectedCatalogRole, string selectedCatalogPatchId,
-			string loadedPatchId,
+			string loadedPatchId, IReadOnlyList<RenderTexture> overlayLanePreviews,
 			LiveParameterDefinition bpm, IReadOnlyList<LiveParameterDefinition> parameters, IReadOnlyList<LiveSequencerReadModel> sequencers, LiveProgramFrames programFrames, LiveExternalDisplayOutput output,
 			LiveCapabilitySnapshot capabilities, string diagnostic, IReadOnlyList<LiveParameterApplicationResult> requestResults) {
 			FrameNumber = frameNumber;
@@ -50,6 +51,7 @@ namespace ShitDesigner.Main {
 			SelectedCatalogRole = selectedCatalogRole;
 			SelectedCatalogPatchId = selectedCatalogPatchId ?? string.Empty;
 			LoadedPatchId = loadedPatchId ?? string.Empty;
+			OverlayLanePreviews = overlayLanePreviews ?? Array.Empty<RenderTexture>();
 			Bpm = bpm;
 			Parameters = parameters ?? Array.Empty<LiveParameterDefinition>();
 			Sequencers = sequencers ?? Array.Empty<LiveSequencerReadModel>();

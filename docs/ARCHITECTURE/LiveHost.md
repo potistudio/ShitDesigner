@@ -29,6 +29,7 @@
 
 - Overlayシーケンサーの8レーンは、割り当てられたOverlayパッチのRuntimeをレーンごとに保持する。セルがOffでも割り当てが変わるまでRuntimeを維持する。
 - Overlayパッチの評価、Scene更新および描画は現在ステップで有効な間だけ行う。Offへ移った時点でSceneを非アクティブ化し、ProgramはMain Textureへ直接戻す。
+- 割り当て済みOverlayシーンは、レーン選択ボタンに160×90の低解像度サムネイルを表示する。同じシーンを複数レーンへ割り当てた場合はプレビューRuntimeを共有し、10fpsで更新する。
 - 現在ステップで有効なレーンを0から7の順にMain Textureへ合成し、後のレーンを前面として扱う。
 - Normal、Add、Multiply、SubtractおよびDifferenceはShader Manifestの既存Blendノードを使用する。Invertは既存Invertノードの結果をNormal Alpha Overで合成する。
 - シーケンサーの拍進行はLoaded Patchを切り替えない。合成後の単一TextureをProgram映像として外部DisplayとProgram Monitorへ提示する。

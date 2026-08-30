@@ -226,6 +226,11 @@
     background-color: rgb(29, 62, 96);
 }
 
+.sequencer-lane-label.has-preview {
+    color: rgb(255, 255, 255);
+    -unity-background-scale-mode: scale-and-crop;
+}
+
 .sequencer-lane-label.is-selecting {
     color: rgb(13, 15, 18);
     background-color: rgb(255, 190, 74);

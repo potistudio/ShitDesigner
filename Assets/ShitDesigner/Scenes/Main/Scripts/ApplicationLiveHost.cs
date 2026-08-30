@@ -116,10 +116,11 @@ namespace ShitDesigner.Main {
 			try {
 				var deltaSeconds = Math.Max(0d, Time.unscaledDeltaTime);
 				ApplyRequests();
-				UpdateOverlayComposition(_runtime.BpmFrame.AdjustedTotalBeats + deltaSeconds * _runtime.BpmFrame.Bpm / 60d);
+				var overlayComposition = UpdateOverlayComposition(_runtime.BpmFrame.AdjustedTotalBeats + deltaSeconds * _runtime.BpmFrame.Bpm / 60d);
 				_runtime.Evaluate(deltaSeconds);
 				_runtime.SceneUpdate(deltaSeconds);
 				var frames = _runtime.Render();
+				_runtime.RenderOverlayPreviews(overlayComposition.LanePatchIds, deltaSeconds);
 				_externalDisplay.Present(frames);
 				LastDiagnostic = string.Empty;
 				PublishReadModel(string.Empty);
@@ -205,14 +206,15 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		private void UpdateOverlayComposition(double adjustedTotalBeats) {
+		private LiveSequencerReadModel UpdateOverlayComposition(double adjustedTotalBeats) {
 			var overlay = m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay)
 				.CreateReadModel(adjustedTotalBeats);
 			_runtime.SetOverlayComposition(overlay);
+			return overlay;
 		}
 
 		private void PublishReadModel(string diagnostic) {
-			ReadModel = new LiveUiReadModel(_tickFrameNumber, _patches, m_SelectedPatchRole, SelectedCatalogPatchId, _runtime?.LoadedPatchId,
+			ReadModel = new LiveUiReadModel(_tickFrameNumber, _patches, m_SelectedPatchRole, SelectedCatalogPatchId, _runtime?.LoadedPatchId, _runtime?.OverlayPreviewFrames,
 				_runtime?.BpmDefinition ?? default, _runtime?.GetLoadedPatchParameterDefinitions(), CreateSequencerReadModels(), _runtime?.CurrentFrames ?? default(LiveProgramFrames), _externalDisplay,
 				_capabilityMonitor != null ? _capabilityMonitor.Snapshot : default(LiveCapabilitySnapshot), diagnostic,
 				_requestResults.ToArray());
