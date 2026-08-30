@@ -81,8 +81,7 @@ namespace ShitDesigner.Main {
 				m_SelectedOverlayPatchIndex = 0;
 				m_SelectedEffectPatchIndex = 0;
 				UpdateOverlayComposition(_runtime.BpmFrame.AdjustedTotalBeats);
-				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, laneIndex => { AssignSelectedOverlayPatchToLane(laneIndex); },
-					effectIndex => { TriggerInstantEffect(effectIndex); }, MoveCatalogSelection, () => { LaunchSelectedCatalogPatch(); }, TapBpm);
+				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, laneIndex => { AssignSelectedOverlayPatchToLane(laneIndex); }, MoveCatalogSelection, () => { LaunchSelectedCatalogPatch(); }, TapBpm);
 				_midiInputManager.InitializeForHostPolling();
 				_shutdown.Add(_midiInputManager.Shutdown);
 				_midi = new LiveMidiInput(_midiInputManager, _parameterQueue, _runtime.Patches);
@@ -166,12 +165,6 @@ namespace ShitDesigner.Main {
 			if (!IsKnownPatch(patchId)) return LiveParameterEnqueueResult.Reject("The requested patch does not exist.");
 			SelectCatalogPatch(patchId);
 			return _parameterQueue.EnqueueLaunchPatch(patchId);
-		}
-
-		public LiveParameterEnqueueResult TriggerInstantEffect(int effectIndex) {
-			if (effectIndex < 0 || effectIndex >= m_EffectPatchIds.Length)
-				return LiveParameterEnqueueResult.Reject("The requested instant effect does not exist.");
-			return _parameterQueue.EnqueueLaunchPatch(m_EffectPatchIds[effectIndex]);
 		}
 
 		public void TapBpm(double time) {

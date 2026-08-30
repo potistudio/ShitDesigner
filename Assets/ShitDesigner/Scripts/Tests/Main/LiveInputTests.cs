@@ -20,7 +20,7 @@ namespace ShitDesigner.Main.Tests {
 				keyboard = InputSystem.AddDevice<Keyboard>();
 				keyboard.MakeCurrent();
 				var queue = new LiveParameterQueue();
-				var input = new LiveKeyboardInput(queue, new[] { patch }, _ => { }, _ => { }, (_, _) => { }, () => { }, _ => { });
+				var input = new LiveKeyboardInput(queue, new[] { patch }, _ => { }, (_, _) => { }, () => { }, _ => { });
 
 				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.A));
 				InputSystem.Update();
@@ -50,7 +50,7 @@ namespace ShitDesigner.Main.Tests {
 				keyboard = InputSystem.AddDevice<Keyboard>();
 				keyboard.MakeCurrent();
 				var movements = new List<(int Horizontal, int Vertical)>();
-				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, _ => { }, _ => { },
+				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, _ => { },
 					(horizontal, vertical) => movements.Add((horizontal, vertical)), () => { }, _ => { });
 
 				PollKey(input, keyboard, Key.LeftArrow);
@@ -74,7 +74,7 @@ namespace ShitDesigner.Main.Tests {
 				keyboard = InputSystem.AddDevice<Keyboard>();
 				keyboard.MakeCurrent();
 				var launched = false;
-				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, _ => { }, _ => { }, (_, _) => { }, () => { launched = true; }, _ => { });
+				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, _ => { }, (_, _) => { }, () => { launched = true; }, _ => { });
 
 				PollKey(input, keyboard, Key.Enter);
 
@@ -94,55 +94,12 @@ namespace ShitDesigner.Main.Tests {
 				keyboard = InputSystem.AddDevice<Keyboard>();
 				keyboard.MakeCurrent();
 				var assignedLanes = new List<int>();
-				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, assignedLanes.Add, _ => { }, (_, _) => { }, () => { }, _ => { });
+				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, assignedLanes.Add, (_, _) => { }, () => { }, _ => { });
 
 				foreach (var key in new[] { Key.Digit1, Key.Digit2, Key.Digit3, Key.Digit4, Key.Digit5, Key.Digit6, Key.Digit7, Key.Digit8 })
 					PollKey(input, keyboard, key);
 
 				Assert.That(assignedLanes, Is.EqualTo(new[] { 0, 1, 2, 3, 4, 5, 6, 7 }));
-			}
-			finally {
-				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
-				Object.DestroyImmediate(patch);
-			}
-		}
-
-		[Test]
-		public void QwertyRowTriggersGlobalInstantEffectsInCatalogOrder() {
-			var patch = CreatePatch("patch-a");
-			Keyboard keyboard = null;
-			try {
-				keyboard = InputSystem.AddDevice<Keyboard>();
-				keyboard.MakeCurrent();
-				var triggeredEffects = new List<int>();
-				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, _ => { }, triggeredEffects.Add, (_, _) => { }, () => { }, _ => { });
-
-				foreach (var key in new[] { Key.Q, Key.W, Key.E, Key.R, Key.T, Key.Y, Key.U, Key.I, Key.O, Key.P })
-					PollKey(input, keyboard, key, string.Empty);
-
-				Assert.That(triggeredEffects, Is.EqualTo(new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }));
-			}
-			finally {
-				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
-				Object.DestroyImmediate(patch);
-			}
-		}
-
-		[Test]
-		public void InstantEffectKeysDoNotAlsoInvokePatchKeyboardBindings() {
-			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.Q));
-			Keyboard keyboard = null;
-			try {
-				keyboard = InputSystem.AddDevice<Keyboard>();
-				keyboard.MakeCurrent();
-				var queue = new LiveParameterQueue();
-				var input = new LiveKeyboardInput(queue, new[] { patch }, _ => { }, _ => { }, (_, _) => { }, () => { }, _ => { });
-
-				PollKey(input, keyboard, Key.Q);
-
-				var requests = new List<LiveParameterRequest>();
-				queue.Drain(requests);
-				Assert.That(requests, Is.Empty);
 			}
 			finally {
 				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
@@ -205,13 +162,13 @@ namespace ShitDesigner.Main.Tests {
 			return patch;
 		}
 
-		private static void PollKey(LiveKeyboardInput input, Keyboard keyboard, Key key, string loadedPatchId = "patch-a") {
+		private static void PollKey(LiveKeyboardInput input, Keyboard keyboard, Key key) {
 			InputSystem.QueueStateEvent(keyboard, new KeyboardState(key));
 			InputSystem.Update();
-			input.Poll(loadedPatchId);
+			input.Poll("patch-a");
 			InputSystem.QueueStateEvent(keyboard, new KeyboardState());
 			InputSystem.Update();
-			input.Poll(loadedPatchId);
+			input.Poll("patch-a");
 		}
 
 		private static PatchDefinition CreateKeyboardPatch(string id, params PatchKeyboardInputBinding[] keyboardInputs) {
