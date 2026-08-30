@@ -15,6 +15,19 @@
                     <ui:VisualElement name="overlay-sequencer" class="sequencer"/>
                     <ui:VisualElement name="effect-sequencer" class="sequencer"/>
                 </ui:VisualElement>
+                <ui:VisualElement name="instant-effect-cues" class="instant-effect-cues">
+                    <ui:Label text="INSTANT FX" class="instant-effect-cue-title"/>
+                    <ui:Button name="instant-effect-cue-1" text="Q" tooltip="Instant Effect Trigger 1" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-2" text="W" tooltip="Instant Effect Trigger 2" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-3" text="E" tooltip="Instant Effect Trigger 3" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-4" text="R" tooltip="Instant Effect Trigger 4" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-5" text="T" tooltip="Instant Effect Trigger 5" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-6" text="Y" tooltip="Instant Effect Trigger 6" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-7" text="U" tooltip="Instant Effect Trigger 7" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-8" text="I" tooltip="Instant Effect Trigger 8" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-9" text="O" tooltip="Instant Effect Trigger 9" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-10" text="P" tooltip="Instant Effect Trigger 10" class="instant-effect-cue-button"/>
+                </ui:VisualElement>
                 <ui:VisualElement class="live-fader-panel">
                     <ui:VisualElement name="parameter-controls" class="parameter-controls"/>
                 </ui:VisualElement>
@@ -39,19 +52,6 @@
             </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement class="bottom-bar">
-            <ui:VisualElement name="instant-effect-cues" class="instant-effect-cues">
-                <ui:Label text="INSTANT FX" class="instant-effect-cue-title"/>
-                <ui:Button name="instant-effect-cue-1" text="Q" tooltip="Instant Effect Trigger 1" class="instant-effect-cue-button"/>
-                <ui:Button name="instant-effect-cue-2" text="W" tooltip="Instant Effect Trigger 2" class="instant-effect-cue-button"/>
-                <ui:Button name="instant-effect-cue-3" text="E" tooltip="Instant Effect Trigger 3" class="instant-effect-cue-button"/>
-                <ui:Button name="instant-effect-cue-4" text="R" tooltip="Instant Effect Trigger 4" class="instant-effect-cue-button"/>
-                <ui:Button name="instant-effect-cue-5" text="T" tooltip="Instant Effect Trigger 5" class="instant-effect-cue-button"/>
-                <ui:Button name="instant-effect-cue-6" text="Y" tooltip="Instant Effect Trigger 6" class="instant-effect-cue-button"/>
-                <ui:Button name="instant-effect-cue-7" text="U" tooltip="Instant Effect Trigger 7" class="instant-effect-cue-button"/>
-                <ui:Button name="instant-effect-cue-8" text="I" tooltip="Instant Effect Trigger 8" class="instant-effect-cue-button"/>
-                <ui:Button name="instant-effect-cue-9" text="O" tooltip="Instant Effect Trigger 9" class="instant-effect-cue-button"/>
-                <ui:Button name="instant-effect-cue-10" text="P" tooltip="Instant Effect Trigger 10" class="instant-effect-cue-button"/>
-            </ui:VisualElement>
             <ui:VisualElement name="tempo-controls" class="tempo-controls is-hidden">
                 <ui:VisualElement class="tempo-input-row">
                     <ui:TextField name="bpm-field" class="tempo-bpm-input" is-delayed="true"/>
