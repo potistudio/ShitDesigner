@@ -28,8 +28,7 @@ namespace ShitDesigner.Main {
 		private readonly LiveBpmTap _bpmTap = new LiveBpmTap();
 		private readonly LiveStepSequencer[] m_Sequencers = {
 			new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY"),
-			new LiveStepSequencer(LiveSequencerKind.Effect, "EFFECT"),
-			new LiveStepSequencer(LiveSequencerKind.CompositingMode, "COMPOSITING MODE")
+			new LiveStepSequencer(LiveSequencerKind.Effect, "EFFECT")
 		};
 		private readonly List<LiveParameterRequest> _pendingRequests = new List<LiveParameterRequest>();
 		private readonly List<LiveParameterApplicationResult> _requestResults = new List<LiveParameterApplicationResult>();
@@ -201,11 +200,11 @@ namespace ShitDesigner.Main {
 			_parameterQueue.EnqueueSetBpm(bpm);
 		}
 
-		public LiveSequencerOperationResult ToggleSequencerStep(LiveSequencerKind kind, int laneIndex, int stepIndex) {
+		public LiveSequencerOperationResult CycleSequencerCellMode(LiveSequencerKind kind, int laneIndex, int stepIndex) {
 			var sequencer = m_Sequencers.FirstOrDefault(item => item.Kind == kind);
 			return sequencer == null
 				? LiveSequencerOperationResult.Reject("The requested sequencer does not exist.")
-				: sequencer.Toggle(laneIndex, stepIndex);
+				: sequencer.CycleCellMode(laneIndex, stepIndex);
 		}
 
 		public bool IsSelectingSequencerLane => m_Sequencers.Any(sequencer => sequencer.SelectedLaneIndex >= 0);

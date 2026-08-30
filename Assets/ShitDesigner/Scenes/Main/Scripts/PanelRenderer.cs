@@ -234,7 +234,10 @@ namespace ShitDesigner.Main {
 					for (var stepIndex = 0; stepIndex < LiveStepSequencer.StepCount; stepIndex++) {
 						var button = m_SequencerControls.Q<Button>(GetSequencerCellName(sequencer.Kind, laneIndex, stepIndex));
 						if (button == null) continue;
-						button.EnableInClassList("is-set", sequencer.IsActive(laneIndex, stepIndex));
+						var mode = sequencer.GetCellMode(laneIndex, stepIndex);
+						button.text = FormatSequencerCellMode(mode);
+						button.tooltip = mode.ToString().ToUpperInvariant();
+						button.EnableInClassList("is-set", mode != LiveSequencerCellMode.Off);
 						button.EnableInClassList("is-playhead", sequencer.CurrentStep == stepIndex);
 					}
 				}
@@ -247,7 +250,7 @@ namespace ShitDesigner.Main {
 			var button = target as Button ?? target?.GetFirstAncestorOfType<Button>();
 			if (_host == null || button == null) return;
 			if (button.userData is SequencerCellAddress cellAddress) {
-				ShowSequencerRejection(_host.ToggleSequencerStep(cellAddress.Kind, cellAddress.LaneIndex, cellAddress.StepIndex));
+				ShowSequencerRejection(_host.CycleSequencerCellMode(cellAddress.Kind, cellAddress.LaneIndex, cellAddress.StepIndex));
 				return;
 			}
 			if (button.userData is SequencerLaneAddress laneAddress)
@@ -258,7 +261,6 @@ namespace ShitDesigner.Main {
 			switch (kind) {
 				case LiveSequencerKind.Overlay: return "overlay-sequencer";
 				case LiveSequencerKind.Effect: return "effect-sequencer";
-				case LiveSequencerKind.CompositingMode: return "compositing-mode-sequencer";
 				default: throw new ArgumentOutOfRangeException(nameof(kind), kind, null);
 			}
 		}
@@ -275,9 +277,12 @@ namespace ShitDesigner.Main {
 			switch (kind) {
 				case LiveSequencerKind.Overlay: return "overlay";
 				case LiveSequencerKind.Effect: return "effect";
-				case LiveSequencerKind.CompositingMode: return "compositing-mode";
 				default: throw new ArgumentOutOfRangeException(nameof(kind), kind, null);
 			}
+		}
+
+		private static string FormatSequencerCellMode(LiveSequencerCellMode mode) {
+			return mode.ToString().ToUpperInvariant();
 		}
 
 		private void RebuildParameters(LiveUiReadModel model) {
