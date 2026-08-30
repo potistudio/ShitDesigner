@@ -243,35 +243,21 @@ namespace ShitDesigner.Main {
 
 #if UNITY_STANDALONE_OSX && !UNITY_EDITOR
 	internal sealed class MacOsNativeOutputMenuBackend : INativeOutputMenuBackend {
-		private const string ObjectiveCLibrary = "/usr/lib/libobjc.A.dylib";
-		private const string TargetClassName = "ShitDesignerOutputMenuTarget";
-		private const long DisabledState = 0;
-		private static readonly MenuAction ActionCallback = HandleMenuAction;
-		private static MacOsNativeOutputMenuBackend s_Active;
-
-		private readonly Queue<OutputMenuCommand> m_Commands = new Queue<OutputMenuCommand>();
-		private IntPtr m_MainMenu;
-		private IntPtr m_TopItem;
-		private IntPtr m_Submenu;
-		private IntPtr m_Target;
-		private IntPtr m_StartItem;
-		private IntPtr m_StopItem;
-		private IntPtr m_IdentifyItem;
 		private bool m_Disposed;
 		private bool m_HasAppliedState;
 		private OutputMenuState m_AppliedState;
 
 		public bool TryDequeueCommand(out OutputMenuCommand command) {
-			if (m_Commands.Count == 0) { command = default; return false; }
-			command = m_Commands.Dequeue();
+			if (!ShitDesignerOutputMenuTryDequeue(out var commandValue)) { command = default; return false; }
+			command = (OutputMenuCommand)commandValue;
 			return true;
 		}
 
 		public void Refresh(OutputMenuState state) {
-			if (m_Disposed || !EnsureCreated() || (m_HasAppliedState && m_AppliedState.Equals(state))) return;
-			SetEnabled(m_StartItem, state.CanStart);
-			SetEnabled(m_StopItem, state.CanStop);
-			SetEnabled(m_IdentifyItem, state.CanIdentifyDisplays);
+			if (m_Disposed) return;
+			ShitDesignerOutputMenuCreate();
+			if (m_HasAppliedState && m_AppliedState.Equals(state)) return;
+			ShitDesignerOutputMenuSetState(state.CanStart, state.CanStop, state.CanIdentifyDisplays);
 			m_AppliedState = state;
 			m_HasAppliedState = true;
 		}
@@ -279,126 +265,16 @@ namespace ShitDesigner.Main {
 		public void Dispose() {
 			if (m_Disposed) return;
 			m_Disposed = true;
-			if (m_MainMenu != IntPtr.Zero && m_TopItem != IntPtr.Zero) SendVoidWithObject(m_MainMenu, Selector("removeItem:"), m_TopItem);
-			Release(m_StartItem);
-			Release(m_StopItem);
-			Release(m_IdentifyItem);
-			Release(m_TopItem);
-			Release(m_Submenu);
-			Release(m_Target);
-			m_MainMenu = IntPtr.Zero;
-			m_TopItem = IntPtr.Zero;
-			m_Submenu = IntPtr.Zero;
-			m_Target = IntPtr.Zero;
-			m_StartItem = IntPtr.Zero;
-			m_StopItem = IntPtr.Zero;
-			m_IdentifyItem = IntPtr.Zero;
-			if (ReferenceEquals(s_Active, this)) s_Active = null;
+			ShitDesignerOutputMenuDestroy();
 		}
 
-		private bool EnsureCreated() {
-			if (m_TopItem != IntPtr.Zero) return true;
-			var applicationClass = objc_getClass("NSApplication");
-			var application = SendIntPtr(applicationClass, Selector("sharedApplication"));
-			var mainMenu = SendIntPtr(application, Selector("mainMenu"));
-			if (mainMenu == IntPtr.Zero) return false;
-
-			var targetClass = GetOrCreateTargetClass();
-			if (targetClass == IntPtr.Zero) return false;
-			m_Target = SendIntPtr(SendIntPtr(targetClass, Selector("alloc")), Selector("init"));
-			m_Submenu = CreateMenu("Output");
-			m_TopItem = CreateMenuItem("Output", IntPtr.Zero, 0);
-			if (m_Target == IntPtr.Zero || m_Submenu == IntPtr.Zero || m_TopItem == IntPtr.Zero) { Dispose(); return false; }
-
-			var action = Selector("handleOutputMenuItem:");
-			m_StartItem = CreateMenuItem("Start External Output", action, (long)OutputMenuCommand.Start);
-			m_StopItem = CreateMenuItem("Stop External Output", action, (long)OutputMenuCommand.Stop);
-			m_IdentifyItem = CreateMenuItem("Identify Displays", action, (long)OutputMenuCommand.IdentifyDisplays);
-			ConfigureActionItem(m_StartItem);
-			ConfigureActionItem(m_StopItem);
-			ConfigureActionItem(m_IdentifyItem);
-			SendVoidWithObject(m_Submenu, Selector("addItem:"), m_StartItem);
-			SendVoidWithObject(m_Submenu, Selector("addItem:"), m_StopItem);
-			var separator = SendIntPtr(objc_getClass("NSMenuItem"), Selector("separatorItem"));
-			SendVoidWithObject(m_Submenu, Selector("addItem:"), separator);
-			SendVoidWithObject(m_Submenu, Selector("addItem:"), m_IdentifyItem);
-			SendVoidWithObject(m_TopItem, Selector("setSubmenu:"), m_Submenu);
-			SendVoidWithObject(mainMenu, Selector("addItem:"), m_TopItem);
-			m_MainMenu = mainMenu;
-			s_Active = this;
-			return true;
-		}
-
-		private void ConfigureActionItem(IntPtr item) {
-			SendVoidWithObject(item, Selector("setTarget:"), m_Target);
-			SendVoidWithLong(item, Selector("setState:"), DisabledState);
-		}
-
-		private static IntPtr GetOrCreateTargetClass() {
-			var targetClass = objc_getClass(TargetClassName);
-			if (targetClass != IntPtr.Zero) return targetClass;
-			targetClass = objc_allocateClassPair(objc_getClass("NSObject"), TargetClassName, IntPtr.Zero);
-			if (targetClass == IntPtr.Zero) return IntPtr.Zero;
-			if (!class_addMethod(targetClass, Selector("handleOutputMenuItem:"), Marshal.GetFunctionPointerForDelegate(ActionCallback), "v@:@")) return IntPtr.Zero;
-			objc_registerClassPair(targetClass);
-			return targetClass;
-		}
-
-		private static IntPtr CreateMenu(string title) {
-			var menu = SendIntPtr(objc_getClass("NSMenu"), Selector("alloc"));
-			var nativeTitle = CreateString(title);
-			try { return SendIntPtrWithObject(menu, Selector("initWithTitle:"), nativeTitle); }
-			finally { Release(nativeTitle); }
-		}
-
-		private static IntPtr CreateMenuItem(string title, IntPtr action, long tag) {
-			var item = SendIntPtr(objc_getClass("NSMenuItem"), Selector("alloc"));
-			var nativeTitle = CreateString(title);
-			var keyEquivalent = CreateString(string.Empty);
-			var initialized = IntPtr.Zero;
-			try { initialized = SendIntPtrWithThreeObjects(item, Selector("initWithTitle:action:keyEquivalent:"), nativeTitle, action, keyEquivalent); }
-			finally { Release(nativeTitle); Release(keyEquivalent); }
-			if (initialized != IntPtr.Zero) SendVoidWithLong(initialized, Selector("setTag:"), tag);
-			return initialized;
-		}
-
-		private static IntPtr CreateString(string value) {
-			var utf8 = Marshal.StringToCoTaskMemUTF8(value ?? string.Empty);
-			try {
-				var instance = SendIntPtr(objc_getClass("NSString"), Selector("alloc"));
-				return SendIntPtrWithObject(instance, Selector("initWithUTF8String:"), utf8);
-			}
-			finally { Marshal.FreeCoTaskMem(utf8); }
-		}
-
-		private static void SetEnabled(IntPtr item, bool enabled) => SendVoidWithBool(item, Selector("setEnabled:"), enabled);
-		private static void Release(IntPtr value) { if (value != IntPtr.Zero) SendVoid(value, Selector("release")); }
-		private static IntPtr Selector(string name) => sel_registerName(name);
-
-		[MonoPInvokeCallback(typeof(MenuAction))]
-		private static void HandleMenuAction(IntPtr self, IntPtr selector, IntPtr sender) {
-			var active = s_Active;
-			if (active == null || sender == IntPtr.Zero) return;
-			var tag = SendLong(sender, Selector("tag"));
-			if (tag >= (long)OutputMenuCommand.Start && tag <= (long)OutputMenuCommand.IdentifyDisplays)
-				active.m_Commands.Enqueue((OutputMenuCommand)tag);
-		}
-
-		private delegate void MenuAction(IntPtr self, IntPtr selector, IntPtr sender);
-
-		[DllImport(ObjectiveCLibrary)] [return: MarshalAs(UnmanagedType.I1)] private static extern bool class_addMethod(IntPtr targetClass, IntPtr selector, IntPtr implementation, string types);
-		[DllImport(ObjectiveCLibrary)] private static extern IntPtr objc_allocateClassPair(IntPtr superclass, string name, IntPtr extraBytes);
-		[DllImport(ObjectiveCLibrary)] private static extern IntPtr objc_getClass(string name);
-		[DllImport(ObjectiveCLibrary)] private static extern void objc_registerClassPair(IntPtr targetClass);
-		[DllImport(ObjectiveCLibrary)] private static extern IntPtr sel_registerName(string name);
-		[DllImport(ObjectiveCLibrary, EntryPoint = "objc_msgSend")] private static extern IntPtr SendIntPtr(IntPtr receiver, IntPtr selector);
-		[DllImport(ObjectiveCLibrary, EntryPoint = "objc_msgSend")] private static extern IntPtr SendIntPtrWithObject(IntPtr receiver, IntPtr selector, IntPtr argument);
-		[DllImport(ObjectiveCLibrary, EntryPoint = "objc_msgSend")] private static extern IntPtr SendIntPtrWithThreeObjects(IntPtr receiver, IntPtr selector, IntPtr first, IntPtr second, IntPtr third);
-		[DllImport(ObjectiveCLibrary, EntryPoint = "objc_msgSend")] private static extern long SendLong(IntPtr receiver, IntPtr selector);
-		[DllImport(ObjectiveCLibrary, EntryPoint = "objc_msgSend")] private static extern void SendVoid(IntPtr receiver, IntPtr selector);
-		[DllImport(ObjectiveCLibrary, EntryPoint = "objc_msgSend")] private static extern void SendVoidWithBool(IntPtr receiver, IntPtr selector, [MarshalAs(UnmanagedType.I1)] bool value);
-		[DllImport(ObjectiveCLibrary, EntryPoint = "objc_msgSend")] private static extern void SendVoidWithLong(IntPtr receiver, IntPtr selector, long value);
-		[DllImport(ObjectiveCLibrary, EntryPoint = "objc_msgSend")] private static extern void SendVoidWithObject(IntPtr receiver, IntPtr selector, IntPtr value);
+		[DllImport("__Internal")] private static extern void ShitDesignerOutputMenuCreate();
+		[DllImport("__Internal")] private static extern void ShitDesignerOutputMenuDestroy();
+		[DllImport("__Internal")] private static extern void ShitDesignerOutputMenuSetState(
+			[MarshalAs(UnmanagedType.I1)] bool canStart,
+			[MarshalAs(UnmanagedType.I1)] bool canStop,
+			[MarshalAs(UnmanagedType.I1)] bool canIdentifyDisplays);
+		[DllImport("__Internal")] [return: MarshalAs(UnmanagedType.I1)] private static extern bool ShitDesignerOutputMenuTryDequeue(out int command);
 	}
 #endif
 }
