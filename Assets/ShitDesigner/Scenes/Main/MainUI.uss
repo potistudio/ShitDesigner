@@ -132,9 +132,9 @@
 
 .output-previews {
     width: 1280px;
-    height: 540px;
+    height: 420px;
     min-width: 1280px;
-    min-height: 540px;
+    min-height: 420px;
     flex-direction: row;
     align-items: flex-start;
     flex-shrink: 0;
@@ -144,9 +144,9 @@
     width: 640px;
     min-width: 640px;
     max-width: 640px;
-    height: 540px;
-    min-height: 540px;
-    max-height: 540px;
+    height: 420px;
+    min-height: 420px;
+    max-height: 420px;
     flex-grow: 0;
     flex-shrink: 0;
 }
@@ -185,9 +185,9 @@
     width: 640px;
     min-width: 640px;
     max-width: 640px;
-    height: 180px;
-    min-height: 180px;
-    max-height: 180px;
+    height: 60px;
+    min-height: 60px;
+    max-height: 60px;
     flex-direction: row;
     flex-grow: 0;
     flex-shrink: 0;
@@ -198,9 +198,9 @@
     width: 320px;
     min-width: 320px;
     max-width: 320px;
-    height: 180px;
-    min-height: 180px;
-    max-height: 180px;
+    height: 60px;
+    min-height: 60px;
+    max-height: 60px;
     flex-grow: 0;
     flex-shrink: 0;
     background-color: black;
