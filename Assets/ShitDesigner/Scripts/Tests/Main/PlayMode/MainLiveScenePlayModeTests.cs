@@ -110,7 +110,7 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(effectCell.ClassListContains("is-set"), Is.True);
 			Assert.That(ui.Q<Button>("sequencer-effect-lane-1-step-4").ClassListContains("is-set"), Is.True);
 			Assert.That(effectCell.text, Is.EqualTo("NORMAL"));
-			Assert.That(ui.Q<Button>("patch-" + nextPatch.Id).ClassListContains("is-loaded"), Is.True);
+			Assert.That(ui.Query<Button>(className: "is-loaded").ToList(), Is.Empty);
 			var rememberedMainPatch = host.ReadModel.Patches.Last(patch => patch.Role == LivePatchRole.Main);
 			var rememberedOverlayPatch = host.ReadModel.Patches.First(patch => patch.Role == LivePatchRole.Overlay);
 			var nextOverlayPatch = host.ReadModel.Patches.Where(patch => patch.Role == LivePatchRole.Overlay).Skip(1).First();

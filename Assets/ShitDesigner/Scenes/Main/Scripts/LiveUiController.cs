@@ -444,7 +444,6 @@ namespace ShitDesigner.Main {
 			foreach (var patch in model.Patches) {
 				var button = m_PatchControls.Q<Button>("patch-" + patch.Id);
 				if (button == null) continue;
-				button.EnableInClassList("is-loaded", patch.Id == model.LoadedPatchId);
 				button.EnableInClassList("is-selected", patch.Id == model.SelectedCatalogPatchId);
 				button.EnableInClassList("is-assignment-option", _host.IsSelectingSequencerLane && patch.Role == LivePatchRole.Overlay);
 			}
