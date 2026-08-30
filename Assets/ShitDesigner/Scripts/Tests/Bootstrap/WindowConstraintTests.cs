@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using ShitDesigner.Bootstrap;
+using UnityEngine;
 
 namespace ShitDesigner.Bootstrap.Tests {
 	[TestFixture]
@@ -32,6 +33,12 @@ namespace ShitDesigner.Bootstrap.Tests {
 			Assert.That(WindowConstraints.InitialHeight, Is.EqualTo(900));
 			Assert.That(WindowConstraints.MinimumWidth, Is.EqualTo(1280));
 			Assert.That(WindowConstraints.MinimumHeight, Is.EqualTo(720));
+		}
+
+		[Test]
+		public void RuntimeResizeIsDisabledForMacPlayers() {
+			Assert.That(WindowConstraints.SupportsRuntimeResize(RuntimePlatform.WindowsPlayer), Is.True);
+			Assert.That(WindowConstraints.SupportsRuntimeResize(RuntimePlatform.OSXPlayer), Is.False);
 		}
 
 		private sealed class RecordingWindowAdapter : IWindowAdapter {

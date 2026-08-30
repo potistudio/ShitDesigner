@@ -37,6 +37,9 @@ namespace ShitDesigner.Bootstrap {
 			=> new WindowSize(Math.Max(MinimumWidth, current.Width), Math.Max(MinimumHeight, current.Height));
 
 		public static bool NeedsClamp(WindowSize current) => Clamp(current) != current;
+
+		public static bool SupportsRuntimeResize(RuntimePlatform platform)
+			=> platform == RuntimePlatform.WindowsPlayer;
 	}
 
 	/// <summary>
@@ -66,8 +69,11 @@ namespace ShitDesigner.Bootstrap {
 		private bool _hasCapturedWindowFrame;
 #endif
 
-		public bool IsSupported => UnityEngine.Application.platform == RuntimePlatform.WindowsPlayer ||
-									UnityEngine.Application.platform == RuntimePlatform.OSXPlayer;
+		// Screen.SetResolution recreates the Metal backbuffer after UI Toolkit
+		// has already captured the Retina surface descriptor. Keep explicit
+		// runtime window constraints on Windows; macOS uses its native window
+		// sizing and the PlayerSettings startup dimensions instead.
+		public bool IsSupported => WindowConstraints.SupportsRuntimeResize(UnityEngine.Application.platform);
 		public bool IsFullscreen => Screen.fullScreen;
 		public WindowSize CurrentSize {
 			get {

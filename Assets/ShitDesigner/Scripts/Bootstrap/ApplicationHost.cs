@@ -5,7 +5,6 @@ using ShitDesigner.Core;
 using ShitDesigner.Input;
 using ShitDesigner.Presentation;
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 
 namespace ShitDesigner.Bootstrap {
@@ -80,7 +79,6 @@ namespace ShitDesigner.Bootstrap {
 			m_HandshakeReport = null;
 			m_ShutdownDiagnostics.Clear();
 			ClearShutdownActions();
-			RegisterMetalUiOverlayOwnership();
 			m_WindowAdapter ??= new WindowAdapter();
 			m_WindowLifecycle = new WindowLifecycle(m_WindowAdapter);
 
@@ -98,20 +96,6 @@ namespace ShitDesigner.Bootstrap {
 			}
 
 			return started;
-		}
-
-		private void RegisterMetalUiOverlayOwnership() {
-			RenderPipelineManager.beginContextRendering += UseNativeUiOverlayOnMetal;
-			m_TeardownShutdown.Add(() => RenderPipelineManager.beginContextRendering -= UseNativeUiOverlayOnMetal);
-		}
-
-		private static void UseNativeUiOverlayOnMetal(ScriptableRenderContext context, List<Camera> cameras) {
-			if (SystemInfo.graphicsDeviceType != GraphicsDeviceType.Metal) return;
-			// URP 6000.5 records screen-space UI into the active RenderGraph
-			// target by default.  Offscreen camera requests can leave that pass
-			// paired with the Retina backbuffer descriptor on Metal.  Returning
-			// ownership to Unity renders the same overlay after SRP instead.
-			SupportedRenderingFeatures.active.rendersUIOverlay = false;
 		}
 
 		/// <summary>
