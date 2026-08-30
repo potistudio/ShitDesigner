@@ -44,9 +44,18 @@
                 </ui:VisualElement>
             </ui:VisualElement>
             <ui:VisualElement class="inspector-column">
+                <ui:VisualElement class="sidebar-tabs">
+                    <ui:Button name="inspector-tab" text="INSPECTOR" class="sidebar-tab is-selected"/>
+                    <ui:Button name="logical-controls-tab" text="LOGICAL CONTROLS" class="sidebar-tab"/>
+                    <ui:Button name="diagnostics-tab" text="DIAGNOSTICS" class="sidebar-tab"/>
+                </ui:VisualElement>
                 <ui:VisualElement class="control-panel">
-                    <ui:Label name="capability-status" class="status-label"/>
-                    <ui:Label name="diagnostic-status" class="diagnostic-label"/>
+                    <ui:VisualElement name="inspector-tab-content" class="sidebar-tab-content"/>
+                    <ui:VisualElement name="logical-controls-tab-content" class="sidebar-tab-content is-hidden"/>
+                    <ui:VisualElement name="diagnostics-tab-content" class="sidebar-tab-content is-hidden">
+                        <ui:Label name="capability-status" class="status-label"/>
+                        <ui:Label name="diagnostic-status" class="diagnostic-label"/>
+                    </ui:VisualElement>
                 </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>

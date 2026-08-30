@@ -138,6 +138,44 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void MainUiDefinesThreeSidebarTabs() {
+			var asset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/ShitDesigner/Scenes/Main/MainUI.uxml");
+			Assert.That(asset, Is.Not.Null);
+			var root = new VisualElement();
+			asset.CloneTree(root);
+
+			var tabs = root.Query<Button>(className: "sidebar-tab").ToList();
+
+			Assert.That(tabs.Select(tab => tab.name).ToArray(), Is.EqualTo(new[] { "inspector-tab", "logical-controls-tab", "diagnostics-tab" }));
+			Assert.That(tabs[0].ClassListContains("is-selected"), Is.True);
+			Assert.That(root.Q<Label>("capability-status").parent.name, Is.EqualTo("diagnostics-tab-content"));
+			Assert.That(root.Q<Label>("diagnostic-status").parent.name, Is.EqualTo("diagnostics-tab-content"));
+		}
+
+		[Test]
+		public void ExternalProgramDisplayCamera_UsesAnUrpRenderableSurface() {
+			var host = new GameObject("External Program Display Camera Test");
+			var source = new RenderTexture(4, 4, 0, RenderTextureFormat.ARGB32);
+			try {
+				Assert.That(source.Create(), Is.True);
+				var camera = host.AddComponent<Camera>();
+				var presenter = host.AddComponent<LiveProgramDisplayCamera>();
+
+				presenter.Initialize(camera, source);
+
+				Assert.That(camera.cullingMask, Is.EqualTo(1 << 31));
+				var renderer = host.GetComponentInChildren<MeshRenderer>();
+				Assert.That(renderer, Is.Not.Null);
+				Assert.That(renderer.sharedMaterial.shader.name, Is.EqualTo("Hidden/ShitDesigner/ProgramDisplay"));
+			}
+			finally {
+				source.Release();
+				Object.DestroyImmediate(source);
+				Object.DestroyImmediate(host);
+			}
+		}
+
+		[Test]
 		public void ExternalProgramDisplayCanvas_FillsTheTargetWithoutACamera() {
 			var host = new GameObject("External Program Display Canvas Test");
 			var source = new RenderTexture(4, 4, 0, RenderTextureFormat.ARGB32);
