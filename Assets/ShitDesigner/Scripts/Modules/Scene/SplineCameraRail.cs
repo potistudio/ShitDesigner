@@ -4,10 +4,12 @@ using UnityEngine;
 using UnityEngine.Splines;
 
 namespace ShitDesigner.Scene {
-	/// <summary>Moves a camera along an inspector-authored spline using the scene graph clock.</summary>
+	/// <summary>
+	/// Moves a camera along an inspector-authored spline using the scene graph clock.
+	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
-	public sealed class SplineCameraRail : MonoBehaviour, ISceneGraphClockReceiver {
+	public sealed class SplineCameraRail : MonoBehaviour, ISceneGraphClockReceiver, ISceneActivationReceiver {
 		[Header("Path")]
 		[SerializeField] private SplineContainer path;
 		[SerializeField] private Transform cameraTransform;
@@ -19,6 +21,7 @@ namespace ShitDesigner.Scene {
 		[SerializeField] private bool alignToPath = true;
 
 		private bool _graphClockDriven;
+		private bool m_IsSceneActive;
 		private bool _initialized;
 		private float _pathLength;
 		private float _distance;
@@ -37,14 +40,25 @@ namespace ShitDesigner.Scene {
 			speed = Mathf.Max(0f, speed);
 			startOffset = Mathf.Clamp01(startOffset);
 			_initialized = false;
-			if (!Application.isPlaying) ResetProgress();
+
+			if (!Application.isPlaying)
+				ResetProgress();
 		}
 
 		public void SetGraphClockDriven(bool graphClockDriven) => _graphClockDriven = graphClockDriven;
 
 		public void AdvanceGraphClock(double deltaSeconds) {
-			if (!_graphClockDriven || double.IsNaN(deltaSeconds) || double.IsInfinity(deltaSeconds) || deltaSeconds <= 0d) return;
+			if (!_graphClockDriven || !m_IsSceneActive || double.IsNaN(deltaSeconds) || double.IsInfinity(deltaSeconds) || deltaSeconds <= 0d) return;
 			Advance((float)Math.Min(deltaSeconds, float.MaxValue));
+		}
+
+		public void ActivateScene() {
+			ResetProgress();
+			m_IsSceneActive = true;
+		}
+
+		public void DeactivateScene() {
+			m_IsSceneActive = false;
 		}
 
 		[ContextMenu("Reset Camera Rail")]

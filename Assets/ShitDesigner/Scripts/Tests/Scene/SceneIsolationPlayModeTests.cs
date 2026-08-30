@@ -65,6 +65,38 @@ namespace ShitDesigner.Tests.Scene {
 			manager.Dispose();
 		}
 
+		[UnityTest]
+		public IEnumerator ActivationReceiversObserveOnlyExplicitStateTransitions() {
+			var prefab = new GameObject("Activation Prefab");
+			var cameraObject = new GameObject("Camera");
+			cameraObject.transform.SetParent(prefab.transform, false);
+			cameraObject.AddComponent<Camera>();
+			cameraObject.AddComponent<UniversalAdditionalCameraData>().renderType = CameraRenderType.Base;
+			prefab.AddComponent<RecordingSceneActivationReceiver>();
+			var manager = new SceneIsolationManager();
+			var created = manager.Create(new SceneCreateRequest(Node(30), SceneNodeKind.ThreeD, "SceneIsolation.Activation", prefab: prefab));
+			try {
+				Assert.That(created.IsSuccess, Is.True, created.IsFailure ? created.Error.Message : string.Empty);
+				created.Value.BindGraphClock();
+				var receiver = created.Value.Root.GetComponent<RecordingSceneActivationReceiver>();
+
+				Assert.That(created.Value.Activate().IsSuccess, Is.True);
+				Assert.That(created.Value.Activate().IsSuccess, Is.True);
+				Assert.That(created.Value.Deactivate().IsSuccess, Is.True);
+				Assert.That(created.Value.Deactivate().IsSuccess, Is.True);
+				Assert.That(created.Value.Activate().IsSuccess, Is.True);
+
+				Assert.That(receiver.ActivationCount, Is.EqualTo(2));
+				Assert.That(receiver.DeactivationCount, Is.EqualTo(1));
+			}
+			finally {
+				if (created.IsSuccess) created.Value.Dispose();
+				Object.DestroyImmediate(prefab);
+			}
+			for (var index = 0; index < 120 && manager.ActiveNodeCount > 0; index++) yield return null;
+			manager.Dispose();
+		}
+
 		[Test]
 		public void PrefabValidation_RequiresOneCameraRecursiveLayerAndCanvasCamera() {
 			var root = new GameObject("ScenePrefabRoot");
@@ -338,5 +370,13 @@ namespace ShitDesigner.Tests.Scene {
 				return UnitResult.Success<Diagnostic>();
 			}
 		}
+	}
+
+	public sealed class RecordingSceneActivationReceiver : MonoBehaviour, ISceneActivationReceiver {
+		public int ActivationCount { get; private set; }
+		public int DeactivationCount { get; private set; }
+
+		public void ActivateScene() => ActivationCount++;
+		public void DeactivateScene() => DeactivationCount++;
 	}
 }

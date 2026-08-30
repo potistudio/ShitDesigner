@@ -34,6 +34,12 @@ namespace ShitDesigner.Scene {
 		void SetBpmClock(BeatClockFrame frame);
 	}
 
+	/// <summary>Receives explicit transitions between prepared and presented Scene states.</summary>
+	public interface ISceneActivationReceiver {
+		void ActivateScene();
+		void DeactivateScene();
+	}
+
 	/// <summary>One of the reserved user layers 8..31. Releasing the lease is
 	/// deliberately separate from destroying a node; the Scene manager returns
 	/// it only after unload has completed.</summary>
@@ -197,7 +203,9 @@ namespace ShitDesigner.Scene {
 		private readonly SceneIsolationManager _owner;
 		private ISceneGraphClockReceiver[] _graphClockReceivers = Array.Empty<ISceneGraphClockReceiver>();
 		private IBpmClockReceiver[] _bpmClockReceivers = Array.Empty<IBpmClockReceiver>();
+		private ISceneActivationReceiver[] m_ActivationReceivers = Array.Empty<ISceneActivationReceiver>();
 		private bool _destroyRequested;
+		private bool m_IsActive;
 		private double _physicsAccumulator;
 
 		public NodeInstanceId NodeId { get; }
@@ -210,6 +218,7 @@ namespace ShitDesigner.Scene {
 		public SceneLayerLease LayerLease { get; internal set; }
 		public int Layer => LayerLease?.Layer ?? -1;
 		public bool IsLoaded => Scene.IsValid() && Scene.isLoaded && Root != null && Camera != null;
+		public bool IsActive => m_IsActive;
 		public PhysicsScene PhysicsScene3D => Scene.GetPhysicsScene();
 		public PhysicsScene2D PhysicsScene2D => Scene.GetPhysicsScene2D();
 
@@ -233,8 +242,13 @@ namespace ShitDesigner.Scene {
 			var receivers = Root == null ? Array.Empty<MonoBehaviour>() : Root.GetComponentsInChildren<MonoBehaviour>(true);
 			_graphClockReceivers = receivers.OfType<ISceneGraphClockReceiver>().ToArray();
 			_bpmClockReceivers = receivers.OfType<IBpmClockReceiver>().ToArray();
+			m_ActivationReceivers = receivers.OfType<ISceneActivationReceiver>().ToArray();
 			foreach (var receiver in _graphClockReceivers) receiver.SetGraphClockDriven(true);
 		}
+
+		public UnitResult<Diagnostic> Activate() => SetActive(true);
+
+		public UnitResult<Diagnostic> Deactivate() => SetActive(false);
 
 		public UnitResult<Diagnostic> AdvanceGraphClock(double deltaSeconds) {
 			if (double.IsNaN(deltaSeconds) || double.IsInfinity(deltaSeconds) || deltaSeconds < 0d)
@@ -301,7 +315,27 @@ namespace ShitDesigner.Scene {
 		public void Dispose() {
 			if (_destroyRequested) return;
 			_destroyRequested = true;
+			if (m_IsActive) SetActive(false);
 			_owner.Retire(this);
+		}
+
+		private UnitResult<Diagnostic> SetActive(bool active) {
+			if (State != SceneLifecycleState.Ready)
+				return AnimationFailure("scene.activation.state", "Scene activation requires a ready Scene node.");
+			if (m_IsActive == active) return UnitResult.Success<Diagnostic>();
+			try {
+				foreach (var receiver in m_ActivationReceivers) {
+					if (active) receiver.ActivateScene();
+					else receiver.DeactivateScene();
+				}
+				m_IsActive = active;
+				return UnitResult.Success<Diagnostic>();
+			}
+			catch (Exception exception) {
+				return UnitResult.Failure<Diagnostic>(new Diagnostic(new DiagnosticCode("scene.activation.failed"), Severity.Error,
+					"A Scene prefab failed while changing activation state.", nodeId: NodeId, generationId: GenerationId,
+					module: "scene", exception: DiagnosticExceptionInfo.FromException(exception)));
+			}
 		}
 
 		private static Result<T, Diagnostic> Failure<T>(string code, string message) => Result.Failure<T, Diagnostic>(new Diagnostic(new DiagnosticCode(code), Severity.Error, message, nodeId: default(NodeInstanceId), module: "scene"));

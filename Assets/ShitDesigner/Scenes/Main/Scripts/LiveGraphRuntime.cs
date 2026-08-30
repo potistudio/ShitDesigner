@@ -191,6 +191,8 @@ namespace ShitDesigner.Main {
 
 		public void SceneUpdate(double deltaSeconds) => _programGraph.SceneUpdate(deltaSeconds);
 
+		public void SetSceneActive(bool active) => _programGraph.SetSceneActive(active);
+
 		public void Render(double graphTime, ulong frameNumber) {
 			_programGraph.Render(_shaderGraphTexture, graphTime, frameNumber);
 			Graphics.Blit(_shaderGraphTexture, ProgramTexture);
@@ -290,9 +292,14 @@ namespace ShitDesigner.Main {
 		public RenderTexture Render(Texture main, IReadOnlyList<LiveOverlayInput> overlays, ulong frameNumber, double graphTime) {
 			if (m_Disposed) throw new ObjectDisposedException(nameof(LiveOverlayCompositor));
 			if (main == null) throw new ArgumentNullException(nameof(main));
+			if (overlays == null || overlays.Count == 0) {
+				if (main is RenderTexture mainTexture) return mainTexture;
+				Graphics.Blit(main, Output);
+				return Output;
+			}
 			Texture accumulated = main;
 			var scratchIndex = 0;
-			foreach (var overlay in overlays ?? Array.Empty<LiveOverlayInput>()) {
+			foreach (var overlay in overlays) {
 				var foreground = overlay.Texture;
 				var mode = overlay.Mode;
 				if (mode == LiveSequencerCellMode.Invert) {
@@ -407,6 +414,11 @@ namespace ShitDesigner.Main {
 
 		public void SceneUpdate(double deltaSeconds) {
 			var result = m_Runtime.AdvancePhysics(Math.Max(0d, deltaSeconds) * m_Root.TimeScale);
+			if (result.IsFailure) throw new InvalidOperationException(result.Error.Message);
+		}
+
+		public void SetSceneActive(bool active) {
+			var result = active ? m_Runtime.Activate() : m_Runtime.Deactivate();
 			if (result.IsFailure) throw new InvalidOperationException(result.Error.Message);
 		}
 
@@ -777,6 +789,10 @@ namespace ShitDesigner.Main {
 			foreach (var node in _nodes) node.SceneUpdate(deltaSeconds);
 		}
 
+		public void SetSceneActive(bool active) {
+			foreach (var node in _nodes.OfType<LiveProgramSceneGraphNode>()) node.SetSceneActive(active);
+		}
+
 		public void Render(RenderTexture destination, double graphTime, ulong frameNumber) {
 			if (destination == null || !destination.IsCreated())
 				throw new ArgumentException("Live Program graph rendering requires a created destination texture.");
@@ -862,6 +878,7 @@ namespace ShitDesigner.Main {
 			_patchDefinitionsById = graph.PatchDefinitions.ToDictionary(definition => definition.Id, StringComparer.Ordinal);
 			_loadedPatch = CreatePatch(graph.PatchDefinitions[0], ProgramRenderSize);
 			_preloadedPatch = _loadedPatch;
+			_loadedPatch.SetSceneActive(true);
 			CurrentFrames = new LiveProgramFrames(_loadedPatch.Outputs.Select(output => new LiveProgramFrame(output.ProgramTexture, 0)));
 			CurrentFrame = CurrentFrames.Primary;
 		}
@@ -905,7 +922,9 @@ namespace ShitDesigner.Main {
 			_bpmClock.Advance(_lastDeltaSeconds);
 			_loadedPatch.ApplyResolvedParameters(_bpmClock.Frame);
 			foreach (var output in _loadedPatch.Outputs) output.Evaluate(_lastDeltaSeconds, _bpmClock.Frame);
-			foreach (var overlay in m_OverlayPatches.Where(patch => patch != null)) {
+			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++) {
+				var overlay = m_OverlayPatches[laneIndex];
+				if (overlay == null || m_OverlayModes[laneIndex] == LiveSequencerCellMode.Off) continue;
 				overlay.ApplyResolvedParameters(_bpmClock.Frame);
 				foreach (var output in overlay.Outputs) output.Evaluate(_lastDeltaSeconds, _bpmClock.Frame);
 			}
@@ -914,8 +933,11 @@ namespace ShitDesigner.Main {
 		public void SceneUpdate(double deltaSeconds) {
 			EnsureUsable();
 			foreach (var output in _loadedPatch.Outputs) output.SceneUpdate(Math.Max(0d, deltaSeconds));
-			foreach (var overlay in m_OverlayPatches.Where(patch => patch != null))
+			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++) {
+				var overlay = m_OverlayPatches[laneIndex];
+				if (overlay == null || m_OverlayModes[laneIndex] == LiveSequencerCellMode.Off) continue;
 				foreach (var output in overlay.Outputs) output.SceneUpdate(Math.Max(0d, deltaSeconds));
+			}
 		}
 
 		public LiveProgramFrames Render() {
@@ -923,8 +945,11 @@ namespace ShitDesigner.Main {
 			var nextFrame = _frameNumber + 1;
 			if (nextFrame == 0) nextFrame = 1;
 			foreach (var output in _loadedPatch.Outputs) output.Render(_graphTime, nextFrame);
-			foreach (var overlay in m_OverlayPatches.Where(patch => patch != null))
+			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++) {
+				var overlay = m_OverlayPatches[laneIndex];
+				if (overlay == null || m_OverlayModes[laneIndex] == LiveSequencerCellMode.Off) continue;
 				foreach (var output in overlay.Outputs) output.Render(_graphTime, nextFrame);
+			}
 			var overlayInputs = new List<LiveOverlayInput>();
 			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++) {
 				var overlay = m_OverlayPatches[laneIndex];
@@ -959,8 +984,10 @@ namespace ShitDesigner.Main {
 					var replacement = CreatePatch(definition, ProgramRenderSize);
 					DisposePatch(current);
 					m_OverlayPatches[laneIndex] = replacement;
+					current = replacement;
 				}
 				m_OverlayModes[laneIndex] = activeModes.TryGetValue(laneIndex, out var mode) ? mode : LiveSequencerCellMode.Off;
+				current.SetSceneActive(m_OverlayModes[laneIndex] != LiveSequencerCellMode.Off);
 			}
 		}
 
@@ -1150,7 +1177,9 @@ namespace ShitDesigner.Main {
 
 		private void LoadPreloadedPatch() {
 			var previousLoadedPatch = _loadedPatch;
+			previousLoadedPatch?.SetSceneActive(false);
 			_loadedPatch = _preloadedPatch;
+			_loadedPatch.SetSceneActive(true);
 			if (previousLoadedPatch != _loadedPatch) DisposePatch(previousLoadedPatch);
 		}
 
@@ -1237,6 +1266,10 @@ namespace ShitDesigner.Main {
 			foreach (var parameter in _parameters.Values)
 				if (!parameter.TryApplyResolvedValue(frame, out var rejectionReason))
 					throw new InvalidOperationException("The resolved patch parameter could not be applied: " + rejectionReason);
+		}
+
+		public void SetSceneActive(bool active) {
+			foreach (var output in Outputs) output.SetSceneActive(active);
 		}
 
 		public void Dispose() {
