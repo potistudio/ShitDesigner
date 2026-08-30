@@ -23,7 +23,7 @@ MonoBehaviour:
       _parameters: []
     - _id: video_a
       _typeId: shitdesigner.video.player
-      m_VideoPath: Assets/ShitDesigner/Videos/Mr Beast Rizz.mov
+      m_VideoPath: Assets/ShitDesigner/Shared/Videos/Mr Beast Rizz.mov
       m_VideoClip: {fileID: 0}
       _parameters:
       - _id: transport.playing
