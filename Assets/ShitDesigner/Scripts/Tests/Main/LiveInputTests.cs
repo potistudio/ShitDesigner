@@ -20,7 +20,7 @@ namespace ShitDesigner.Main.Tests {
 				keyboard = InputSystem.AddDevice<Keyboard>();
 				keyboard.MakeCurrent();
 				var queue = new LiveParameterQueue();
-				var input = new LiveKeyboardInput(queue, new[] { patch }, (_, _) => { }, () => { }, _ => { });
+				var input = new LiveKeyboardInput(queue, new[] { patch }, _ => { }, (_, _) => { }, () => { }, _ => { });
 
 				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.A));
 				InputSystem.Update();
@@ -50,7 +50,7 @@ namespace ShitDesigner.Main.Tests {
 				keyboard = InputSystem.AddDevice<Keyboard>();
 				keyboard.MakeCurrent();
 				var movements = new List<(int Horizontal, int Vertical)>();
-				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch },
+				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, _ => { },
 					(horizontal, vertical) => movements.Add((horizontal, vertical)), () => { }, _ => { });
 
 				PollKey(input, keyboard, Key.LeftArrow);
@@ -74,11 +74,32 @@ namespace ShitDesigner.Main.Tests {
 				keyboard = InputSystem.AddDevice<Keyboard>();
 				keyboard.MakeCurrent();
 				var launched = false;
-				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, (_, _) => { }, () => { launched = true; }, _ => { });
+				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, _ => { }, (_, _) => { }, () => { launched = true; }, _ => { });
 
 				PollKey(input, keyboard, Key.Enter);
 
 				Assert.That(launched, Is.True);
+			}
+			finally {
+				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
+				Object.DestroyImmediate(patch);
+			}
+		}
+
+		[Test]
+		public void KeyboardDigitsAssignTheSelectedOverlaySceneToMatchingLanes() {
+			var patch = CreatePatch("patch-a");
+			Keyboard keyboard = null;
+			try {
+				keyboard = InputSystem.AddDevice<Keyboard>();
+				keyboard.MakeCurrent();
+				var assignedLanes = new List<int>();
+				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, assignedLanes.Add, (_, _) => { }, () => { }, _ => { });
+
+				foreach (var key in new[] { Key.Digit1, Key.Digit2, Key.Digit3, Key.Digit4, Key.Digit5, Key.Digit6, Key.Digit7, Key.Digit8 })
+					PollKey(input, keyboard, key);
+
+				Assert.That(assignedLanes, Is.EqualTo(new[] { 0, 1, 2, 3, 4, 5, 6, 7 }));
 			}
 			finally {
 				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
