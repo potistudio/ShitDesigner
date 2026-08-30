@@ -55,7 +55,11 @@ namespace ShitDesigner.Scene {
 		public SceneNodeRuntime Scene => _scene;
 
 		internal SceneRuntimeNode(RuntimeNodeCreateInfo record, ulong generationId, SceneNodeRuntime scene, Action<SceneNodeRuntime, FrameSnapshot> applyEffectiveParameters) { _record = record ?? throw new ArgumentNullException(nameof(record)); GenerationId = generationId; _scene = scene ?? throw new ArgumentNullException(nameof(scene)); _scene.BindGraphClock(); _applyEffectiveParameters = applyEffectiveParameters; _lastClock = 0d; }
-		public void OnDemandChanged(bool demanded, FrameEvaluationContext context) { if (context != null) _lastClock = context.Snapshot.GraphClockTime; }
+		public void OnDemandChanged(bool demanded, FrameEvaluationContext context) {
+			if (context != null) _lastClock = context.Snapshot.GraphClockTime;
+			var activation = demanded ? _scene.Activate() : _scene.Deactivate();
+			if (activation.IsFailure) throw new InvalidOperationException(activation.Error.Message);
+		}
 		public void Evaluate(NodeExecutionContext context, NodeOutputWriter outputs) {
 			var image = new PortId("image");
 			if (!context.RequestedOutputs.Contains(image)) return;
