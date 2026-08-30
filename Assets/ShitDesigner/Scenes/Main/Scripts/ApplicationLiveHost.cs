@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ShitDesigner.Input;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace ShitDesigner.Main {
 	public enum ApplicationLiveHostState {
@@ -52,6 +53,23 @@ namespace ShitDesigner.Main {
 		public LivePatchSlots PatchSlots => _patchSlots;
 		public string LastDiagnostic { get; private set; } = string.Empty;
 		public IReadOnlyList<LiveStepSequencer> Sequencers => m_Sequencers;
+
+		private void OnEnable() {
+			RenderPipelineManager.beginContextRendering += UseNativeUiOverlayForMultipleMetalDisplays;
+		}
+
+		private void OnDisable() {
+			RenderPipelineManager.beginContextRendering -= UseNativeUiOverlayForMultipleMetalDisplays;
+		}
+
+		public static bool RequiresNativeUiOverlay(GraphicsDeviceType graphicsDeviceType, int displayCount)
+			=> graphicsDeviceType == GraphicsDeviceType.Metal && displayCount > 1;
+
+		private static void UseNativeUiOverlayForMultipleMetalDisplays(ScriptableRenderContext context, List<Camera> cameras) {
+			var displayCount = Display.displays?.Length ?? 0;
+			if (RequiresNativeUiOverlay(SystemInfo.graphicsDeviceType, displayCount))
+				SupportedRenderingFeatures.active.rendersUIOverlay = false;
+		}
 
 		private void Awake() {
 			if (_bootOnAwake) Boot();
