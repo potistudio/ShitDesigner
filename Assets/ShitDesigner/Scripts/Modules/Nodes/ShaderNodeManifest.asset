@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ShaderNodeManifest
   m_EditorClassIdentifier: ShitDesigner.Nodes::ShitDesigner.Nodes.ShaderNodeManifestAsset
   schemaVersion: 1
-  sourceFingerprint: a8192e631afff3c43f1e36fc0e264fb8cef53dc7ce114cff226dfc8d3c67dba5
+  sourceFingerprint: 672ff1c50b06b733880f7f91777193bb8b6598b0c87266206443db834f6b13a2
   entries:
   - typeId: shitdesigner.shader.generator
     schemaVersion: 1
@@ -56843,6 +56843,3891 @@ MonoBehaviour:
       variantId: glitch.31
       outputRole: image
       requiredFeatures: 66
+    shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
+  - typeId: shitdesigner.shader.glitch.packet-loss
+    schemaVersion: 1
+    displayName: Packet Loss
+    category: Glitch/Signal/Data
+    family: 3
+    shaderKey: Hidden/ShitDesigner/VJ/Glitch
+    variantId: glitch.32
+    requiredFeatures: 66
+    stateful: 1
+    historySlots: 3
+    userAddable: 1
+    description: finite-deterministic-reference
+    priority: P1
+    warmupFrames: 1
+    sourceLedger: spatial-variants.json
+    sourceVariant: 32
+    outputPass: 0
+    aliases:
+    - packet_loss
+    - glitch.32
+    inputs:
+    - id: input
+      sourceId: image
+      displayName: image
+      property: _MainTex
+      role: 0
+      type: 0
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: history_tex
+      sourceId: HistoryTex
+      displayName: HistoryTex
+      property: _HistoryTex
+      role: 4
+      type: 0
+      required: 0
+      hasDefaultImage: 1
+      defaultImage: 1
+    - id: history_tex2
+      sourceId: HistoryTex2
+      displayName: HistoryTex2
+      property: _HistoryTex2
+      role: 4
+      type: 0
+      required: 0
+      hasDefaultImage: 1
+      defaultImage: 1
+    - id: history_tex3
+      sourceId: HistoryTex3
+      displayName: HistoryTex3
+      property: _HistoryTex3
+      role: 4
+      type: 0
+      required: 0
+      hasDefaultImage: 1
+      defaultImage: 1
+    parameters:
+    - id: amount
+      sourceId: amount
+      displayName: Amount
+      property: _VJAmount
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: frequency
+      sourceId: frequency
+      displayName: Frequency
+      property: _VJFrequency
+      type: 0
+      defaultValue: float:4
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: detail
+      sourceId: detail
+      displayName: Detail
+      property: _VJDetail
+      type: 0
+      defaultValue: float:4
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: softness
+      sourceId: softness
+      displayName: Softness
+      property: _VJSoftness
+      type: 0
+      defaultValue: float:0.05
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: threshold
+      sourceId: threshold
+      displayName: Threshold
+      property: _VJThreshold
+      type: 0
+      defaultValue: float:0.5
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: gain
+      sourceId: gain
+      displayName: Gain
+      property: _VJGain
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: mix
+      sourceId: mix
+      displayName: Mix
+      property: _VJMix
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: speed
+      sourceId: speed
+      displayName: Speed
+      property: _VJSpeed
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: phase
+      sourceId: phase
+      displayName: Phase
+      property: _VJPhase
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: seed
+      sourceId: seed
+      displayName: Seed
+      property: _VJSeed
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: center
+      sourceId: center
+      displayName: Center
+      property: _VJCenter
+      type: 5
+      defaultValue: vector4:0.5,0.5,0,0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: angle
+      sourceId: angle
+      displayName: Angle
+      property: _VJAngle
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: scale
+      sourceId: scale
+      displayName: Scale
+      property: _VJScale
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: radius
+      sourceId: radius
+      displayName: Radius
+      property: _VJRadius
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: falloff
+      sourceId: falloff
+      displayName: Falloff
+      property: _VJFalloff
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: displacement
+      sourceId: displacement
+      displayName: Displacement
+      property: _VJDisplacement
+      type: 5
+      defaultValue: vector4:0.5,0.5,0,0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    passes:
+    - id: main
+      index: 0
+      kind: 0
+      variantId: glitch.32
+      outputRole: image
+      requiredFeatures: 66
+    shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
+  - typeId: shitdesigner.shader.glitch.buffer-underrun
+    schemaVersion: 1
+    displayName: Buffer Underrun
+    category: Glitch/Signal/Data
+    family: 3
+    shaderKey: Hidden/ShitDesigner/VJ/Glitch
+    variantId: glitch.33
+    requiredFeatures: 66
+    stateful: 1
+    historySlots: 3
+    userAddable: 1
+    description: finite-deterministic-reference
+    priority: P1
+    warmupFrames: 1
+    sourceLedger: spatial-variants.json
+    sourceVariant: 33
+    outputPass: 0
+    aliases:
+    - buffer_underrun
+    - glitch.33
+    inputs:
+    - id: input
+      sourceId: image
+      displayName: image
+      property: _MainTex
+      role: 0
+      type: 0
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: history_tex
+      sourceId: HistoryTex
+      displayName: HistoryTex
+      property: _HistoryTex
+      role: 4
+      type: 0
+      required: 0
+      hasDefaultImage: 1
+      defaultImage: 1
+    - id: history_tex2
+      sourceId: HistoryTex2
+      displayName: HistoryTex2
+      property: _HistoryTex2
+      role: 4
+      type: 0
+      required: 0
+      hasDefaultImage: 1
+      defaultImage: 1
+    - id: history_tex3
+      sourceId: HistoryTex3
+      displayName: HistoryTex3
+      property: _HistoryTex3
+      role: 4
+      type: 0
+      required: 0
+      hasDefaultImage: 1
+      defaultImage: 1
+    parameters:
+    - id: amount
+      sourceId: amount
+      displayName: Amount
+      property: _VJAmount
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: frequency
+      sourceId: frequency
+      displayName: Frequency
+      property: _VJFrequency
+      type: 0
+      defaultValue: float:4
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: detail
+      sourceId: detail
+      displayName: Detail
+      property: _VJDetail
+      type: 0
+      defaultValue: float:4
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: softness
+      sourceId: softness
+      displayName: Softness
+      property: _VJSoftness
+      type: 0
+      defaultValue: float:0.05
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: threshold
+      sourceId: threshold
+      displayName: Threshold
+      property: _VJThreshold
+      type: 0
+      defaultValue: float:0.5
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: gain
+      sourceId: gain
+      displayName: Gain
+      property: _VJGain
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: mix
+      sourceId: mix
+      displayName: Mix
+      property: _VJMix
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: speed
+      sourceId: speed
+      displayName: Speed
+      property: _VJSpeed
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: phase
+      sourceId: phase
+      displayName: Phase
+      property: _VJPhase
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: seed
+      sourceId: seed
+      displayName: Seed
+      property: _VJSeed
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: center
+      sourceId: center
+      displayName: Center
+      property: _VJCenter
+      type: 5
+      defaultValue: vector4:0.5,0.5,0,0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: angle
+      sourceId: angle
+      displayName: Angle
+      property: _VJAngle
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: scale
+      sourceId: scale
+      displayName: Scale
+      property: _VJScale
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: radius
+      sourceId: radius
+      displayName: Radius
+      property: _VJRadius
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: falloff
+      sourceId: falloff
+      displayName: Falloff
+      property: _VJFalloff
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: displacement
+      sourceId: displacement
+      displayName: Displacement
+      property: _VJDisplacement
+      type: 5
+      defaultValue: vector4:0.5,0.5,0,0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    passes:
+    - id: main
+      index: 0
+      kind: 0
+      variantId: glitch.33
+      outputRole: image
+      requiredFeatures: 66
+    shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
+  - typeId: shitdesigner.shader.glitch.frame-address-error
+    schemaVersion: 1
+    displayName: Frame Address Error
+    category: Glitch/Signal/Data
+    family: 3
+    shaderKey: Hidden/ShitDesigner/VJ/Glitch
+    variantId: glitch.34
+    requiredFeatures: 66
+    stateful: 1
+    historySlots: 3
+    userAddable: 1
+    description: finite-deterministic-reference
+    priority: P1
+    warmupFrames: 1
+    sourceLedger: spatial-variants.json
+    sourceVariant: 34
+    outputPass: 0
+    aliases:
+    - frame_address_error
+    - glitch.34
+    inputs:
+    - id: input
+      sourceId: image
+      displayName: image
+      property: _MainTex
+      role: 0
+      type: 0
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: history_tex
+      sourceId: HistoryTex
+      displayName: HistoryTex
+      property: _HistoryTex
+      role: 4
+      type: 0
+      required: 0
+      hasDefaultImage: 1
+      defaultImage: 1
+    - id: history_tex2
+      sourceId: HistoryTex2
+      displayName: HistoryTex2
+      property: _HistoryTex2
+      role: 4
+      type: 0
+      required: 0
+      hasDefaultImage: 1
+      defaultImage: 1
+    - id: history_tex3
+      sourceId: HistoryTex3
+      displayName: HistoryTex3
+      property: _HistoryTex3
+      role: 4
+      type: 0
+      required: 0
+      hasDefaultImage: 1
+      defaultImage: 1
+    parameters:
+    - id: amount
+      sourceId: amount
+      displayName: Amount
+      property: _VJAmount
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: frequency
+      sourceId: frequency
+      displayName: Frequency
+      property: _VJFrequency
+      type: 0
+      defaultValue: float:4
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: detail
+      sourceId: detail
+      displayName: Detail
+      property: _VJDetail
+      type: 0
+      defaultValue: float:4
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: softness
+      sourceId: softness
+      displayName: Softness
+      property: _VJSoftness
+      type: 0
+      defaultValue: float:0.05
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: threshold
+      sourceId: threshold
+      displayName: Threshold
+      property: _VJThreshold
+      type: 0
+      defaultValue: float:0.5
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: gain
+      sourceId: gain
+      displayName: Gain
+      property: _VJGain
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: mix
+      sourceId: mix
+      displayName: Mix
+      property: _VJMix
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: speed
+      sourceId: speed
+      displayName: Speed
+      property: _VJSpeed
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: phase
+      sourceId: phase
+      displayName: Phase
+      property: _VJPhase
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: seed
+      sourceId: seed
+      displayName: Seed
+      property: _VJSeed
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: center
+      sourceId: center
+      displayName: Center
+      property: _VJCenter
+      type: 5
+      defaultValue: vector4:0.5,0.5,0,0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: angle
+      sourceId: angle
+      displayName: Angle
+      property: _VJAngle
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: scale
+      sourceId: scale
+      displayName: Scale
+      property: _VJScale
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: radius
+      sourceId: radius
+      displayName: Radius
+      property: _VJRadius
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: falloff
+      sourceId: falloff
+      displayName: Falloff
+      property: _VJFalloff
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: displacement
+      sourceId: displacement
+      displayName: Displacement
+      property: _VJDisplacement
+      type: 5
+      defaultValue: vector4:0.5,0.5,0,0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    passes:
+    - id: main
+      index: 0
+      kind: 0
+      variantId: glitch.34
+      outputRole: image
+      requiredFeatures: 66
+    shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
+  - typeId: shitdesigner.shader.glitch.codec-collapse
+    schemaVersion: 1
+    displayName: Codec Collapse
+    category: Glitch/Signal/Data
+    family: 3
+    shaderKey: Hidden/ShitDesigner/VJ/Glitch
+    variantId: glitch.35
+    requiredFeatures: 2
+    stateful: 0
+    historySlots: 0
+    userAddable: 1
+    description: finite-deterministic-reference
+    priority: P1
+    warmupFrames: 0
+    sourceLedger: spatial-variants.json
+    sourceVariant: 35
+    outputPass: 0
+    aliases:
+    - codec_collapse
+    - glitch.35
+    inputs:
+    - id: input
+      sourceId: image
+      displayName: image
+      property: _MainTex
+      role: 0
+      type: 0
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters:
+    - id: amount
+      sourceId: amount
+      displayName: Amount
+      property: _VJAmount
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: frequency
+      sourceId: frequency
+      displayName: Frequency
+      property: _VJFrequency
+      type: 0
+      defaultValue: float:4
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: detail
+      sourceId: detail
+      displayName: Detail
+      property: _VJDetail
+      type: 0
+      defaultValue: float:4
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: softness
+      sourceId: softness
+      displayName: Softness
+      property: _VJSoftness
+      type: 0
+      defaultValue: float:0.05
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: threshold
+      sourceId: threshold
+      displayName: Threshold
+      property: _VJThreshold
+      type: 0
+      defaultValue: float:0.5
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: gain
+      sourceId: gain
+      displayName: Gain
+      property: _VJGain
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: mix
+      sourceId: mix
+      displayName: Mix
+      property: _VJMix
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: speed
+      sourceId: speed
+      displayName: Speed
+      property: _VJSpeed
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: phase
+      sourceId: phase
+      displayName: Phase
+      property: _VJPhase
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: seed
+      sourceId: seed
+      displayName: Seed
+      property: _VJSeed
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: center
+      sourceId: center
+      displayName: Center
+      property: _VJCenter
+      type: 5
+      defaultValue: vector4:0.5,0.5,0,0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: angle
+      sourceId: angle
+      displayName: Angle
+      property: _VJAngle
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: scale
+      sourceId: scale
+      displayName: Scale
+      property: _VJScale
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: radius
+      sourceId: radius
+      displayName: Radius
+      property: _VJRadius
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: falloff
+      sourceId: falloff
+      displayName: Falloff
+      property: _VJFalloff
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: displacement
+      sourceId: displacement
+      displayName: Displacement
+      property: _VJDisplacement
+      type: 5
+      defaultValue: vector4:0.5,0.5,0,0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    passes:
+    - id: main
+      index: 0
+      kind: 0
+      variantId: glitch.35
+      outputRole: image
+      requiredFeatures: 2
+    shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
+  - typeId: shitdesigner.shader.glitch.bitplane-failure
+    schemaVersion: 1
+    displayName: Bitplane Failure
+    category: Glitch/Signal/Data
+    family: 3
+    shaderKey: Hidden/ShitDesigner/VJ/Glitch
+    variantId: glitch.36
+    requiredFeatures: 2
+    stateful: 0
+    historySlots: 0
+    userAddable: 1
+    description: finite-deterministic-reference
+    priority: P1
+    warmupFrames: 0
+    sourceLedger: spatial-variants.json
+    sourceVariant: 36
+    outputPass: 0
+    aliases:
+    - bitplane_failure
+    - glitch.36
+    inputs:
+    - id: input
+      sourceId: image
+      displayName: image
+      property: _MainTex
+      role: 0
+      type: 0
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters:
+    - id: amount
+      sourceId: amount
+      displayName: Amount
+      property: _VJAmount
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: frequency
+      sourceId: frequency
+      displayName: Frequency
+      property: _VJFrequency
+      type: 0
+      defaultValue: float:4
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: detail
+      sourceId: detail
+      displayName: Detail
+      property: _VJDetail
+      type: 0
+      defaultValue: float:4
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: softness
+      sourceId: softness
+      displayName: Softness
+      property: _VJSoftness
+      type: 0
+      defaultValue: float:0.05
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: threshold
+      sourceId: threshold
+      displayName: Threshold
+      property: _VJThreshold
+      type: 0
+      defaultValue: float:0.5
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: gain
+      sourceId: gain
+      displayName: Gain
+      property: _VJGain
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: mix
+      sourceId: mix
+      displayName: Mix
+      property: _VJMix
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: speed
+      sourceId: speed
+      displayName: Speed
+      property: _VJSpeed
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: phase
+      sourceId: phase
+      displayName: Phase
+      property: _VJPhase
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: seed
+      sourceId: seed
+      displayName: Seed
+      property: _VJSeed
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: center
+      sourceId: center
+      displayName: Center
+      property: _VJCenter
+      type: 5
+      defaultValue: vector4:0.5,0.5,0,0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: angle
+      sourceId: angle
+      displayName: Angle
+      property: _VJAngle
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: scale
+      sourceId: scale
+      displayName: Scale
+      property: _VJScale
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: radius
+      sourceId: radius
+      displayName: Radius
+      property: _VJRadius
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: falloff
+      sourceId: falloff
+      displayName: Falloff
+      property: _VJFalloff
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: displacement
+      sourceId: displacement
+      displayName: Displacement
+      property: _VJDisplacement
+      type: 5
+      defaultValue: vector4:0.5,0.5,0,0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    passes:
+    - id: main
+      index: 0
+      kind: 0
+      variantId: glitch.36
+      outputRole: image
+      requiredFeatures: 2
+    shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
+  - typeId: shitdesigner.shader.glitch.memory-corruption
+    schemaVersion: 1
+    displayName: Memory Corruption
+    category: Glitch/Signal/Data
+    family: 3
+    shaderKey: Hidden/ShitDesigner/VJ/Glitch
+    variantId: glitch.37
+    requiredFeatures: 66
+    stateful: 1
+    historySlots: 3
+    userAddable: 1
+    description: finite-deterministic-reference
+    priority: P1
+    warmupFrames: 1
+    sourceLedger: spatial-variants.json
+    sourceVariant: 37
+    outputPass: 0
+    aliases:
+    - memory_corruption
+    - glitch.37
+    inputs:
+    - id: input
+      sourceId: image
+      displayName: image
+      property: _MainTex
+      role: 0
+      type: 0
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: history_tex
+      sourceId: HistoryTex
+      displayName: HistoryTex
+      property: _HistoryTex
+      role: 4
+      type: 0
+      required: 0
+      hasDefaultImage: 1
+      defaultImage: 1
+    - id: history_tex2
+      sourceId: HistoryTex2
+      displayName: HistoryTex2
+      property: _HistoryTex2
+      role: 4
+      type: 0
+      required: 0
+      hasDefaultImage: 1
+      defaultImage: 1
+    - id: history_tex3
+      sourceId: HistoryTex3
+      displayName: HistoryTex3
+      property: _HistoryTex3
+      role: 4
+      type: 0
+      required: 0
+      hasDefaultImage: 1
+      defaultImage: 1
+    parameters:
+    - id: amount
+      sourceId: amount
+      displayName: Amount
+      property: _VJAmount
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: frequency
+      sourceId: frequency
+      displayName: Frequency
+      property: _VJFrequency
+      type: 0
+      defaultValue: float:4
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: detail
+      sourceId: detail
+      displayName: Detail
+      property: _VJDetail
+      type: 0
+      defaultValue: float:4
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: softness
+      sourceId: softness
+      displayName: Softness
+      property: _VJSoftness
+      type: 0
+      defaultValue: float:0.05
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: threshold
+      sourceId: threshold
+      displayName: Threshold
+      property: _VJThreshold
+      type: 0
+      defaultValue: float:0.5
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: gain
+      sourceId: gain
+      displayName: Gain
+      property: _VJGain
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: mix
+      sourceId: mix
+      displayName: Mix
+      property: _VJMix
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: speed
+      sourceId: speed
+      displayName: Speed
+      property: _VJSpeed
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: phase
+      sourceId: phase
+      displayName: Phase
+      property: _VJPhase
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: seed
+      sourceId: seed
+      displayName: Seed
+      property: _VJSeed
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: center
+      sourceId: center
+      displayName: Center
+      property: _VJCenter
+      type: 5
+      defaultValue: vector4:0.5,0.5,0,0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: angle
+      sourceId: angle
+      displayName: Angle
+      property: _VJAngle
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: scale
+      sourceId: scale
+      displayName: Scale
+      property: _VJScale
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: radius
+      sourceId: radius
+      displayName: Radius
+      property: _VJRadius
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: falloff
+      sourceId: falloff
+      displayName: Falloff
+      property: _VJFalloff
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: displacement
+      sourceId: displacement
+      displayName: Displacement
+      property: _VJDisplacement
+      type: 5
+      defaultValue: vector4:0.5,0.5,0,0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    passes:
+    - id: main
+      index: 0
+      kind: 0
+      variantId: glitch.37
+      outputRole: image
+      requiredFeatures: 66
+    shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
+  - typeId: shitdesigner.shader.glitch.decode-drift
+    schemaVersion: 1
+    displayName: Decode Drift
+    category: Glitch/Signal/Data
+    family: 3
+    shaderKey: Hidden/ShitDesigner/VJ/Glitch
+    variantId: glitch.38
+    requiredFeatures: 66
+    stateful: 1
+    historySlots: 3
+    userAddable: 1
+    description: finite-deterministic-reference
+    priority: P1
+    warmupFrames: 1
+    sourceLedger: spatial-variants.json
+    sourceVariant: 38
+    outputPass: 0
+    aliases:
+    - decode_drift
+    - glitch.38
+    inputs:
+    - id: input
+      sourceId: image
+      displayName: image
+      property: _MainTex
+      role: 0
+      type: 0
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: history_tex
+      sourceId: HistoryTex
+      displayName: HistoryTex
+      property: _HistoryTex
+      role: 4
+      type: 0
+      required: 0
+      hasDefaultImage: 1
+      defaultImage: 1
+    - id: history_tex2
+      sourceId: HistoryTex2
+      displayName: HistoryTex2
+      property: _HistoryTex2
+      role: 4
+      type: 0
+      required: 0
+      hasDefaultImage: 1
+      defaultImage: 1
+    - id: history_tex3
+      sourceId: HistoryTex3
+      displayName: HistoryTex3
+      property: _HistoryTex3
+      role: 4
+      type: 0
+      required: 0
+      hasDefaultImage: 1
+      defaultImage: 1
+    parameters:
+    - id: amount
+      sourceId: amount
+      displayName: Amount
+      property: _VJAmount
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: frequency
+      sourceId: frequency
+      displayName: Frequency
+      property: _VJFrequency
+      type: 0
+      defaultValue: float:4
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: detail
+      sourceId: detail
+      displayName: Detail
+      property: _VJDetail
+      type: 0
+      defaultValue: float:4
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: softness
+      sourceId: softness
+      displayName: Softness
+      property: _VJSoftness
+      type: 0
+      defaultValue: float:0.05
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: threshold
+      sourceId: threshold
+      displayName: Threshold
+      property: _VJThreshold
+      type: 0
+      defaultValue: float:0.5
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: gain
+      sourceId: gain
+      displayName: Gain
+      property: _VJGain
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: mix
+      sourceId: mix
+      displayName: Mix
+      property: _VJMix
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: speed
+      sourceId: speed
+      displayName: Speed
+      property: _VJSpeed
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: phase
+      sourceId: phase
+      displayName: Phase
+      property: _VJPhase
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: seed
+      sourceId: seed
+      displayName: Seed
+      property: _VJSeed
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: center
+      sourceId: center
+      displayName: Center
+      property: _VJCenter
+      type: 5
+      defaultValue: vector4:0.5,0.5,0,0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: angle
+      sourceId: angle
+      displayName: Angle
+      property: _VJAngle
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: scale
+      sourceId: scale
+      displayName: Scale
+      property: _VJScale
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: radius
+      sourceId: radius
+      displayName: Radius
+      property: _VJRadius
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: falloff
+      sourceId: falloff
+      displayName: Falloff
+      property: _VJFalloff
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: displacement
+      sourceId: displacement
+      displayName: Displacement
+      property: _VJDisplacement
+      type: 5
+      defaultValue: vector4:0.5,0.5,0,0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    passes:
+    - id: main
+      index: 0
+      kind: 0
+      variantId: glitch.38
+      outputRole: image
+      requiredFeatures: 66
+    shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
+  - typeId: shitdesigner.shader.glitch.header-damage
+    schemaVersion: 1
+    displayName: Header Damage
+    category: Glitch/Signal/Data
+    family: 3
+    shaderKey: Hidden/ShitDesigner/VJ/Glitch
+    variantId: glitch.39
+    requiredFeatures: 2
+    stateful: 0
+    historySlots: 0
+    userAddable: 1
+    description: finite-deterministic-reference
+    priority: P1
+    warmupFrames: 0
+    sourceLedger: spatial-variants.json
+    sourceVariant: 39
+    outputPass: 0
+    aliases:
+    - header_damage
+    - glitch.39
+    inputs:
+    - id: input
+      sourceId: image
+      displayName: image
+      property: _MainTex
+      role: 0
+      type: 0
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters:
+    - id: amount
+      sourceId: amount
+      displayName: Amount
+      property: _VJAmount
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: frequency
+      sourceId: frequency
+      displayName: Frequency
+      property: _VJFrequency
+      type: 0
+      defaultValue: float:4
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: detail
+      sourceId: detail
+      displayName: Detail
+      property: _VJDetail
+      type: 0
+      defaultValue: float:4
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: softness
+      sourceId: softness
+      displayName: Softness
+      property: _VJSoftness
+      type: 0
+      defaultValue: float:0.05
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: threshold
+      sourceId: threshold
+      displayName: Threshold
+      property: _VJThreshold
+      type: 0
+      defaultValue: float:0.5
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: gain
+      sourceId: gain
+      displayName: Gain
+      property: _VJGain
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: mix
+      sourceId: mix
+      displayName: Mix
+      property: _VJMix
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: speed
+      sourceId: speed
+      displayName: Speed
+      property: _VJSpeed
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: phase
+      sourceId: phase
+      displayName: Phase
+      property: _VJPhase
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: seed
+      sourceId: seed
+      displayName: Seed
+      property: _VJSeed
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: center
+      sourceId: center
+      displayName: Center
+      property: _VJCenter
+      type: 5
+      defaultValue: vector4:0.5,0.5,0,0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: angle
+      sourceId: angle
+      displayName: Angle
+      property: _VJAngle
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: scale
+      sourceId: scale
+      displayName: Scale
+      property: _VJScale
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: radius
+      sourceId: radius
+      displayName: Radius
+      property: _VJRadius
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: falloff
+      sourceId: falloff
+      displayName: Falloff
+      property: _VJFalloff
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: displacement
+      sourceId: displacement
+      displayName: Displacement
+      property: _VJDisplacement
+      type: 5
+      defaultValue: vector4:0.5,0.5,0,0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    passes:
+    - id: main
+      index: 0
+      kind: 0
+      variantId: glitch.39
+      outputRole: image
+      requiredFeatures: 2
+    shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
+  - typeId: shitdesigner.shader.glitch.channel-dropout
+    schemaVersion: 1
+    displayName: Channel Dropout
+    category: Glitch/Signal/Data
+    family: 3
+    shaderKey: Hidden/ShitDesigner/VJ/Glitch
+    variantId: glitch.40
+    requiredFeatures: 2
+    stateful: 0
+    historySlots: 0
+    userAddable: 1
+    description: finite-deterministic-reference
+    priority: P1
+    warmupFrames: 0
+    sourceLedger: spatial-variants.json
+    sourceVariant: 40
+    outputPass: 0
+    aliases:
+    - channel_dropout
+    - glitch.40
+    inputs:
+    - id: input
+      sourceId: image
+      displayName: image
+      property: _MainTex
+      role: 0
+      type: 0
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters:
+    - id: amount
+      sourceId: amount
+      displayName: Amount
+      property: _VJAmount
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: frequency
+      sourceId: frequency
+      displayName: Frequency
+      property: _VJFrequency
+      type: 0
+      defaultValue: float:4
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: detail
+      sourceId: detail
+      displayName: Detail
+      property: _VJDetail
+      type: 0
+      defaultValue: float:4
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: softness
+      sourceId: softness
+      displayName: Softness
+      property: _VJSoftness
+      type: 0
+      defaultValue: float:0.05
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: threshold
+      sourceId: threshold
+      displayName: Threshold
+      property: _VJThreshold
+      type: 0
+      defaultValue: float:0.5
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: gain
+      sourceId: gain
+      displayName: Gain
+      property: _VJGain
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: mix
+      sourceId: mix
+      displayName: Mix
+      property: _VJMix
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: speed
+      sourceId: speed
+      displayName: Speed
+      property: _VJSpeed
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: phase
+      sourceId: phase
+      displayName: Phase
+      property: _VJPhase
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: seed
+      sourceId: seed
+      displayName: Seed
+      property: _VJSeed
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: center
+      sourceId: center
+      displayName: Center
+      property: _VJCenter
+      type: 5
+      defaultValue: vector4:0.5,0.5,0,0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: angle
+      sourceId: angle
+      displayName: Angle
+      property: _VJAngle
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: scale
+      sourceId: scale
+      displayName: Scale
+      property: _VJScale
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: radius
+      sourceId: radius
+      displayName: Radius
+      property: _VJRadius
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: falloff
+      sourceId: falloff
+      displayName: Falloff
+      property: _VJFalloff
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: displacement
+      sourceId: displacement
+      displayName: Displacement
+      property: _VJDisplacement
+      type: 5
+      defaultValue: vector4:0.5,0.5,0,0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    passes:
+    - id: main
+      index: 0
+      kind: 0
+      variantId: glitch.40
+      outputRole: image
+      requiredFeatures: 2
+    shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
+  - typeId: shitdesigner.shader.glitch.data-rain-replacement
+    schemaVersion: 1
+    displayName: Data Rain Replacement
+    category: Glitch/Signal/Data
+    family: 3
+    shaderKey: Hidden/ShitDesigner/VJ/Glitch
+    variantId: glitch.41
+    requiredFeatures: 2
+    stateful: 0
+    historySlots: 0
+    userAddable: 1
+    description: finite-deterministic-reference
+    priority: P1
+    warmupFrames: 0
+    sourceLedger: spatial-variants.json
+    sourceVariant: 41
+    outputPass: 0
+    aliases:
+    - data_rain_replacement
+    - glitch.41
+    inputs:
+    - id: input
+      sourceId: image
+      displayName: image
+      property: _MainTex
+      role: 0
+      type: 0
+      required: 1
+      hasDefaultImage: 0
+      defaultImage: 0
+    parameters:
+    - id: amount
+      sourceId: amount
+      displayName: Amount
+      property: _VJAmount
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: frequency
+      sourceId: frequency
+      displayName: Frequency
+      property: _VJFrequency
+      type: 0
+      defaultValue: float:4
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: detail
+      sourceId: detail
+      displayName: Detail
+      property: _VJDetail
+      type: 0
+      defaultValue: float:4
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: softness
+      sourceId: softness
+      displayName: Softness
+      property: _VJSoftness
+      type: 0
+      defaultValue: float:0.05
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: threshold
+      sourceId: threshold
+      displayName: Threshold
+      property: _VJThreshold
+      type: 0
+      defaultValue: float:0.5
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: gain
+      sourceId: gain
+      displayName: Gain
+      property: _VJGain
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: mix
+      sourceId: mix
+      displayName: Mix
+      property: _VJMix
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: speed
+      sourceId: speed
+      displayName: Speed
+      property: _VJSpeed
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: phase
+      sourceId: phase
+      displayName: Phase
+      property: _VJPhase
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: seed
+      sourceId: seed
+      displayName: Seed
+      property: _VJSeed
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: center
+      sourceId: center
+      displayName: Center
+      property: _VJCenter
+      type: 5
+      defaultValue: vector4:0.5,0.5,0,0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: angle
+      sourceId: angle
+      displayName: Angle
+      property: _VJAngle
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: scale
+      sourceId: scale
+      displayName: Scale
+      property: _VJScale
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: radius
+      sourceId: radius
+      displayName: Radius
+      property: _VJRadius
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: falloff
+      sourceId: falloff
+      displayName: Falloff
+      property: _VJFalloff
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: displacement
+      sourceId: displacement
+      displayName: Displacement
+      property: _VJDisplacement
+      type: 5
+      defaultValue: vector4:0.5,0.5,0,0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    passes:
+    - id: main
+      index: 0
+      kind: 0
+      variantId: glitch.41
+      outputRole: image
+      requiredFeatures: 2
     shader: {fileID: 4800000, guid: 0332bf06f18586840a7102a9f61de9b7, type: 3}
   - typeId: shitdesigner.shader.blur.box-blur
     schemaVersion: 1

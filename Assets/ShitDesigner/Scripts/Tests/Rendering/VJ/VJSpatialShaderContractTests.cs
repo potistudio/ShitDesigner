@@ -9,7 +9,7 @@ using UnityEngine.TestTools;
 
 namespace ShitDesigner.Rendering.Tests.VJ {
 	public sealed class VJSpatialShaderContractTests {
-		private const int ExpectedVariantCount = 246;
+		private const int ExpectedVariantCount = 256;
 		private static readonly string[] FamilyShaderNames =
 		{
 			"Hidden/ShitDesigner/VJ/Generator",
@@ -24,7 +24,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 		[Test]
 		[Category("VJSpatial")]
 		[Category("Manifest")]
-		public void SpatialLedger_ContainsAll246VariantsWithContiguousFamilyIds() {
+		public void SpatialLedger_ContainsAll256VariantsWithContiguousFamilyIds() {
 			var path = Path.Combine(Application.dataPath, "ShitDesigner/Shaders/Manifests/spatial-variants.json");
 			Assert.That(File.Exists(path), Is.True, "Spatial variant ledger is missing: " + path);
 
@@ -61,7 +61,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 				{ "VJGenerator", 48 },
 				{ "VJColor", 34 },
 				{ "VJGeometry", 42 },
-				{ "VJGlitch", 32 },
+				{ "VJGlitch", 42 },
 				{ "VJConvolution", 28 },
 				{ "VJEdge", 38 },
 				{ "VJKey", 24 }

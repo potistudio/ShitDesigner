@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "pack": "vj-spatial",
-  "variantCount": 246,
+  "variantCount": 256,
   "families": [
     {
       "family": "VJGenerator",
@@ -21,7 +21,7 @@
     {
       "family": "VJGlitch",
       "shader": "Hidden/ShitDesigner/VJ/Glitch",
-      "count": 32
+      "count": 42
     },
     {
       "family": "VJConvolution",
@@ -5591,6 +5591,386 @@
       "family": "VJGlitch",
       "shader": "Hidden/ShitDesigner/VJ/Glitch",
       "variant": 31,
+      "role": "effect",
+      "inputs": [
+        "image"
+      ],
+      "outputs": [
+        "image"
+      ],
+      "parameters": [
+        "amount",
+        "frequency",
+        "detail",
+        "softness",
+        "threshold",
+        "gain",
+        "mix",
+        "speed",
+        "phase",
+        "seed",
+        "center",
+        "angle",
+        "scale",
+        "radius",
+        "falloff",
+        "displacement"
+      ],
+      "stateful": false,
+      "priority": "P1",
+      "testStrategy": "finite-deterministic-reference"
+    },
+    {
+      "nodeTypeId": "shitdesigner.shader.glitch.packet-loss",
+      "variantId": "glitch.32",
+      "name": "Packet Loss",
+      "category": "Glitch/Signal/Data",
+      "family": "VJGlitch",
+      "shader": "Hidden/ShitDesigner/VJ/Glitch",
+      "variant": 32,
+      "role": "effect",
+      "inputs": [
+        "image"
+      ],
+      "outputs": [
+        "image"
+      ],
+      "parameters": [
+        "amount",
+        "frequency",
+        "detail",
+        "softness",
+        "threshold",
+        "gain",
+        "mix",
+        "speed",
+        "phase",
+        "seed",
+        "center",
+        "angle",
+        "scale",
+        "radius",
+        "falloff",
+        "displacement"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "priority": "P1",
+      "testStrategy": "finite-deterministic-reference"
+    },
+    {
+      "nodeTypeId": "shitdesigner.shader.glitch.buffer-underrun",
+      "variantId": "glitch.33",
+      "name": "Buffer Underrun",
+      "category": "Glitch/Signal/Data",
+      "family": "VJGlitch",
+      "shader": "Hidden/ShitDesigner/VJ/Glitch",
+      "variant": 33,
+      "role": "effect",
+      "inputs": [
+        "image"
+      ],
+      "outputs": [
+        "image"
+      ],
+      "parameters": [
+        "amount",
+        "frequency",
+        "detail",
+        "softness",
+        "threshold",
+        "gain",
+        "mix",
+        "speed",
+        "phase",
+        "seed",
+        "center",
+        "angle",
+        "scale",
+        "radius",
+        "falloff",
+        "displacement"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "priority": "P1",
+      "testStrategy": "finite-deterministic-reference"
+    },
+    {
+      "nodeTypeId": "shitdesigner.shader.glitch.frame-address-error",
+      "variantId": "glitch.34",
+      "name": "Frame Address Error",
+      "category": "Glitch/Signal/Data",
+      "family": "VJGlitch",
+      "shader": "Hidden/ShitDesigner/VJ/Glitch",
+      "variant": 34,
+      "role": "effect",
+      "inputs": [
+        "image"
+      ],
+      "outputs": [
+        "image"
+      ],
+      "parameters": [
+        "amount",
+        "frequency",
+        "detail",
+        "softness",
+        "threshold",
+        "gain",
+        "mix",
+        "speed",
+        "phase",
+        "seed",
+        "center",
+        "angle",
+        "scale",
+        "radius",
+        "falloff",
+        "displacement"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "priority": "P1",
+      "testStrategy": "finite-deterministic-reference"
+    },
+    {
+      "nodeTypeId": "shitdesigner.shader.glitch.codec-collapse",
+      "variantId": "glitch.35",
+      "name": "Codec Collapse",
+      "category": "Glitch/Signal/Data",
+      "family": "VJGlitch",
+      "shader": "Hidden/ShitDesigner/VJ/Glitch",
+      "variant": 35,
+      "role": "effect",
+      "inputs": [
+        "image"
+      ],
+      "outputs": [
+        "image"
+      ],
+      "parameters": [
+        "amount",
+        "frequency",
+        "detail",
+        "softness",
+        "threshold",
+        "gain",
+        "mix",
+        "speed",
+        "phase",
+        "seed",
+        "center",
+        "angle",
+        "scale",
+        "radius",
+        "falloff",
+        "displacement"
+      ],
+      "stateful": false,
+      "priority": "P1",
+      "testStrategy": "finite-deterministic-reference"
+    },
+    {
+      "nodeTypeId": "shitdesigner.shader.glitch.bitplane-failure",
+      "variantId": "glitch.36",
+      "name": "Bitplane Failure",
+      "category": "Glitch/Signal/Data",
+      "family": "VJGlitch",
+      "shader": "Hidden/ShitDesigner/VJ/Glitch",
+      "variant": 36,
+      "role": "effect",
+      "inputs": [
+        "image"
+      ],
+      "outputs": [
+        "image"
+      ],
+      "parameters": [
+        "amount",
+        "frequency",
+        "detail",
+        "softness",
+        "threshold",
+        "gain",
+        "mix",
+        "speed",
+        "phase",
+        "seed",
+        "center",
+        "angle",
+        "scale",
+        "radius",
+        "falloff",
+        "displacement"
+      ],
+      "stateful": false,
+      "priority": "P1",
+      "testStrategy": "finite-deterministic-reference"
+    },
+    {
+      "nodeTypeId": "shitdesigner.shader.glitch.memory-corruption",
+      "variantId": "glitch.37",
+      "name": "Memory Corruption",
+      "category": "Glitch/Signal/Data",
+      "family": "VJGlitch",
+      "shader": "Hidden/ShitDesigner/VJ/Glitch",
+      "variant": 37,
+      "role": "effect",
+      "inputs": [
+        "image"
+      ],
+      "outputs": [
+        "image"
+      ],
+      "parameters": [
+        "amount",
+        "frequency",
+        "detail",
+        "softness",
+        "threshold",
+        "gain",
+        "mix",
+        "speed",
+        "phase",
+        "seed",
+        "center",
+        "angle",
+        "scale",
+        "radius",
+        "falloff",
+        "displacement"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "priority": "P1",
+      "testStrategy": "finite-deterministic-reference"
+    },
+    {
+      "nodeTypeId": "shitdesigner.shader.glitch.decode-drift",
+      "variantId": "glitch.38",
+      "name": "Decode Drift",
+      "category": "Glitch/Signal/Data",
+      "family": "VJGlitch",
+      "shader": "Hidden/ShitDesigner/VJ/Glitch",
+      "variant": 38,
+      "role": "effect",
+      "inputs": [
+        "image"
+      ],
+      "outputs": [
+        "image"
+      ],
+      "parameters": [
+        "amount",
+        "frequency",
+        "detail",
+        "softness",
+        "threshold",
+        "gain",
+        "mix",
+        "speed",
+        "phase",
+        "seed",
+        "center",
+        "angle",
+        "scale",
+        "radius",
+        "falloff",
+        "displacement"
+      ],
+      "stateful": true,
+      "historySlots": 3,
+      "warmupFrames": 1,
+      "priority": "P1",
+      "testStrategy": "finite-deterministic-reference"
+    },
+    {
+      "nodeTypeId": "shitdesigner.shader.glitch.header-damage",
+      "variantId": "glitch.39",
+      "name": "Header Damage",
+      "category": "Glitch/Signal/Data",
+      "family": "VJGlitch",
+      "shader": "Hidden/ShitDesigner/VJ/Glitch",
+      "variant": 39,
+      "role": "effect",
+      "inputs": [
+        "image"
+      ],
+      "outputs": [
+        "image"
+      ],
+      "parameters": [
+        "amount",
+        "frequency",
+        "detail",
+        "softness",
+        "threshold",
+        "gain",
+        "mix",
+        "speed",
+        "phase",
+        "seed",
+        "center",
+        "angle",
+        "scale",
+        "radius",
+        "falloff",
+        "displacement"
+      ],
+      "stateful": false,
+      "priority": "P1",
+      "testStrategy": "finite-deterministic-reference"
+    },
+    {
+      "nodeTypeId": "shitdesigner.shader.glitch.channel-dropout",
+      "variantId": "glitch.40",
+      "name": "Channel Dropout",
+      "category": "Glitch/Signal/Data",
+      "family": "VJGlitch",
+      "shader": "Hidden/ShitDesigner/VJ/Glitch",
+      "variant": 40,
+      "role": "effect",
+      "inputs": [
+        "image"
+      ],
+      "outputs": [
+        "image"
+      ],
+      "parameters": [
+        "amount",
+        "frequency",
+        "detail",
+        "softness",
+        "threshold",
+        "gain",
+        "mix",
+        "speed",
+        "phase",
+        "seed",
+        "center",
+        "angle",
+        "scale",
+        "radius",
+        "falloff",
+        "displacement"
+      ],
+      "stateful": false,
+      "priority": "P1",
+      "testStrategy": "finite-deterministic-reference"
+    },
+    {
+      "nodeTypeId": "shitdesigner.shader.glitch.data-rain-replacement",
+      "variantId": "glitch.41",
+      "name": "Data Rain Replacement",
+      "category": "Glitch/Signal/Data",
+      "family": "VJGlitch",
+      "shader": "Hidden/ShitDesigner/VJ/Glitch",
+      "variant": 41,
       "role": "effect",
       "inputs": [
         "image"

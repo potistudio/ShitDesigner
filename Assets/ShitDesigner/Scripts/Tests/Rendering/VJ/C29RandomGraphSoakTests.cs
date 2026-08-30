@@ -17,7 +17,7 @@ using UnityEngine.TestTools;
 namespace ShitDesigner.Rendering.Tests.VJ {
 	/// <summary>
 	/// C29 long-running graph lifetime probe. A deterministic PRNG chooses
-	/// short chains from the authoritative 438-entry VJ manifest while the
+	/// short chains from the authoritative 448-entry VJ manifest while the
 	/// real ShaderPassGraphRuntimeNode owns history and temporary leases.
 	/// The test intentionally runs for the full 30 minutes when invoked by
 	/// the integration command; it is not a shortened fixture loop.
@@ -39,7 +39,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 			var entries = asset.BuildRuntimeManifest().Entries
 				.Where(x => x != null && x.ShaderKey.StartsWith("Hidden/ShitDesigner/VJ/", StringComparison.Ordinal))
 				.ToArray();
-			Assert.That(entries.Length, Is.EqualTo(438), "C29 must draw from every generated VJ variant.");
+			Assert.That(entries.Length, Is.EqualTo(448), "C29 must draw from every generated VJ variant.");
 			Assert.That(entries.All(x => asset.Find(x.TypeId.Value)?.Shader != null), Is.True,
 				"Every soak entry must have a direct family Shader asset.");
 
