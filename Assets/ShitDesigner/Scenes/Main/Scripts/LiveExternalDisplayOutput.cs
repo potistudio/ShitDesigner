@@ -39,7 +39,10 @@ namespace ShitDesigner.Main {
 			if (!_initialized) return Fail("External Display output is not initialized.");
 			if (!active) {
 				IsOutputActive = false;
-				foreach (var output in _outputs.Values) output.SetVisible(false);
+				foreach (var output in _outputs.Values) {
+					output.Clear();
+					output.SetVisible(false);
+				}
 				LastError = string.Empty;
 				return true;
 			}
@@ -57,7 +60,7 @@ namespace ShitDesigner.Main {
 		public void IdentifyDisplay() => Debug.Log(DisplayIdentity, this);
 
 		public void Present(LiveProgramFrames frames) {
-			if (!_initialized || frames.Count == 0 || frames.Primary.FrameNumber == 0) return;
+			if (!_initialized || !IsOutputActive || frames.Count == 0 || frames.Primary.FrameNumber == 0) return;
 			var outputsRebuilt = false;
 			if (IsOutputActive && OutputsDoNotMatchConnectedDisplays()) {
 				RebuildOutputs();
@@ -178,7 +181,10 @@ namespace ShitDesigner.Main {
 			}
 
 			public void SetVisible(bool visible) {
-				Camera.enabled = visible;
+				// Unity cannot deactivate a Display after Activate(). On macOS,
+				// keep rendering the cleared black texture so the secondary Metal
+				// surface cannot retain or expose the control-window backbuffer.
+				Camera.enabled = visible || UnityEngine.Application.platform == RuntimePlatform.OSXPlayer;
 				WindowController.SetOutputVisible(visible);
 			}
 

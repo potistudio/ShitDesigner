@@ -34,6 +34,7 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(output, Is.Not.Null);
 				Assert.That(ui, Is.Not.Null);
 				Assert.That(panelRenderer, Is.Not.Null);
+				Assert.That(panelRenderer.enabled, Is.False, "UI Toolkit must attach after the Retina Player surface has reached its final size.");
 				Assert.That(panelRenderer.visualTreeAsset, Is.Not.Null);
 				Assert.That(panelRenderer.panelSettings, Is.Not.Null);
 				Assert.That(root.GetComponent<UIDocument>(), Is.Null);

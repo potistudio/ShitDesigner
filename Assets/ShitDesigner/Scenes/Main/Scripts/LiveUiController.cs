@@ -76,6 +76,12 @@ namespace ShitDesigner.Main {
 		}
 
 		private IEnumerator ReloadUiAfterPanelInitialization() {
+			if (m_PanelRenderer != null && !m_PanelRenderer.enabled) {
+				// Let Unity finish creating the final Retina Metal surface before
+				// UI Toolkit captures the backbuffer descriptor for its RenderPass.
+				yield return new WaitForEndOfFrame();
+				m_PanelRenderer.enabled = true;
+			}
 			yield return null;
 			m_ReloadRoutine = null;
 			if (m_PanelRenderer == null) yield break;
