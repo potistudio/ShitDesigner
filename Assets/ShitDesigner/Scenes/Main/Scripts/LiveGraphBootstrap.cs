@@ -27,6 +27,8 @@ namespace ShitDesigner.Main {
 		[SerializeField] private PatchDefinition[] m_MainPatches = Array.Empty<PatchDefinition>();
 		[Header("Overlay")]
 		[SerializeField] private PatchDefinition[] m_OverlayPatches = Array.Empty<PatchDefinition>();
+		[Header("FX")]
+		[SerializeField] private PatchDefinition[] m_EffectPatches = Array.Empty<PatchDefinition>();
 		[SerializeField] private ShaderNodeManifestAsset _shaderManifest;
 		[Header("Video decoding")]
 		[SerializeField] private Material m_VideoConversionMaterial;
@@ -37,7 +39,8 @@ namespace ShitDesigner.Main {
 
 		public PatchDefinition[] MainPatches => m_MainPatches ?? Array.Empty<PatchDefinition>();
 		public PatchDefinition[] OverlayPatches => m_OverlayPatches ?? Array.Empty<PatchDefinition>();
-		public PatchDefinition[] Patches => MainPatches.Concat(OverlayPatches).ToArray();
+		public PatchDefinition[] EffectPatches => m_EffectPatches ?? Array.Empty<PatchDefinition>();
+		public PatchDefinition[] Patches => MainPatches.Concat(OverlayPatches).Concat(EffectPatches).ToArray();
 		public int ProgramOutputCount => Patches.Count(patch => patch != null);
 
 		public LiveGraphRuntime CreateRuntime() {

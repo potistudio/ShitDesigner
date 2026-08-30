@@ -23,18 +23,6 @@
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:VisualElement>
-                <ui:VisualElement class="patch-dock">
-                    <ui:VisualElement name="patch-controls" class="patch-controls">
-                        <ui:VisualElement name="patch-role-labels" class="patch-role-labels">
-                            <ui:Label text="MAIN" class="patch-role-label"/>
-                            <ui:Label text="OVERLAY" class="patch-role-label"/>
-                        </ui:VisualElement>
-                        <ui:VisualElement class="patch-scroll-rows">
-                            <ui:ScrollView name="main-patch-controls" class="patch-row-controls" mode="Horizontal" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden"/>
-                            <ui:ScrollView name="overlay-patch-controls" class="patch-row-controls" mode="Horizontal" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden"/>
-                        </ui:VisualElement>
-                    </ui:VisualElement>
-                </ui:VisualElement>
                 <ui:VisualElement name="sequencer-controls" class="sequencer-controls">
                     <ui:VisualElement name="overlay-sequencer" class="sequencer"/>
                     <ui:VisualElement name="effect-sequencer" class="sequencer"/>
@@ -45,14 +33,17 @@
             </ui:VisualElement>
             <ui:VisualElement class="inspector-column">
                 <ui:VisualElement class="sidebar-tabs">
-                    <ui:Button name="inspector-tab" text="INSPECTOR" class="sidebar-tab is-selected"/>
-                    <ui:Button name="logical-controls-tab" text="LOGICAL CONTROLS" class="sidebar-tab"/>
-                    <ui:Button name="diagnostics-tab" text="DIAGNOSTICS" class="sidebar-tab"/>
+                    <ui:Button name="main-tab" text="MAIN" class="sidebar-tab is-selected"/>
+                    <ui:Button name="overlay-tab" text="OVERLAY" class="sidebar-tab"/>
+                    <ui:Button name="effect-tab" text="FX" class="sidebar-tab"/>
                 </ui:VisualElement>
                 <ui:VisualElement class="control-panel">
-                    <ui:VisualElement name="inspector-tab-content" class="sidebar-tab-content"/>
-                    <ui:VisualElement name="logical-controls-tab-content" class="sidebar-tab-content is-hidden"/>
-                    <ui:VisualElement name="diagnostics-tab-content" class="sidebar-tab-content is-hidden">
+                    <ui:VisualElement name="patch-controls" class="patch-controls">
+                        <ui:ScrollView name="main-patch-controls" class="sidebar-tab-content patch-list-controls" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Auto"/>
+                        <ui:ScrollView name="overlay-patch-controls" class="sidebar-tab-content patch-list-controls is-hidden" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Auto"/>
+                        <ui:ScrollView name="effect-patch-controls" class="sidebar-tab-content patch-list-controls is-hidden" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Auto"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="sidebar-status">
                         <ui:Label name="capability-status" class="status-label"/>
                         <ui:Label name="diagnostic-status" class="diagnostic-label"/>
                     </ui:VisualElement>

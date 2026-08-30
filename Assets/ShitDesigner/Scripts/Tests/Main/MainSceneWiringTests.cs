@@ -138,7 +138,7 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void MainUiDefinesThreeSidebarTabs() {
+		public void MainUiDefinesSceneCatalogSidebarTabs() {
 			var asset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/ShitDesigner/Scenes/Main/MainUI.uxml");
 			Assert.That(asset, Is.Not.Null);
 			var root = new VisualElement();
@@ -146,10 +146,12 @@ namespace ShitDesigner.Main.Tests {
 
 			var tabs = root.Query<Button>(className: "sidebar-tab").ToList();
 
-			Assert.That(tabs.Select(tab => tab.name).ToArray(), Is.EqualTo(new[] { "inspector-tab", "logical-controls-tab", "diagnostics-tab" }));
+			Assert.That(tabs.Select(tab => tab.name).ToArray(), Is.EqualTo(new[] { "main-tab", "overlay-tab", "effect-tab" }));
 			Assert.That(tabs[0].ClassListContains("is-selected"), Is.True);
-			Assert.That(root.Q<Label>("capability-status").parent.name, Is.EqualTo("diagnostics-tab-content"));
-			Assert.That(root.Q<Label>("diagnostic-status").parent.name, Is.EqualTo("diagnostics-tab-content"));
+			var patchControls = root.Q<VisualElement>("patch-controls");
+			Assert.That(root.Q<ScrollView>("main-patch-controls").parent, Is.SameAs(patchControls));
+			Assert.That(root.Q<ScrollView>("overlay-patch-controls").parent, Is.SameAs(patchControls));
+			Assert.That(root.Q<ScrollView>("effect-patch-controls").parent, Is.SameAs(patchControls));
 		}
 
 		[Test]
