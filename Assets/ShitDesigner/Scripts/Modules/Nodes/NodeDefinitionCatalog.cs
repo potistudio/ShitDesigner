@@ -438,6 +438,7 @@ namespace ShitDesigner.Nodes {
 
 		private bool TryConvert(NodeExecutionContext context, NodePortDefinition output, out PortValue value) {
 			value = default(PortValue); var type = TypeId.Value;
+			if (type == InstantEffectTriggerContract.NodeTypeId && TryInstantEffectTrigger(context, output.Id, out value)) return true;
 			if (type == "shitdesigner.convert.float_to_int" && TryFloat(context, "value", out var f)) { var rounding = ParameterString(context, "rounding", "round"); var rounded = rounding == "floor" ? Math.Floor(f) : rounding == "ceil" ? Math.Ceiling(f) : rounding == "truncate" ? Math.Truncate(f) : Math.Round(f, MidpointRounding.AwayFromZero); value = PortValue.FromInt((int)rounded); return true; }
 			if (type == "shitdesigner.convert.int_to_float" && TryInt(context, "value", out var i)) { value = PortValue.FromFloat(i); return true; }
 			if (type == "shitdesigner.convert.float_to_bool" && TryFloat(context, "value", out f)) { var threshold = ParameterFloat(context, "threshold", .5f); var comparison = ParameterString(context, "comparison", "greater_equal"); value = PortValue.FromBool(comparison == "less" ? f < threshold : f >= threshold); return true; }
@@ -448,6 +449,14 @@ namespace ShitDesigner.Nodes {
 			if (type == "shitdesigner.convert.color_to_luminance" && TryColor(context, "value", out var color)) { value = PortValue.FromFloat(color.R * .2126f + color.G * .7152f + color.B * .0722f); return true; }
 			if (type == "shitdesigner.convert.float_to_color" && TryFloat(context, "value", out f)) { value = PortValue.FromColor(new ColorValue(f, f, f, ParameterFloat(context, "alpha", 1f))); return true; }
 			return false;
+		}
+		private static bool TryInstantEffectTrigger(NodeExecutionContext context, PortId output, out PortValue value) {
+			value = default(PortValue);
+			const string prefix = "trigger_";
+			if (!output.Value.StartsWith(prefix, StringComparison.Ordinal) || !int.TryParse(output.Value.Substring(prefix.Length), out var triggerNumber)
+				|| triggerNumber < 1 || triggerNumber > InstantEffectTriggerContract.TriggerCount) return false;
+			value = PortValue.FromBool(context.Snapshot.InstantEffectTriggers.Contains(triggerNumber));
+			return true;
 		}
 		private static bool Compose(NodeExecutionContext c, string type, out PortValue value) { value = default(PortValue); if (!TryFloat(c, "x", out var x) || !TryFloat(c, "y", out var y)) return false; if (type.EndsWith("2")) { value = PortValue.FromVector2(new Vector2Value(x, y)); return true; } if (!TryFloat(c, "z", out var z)) return false; if (type.EndsWith("3")) { value = PortValue.FromVector3(new Vector3Value(x, y, z)); return true; } if (!TryFloat(c, "w", out var w)) return false; value = PortValue.FromVector4(new Vector4Value(x, y, z, w)); return true; }
 		private static bool Split(NodeExecutionContext c, PortId id, out PortValue value) { value = default(PortValue); if (!c.Inputs.TryGetValue(new PortId("value"), out var input) || !input.HasValue) return false; try { var v = input.Value.AsVector2(); if (id.Value == "x") value = PortValue.FromFloat(v.X); else if (id.Value == "y") value = PortValue.FromFloat(v.Y); else return false; return true; } catch (InvalidOperationException) { } try { var v = input.Value.AsVector3(); if (id.Value == "x") value = PortValue.FromFloat(v.X); else if (id.Value == "y") value = PortValue.FromFloat(v.Y); else if (id.Value == "z") value = PortValue.FromFloat(v.Z); else return false; return true; } catch (InvalidOperationException) { } try { var v = input.Value.AsVector4(); if (id.Value == "x") value = PortValue.FromFloat(v.X); else if (id.Value == "y") value = PortValue.FromFloat(v.Y); else if (id.Value == "z") value = PortValue.FromFloat(v.Z); else if (id.Value == "w") value = PortValue.FromFloat(v.W); else return false; return true; } catch (InvalidOperationException) { return false; } }
@@ -507,6 +516,7 @@ namespace ShitDesigner.Nodes {
 			};
 			definitions.AddRange(shaderManifest.Entries.Select(x => x.ToNodeDefinition()));
 			definitions.Add(new NodeDefinition(new NodeTypeId("shitdesigner.video.player"), 1, "VideoPlayer", "Video", new[] { ImageOut }, VideoParameters()));
+			definitions.Add(InstantEffectTriggers());
 			definitions.Add(AssetFlash());
 			definitions.AddRange(new[] { FloatToInt(), IntToFloat(), FloatToBool(), BoolToFloat(), Compose("2"), Compose("3"), Compose("4"), Split("2"), Split("3"), Split("4"), VectorComponent(), ColorToLuminance(), FloatToColor() });
 			return new ReadOnlyCollection<NodeDefinition>(definitions);
@@ -515,6 +525,13 @@ namespace ShitDesigner.Nodes {
 		public static ShaderNodeBinding ShaderBinding(ShaderNodeManifest manifest, NodeTypeId id) => manifest?.Find(id)?.ToShaderBinding();
 		private static NodeParameterDefinition PreviewMode() => new NodeParameterDefinition(new ParameterId("display.mode"), "Display Mode", ParameterType.Enum, ParameterValue.FromEnum("fit"), enumOptions: new[] { "fit", "fill", "stretch" });
 		private static IEnumerable<NodeParameterDefinition> VideoParameters() => new[] { new NodeParameterDefinition(new ParameterId("transport.media_asset"), "Media Asset", ParameterType.MediaAssetReference, ParameterValue.Default(ParameterType.MediaAssetReference)), new NodeParameterDefinition(new ParameterId("transport.playing"), "Playing", ParameterType.Bool, ParameterValue.FromBool(true)), new NodeParameterDefinition(new ParameterId("transport.playhead_seconds"), "Playhead", ParameterType.Float, ParameterValue.FromFloat(0), ParameterValue.FromFloat(0), ParameterValue.FromFloat(float.MaxValue), true), new NodeParameterDefinition(new ParameterId("transport.speed"), "Speed", ParameterType.Float, ParameterValue.FromFloat(1), ParameterValue.FromFloat(0), ParameterValue.FromFloat(4)), new NodeParameterDefinition(new ParameterId("transport.loop"), "Loop", ParameterType.Bool, ParameterValue.FromBool(true)) };
+		private static NodeDefinition InstantEffectTriggers() {
+			var keys = new[] { "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P" };
+			var ports = Enumerable.Range(1, InstantEffectTriggerContract.TriggerCount)
+				.Select(triggerNumber => new NodePortDefinition(new PortId(InstantEffectTriggerContract.PortId(triggerNumber)),
+					"Trigger " + triggerNumber + " (" + keys[triggerNumber - 1] + ")", NodePortDirection.Output, NodePortType.Bool, false));
+			return new NodeDefinition(new NodeTypeId(InstantEffectTriggerContract.NodeTypeId), 1, "Instant Effect Triggers", "Input", ports);
+		}
 		private static NodeDefinition AssetFlash() {
 			var ports = Enumerable.Range(1, 8)
 				.Select(slot => new NodePortDefinition(new PortId("trigger_" + slot), "Trigger " + slot, NodePortDirection.Input, NodePortType.Bool, false))

@@ -53,7 +53,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 			Assert.That(catalog.ValidateManifest().IsSuccess, Is.True);
 			var runtime = catalog.BuildRuntimeCatalog();
 			Assert.That(runtime.IsSuccess, Is.True, runtime.IsFailure ? runtime.Error.Message : string.Empty);
-			Assert.That(catalog.Entries.Count, Is.EqualTo(462));
+			Assert.That(catalog.Entries.Count, Is.EqualTo(463));
 			Assert.That(catalog.Entries.Count(x => !string.IsNullOrWhiteSpace(x.ShaderKey)), Is.EqualTo(442));
 			Assert.That(runtime.Value.Entries.Count, Is.EqualTo(catalog.Entries.Count));
 

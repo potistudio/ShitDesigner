@@ -86,6 +86,44 @@ namespace ShitDesigner.Application.Tests {
 		}
 
 		[Test]
+		public void InstantEffectKeys_AreReservedFromLogicalControlLearn() {
+			var target = Path.Combine(_root, "InstantEffectInput");
+			using (var application = new ProjectApplication(new LocalProjectFileSystem())) {
+				Assert.That(application.NewProject("Instant Effect Input", target).IsSuccess, Is.True);
+				var id = LogicalControlId.New();
+				Assert.That(application.AddLogicalControl(new LogicalControlRecord(id, "Value", LogicalControlKind.Value)).IsSuccess, Is.True);
+				Assert.That(application.BeginKeyboardLearn(id).IsSuccess, Is.True);
+
+				var reserved = application.HandleKeyboard(new PhysicalKey("q", "<Keyboard>/q"), true);
+
+				Assert.That(reserved.Status, Is.EqualTo(ApplicationCommandStatus.Rejected));
+				Assert.That(application.IsKeyboardLearnActive, Is.True);
+				Assert.That(application.ReadModel.Project.Model.LogicalControls.Single(control => control.Id == id.Value).Mappings, Is.Empty);
+			}
+		}
+
+		[Test]
+		public void QwertyRow_QueuesGlobalInstantEffectPulsesInOrder() {
+			var target = Path.Combine(_root, "InstantEffectPulses");
+			using (var application = new ProjectApplication(new LocalProjectFileSystem())) {
+				Assert.That(application.NewProject("Instant Effect Pulses", target).IsSuccess, Is.True);
+				var runtimeField = typeof(ProjectApplication).GetField("_runtime", BindingFlags.Instance | BindingFlags.NonPublic);
+				Assert.That(runtimeField, Is.Not.Null);
+				var runtime = (RuntimeSession)runtimeField.GetValue(application);
+				var keys = new[] { "q", "w", "e", "r", "t", "y", "u", "i", "o", "p" };
+
+				for (var index = 0; index < keys.Length; index++) {
+					Assert.That(application.HandleKeyboard(new PhysicalKey(keys[index], "<Keyboard>/" + keys[index]), true).Status, Is.EqualTo(ApplicationCommandStatus.Applied));
+					application.Tick(index * 2d / 60d);
+					Assert.That(runtime.LastSnapshot.InstantEffectTriggers, Is.EqualTo(new[] { index + 1 }));
+					Assert.That(application.HandleKeyboard(new PhysicalKey(keys[index], "<Keyboard>/" + keys[index]), false).Status, Is.EqualTo(ApplicationCommandStatus.Applied));
+					application.Tick((index * 2d + 1d) / 60d);
+					Assert.That(runtime.LastSnapshot.InstantEffectTriggers, Is.Empty);
+				}
+			}
+		}
+
+		[Test]
 		public void LearnMidiMapsAndNormalizesControlChangeInput() {
 			var target = Path.Combine(_root, "MidiInput");
 			using (var application = new ProjectApplication(new LocalProjectFileSystem())) {
