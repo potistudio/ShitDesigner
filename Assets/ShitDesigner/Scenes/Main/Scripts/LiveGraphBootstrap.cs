@@ -56,11 +56,14 @@ namespace ShitDesigner.Main {
 			var shaderDefinitions = BuildProgramShaderDefinitions(programGraphs.Values);
 			var sceneManager = new SceneIsolationManager(renderSource: new UnityCameraRenderSource());
 			var renderPool = new RenderTexturePool();
+			LiveOverlayCompositor compositor = null;
 			try {
+				compositor = new LiveOverlayCompositor(shaderDefinitions, renderPool, renderSize);
 				return new LiveGraph(sceneManager, renderPool, definitions, (patch, outputSize) =>
-					BuildOutput(sceneManager, renderPool, patch, programGraphs[patch.Id], shaderDefinitions, outputSize));
+					BuildOutput(sceneManager, renderPool, patch, programGraphs[patch.Id], shaderDefinitions, outputSize), compositor);
 			}
 			catch {
+				compositor?.Dispose();
 				sceneManager.Dispose();
 				renderPool.Dispose();
 				throw;
@@ -71,17 +74,16 @@ namespace ShitDesigner.Main {
 			if (_shaderManifest == null) throw new InvalidOperationException("The live Program graph requires a ShaderNodeManifest.");
 			var manifest = _shaderManifest.BuildRuntimeManifest();
 			var definitions = new Dictionary<NodeTypeId, LiveProgramShaderDefinition>();
-			foreach (var programGraph in programGraphs) {
-				foreach (var node in programGraph.Nodes) {
-					if (node.TypeId.Value == PatchGraphNode.Scene3DTypeId) continue;
-					if (node.TypeId.Value == VideoPlayerTypeId) continue;
-					if (definitions.ContainsKey(node.TypeId)) continue;
-					var entry = manifest.Find(node.TypeId.Value);
-					var assetEntry = _shaderManifest.Find(node.TypeId.Value);
-					if (entry == null || assetEntry == null || assetEntry.Shader == null)
-						throw new InvalidOperationException("The live Program graph shader is missing a direct Shader reference: " + node.TypeId.Value + ".");
-					definitions.Add(node.TypeId, new LiveProgramShaderDefinition(entry, assetEntry.Shader));
-				}
+			var typeIds = programGraphs.SelectMany(programGraph => programGraph.Nodes.Select(node => node.TypeId))
+				.Concat(LiveOverlayCompositor.RequiredNodeTypeIds)
+				.Distinct()
+				.Where(typeId => typeId.Value != PatchGraphNode.Scene3DTypeId && typeId.Value != VideoPlayerTypeId);
+			foreach (var typeId in typeIds) {
+				var entry = manifest.Find(typeId.Value);
+				var assetEntry = _shaderManifest.Find(typeId.Value);
+				if (entry == null || assetEntry == null || assetEntry.Shader == null)
+					throw new InvalidOperationException("The live Program graph shader is missing a direct Shader reference: " + typeId.Value + ".");
+				definitions.Add(typeId, new LiveProgramShaderDefinition(entry, assetEntry.Shader));
 			}
 			return definitions;
 		}
@@ -109,7 +111,7 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		private static RuntimeParameterSnapshot[] BuildRuntimeParameters(ShaderNodeManifestEntry entry, PatchGraphNode authoredNode) {
+		internal static RuntimeParameterSnapshot[] BuildRuntimeParameters(ShaderNodeManifestEntry entry, PatchGraphNode authoredNode) {
 			if (authoredNode != null)
 				foreach (var configured in authoredNode.Parameters)
 					if (configured != null && entry.Parameters.All(parameter => !string.Equals(parameter.Id.Value, configured.Id, StringComparison.Ordinal)))

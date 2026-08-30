@@ -45,7 +45,6 @@ namespace ShitDesigner.Main {
 		private LivePatchRole m_SelectedPatchRole;
 		private int m_SelectedMainPatchIndex;
 		private int m_SelectedOverlayPatchIndex;
-		private long m_LastScheduledSequencerBeat;
 
 		public ApplicationLiveHostState State { get; private set; } = ApplicationLiveHostState.Cold;
 		public LiveUiReadModel ReadModel { get; private set; }
@@ -78,7 +77,7 @@ namespace ShitDesigner.Main {
 				m_SelectedPatchRole = m_MainPatchIds.Length > 0 ? LivePatchRole.Main : LivePatchRole.Overlay;
 				m_SelectedMainPatchIndex = 0;
 				m_SelectedOverlayPatchIndex = 0;
-				m_LastScheduledSequencerBeat = (long)Math.Floor(_runtime.BpmFrame.AdjustedTotalBeats);
+				UpdateOverlayComposition(_runtime.BpmFrame.AdjustedTotalBeats);
 				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, slotIndex => { LaunchPatchSlot(slotIndex); }, slotIndex => { ClearPatchSlot(slotIndex); }, MoveCatalogSelection, () => { AssignSelectedCatalogPatch(); }, TapBpm);
 				_midiInputManager.InitializeForHostPolling();
 				_shutdown.Add(_midiInputManager.Shutdown);
@@ -114,8 +113,7 @@ namespace ShitDesigner.Main {
 			try {
 				var deltaSeconds = Math.Max(0d, Time.unscaledDeltaTime);
 				ApplyRequests();
-				ScheduleSequencerTriggers(_runtime.BpmFrame.AdjustedTotalBeats + deltaSeconds * _runtime.BpmFrame.Bpm / 60d);
-				ApplyRequests(clearResults: false);
+				UpdateOverlayComposition(_runtime.BpmFrame.AdjustedTotalBeats + deltaSeconds * _runtime.BpmFrame.Bpm / 60d);
 				_runtime.Evaluate(deltaSeconds);
 				_runtime.SceneUpdate(deltaSeconds);
 				var frames = _runtime.Render();
@@ -232,19 +230,10 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		private void ScheduleSequencerTriggers(double adjustedTotalBeats) {
-			var targetBeat = (long)Math.Floor(adjustedTotalBeats);
-			if (targetBeat < m_LastScheduledSequencerBeat) {
-				m_LastScheduledSequencerBeat = targetBeat;
-				return;
-			}
-			for (var beat = m_LastScheduledSequencerBeat + 1; beat <= targetBeat; beat++) {
-				var stepIndex = (int)((beat % LiveStepSequencer.StepCount + LiveStepSequencer.StepCount) % LiveStepSequencer.StepCount);
-				foreach (var sequencer in m_Sequencers) {
-					foreach (var patchId in sequencer.GetTriggeredPatchIds(stepIndex)) _parameterQueue.EnqueueLaunchPatch(patchId);
-				}
-			}
-			m_LastScheduledSequencerBeat = targetBeat;
+		private void UpdateOverlayComposition(double adjustedTotalBeats) {
+			var overlay = m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay)
+				.CreateReadModel(adjustedTotalBeats);
+			_runtime.SetOverlayComposition(overlay);
 		}
 
 		private void PublishReadModel(string diagnostic) {

@@ -134,8 +134,10 @@ namespace ShitDesigner.Main.Tests {
 			var overlaySequencer = host.ReadModel.Sequencers.Single(sequencer => sequencer.Kind == LiveSequencerKind.Overlay);
 			var triggerStep = (overlaySequencer.CurrentStep + 1) % LiveStepSequencer.StepCount;
 			Assert.That(host.CycleSequencerCellMode(LiveSequencerKind.Overlay, 0, triggerStep).Accepted, Is.True);
-			for (var frame = 0; frame < 120 && host.ReadModel.LoadedPatchId != rememberedOverlayPatch.Id; frame++) yield return null;
-			Assert.That(host.ReadModel.LoadedPatchId, Is.EqualTo(rememberedOverlayPatch.Id));
+			for (var frame = 0; frame < 120 && host.ReadModel.Sequencers.Single(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).CurrentStep != triggerStep; frame++) yield return null;
+			Assert.That(host.ReadModel.LoadedPatchId, Is.EqualTo(rememberedMainPatch.Id));
+			Assert.That(host.ReadModel.ProgramTexture, Is.Not.Null);
+			Assert.That(HasVisiblePixels(host.ReadModel.ProgramTexture), Is.True);
 
 			var midi = (Component)typeof(ApplicationLiveHost).GetField("_midiInputManager", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(host);
 			host.Shutdown();

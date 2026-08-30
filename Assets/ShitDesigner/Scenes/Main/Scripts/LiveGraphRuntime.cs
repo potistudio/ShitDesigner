@@ -70,12 +70,14 @@ namespace ShitDesigner.Main {
 		private readonly RenderTexturePool _renderPool;
 		private readonly Func<PatchDefinition, LiveRenderSize, LiveProgramOutput> _createOutput;
 		public IReadOnlyList<PatchDefinition> PatchDefinitions { get; }
+		public LiveOverlayCompositor Compositor { get; }
 
 		public LiveGraph(SceneIsolationManager sceneManager, RenderTexturePool renderPool, IEnumerable<PatchDefinition> patchDefinitions,
-			Func<PatchDefinition, LiveRenderSize, LiveProgramOutput> createOutput) {
+			Func<PatchDefinition, LiveRenderSize, LiveProgramOutput> createOutput, LiveOverlayCompositor compositor) {
 			_sceneManager = sceneManager ?? throw new ArgumentNullException(nameof(sceneManager));
 			_renderPool = renderPool ?? throw new ArgumentNullException(nameof(renderPool));
 			_createOutput = createOutput ?? throw new ArgumentNullException(nameof(createOutput));
+			Compositor = compositor ?? throw new ArgumentNullException(nameof(compositor));
 			PatchDefinitions = (patchDefinitions ?? throw new ArgumentNullException(nameof(patchDefinitions))).ToArray();
 			if (PatchDefinitions.Count == 0) throw new ArgumentException("A live graph requires patches.");
 		}
@@ -84,6 +86,7 @@ namespace ShitDesigner.Main {
 			=> _createOutput(patch, renderSize);
 
 		public void Dispose() {
+			Compositor.Dispose();
 			_sceneManager.Dispose();
 			_renderPool.Dispose();
 		}
@@ -220,6 +223,145 @@ namespace ShitDesigner.Main {
 		public LiveProgramShaderDefinition(ShaderNodeManifestEntry entry, Shader shader) {
 			Entry = entry ?? throw new ArgumentNullException(nameof(entry));
 			Shader = shader ?? throw new ArgumentNullException(nameof(shader));
+		}
+	}
+
+	internal readonly struct LiveOverlayInput {
+		public LiveSequencerCellMode Mode { get; }
+		public Texture Texture { get; }
+
+		public LiveOverlayInput(LiveSequencerCellMode mode, Texture texture) {
+			if (mode == LiveSequencerCellMode.Off) throw new ArgumentException("An overlay input requires an active compositing mode.", nameof(mode));
+			Mode = mode;
+			Texture = texture ?? throw new ArgumentNullException(nameof(texture));
+		}
+	}
+
+	internal sealed class LiveOverlayCompositor : IDisposable {
+		private const string NormalTypeId = "shitdesigner.shader.blend.normal_alpha_over";
+		private const string AddTypeId = "shitdesigner.shader.blend.add";
+		private const string MultiplyTypeId = "shitdesigner.shader.blend.multiply";
+		private const string SubtractTypeId = "shitdesigner.shader.blend.subtract";
+		private const string DifferenceTypeId = "shitdesigner.shader.blend.difference";
+		private const string InvertTypeId = "shitdesigner.shader.color.invert";
+
+		private static readonly IReadOnlyDictionary<LiveSequencerCellMode, string> BlendTypeIds =
+			new Dictionary<LiveSequencerCellMode, string> {
+				{ LiveSequencerCellMode.Normal, NormalTypeId },
+				{ LiveSequencerCellMode.Add, AddTypeId },
+				{ LiveSequencerCellMode.Multiply, MultiplyTypeId },
+				{ LiveSequencerCellMode.Subtract, SubtractTypeId },
+				{ LiveSequencerCellMode.Difference, DifferenceTypeId }
+			};
+
+		public static IReadOnlyList<NodeTypeId> RequiredNodeTypeIds { get; } = BlendTypeIds.Values
+			.Concat(new[] { InvertTypeId })
+			.Select(value => new NodeTypeId(value))
+			.ToArray();
+
+		private readonly Dictionary<LiveSequencerCellMode, ShaderPassGraphRuntimeNode> m_BlendNodes =
+			new Dictionary<LiveSequencerCellMode, ShaderPassGraphRuntimeNode>();
+		private readonly RenderTexture[] m_Scratch = new RenderTexture[2];
+		private readonly ShaderPassGraphRuntimeNode m_InvertNode;
+		private readonly RenderTexture m_InvertedOverlay;
+		private bool m_Disposed;
+
+		public RenderTexture Output { get; }
+
+		public LiveOverlayCompositor(IReadOnlyDictionary<NodeTypeId, LiveProgramShaderDefinition> shaderDefinitions,
+			RenderTexturePool renderPool, LiveRenderSize renderSize) {
+			if (shaderDefinitions == null) throw new ArgumentNullException(nameof(shaderDefinitions));
+			if (renderPool == null) throw new ArgumentNullException(nameof(renderPool));
+			try {
+				Output = CreateTexture("ShitDesigner.Main.Composite.Output", renderSize);
+				m_Scratch[0] = CreateTexture("ShitDesigner.Main.Composite.Scratch.0", renderSize);
+				m_Scratch[1] = CreateTexture("ShitDesigner.Main.Composite.Scratch.1", renderSize);
+				m_InvertedOverlay = CreateTexture("ShitDesigner.Main.Composite.InvertedOverlay", renderSize);
+				foreach (var pair in BlendTypeIds)
+					m_BlendNodes.Add(pair.Key, CreateNode(pair.Value, shaderDefinitions, renderPool));
+				m_InvertNode = CreateNode(InvertTypeId, shaderDefinitions, renderPool);
+			}
+			catch {
+				Dispose();
+				throw;
+			}
+		}
+
+		public RenderTexture Render(Texture main, IReadOnlyList<LiveOverlayInput> overlays, ulong frameNumber, double graphTime) {
+			if (m_Disposed) throw new ObjectDisposedException(nameof(LiveOverlayCompositor));
+			if (main == null) throw new ArgumentNullException(nameof(main));
+			Texture accumulated = main;
+			var scratchIndex = 0;
+			foreach (var overlay in overlays ?? Array.Empty<LiveOverlayInput>()) {
+				var foreground = overlay.Texture;
+				var mode = overlay.Mode;
+				if (mode == LiveSequencerCellMode.Invert) {
+					var inverted = m_InvertNode.Render(foreground as RenderTexture, m_InvertedOverlay, frameNumber, graphTime);
+					if (inverted.IsFailure) throw new InvalidOperationException(inverted.Error.Message);
+					foreground = m_InvertedOverlay;
+					mode = LiveSequencerCellMode.Normal;
+				}
+				if (!m_BlendNodes.TryGetValue(mode, out var blendNode))
+					throw new InvalidOperationException("The overlay compositing mode is not available: " + mode + ".");
+				var inputs = new Dictionary<PortId, Texture> {
+					{ new PortId("a"), foreground },
+					{ new PortId("b"), accumulated }
+				};
+				var blended = blendNode.Render(inputs, m_Scratch[scratchIndex], frameNumber, graphTime);
+				if (blended.IsFailure) throw new InvalidOperationException(blended.Error.Message);
+				accumulated = m_Scratch[scratchIndex];
+				scratchIndex = 1 - scratchIndex;
+			}
+			Graphics.Blit(accumulated, Output);
+			return Output;
+		}
+
+		public void Dispose() {
+			if (m_Disposed) return;
+			m_Disposed = true;
+			foreach (var node in m_BlendNodes.Values) node.Dispose();
+			m_BlendNodes.Clear();
+			m_InvertNode?.Dispose();
+			ReleaseTexture(m_InvertedOverlay);
+			foreach (var texture in m_Scratch) ReleaseTexture(texture);
+			ReleaseTexture(Output);
+		}
+
+		private static ShaderPassGraphRuntimeNode CreateNode(string typeId,
+			IReadOnlyDictionary<NodeTypeId, LiveProgramShaderDefinition> shaderDefinitions, RenderTexturePool renderPool) {
+			var nodeTypeId = new NodeTypeId(typeId);
+			if (!shaderDefinitions.TryGetValue(nodeTypeId, out var definition))
+				throw new InvalidOperationException("The overlay compositor shader is unavailable: " + typeId + ".");
+			var binding = definition.Entry.ToShaderBinding();
+			var record = new RuntimeNodeCreateInfo(NodeInstanceId.New(), nodeTypeId, definition.Entry.SchemaVersion,
+				definition.Entry.DisplayName, true, 0f, 0f, LiveGraphBootstrap.BuildRuntimeParameters(definition.Entry, null));
+			var node = new ShaderPassGraphRuntimeNode(record, 1UL,
+				new ShaderMaterialBinding(binding.ShaderKey, definition.Shader, outputPass: binding.OutputPass, descriptor: binding),
+				renderPool, "shitdesigner.main.compositor." + typeId, binding.Family == ShaderNodeFamily.Generator,
+				binding.Family == ShaderNodeFamily.Composite);
+			if (!node.TrySetDirectParameter("amount", ParameterValue.FromFloat(1f), out var rejectionReason)) {
+				node.Dispose();
+				throw new InvalidOperationException("The overlay compositor amount could not be configured: " + rejectionReason);
+			}
+			return node;
+		}
+
+		private static RenderTexture CreateTexture(string name, LiveRenderSize renderSize) {
+			var texture = new RenderTexture(renderSize.Width, renderSize.Height, 0, RenderTextureFormat.ARGBHalf) {
+				name = name,
+				useMipMap = false,
+				autoGenerateMips = false
+			};
+			if (texture.Create()) return texture;
+			ReleaseTexture(texture);
+			throw new InvalidOperationException("An overlay compositor texture could not be created.");
+		}
+
+		private static void ReleaseTexture(RenderTexture texture) {
+			if (texture == null) return;
+			texture.Release();
+			if (UnityEngine.Application.isPlaying) UnityEngine.Object.Destroy(texture);
+			else UnityEngine.Object.DestroyImmediate(texture);
 		}
 	}
 
@@ -673,7 +815,7 @@ namespace ShitDesigner.Main {
 
 	}
 
-	/// <summary>Evaluates a Bootstrap-created graph and manages its live patch outputs.</summary>
+	/// <summary>Evaluates Bootstrap-created patch graphs and composes their live Program output.</summary>
 	public sealed class LiveGraphRuntime : IDisposable {
 		public const int ProgramWidth = 1920;
 		public const int ProgramHeight = 1080;
@@ -690,6 +832,8 @@ namespace ShitDesigner.Main {
 		private readonly Dictionary<string, PatchDefinition> _patchDefinitionsById;
 		private readonly LiveBpmClock _bpmClock = new LiveBpmClock();
 		private readonly List<LivePatch> _createdPatches = new List<LivePatch>();
+		private readonly LivePatch[] m_OverlayPatches = new LivePatch[LiveStepSequencer.LaneCount];
+		private readonly LiveSequencerCellMode[] m_OverlayModes = new LiveSequencerCellMode[LiveStepSequencer.LaneCount];
 		private readonly Dictionary<string, LiveSlotPreview> m_SlotPreviewPatches = new Dictionary<string, LiveSlotPreview>(StringComparer.Ordinal);
 		private readonly Dictionary<string, RenderTexture> m_SlotPreviewTextures = new Dictionary<string, RenderTexture>(StringComparer.Ordinal);
 		private readonly HashSet<string> m_SlotPreviewPatchFailures = new HashSet<string>(StringComparer.Ordinal);
@@ -761,11 +905,17 @@ namespace ShitDesigner.Main {
 			_bpmClock.Advance(_lastDeltaSeconds);
 			_loadedPatch.ApplyResolvedParameters(_bpmClock.Frame);
 			foreach (var output in _loadedPatch.Outputs) output.Evaluate(_lastDeltaSeconds, _bpmClock.Frame);
+			foreach (var overlay in m_OverlayPatches.Where(patch => patch != null)) {
+				overlay.ApplyResolvedParameters(_bpmClock.Frame);
+				foreach (var output in overlay.Outputs) output.Evaluate(_lastDeltaSeconds, _bpmClock.Frame);
+			}
 		}
 
 		public void SceneUpdate(double deltaSeconds) {
 			EnsureUsable();
 			foreach (var output in _loadedPatch.Outputs) output.SceneUpdate(Math.Max(0d, deltaSeconds));
+			foreach (var overlay in m_OverlayPatches.Where(patch => patch != null))
+				foreach (var output in overlay.Outputs) output.SceneUpdate(Math.Max(0d, deltaSeconds));
 		}
 
 		public LiveProgramFrames Render() {
@@ -773,10 +923,45 @@ namespace ShitDesigner.Main {
 			var nextFrame = _frameNumber + 1;
 			if (nextFrame == 0) nextFrame = 1;
 			foreach (var output in _loadedPatch.Outputs) output.Render(_graphTime, nextFrame);
+			foreach (var overlay in m_OverlayPatches.Where(patch => patch != null))
+				foreach (var output in overlay.Outputs) output.Render(_graphTime, nextFrame);
+			var overlayInputs = new List<LiveOverlayInput>();
+			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++) {
+				var overlay = m_OverlayPatches[laneIndex];
+				if (overlay == null || m_OverlayModes[laneIndex] == LiveSequencerCellMode.Off || overlay.Outputs.Count == 0) continue;
+				overlayInputs.Add(new LiveOverlayInput(m_OverlayModes[laneIndex], overlay.Outputs[0].ProgramTexture));
+			}
+			var mainTexture = _loadedPatch.Outputs.Count > 0 ? _loadedPatch.Outputs[0].ProgramTexture : null;
+			var composite = _graph.Compositor.Render(mainTexture, overlayInputs, nextFrame, _graphTime);
 			_frameNumber = nextFrame;
-			CurrentFrames = new LiveProgramFrames(_loadedPatch.Outputs.Select(output => new LiveProgramFrame(output.ProgramTexture, _frameNumber)));
+			CurrentFrames = new LiveProgramFrames(new[] { new LiveProgramFrame(composite, _frameNumber) });
 			CurrentFrame = CurrentFrames.Primary;
 			return CurrentFrames;
+		}
+
+		public void SetOverlayComposition(LiveSequencerReadModel composition) {
+			EnsureUsable();
+			if (composition.Kind != LiveSequencerKind.Overlay)
+				throw new ArgumentException("The live overlay compositor requires the overlay sequencer.", nameof(composition));
+			var activeModes = composition.GetActiveLayers().ToDictionary(layer => layer.LaneIndex, layer => layer.Mode);
+			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++) {
+				var patchId = composition.LanePatchIds.Count > laneIndex ? composition.LanePatchIds[laneIndex] : string.Empty;
+				var current = m_OverlayPatches[laneIndex];
+				if (string.IsNullOrEmpty(patchId)) {
+					DisposePatch(current);
+					m_OverlayPatches[laneIndex] = null;
+					m_OverlayModes[laneIndex] = LiveSequencerCellMode.Off;
+					continue;
+				}
+				if (!_patchDefinitionsById.TryGetValue(patchId, out var definition))
+					throw new InvalidOperationException("The overlay sequencer references an unknown patch: " + patchId + ".");
+				if (current == null || current.Definition != definition) {
+					var replacement = CreatePatch(definition, ProgramRenderSize);
+					DisposePatch(current);
+					m_OverlayPatches[laneIndex] = replacement;
+				}
+				m_OverlayModes[laneIndex] = activeModes.TryGetValue(laneIndex, out var mode) ? mode : LiveSequencerCellMode.Off;
+			}
 		}
 
 		public IReadOnlyList<RenderTexture> RenderSlotPreviews(IReadOnlyList<LivePatchSlotReadModel> slots, double deltaSeconds) {

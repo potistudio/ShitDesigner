@@ -30,6 +30,18 @@ namespace ShitDesigner.Main {
 		internal static LiveSequencerOperationResult Reject(string reason) => new LiveSequencerOperationResult(false, reason);
 	}
 
+	public readonly struct LiveSequencerLayer {
+		public int LaneIndex { get; }
+		public string PatchId { get; }
+		public LiveSequencerCellMode Mode { get; }
+
+		internal LiveSequencerLayer(int laneIndex, string patchId, LiveSequencerCellMode mode) {
+			LaneIndex = laneIndex;
+			PatchId = patchId;
+			Mode = mode;
+		}
+	}
+
 	public readonly struct LiveSequencerReadModel {
 		private readonly int[] m_ActiveLaneMasks;
 		private readonly string[] m_LanePatchIds;
@@ -63,6 +75,17 @@ namespace ShitDesigner.Main {
 				return LiveSequencerCellMode.Off;
 			var index = laneIndex * LiveStepSequencer.StepCount + stepIndex;
 			return m_CellModes != null && index < m_CellModes.Length ? m_CellModes[index] : LiveSequencerCellMode.Off;
+		}
+
+		public IReadOnlyList<LiveSequencerLayer> GetActiveLayers() {
+			var layers = new List<LiveSequencerLayer>();
+			for (var laneIndex = 0; laneIndex < LiveStepSequencer.LaneCount; laneIndex++) {
+				var mode = GetCellMode(laneIndex, CurrentStep);
+				var patchId = LanePatchIds.Count > laneIndex ? LanePatchIds[laneIndex] : string.Empty;
+				if (mode == LiveSequencerCellMode.Off || string.IsNullOrEmpty(patchId)) continue;
+				layers.Add(new LiveSequencerLayer(laneIndex, patchId, mode));
+			}
+			return layers;
 		}
 	}
 
@@ -110,16 +133,6 @@ namespace ShitDesigner.Main {
 			m_LanePatchIds[SelectedLaneIndex] = patchId;
 			SelectedLaneIndex = -1;
 			return LiveSequencerOperationResult.Accept();
-		}
-
-		public IReadOnlyList<string> GetTriggeredPatchIds(int stepIndex) {
-			if (stepIndex < 0 || stepIndex >= StepCount) return Array.Empty<string>();
-			var triggered = new List<string>();
-			for (var laneIndex = 0; laneIndex < LaneCount; laneIndex++) {
-				if ((m_ActiveLaneMasks[stepIndex] & (1 << laneIndex)) == 0 || string.IsNullOrEmpty(m_LanePatchIds[laneIndex])) continue;
-				triggered.Add(m_LanePatchIds[laneIndex]);
-			}
-			return triggered;
 		}
 
 		public LiveSequencerReadModel CreateReadModel(double adjustedTotalBeats) {
