@@ -68,6 +68,10 @@ namespace ShitDesigner.Main {
 		public LiveSequencerOperationResult Toggle(int laneIndex, int stepIndex) {
 			if (laneIndex < 0 || laneIndex >= LaneCount) return LiveSequencerOperationResult.Reject("The sequencer lane does not exist.");
 			if (stepIndex < 0 || stepIndex >= StepCount) return LiveSequencerOperationResult.Reject("The sequencer step does not exist.");
+			if (Kind == LiveSequencerKind.CompositingMode) {
+				m_ActiveLaneMasks[stepIndex] = 1 << laneIndex;
+				return LiveSequencerOperationResult.Accept();
+			}
 			m_ActiveLaneMasks[stepIndex] ^= 1 << laneIndex;
 			return LiveSequencerOperationResult.Accept();
 		}

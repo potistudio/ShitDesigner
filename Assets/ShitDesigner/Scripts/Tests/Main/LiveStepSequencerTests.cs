@@ -28,6 +28,30 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void SelectingACompositingModeReplacesTheModeAtThatStep() {
+			var sequencer = new LiveStepSequencer(LiveSequencerKind.CompositingMode, "COMPOSITING MODE");
+			sequencer.Toggle(0, 3);
+
+			var result = sequencer.Toggle(2, 3);
+
+			Assert.That(result.Accepted, Is.True);
+			var readModel = sequencer.CreateReadModel(3d);
+			Assert.That(readModel.IsActive(0, 3), Is.False);
+			Assert.That(readModel.IsActive(2, 3), Is.True);
+		}
+
+		[Test]
+		public void SelectingTheActiveCompositingModeKeepsItSelected() {
+			var sequencer = new LiveStepSequencer(LiveSequencerKind.CompositingMode, "COMPOSITING MODE");
+			sequencer.Toggle(1, 5);
+
+			var result = sequencer.Toggle(1, 5);
+
+			Assert.That(result.Accepted, Is.True);
+			Assert.That(sequencer.CreateReadModel(5d).IsActive(1, 5), Is.True);
+		}
+
+		[Test]
 		public void PlayheadRepeatsEveryEightBeats() {
 			var sequencer = new LiveStepSequencer(LiveSequencerKind.CompositingMode, "COMPOSITING MODE");
 
