@@ -10,6 +10,17 @@ namespace ShitDesigner.Scene {
 	[DisallowMultipleComponent]
 	public sealed class ChitoseCandyCutScene : MonoBehaviour, IBpmClockReceiver {
 		private const int CandyDivisionCount = 10;
+		private static readonly Vector3 DefaultCandyAxis = new Vector3(0.57f, -0.37f, -0.73f);
+		private static readonly Color[] DefaultCandyColors = {
+			new Color(0.05f, 0.72f, 0.74f, 1f),
+			new Color(0.98f, 0.13f, 0.25f, 1f),
+			new Color(0.98f, 0.91f, 0.04f, 1f),
+			new Color(0.03f, 0.86f, 0.58f, 1f),
+			new Color(0.92f, 0.17f, 0.43f, 1f)
+		};
+		private static readonly Color[] FallbackCandyColors = {
+			DefaultCandyColors[0], DefaultCandyColors[1], DefaultCandyColors[2]
+		};
 
 		private enum PatternType {
 			Dot,
@@ -21,13 +32,13 @@ namespace ShitDesigner.Scene {
 		}
 
 		private sealed class CandyFragment {
-			public Transform Segment { get; }
-			public Transform RearCutFace { get; }
-			public Transform FrontCutFace { get; }
-			public Rigidbody Body { get; }
-			public float BasePosition { get; }
-			public Vector3 Impulse { get; }
-			public Vector3 PushStartPosition { get; set; }
+			public readonly Transform Segment;
+			public readonly Transform RearCutFace;
+			public readonly Transform FrontCutFace;
+			public readonly Rigidbody Body;
+			public readonly float BasePosition;
+			public readonly Vector3 Impulse;
+			public Vector3 PushStartPosition;
 
 			public CandyFragment(Transform segment, Transform rearCutFace, Transform frontCutFace,
 				Rigidbody body, float basePosition, Vector3 impulse) {
@@ -41,18 +52,15 @@ namespace ShitDesigner.Scene {
 		}
 
 		private sealed class Candy {
-			public Transform Root { get; }
-			public Transform EntryRoot { get; }
-			public CandyFragment[] Fragments { get; }
-			public int NextCutLayer { get; set; }
-			public int PendingPushLayer { get; set; } = -1;
-			public bool IsEntering { get; set; }
-			public Vector3 EntryStartPosition { get; set; }
-			public Vector3 EntryTargetPosition { get; set; }
-			public long EntryStartBeat { get; set; }
+			public readonly Transform EntryRoot;
+			public readonly CandyFragment[] Fragments;
+			public int NextCutLayer;
+			public int PendingPushLayer = -1;
+			public bool IsEntering;
+			public Vector3 EntryStartPosition;
+			public long EntryStartBeat;
 
-			public Candy(Transform root, Transform entryRoot, CandyFragment[] fragments) {
-				Root = root;
+			public Candy(Transform entryRoot, CandyFragment[] fragments) {
 				EntryRoot = entryRoot;
 				Fragments = fragments;
 			}
@@ -64,17 +72,10 @@ namespace ShitDesigner.Scene {
 		[Min(0.05f)][SerializeField] private float m_CandyRadius = 0.68f;
 		[SerializeField] private Vector2 m_FieldSize = new Vector2(9.5f, 5.5f);
 		[Tooltip("Direction from the rear of each stick to its cut end. The negative Z component points toward the camera.")]
-		[SerializeField] private Vector3 m_CandyAxis = new Vector3(0.57f, -0.37f, -0.73f);
+		[SerializeField] private Vector3 m_CandyAxis = DefaultCandyAxis;
 		[SerializeField] private int m_RandomSeed = 5108;
 		[ColorUsage(true, true)]
-		[SerializeField]
-		private Color[] m_CandyColors = {
-			new Color(0.05f, 0.72f, 0.74f, 1f),
-			new Color(0.98f, 0.13f, 0.25f, 1f),
-			new Color(0.98f, 0.91f, 0.04f, 1f),
-			new Color(0.03f, 0.86f, 0.58f, 1f),
-			new Color(0.92f, 0.17f, 0.43f, 1f)
-		};
+		[SerializeField] private Color[] m_CandyColors = DefaultCandyColors;
 
 		[Header("Cut")]
 		[Range(30f, 300f)][SerializeField] private float m_PreviewBpm = 138f;
@@ -99,7 +100,6 @@ namespace ShitDesigner.Scene {
 		private float m_FragmentLength;
 		private System.Random m_RuntimeRandom;
 		private bool m_PushPending;
-		private bool m_PushAnimating;
 		private long m_PushStartBeat;
 		private bool m_RebuildRequested = true;
 		private double m_AdjustedTotalBeats;
@@ -144,16 +144,11 @@ namespace ShitDesigner.Scene {
 				return;
 			}
 
-			m_UsesExternalClock = true;
 			m_AdjustedTotalBeats = frame.AdjustedTotalBeats;
 			ApplyBeatPosition(m_AdjustedTotalBeats);
 		}
 
 		private void OnDisable() {
-			ReleaseGeneratedContent();
-		}
-
-		private void OnDestroy() {
 			ReleaseGeneratedContent();
 		}
 
@@ -164,7 +159,7 @@ namespace ShitDesigner.Scene {
 			m_FieldSize.x = Mathf.Max(0.1f, m_FieldSize.x);
 			m_FieldSize.y = Mathf.Max(0.1f, m_FieldSize.y);
 			if (m_CandyAxis.sqrMagnitude < 0.0001f)
-				m_CandyAxis = new Vector3(0.57f, -0.37f, -0.73f);
+				m_CandyAxis = DefaultCandyAxis;
 			m_PreviewBpm = Mathf.Clamp(m_PreviewBpm, 30f, 300f);
 			m_SplitGap = Mathf.Max(0f, m_SplitGap);
 			m_HorizontalImpulse = Mathf.Max(0f, m_HorizontalImpulse);
@@ -176,7 +171,6 @@ namespace ShitDesigner.Scene {
 			m_RebuildRequested = false;
 			m_LastProcessedBeat = long.MinValue;
 			m_PushPending = false;
-			m_PushAnimating = false;
 			m_PushStartBeat = long.MinValue;
 			ReleaseGeneratedContent();
 
@@ -184,7 +178,7 @@ namespace ShitDesigner.Scene {
 				"Generated Chitose Candy", transform, HideFlags.HideInHierarchy | HideFlags.DontSave);
 
 			m_CandyAxisRuntime = m_CandyAxis.sqrMagnitude < 0.0001f
-				? new Vector3(0.57f, -0.37f, -0.73f).normalized
+				? DefaultCandyAxis.normalized
 				: m_CandyAxis.normalized;
 
 			m_FragmentLength = m_CandyLength / CandyDivisionCount;
@@ -200,7 +194,6 @@ namespace ShitDesigner.Scene {
 			m_AdjustedTotalBeats = 0d;
 			m_LastProcessedBeat = long.MinValue;
 			m_PushPending = false;
-			m_PushAnimating = false;
 			m_PushStartBeat = long.MinValue;
 			m_UsesExternalClock = false;
 		}
@@ -219,7 +212,6 @@ namespace ShitDesigner.Scene {
 		}
 
 		private void CreateCandies() {
-			var random = m_RuntimeRandom;
 			var columns = Mathf.CeilToInt(Mathf.Sqrt(m_CandyCount));
 			var rows = Mathf.CeilToInt(m_CandyCount / (float)columns);
 			var xStep = columns <= 1 ? 0f : m_FieldSize.x / (columns - 1f);
@@ -230,25 +222,24 @@ namespace ShitDesigner.Scene {
 				var row = index / columns;
 				var x = (column - (columns - 1f) * 0.5f) * xStep;
 				var y = ((rows - 1f) * 0.5f - row) * yStep;
-				x += NextFloat(random, -0.16f, 0.16f);
-				y += NextFloat(random, -0.16f, 0.16f);
-				var frontPosition = new Vector3(x, y, NextFloat(random, -0.18f, 0.18f));
-				var axis = Quaternion.AngleAxis(NextFloat(random, -2.5f, 2.5f), Vector3.forward) * m_CandyAxisRuntime;
-				var candy = CreateCandy(index, frontPosition, axis.normalized, random);
+				x += NextFloat(-0.16f, 0.16f);
+				y += NextFloat(-0.16f, 0.16f);
+				var frontPosition = new Vector3(x, y, NextFloat(-0.18f, 0.18f));
+				var axis = Quaternion.AngleAxis(NextFloat(-2.5f, 2.5f), Vector3.forward)
+					* m_CandyAxisRuntime;
+				var candy = CreateCandy(index, frontPosition, axis.normalized);
 				m_Candies.Add(candy);
 			}
 		}
 
 		private void AddNewCandy(long startBeat) {
-			var random = m_RuntimeRandom;
 			var frontPosition = new Vector3(
-				NextFloat(random, -m_FieldSize.x * 0.5f, m_FieldSize.x * 0.5f),
-				NextFloat(random, -m_FieldSize.y * 0.5f, m_FieldSize.y * 0.5f),
-				NextFloat(random, -0.18f, 0.18f));
-			var axis = (Quaternion.AngleAxis(NextFloat(random, -2.5f, 2.5f), Vector3.forward)
+				NextFloat(-m_FieldSize.x * 0.5f, m_FieldSize.x * 0.5f),
+				NextFloat(-m_FieldSize.y * 0.5f, m_FieldSize.y * 0.5f),
+				NextFloat(-0.18f, 0.18f));
+			var axis = (Quaternion.AngleAxis(NextFloat(-2.5f, 2.5f), Vector3.forward)
 				* m_CandyAxisRuntime).normalized;
-			var candy = CreateCandy(m_Candies.Count, frontPosition, axis, random);
-			candy.EntryTargetPosition = Vector3.zero;
+			var candy = CreateCandy(m_Candies.Count, frontPosition, axis);
 			candy.EntryStartPosition = Vector3.down * (m_CandyLength * 0.5f);
 			candy.EntryStartBeat = startBeat;
 			candy.IsEntering = true;
@@ -256,7 +247,7 @@ namespace ShitDesigner.Scene {
 			m_Candies.Add(candy);
 		}
 
-		private Candy CreateCandy(int index, Vector3 frontPosition, Vector3 axis, System.Random random) {
+		private Candy CreateCandy(int index, Vector3 frontPosition, Vector3 axis) {
 			var candyRoot = CreateGeneratedTransform($"Candy {index + 1:00}", m_GeneratedRoot);
 			candyRoot.localPosition = frontPosition - axis * (m_CandyLength * 0.5f);
 			candyRoot.localRotation = Quaternion.FromToRotation(Vector3.up, axis);
@@ -283,16 +274,16 @@ namespace ShitDesigner.Scene {
 				frontCutFace.gameObject.SetActive(false);
 
 				if (fragmentIndex == 0)
-					CreateOriginalCandyEnd(fragment, index, random);
+					CreateOriginalCandyEnd(fragment, index);
 
 				fragments[fragmentIndex] = new CandyFragment(fragment, rearCutFace, frontCutFace,
-					body, basePosition, CreateImpactImpulse(random));
+					body, basePosition, CreateImpactImpulse());
 			}
 
-			return new Candy(candyRoot, entryRoot, fragments);
+			return new Candy(entryRoot, fragments);
 		}
 
-		private void CreateOriginalCandyEnd(Transform frontFragment, int index, System.Random random) {
+		private void CreateOriginalCandyEnd(Transform frontFragment, int index) {
 			var originalEnd = CreateGeneratedTransform("Original Candy End", frontFragment);
 			originalEnd.localPosition = Vector3.up * (m_FragmentLength * 0.5f + m_CandyRadius * 0.02f);
 			CreateMeshObject("Pale Rim", originalEnd, m_DiscMesh, m_RimMaterial,
@@ -301,7 +292,7 @@ namespace ShitDesigner.Scene {
 				new Vector3(m_CandyRadius * 0.76f, 0.028f, m_CandyRadius * 0.76f));
 			face.localPosition = Vector3.up * 0.04f;
 
-			var patternType = (PatternType)random.Next((int)PatternType.Count);
+			var patternType = (PatternType)m_RuntimeRandom.Next((int)PatternType.Count);
 			var pattern = CreateMeshObject("Candy Pattern", originalEnd, m_PatternMeshes[(int)patternType],
 				m_PatternMaterials[(index + 1) % m_PatternMaterials.Length],
 				Vector3.one * (m_CandyRadius * 0.34f));
@@ -322,9 +313,9 @@ namespace ShitDesigner.Scene {
 			return rigidbody;
 		}
 
-		private Vector3 CreateImpactImpulse(System.Random random) {
-			var magnitude = NextFloat(random, m_HorizontalImpulse * 0.55f, m_HorizontalImpulse);
-			var direction = random.Next(2) == 0 ? -1f : 1f;
+		private Vector3 CreateImpactImpulse() {
+			var magnitude = NextFloat(m_HorizontalImpulse * 0.55f, m_HorizontalImpulse);
+			var direction = m_RuntimeRandom.Next(2) == 0 ? -1f : 1f;
 			return new Vector3(direction, 1f, 0f).normalized * magnitude;
 		}
 
@@ -359,19 +350,14 @@ namespace ShitDesigner.Scene {
 		private void ProcessNextBeat(long beatIndex) {
 			if (m_PushPending) {
 				m_PushPending = false;
-				m_PushAnimating = true;
 				m_PushStartBeat = beatIndex;
 				CapturePushStartPositions();
 				PushCutLayers(0f);
 				return;
 			}
 
-			var cutOccurred = CutNextLayers();
-			if (!cutOccurred) {
+			if (!CutNextLayers() || m_RuntimeRandom.Next(2) == 0)
 				AddNewCandy(beatIndex);
-			} else if (m_RuntimeRandom.Next(2) == 0) {
-				AddNewCandy(beatIndex);
-			}
 			m_PushPending = true;
 		}
 
@@ -384,11 +370,10 @@ namespace ShitDesigner.Scene {
 
 				var progress = Mathf.Clamp01((float)(beatPosition - candy.EntryStartBeat));
 				var easedProgress = EvaluateEasing(m_EntryEasing, progress);
-				candy.EntryRoot.localPosition = Vector3.Lerp(
-					candy.EntryStartPosition, candy.EntryTargetPosition, easedProgress);
+				candy.EntryRoot.localPosition = Vector3.Lerp(candy.EntryStartPosition, Vector3.zero, easedProgress);
 				moved = true;
 				if (progress >= 1f) {
-					candy.EntryRoot.localPosition = candy.EntryTargetPosition;
+					candy.EntryRoot.localPosition = Vector3.zero;
 					candy.IsEntering = false;
 				}
 			}
@@ -397,14 +382,14 @@ namespace ShitDesigner.Scene {
 		}
 
 		private void UpdatePushAnimation(double beatPosition) {
-			if (!m_PushAnimating)
+			if (m_PushStartBeat == long.MinValue)
 				return;
 
 			var progress = Mathf.Clamp01((float)(beatPosition - m_PushStartBeat));
 			var easedProgress = EvaluateEasing(m_PushEasing, progress);
 			PushCutLayers(easedProgress);
 			if (progress >= 1f) {
-				m_PushAnimating = false;
+				m_PushStartBeat = long.MinValue;
 				for (var index = 0; index < m_Candies.Count; index++)
 					m_Candies[index].PendingPushLayer = -1;
 			}
@@ -450,7 +435,6 @@ namespace ShitDesigner.Scene {
 
 		private void PushCutLayers(float progress) {
 			var pushDistance = m_FragmentLength + m_SplitGap;
-			var clampedProgress = Mathf.Clamp01(progress);
 			for (var index = 0; index < m_Candies.Count; index++) {
 				var candy = m_Candies[index];
 				var layerIndex = candy.PendingPushLayer;
@@ -461,7 +445,7 @@ namespace ShitDesigner.Scene {
 					var fragment = candy.Fragments[fragmentIndex];
 					var targetPosition = Vector3.up * (fragment.BasePosition + pushDistance * (layerIndex + 1));
 					fragment.Segment.localPosition = Vector3.Lerp(
-						fragment.PushStartPosition, targetPosition, clampedProgress);
+						fragment.PushStartPosition, targetPosition, progress);
 				}
 			}
 			if (Application.isPlaying)
@@ -500,11 +484,7 @@ namespace ShitDesigner.Scene {
 					return validColors.ToArray();
 			}
 
-			return new[] {
-				new Color(0.05f, 0.72f, 0.74f, 1f),
-				new Color(0.98f, 0.13f, 0.25f, 1f),
-				new Color(0.98f, 0.91f, 0.04f, 1f)
-			};
+			return FallbackCandyColors;
 		}
 
 		private Mesh[] BuildPatternMeshes() {
@@ -690,8 +670,8 @@ namespace ShitDesigner.Scene {
 			m_FaceMaterial = null;
 		}
 
-		private static float NextFloat(System.Random random, float minimum, float maximum) {
-			return Mathf.Lerp(minimum, maximum, (float)random.NextDouble());
+		private float NextFloat(float minimum, float maximum) {
+			return Mathf.Lerp(minimum, maximum, (float)m_RuntimeRandom.NextDouble());
 		}
 
 		private static void AddTriangle(int[] triangles, ref int index, int first, int second, int third) {
