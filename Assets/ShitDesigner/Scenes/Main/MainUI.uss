@@ -89,22 +89,11 @@
 
 .output-previews {
     width: 1280px;
-    height: 440px;
+    height: 360px;
     min-width: 1280px;
-    min-height: 440px;
+    min-height: 360px;
     flex-direction: row;
     align-items: flex-start;
-    flex-shrink: 0;
-}
-
-.output-2-column {
-    width: 640px;
-    min-width: 640px;
-    max-width: 640px;
-    height: 440px;
-    min-height: 440px;
-    flex-direction: column;
-    flex-grow: 0;
     flex-shrink: 0;
 }
 
@@ -152,9 +141,9 @@
     width: 1280px;
     min-width: 1280px;
     max-width: 1280px;
-    height: 132px;
-    min-height: 132px;
-    max-height: 132px;
+    height: 220px;
+    min-height: 220px;
+    max-height: 220px;
     flex-direction: row;
     flex-shrink: 0;
     background-color: rgb(13, 15, 18);
@@ -326,76 +315,6 @@
     border-top-color: rgb(48, 55, 65);
 }
 
-.patch-slot-controls {
-    width: 640px;
-    min-width: 640px;
-    max-width: 640px;
-    height: 80px;
-    min-height: 80px;
-    max-height: 80px;
-    flex-direction: row;
-    align-items: flex-start;
-    flex-grow: 0;
-    flex-shrink: 0;
-    margin-top: 0;
-    margin-right: 0;
-    margin-bottom: 0;
-    margin-left: 0;
-    padding-top: 0;
-    padding-right: 0;
-    padding-bottom: 0;
-    padding-left: 0;
-    background-color: rgb(13, 15, 18);
-    border-top-width: 0;
-    border-bottom-width: 0;
-    border-color: rgb(48, 55, 65);
-}
-
-.patch-slot-button {
-    width: 80px;
-    min-width: 80px;
-    max-width: 80px;
-    height: 80px;
-    min-height: 80px;
-    max-height: 80px;
-    flex-grow: 0;
-    flex-shrink: 0;
-    margin-top: 0;
-    margin-right: 0;
-    margin-bottom: 0;
-    margin-left: 0;
-    padding-top: 0;
-    padding-right: 0;
-    padding-bottom: 0;
-    padding-left: 0;
-    color: rgb(157, 167, 180);
-    background-color: rgb(21, 24, 29);
-    border-width: 1px;
-    border-color: rgb(48, 55, 65);
-    font-size: 16px;
-    -unity-font-style: bold;
-    -unity-text-align: middle-center;
-    -unity-background-scale-mode: scale-and-crop;
-}
-
-.patch-slot-button.is-selected {
-    border-color: rgb(88, 166, 255);
-}
-
-.patch-slot-button.is-cued {
-    color: rgb(180, 215, 255);
-}
-
-.patch-slot-button.is-playing {
-    color: rgb(255, 255, 255);
-    background-color: rgb(47, 111, 179);
-}
-
-.patch-slot-button:hover {
-    background-color: rgb(36, 43, 52);
-    border-color: rgb(88, 166, 255);
-}
-
 .patch-button {
     width: 100%;
     min-width: 0;
@@ -416,10 +335,6 @@
     font-size: 10px;
 }
 
-.patch-button.is-preloaded {
-    border-color: rgb(88, 166, 255);
-}
-
 .patch-button.is-selected {
     border-color: rgb(88, 166, 255);
 }
@@ -431,10 +346,6 @@
 .patch-list-controls.is-scene-selecting {
     border-width: 1px;
     border-color: rgb(255, 190, 74);
-}
-
-.patch-button.is-queued {
-    color: rgb(180, 215, 255);
 }
 
 .patch-button.is-loaded {
@@ -522,8 +433,8 @@
 }
 
 .live-fader-panel {
-    height: 288px;
-    min-height: 288px;
+    height: 280px;
+    min-height: 280px;
     background-color: rgb(21, 24, 29);
     border-width: 1px;
     border-color: rgb(48, 55, 65);

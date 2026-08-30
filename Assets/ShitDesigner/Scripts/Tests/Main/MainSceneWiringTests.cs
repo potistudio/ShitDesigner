@@ -103,17 +103,13 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void MainUiDefinesAllPatchSlotButtons() {
+		public void MainUiDoesNotDefineCueControls() {
 			var asset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/ShitDesigner/Scenes/Main/MainUI.uxml");
 			Assert.That(asset, Is.Not.Null);
 			var root = new VisualElement();
 			asset.CloneTree(root);
-			var controls = root.Q<VisualElement>("patch-slot-controls");
-			Assert.That(controls, Is.Not.Null);
 
-			var buttons = controls.Query<Button>().ToList();
-			Assert.That(buttons, Has.Count.EqualTo(LivePatchSlots.Capacity));
-			Assert.That(buttons.Select(button => button.name).ToArray(), Is.EqualTo(Enumerable.Range(0, LivePatchSlots.Capacity).Select(index => "patch-slot-" + index).ToArray()));
+			Assert.That(root.Q<VisualElement>("patch-slot-controls"), Is.Null);
 			Assert.That(root.Q<Button>("cue-patch-slot"), Is.Null);
 			Assert.That(root.Q<Button>("launch-patch-slot"), Is.Null);
 			Assert.That(root.Q<Button>("clear-patch-slot"), Is.Null);

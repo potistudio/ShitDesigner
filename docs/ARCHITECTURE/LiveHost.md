@@ -27,9 +27,9 @@
 
 ### 2026-08-30: Overlayシーケンサーは既存ノードRuntimeでProgramへ合成する
 
-- Overlayシーケンサーの4レーンは、割り当てられたOverlayパッチのRuntimeをレーンごとに保持する。セルがOffでも割り当てが変わるまでRuntimeを維持する。
+- Overlayシーケンサーの8レーンは、割り当てられたOverlayパッチのRuntimeをレーンごとに保持する。セルがOffでも割り当てが変わるまでRuntimeを維持する。
 - Overlayパッチの評価、Scene更新および描画は現在ステップで有効な間だけ行う。Offへ移った時点でSceneを非アクティブ化し、ProgramはMain Textureへ直接戻す。
-- 現在ステップで有効なレーンを0から3の順にMain Textureへ合成し、後のレーンを前面として扱う。
+- 現在ステップで有効なレーンを0から7の順にMain Textureへ合成し、後のレーンを前面として扱う。
 - Normal、Add、Multiply、SubtractおよびDifferenceはShader Manifestの既存Blendノードを使用する。Invertは既存Invertノードの結果をNormal Alpha Overで合成する。
 - シーケンサーの拍進行はLoaded Patchを切り替えない。合成後の単一TextureをProgram映像として外部DisplayとProgram Monitorへ提示する。
 
@@ -172,12 +172,11 @@
 - ロード要求は事前ロード済みのパッチIDと一致する場合だけ受理する。表示中のパッチはロード要求まで切り替わらない。
 - 表示中のパッチに含まれるノードだけを更新および描画する。表示中および事前ロード対象のRuntimeはShutdownで破棄する。
 
-### 2026-08-29: ライブUIは8つの固定パッチスロットを持つ
+### 2026-08-30: ライブUIからCueを除去する
 
-- パッチブラウザで選んだパッチは、先頭の空きスロットへ追加する。スロットは8件で固定し、満杯時は追加を拒否する。
-- スロットの選択、Cue、PlayおよびClearはUIの読み取り状態と限定したHost APIを通じて操作する。スロット内容はPatchDefinitionを変更しない。
-- Cueは選択スロットのパッチを事前ロードする。PlayはCue済みならロード要求を、未Cueなら単一のLaunch要求を投入し、同一ライブTickで作成と切替を完結させる。
-- 物理的に事前ロードするPatch Runtimeは従来どおり1件だけとする。8スロットは出演順を保持する操作状態であり、8つのRuntimeを保持しない。
+- パッチスロットとCue表示は持たず、パッチブラウザの選択を直接Launch要求へ変換する。
+- Overlayレーンを選択している間は、Overlayパッチの選択をLaunchではなく対象レーンへの割り当てとして扱う。
+- Launch内部で必要なRuntime生成と切替を同一ライブTickで完結させる。
 
 ### 2026-08-27: BPMクロックはライブグラフ全体で共有する
 
@@ -193,7 +192,7 @@
 
 ### 2026-08-27: ライブ用キーボードは全体操作とパッチ入力を扱う
 
-- 左右矢印はMain／Overlay／FXタブを切り替え、上下矢印はタブ内のパッチカタログ選択を移動する。Enterは選択パッチを先頭の空きスロットへQueueする。`1`から`8`は対応するパッチスロットをPlayし、`Shift + 1`から`8`は対応スロットをClearする。
+- 左右矢印はMain／Overlay／FXタブを切り替え、上下矢印はタブ内のパッチカタログ選択を移動する。Enterは選択パッチを直接Launchする。
 - SpaceはUIのTAPボタンと同じBPM Tap入力とする。
 - `PatchDefinition` のKeyboard Inputsは、キー押下時だけ1.0をロード中パッチの公開パラメーターへ送る。離上では要求を生成せず、キーボードの全体操作はこの設定とは別に固定される。
 - Motion、Scaleなどの連続値はMIDI入力またはUIの操作面から要求する。

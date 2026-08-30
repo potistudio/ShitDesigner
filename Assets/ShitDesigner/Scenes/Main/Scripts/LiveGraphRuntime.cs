@@ -835,33 +835,20 @@ namespace ShitDesigner.Main {
 	public sealed class LiveGraphRuntime : IDisposable {
 		public const int ProgramWidth = 1920;
 		public const int ProgramHeight = 1080;
-		// Slot previews are sampled independently so the full-resolution Program path remains unaffected.
-		public const int SlotPreviewWidth = 160;
-		public const int SlotPreviewHeight = 90;
-		public const int SlotPreviewFrameRate = 10;
 
-		private const double SlotPreviewIntervalSeconds = 1d / SlotPreviewFrameRate;
 		private static readonly LiveRenderSize ProgramRenderSize = new LiveRenderSize(ProgramWidth, ProgramHeight);
-		private static readonly LiveRenderSize SlotPreviewRenderSize = new LiveRenderSize(SlotPreviewWidth, SlotPreviewHeight);
 
 		private readonly LiveGraph _graph;
 		private readonly Dictionary<string, PatchDefinition> _patchDefinitionsById;
 		private readonly LiveBpmClock _bpmClock = new LiveBpmClock();
 		private readonly List<LivePatch> _createdPatches = new List<LivePatch>();
-		private readonly LivePatch[] m_OverlayPatches = new LivePatch[LiveStepSequencer.LaneCount];
-		private readonly LiveSequencerCellMode[] m_OverlayModes = new LiveSequencerCellMode[LiveStepSequencer.LaneCount];
-		private readonly Dictionary<string, LiveSlotPreview> m_SlotPreviewPatches = new Dictionary<string, LiveSlotPreview>(StringComparer.Ordinal);
-		private readonly Dictionary<string, RenderTexture> m_SlotPreviewTextures = new Dictionary<string, RenderTexture>(StringComparer.Ordinal);
-		private readonly HashSet<string> m_SlotPreviewPatchFailures = new HashSet<string>(StringComparer.Ordinal);
-		private readonly HashSet<string> m_SlotPreviewTextureFailures = new HashSet<string>(StringComparer.Ordinal);
-		private readonly RenderTexture[] m_SlotPreviewFrames = new RenderTexture[LivePatchSlots.Capacity];
+		private readonly LivePatch[] m_OverlayPatches = new LivePatch[LiveStepSequencer.OverlayLaneCount];
+		private readonly LiveSequencerCellMode[] m_OverlayModes = new LiveSequencerCellMode[LiveStepSequencer.OverlayLaneCount];
 		private LivePatch _loadedPatch;
 		private LivePatch _preloadedPatch;
 		private ulong _frameNumber;
-		private ulong m_SlotPreviewFrameNumber;
 		private double _graphTime;
 		private double _lastDeltaSeconds;
-		private double m_SlotPreviewElapsedSeconds;
 		private bool _disposed;
 
 		public string LoadedPatchId => _loadedPatch?.Definition.Id ?? string.Empty;
@@ -869,7 +856,6 @@ namespace ShitDesigner.Main {
 		public IReadOnlyList<PatchDefinition> Patches => _graph.PatchDefinitions;
 		public LiveProgramFrame CurrentFrame { get; private set; }
 		public LiveProgramFrames CurrentFrames { get; private set; }
-		public IReadOnlyList<RenderTexture> SlotPreviewTextures => m_SlotPreviewFrames;
 		public LiveParameterDefinition BpmDefinition => _bpmClock.Definition;
 		public BeatClockFrame BpmFrame => _bpmClock.Frame;
 
@@ -991,49 +977,11 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		public IReadOnlyList<RenderTexture> RenderSlotPreviews(IReadOnlyList<LivePatchSlotReadModel> slots, double deltaSeconds) {
-			EnsureUsable();
-			var activePatchIds = CollectActiveSlotPatchIds(slots);
-			ReconcileSlotPreviews(activePatchIds);
-			if (activePatchIds.Count == 0) {
-				m_SlotPreviewElapsedSeconds = 0d;
-				m_SlotPreviewFrameNumber = 0;
-			}
-			else {
-				m_SlotPreviewElapsedSeconds += Math.Max(0d, deltaSeconds);
-				if (m_SlotPreviewFrameNumber == 0 || m_SlotPreviewElapsedSeconds >= SlotPreviewIntervalSeconds) {
-					m_SlotPreviewElapsedSeconds %= SlotPreviewIntervalSeconds;
-					var nextFrame = m_SlotPreviewFrameNumber + 1;
-					if (nextFrame == 0) nextFrame = 1;
-					RenderSlotPreviewPatches(nextFrame);
-					RenderLoadedSlotPreview();
-					m_SlotPreviewFrameNumber = nextFrame;
-				}
-			}
-
-			Array.Clear(m_SlotPreviewFrames, 0, m_SlotPreviewFrames.Length);
-			if (slots != null) {
-				foreach (var slot in slots) {
-					if (!LivePatchSlots.IsValidSlotIndex(slot.Index) || string.IsNullOrEmpty(slot.PatchId)) continue;
-					if (slot.PatchId == LoadedPatchId)
-						m_SlotPreviewTextures.TryGetValue(slot.PatchId, out m_SlotPreviewFrames[slot.Index]);
-					else if (m_SlotPreviewPatches.TryGetValue(slot.PatchId, out var preview))
-						m_SlotPreviewFrames[slot.Index] = preview.Texture;
-				}
-			}
-			return m_SlotPreviewFrames;
-		}
-
 		public LiveParameterDefinition[] GetLoadedPatchParameterDefinitions() => _loadedPatch?.GetParameterDefinitions() ?? Array.Empty<LiveParameterDefinition>();
 
 		public void Dispose() {
 			if (_disposed) return;
 			_disposed = true;
-			foreach (var texture in m_SlotPreviewTextures.Values) ReleaseTexture(texture);
-			m_SlotPreviewTextures.Clear();
-			m_SlotPreviewPatches.Clear();
-			m_SlotPreviewPatchFailures.Clear();
-			m_SlotPreviewTextureFailures.Clear();
 			for (var index = _createdPatches.Count - 1; index >= 0; index--) _createdPatches[index].Dispose();
 			_createdPatches.Clear();
 			_graph.Dispose();
@@ -1057,124 +1005,6 @@ namespace ShitDesigner.Main {
 			patch.Dispose();
 		}
 
-		private HashSet<string> CollectActiveSlotPatchIds(IReadOnlyList<LivePatchSlotReadModel> slots) {
-			var activePatchIds = new HashSet<string>(StringComparer.Ordinal);
-			if (slots == null) return activePatchIds;
-			foreach (var slot in slots)
-				if (!string.IsNullOrEmpty(slot.PatchId)) activePatchIds.Add(slot.PatchId);
-			return activePatchIds;
-		}
-
-		private void ReconcileSlotPreviews(ISet<string> activePatchIds) {
-			foreach (var patchId in m_SlotPreviewPatches.Keys.Where(patchId => !activePatchIds.Contains(patchId) || patchId == LoadedPatchId).ToArray())
-				DisposeSlotPreviewPatch(patchId);
-			foreach (var patchId in m_SlotPreviewTextures.Keys.Where(patchId => !activePatchIds.Contains(patchId) || patchId != LoadedPatchId).ToArray())
-				DisposeSlotPreviewTexture(patchId);
-			foreach (var patchId in m_SlotPreviewPatchFailures.Where(patchId => !activePatchIds.Contains(patchId)).ToArray())
-				m_SlotPreviewPatchFailures.Remove(patchId);
-			foreach (var patchId in m_SlotPreviewTextureFailures.Where(patchId => !activePatchIds.Contains(patchId)).ToArray())
-				m_SlotPreviewTextureFailures.Remove(patchId);
-
-			foreach (var patchId in activePatchIds) {
-				if (!_patchDefinitionsById.ContainsKey(patchId)) {
-					m_SlotPreviewPatchFailures.Add(patchId);
-					continue;
-				}
-				if (patchId == LoadedPatchId) {
-					m_SlotPreviewPatchFailures.Remove(patchId);
-					if (m_SlotPreviewTextures.ContainsKey(patchId) || m_SlotPreviewTextureFailures.Contains(patchId)) continue;
-					try {
-						m_SlotPreviewTextures.Add(patchId, CreateSlotPreviewTexture(patchId));
-					}
-					catch {
-						m_SlotPreviewTextureFailures.Add(patchId);
-					}
-					continue;
-				}
-
-				m_SlotPreviewTextureFailures.Remove(patchId);
-				if (m_SlotPreviewPatches.ContainsKey(patchId) || m_SlotPreviewPatchFailures.Contains(patchId)) continue;
-				try {
-					var previewPatch = CreatePatch(_patchDefinitionsById[patchId], SlotPreviewRenderSize);
-					m_SlotPreviewPatches.Add(patchId, new LiveSlotPreview(previewPatch));
-				}
-				catch {
-					m_SlotPreviewPatchFailures.Add(patchId);
-				}
-			}
-		}
-
-		private void RenderSlotPreviewPatches(ulong frameNumber) {
-			foreach (var pair in m_SlotPreviewPatches.ToArray()) {
-				try {
-					pair.Value.Render(_graphTime, _bpmClock.Frame, frameNumber);
-				}
-				catch {
-					DisposeSlotPreviewPatch(pair.Key);
-					m_SlotPreviewPatchFailures.Add(pair.Key);
-				}
-			}
-		}
-
-		private void RenderLoadedSlotPreview() {
-			if (!m_SlotPreviewTextures.TryGetValue(LoadedPatchId, out var target)) return;
-			try {
-				var source = _loadedPatch.Outputs.Count == 0 ? null : _loadedPatch.Outputs[0].ProgramTexture;
-				if (source == null || !source.IsCreated()) ClearTexture(target);
-				else Graphics.Blit(source, target);
-			}
-			catch {
-				DisposeSlotPreviewTexture(LoadedPatchId);
-				m_SlotPreviewTextureFailures.Add(LoadedPatchId);
-			}
-		}
-
-		private void DisposeSlotPreviewPatch(string patchId) {
-			if (!m_SlotPreviewPatches.TryGetValue(patchId, out var preview)) return;
-			m_SlotPreviewPatches.Remove(patchId);
-			DisposePatch(preview.Patch);
-		}
-
-		private void DisposeSlotPreviewTexture(string patchId) {
-			if (!m_SlotPreviewTextures.TryGetValue(patchId, out var texture)) return;
-			m_SlotPreviewTextures.Remove(patchId);
-			ReleaseTexture(texture);
-		}
-
-		private static RenderTexture CreateSlotPreviewTexture(string patchId) {
-			var texture = new RenderTexture(SlotPreviewWidth, SlotPreviewHeight, 0, RenderTextureFormat.ARGB32) {
-				name = "ShitDesigner.Main.PatchSlotPreview." + patchId,
-				filterMode = FilterMode.Bilinear,
-				wrapMode = TextureWrapMode.Clamp,
-				useMipMap = false,
-				autoGenerateMips = false
-			};
-			if (!texture.Create()) {
-				ReleaseTexture(texture);
-				throw new InvalidOperationException("A patch slot preview texture could not be created.");
-			}
-			ClearTexture(texture);
-			return texture;
-		}
-
-		private static void ClearTexture(RenderTexture texture) {
-			var previous = RenderTexture.active;
-			try {
-				RenderTexture.active = texture;
-				GL.Clear(true, true, Color.black);
-			}
-			finally {
-				RenderTexture.active = previous;
-			}
-		}
-
-		private static void ReleaseTexture(RenderTexture texture) {
-			if (texture == null) return;
-			texture.Release();
-			if (UnityEngine.Application.isPlaying) UnityEngine.Object.Destroy(texture);
-			else UnityEngine.Object.DestroyImmediate(texture);
-		}
-
 		private void LoadPreloadedPatch() {
 			var previousLoadedPatch = _loadedPatch;
 			previousLoadedPatch?.SetSceneActive(false);
@@ -1190,31 +1020,6 @@ namespace ShitDesigner.Main {
 
 		private static LiveParameterApplicationResult Accept(LiveParameterRequest request) => new LiveParameterApplicationResult(request.SequenceNumber, true, string.Empty);
 		private static LiveParameterApplicationResult Reject(LiveParameterRequest request, string reason) => new LiveParameterApplicationResult(request.SequenceNumber, false, reason);
-	}
-
-	internal sealed class LiveSlotPreview {
-		private readonly LivePatch m_Patch;
-		private double m_LastGraphTime;
-		private bool m_HasRendered;
-
-		public LivePatch Patch => m_Patch;
-		public RenderTexture Texture => m_Patch.Outputs.Count == 0 ? null : m_Patch.Outputs[0].ProgramTexture;
-
-		public LiveSlotPreview(LivePatch patch) {
-			m_Patch = patch ?? throw new ArgumentNullException(nameof(patch));
-		}
-
-		public void Render(double graphTime, BeatClockFrame bpmFrame, ulong frameNumber) {
-			var deltaSeconds = m_HasRendered ? Math.Max(0d, graphTime - m_LastGraphTime) : Math.Max(0d, graphTime);
-			m_Patch.ApplyResolvedParameters(bpmFrame);
-			foreach (var output in m_Patch.Outputs) {
-				output.Evaluate(deltaSeconds, bpmFrame);
-				output.SceneUpdate(deltaSeconds);
-				output.Render(graphTime, frameNumber);
-			}
-			m_LastGraphTime = graphTime;
-			m_HasRendered = true;
-		}
 	}
 
 	internal sealed class LivePatch : IDisposable {
