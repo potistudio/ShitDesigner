@@ -36,7 +36,7 @@ The old three-node project format remains compatible: shitdesigner.shader.genera
 | VJEdge | 38 | 14 | 20 | 4 | Hidden/ShitDesigner/VJ/Edge |
 | VJGenerator | 48 | 16 | 24 | 8 | Hidden/ShitDesigner/VJ/Generator |
 | VJGeometry | 42 | 16 | 20 | 6 | Hidden/ShitDesigner/VJ/Geometry |
-| VJGlitch | 32 | 16 | 16 | 0 | Hidden/ShitDesigner/VJ/Glitch |
+| VJGlitch | 42 | 16 | 26 | 0 | Hidden/ShitDesigner/VJ/Glitch |
 | VJKey | 24 | 12 | 12 | 0 | Hidden/ShitDesigner/VJ/Key |
 
 ## Variant index
@@ -332,6 +332,21 @@ The old three-node project format remains compatible: shitdesigner.shader.genera
 | P2 | Datamosh Motion Warp | shitdesigner.shader.geometry.datamosh-motion-warp | VJGeometry | 40 | Hidden/ShitDesigner/VJ/Geometry | 0 | image | amount, frequency, detail, softness, threshold, gain, mix, speed, phase, seed, center, angle, scale, radius, falloff, displacement | 0 | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed | finite-deterministic-reference |
 | P2 | Fluid Advection Warp | shitdesigner.shader.geometry.fluid-advection-warp | VJGeometry | 41 | Hidden/ShitDesigner/VJ/Geometry | 0 | image | amount, frequency, detail, softness, threshold, gain, mix, speed, phase, seed, center, angle, scale, radius, falloff, displacement | 0 | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed | finite-deterministic-reference |
 
+### Glitch/Signal/Data
+
+| Priority | Name | NodeTypeId | Family | Variant | Shader | Pass | Inputs | Parameters | History | Features | Test |
+|---|---|---|---|---:|---|---:|---|---|---:|---|---|
+| P1 | Packet Loss | shitdesigner.shader.glitch.packet-loss | VJGlitch | 32 | Hidden/ShitDesigner/VJ/Glitch | 0 | image | amount, frequency, detail, softness, threshold, gain, mix, speed, phase, seed, center, angle, scale, radius, falloff, displacement | 3 slots, 1 warmup | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed, history-reset-resize-pause | finite-deterministic-reference |
+| P1 | Buffer Underrun | shitdesigner.shader.glitch.buffer-underrun | VJGlitch | 33 | Hidden/ShitDesigner/VJ/Glitch | 0 | image | amount, frequency, detail, softness, threshold, gain, mix, speed, phase, seed, center, angle, scale, radius, falloff, displacement | 3 slots, 1 warmup | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed, history-reset-resize-pause | finite-deterministic-reference |
+| P1 | Frame Address Error | shitdesigner.shader.glitch.frame-address-error | VJGlitch | 34 | Hidden/ShitDesigner/VJ/Glitch | 0 | image | amount, frequency, detail, softness, threshold, gain, mix, speed, phase, seed, center, angle, scale, radius, falloff, displacement | 3 slots, 1 warmup | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed, history-reset-resize-pause | finite-deterministic-reference |
+| P1 | Codec Collapse | shitdesigner.shader.glitch.codec-collapse | VJGlitch | 35 | Hidden/ShitDesigner/VJ/Glitch | 0 | image | amount, frequency, detail, softness, threshold, gain, mix, speed, phase, seed, center, angle, scale, radius, falloff, displacement | 0 | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed | finite-deterministic-reference |
+| P1 | Bitplane Failure | shitdesigner.shader.glitch.bitplane-failure | VJGlitch | 36 | Hidden/ShitDesigner/VJ/Glitch | 0 | image | amount, frequency, detail, softness, threshold, gain, mix, speed, phase, seed, center, angle, scale, radius, falloff, displacement | 0 | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed | finite-deterministic-reference |
+| P1 | Memory Corruption | shitdesigner.shader.glitch.memory-corruption | VJGlitch | 37 | Hidden/ShitDesigner/VJ/Glitch | 0 | image | amount, frequency, detail, softness, threshold, gain, mix, speed, phase, seed, center, angle, scale, radius, falloff, displacement | 3 slots, 1 warmup | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed, history-reset-resize-pause | finite-deterministic-reference |
+| P1 | Decode Drift | shitdesigner.shader.glitch.decode-drift | VJGlitch | 38 | Hidden/ShitDesigner/VJ/Glitch | 0 | image | amount, frequency, detail, softness, threshold, gain, mix, speed, phase, seed, center, angle, scale, radius, falloff, displacement | 3 slots, 1 warmup | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed, history-reset-resize-pause | finite-deterministic-reference |
+| P1 | Header Damage | shitdesigner.shader.glitch.header-damage | VJGlitch | 39 | Hidden/ShitDesigner/VJ/Glitch | 0 | image | amount, frequency, detail, softness, threshold, gain, mix, speed, phase, seed, center, angle, scale, radius, falloff, displacement | 0 | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed | finite-deterministic-reference |
+| P1 | Channel Dropout | shitdesigner.shader.glitch.channel-dropout | VJGlitch | 40 | Hidden/ShitDesigner/VJ/Glitch | 0 | image | amount, frequency, detail, softness, threshold, gain, mix, speed, phase, seed, center, angle, scale, radius, falloff, displacement | 0 | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed | finite-deterministic-reference |
+| P1 | Data Rain Replacement | shitdesigner.shader.glitch.data-rain-replacement | VJGlitch | 41 | Hidden/ShitDesigner/VJ/Glitch | 0 | image | amount, frequency, detail, softness, threshold, gain, mix, speed, phase, seed, center, angle, scale, radius, falloff, displacement | 0 | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed | finite-deterministic-reference |
+
 ### Glitch/Signal/Retro
 
 | Priority | Name | NodeTypeId | Family | Variant | Shader | Pass | Inputs | Parameters | History | Features | Test |
@@ -543,3 +558,4 @@ The old three-node project format remains compatible: shitdesigner.shader.genera
 | P1 | Rec601 709 2020 Matrix | utility.rec601_709_2020_matrix | Utility | 25 | Hidden/ShitDesigner/VJ/UtilityFamily | 0 | MainTex, CompareTex | Channel, Exposure, Threshold, RangeMode, Frame, Resolution | 0 | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed | analysis_output_finite |
 | P1 | Limited Full Range Convert | utility.limited_full_range_convert | Utility | 26 | Hidden/ShitDesigner/VJ/UtilityFamily | 0 | MainTex, CompareTex | Channel, Exposure, Threshold, RangeMode, Frame, Resolution | 0 | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed | analysis_output_finite |
 | P1 | Sdr Hdr Display Transform Preview | utility.sdr_hdr_display_transform_preview | Utility | 27 | Hidden/ShitDesigner/VJ/UtilityFamily | 0 | MainTex, CompareTex | Channel, Exposure, Threshold, RangeMode, Frame, Resolution | 0 | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed | analysis_output_finite |
+

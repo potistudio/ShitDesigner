@@ -16,18 +16,18 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 		private const string CatalogPath = "Assets/ShitDesigner/Scripts/Modules/Nodes/NodeTypeCatalog.asset";
 
 		[Test]
-		public void GeneratedManifestAsset_ContainsAll438LedgerEntriesAndDirectShaders() {
+		public void GeneratedManifestAsset_ContainsAll448LedgerEntriesAndDirectShaders() {
 			var asset = AssetDatabase.LoadAssetAtPath<ShaderNodeManifestAsset>(ManifestPath);
 			Assert.That(asset, Is.Not.Null);
 			var valid = asset.ValidateShaderReferences();
 			Assert.That(valid.IsSuccess, Is.True, valid.IsFailure ? valid.Error.Message : string.Empty);
 
 			var generated = asset.Entries.Where(x => !string.IsNullOrWhiteSpace(x.SourceLedger)).ToList();
-			Assert.That(generated.Count, Is.EqualTo(438));
-			Assert.That(generated.Count(x => x.SourceLedger == "spatial-variants.json"), Is.EqualTo(246));
+			Assert.That(generated.Count, Is.EqualTo(448));
+			Assert.That(generated.Count(x => x.SourceLedger == "spatial-variants.json"), Is.EqualTo(256));
 			Assert.That(generated.Count(x => x.SourceLedger == "compositing-temporal-variants.json"), Is.EqualTo(104));
 			Assert.That(generated.Count(x => x.SourceLedger == "audio-raymarch-utility-variants.json"), Is.EqualTo(88));
-			Assert.That(generated.Select(x => x.TypeId).Distinct(StringComparer.Ordinal).Count(), Is.EqualTo(438));
+			Assert.That(generated.Select(x => x.TypeId).Distinct(StringComparer.Ordinal).Count(), Is.EqualTo(448));
 			Assert.That(generated.All(x => x.Shader != null && x.Passes.Count > 0 && x.SourceVariant >= 0), Is.True);
 			Assert.That(generated.All(x => x.Passes.Any(pass => pass.Index == x.OutputPass && pass.VariantId == x.VariantId)), Is.True);
 			Assert.That(asset.Entries.Count(x => string.IsNullOrWhiteSpace(x.SourceLedger)), Is.EqualTo(4));
@@ -54,7 +54,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 			var runtime = catalog.BuildRuntimeCatalog();
 			Assert.That(runtime.IsSuccess, Is.True, runtime.IsFailure ? runtime.Error.Message : string.Empty);
 			Assert.That(catalog.Entries.Count, Is.EqualTo(463));
-			Assert.That(catalog.Entries.Count(x => !string.IsNullOrWhiteSpace(x.ShaderKey)), Is.EqualTo(442));
+			Assert.That(catalog.Entries.Count(x => !string.IsNullOrWhiteSpace(x.ShaderKey)), Is.EqualTo(452));
 			Assert.That(runtime.Value.Entries.Count, Is.EqualTo(catalog.Entries.Count));
 
 			foreach (var source in manifest.Entries) {
@@ -64,6 +64,35 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 				Assert.That(catalogEntry.ShaderSourceVariant, Is.EqualTo(source.SourceVariant), source.TypeId);
 				Assert.That(catalogEntry.OutputPass, Is.EqualTo(source.OutputPass), source.TypeId);
 				Assert.That(runtimeEntry.ShaderBinding == null || runtimeEntry.ShaderBinding.SourceVariant == source.SourceVariant, Is.True, source.TypeId);
+			}
+		}
+
+		[Test]
+		public void SignalGlitchVariants_ExposeExpectedHistoryContracts() {
+			var asset = AssetDatabase.LoadAssetAtPath<ShaderNodeManifestAsset>(ManifestPath);
+			Assert.That(asset, Is.Not.Null);
+
+			var stateful = new[]
+			{
+				"packet-loss", "buffer-underrun", "frame-address-error", "memory-corruption", "decode-drift"
+			};
+			foreach (var name in stateful) {
+				var entry = asset.Find("shitdesigner.shader.glitch." + name);
+				Assert.That(entry, Is.Not.Null, name);
+				Assert.That(entry.Stateful, Is.True, name);
+				Assert.That(entry.HistorySlots, Is.EqualTo(3), name);
+				Assert.That(entry.WarmupFrames, Is.EqualTo(1), name);
+			}
+
+			var stateless = new[]
+			{
+				"codec-collapse", "bitplane-failure", "header-damage", "channel-dropout", "data-rain-replacement"
+			};
+			foreach (var name in stateless) {
+				var entry = asset.Find("shitdesigner.shader.glitch." + name);
+				Assert.That(entry, Is.Not.Null, name);
+				Assert.That(entry.Stateful, Is.False, name);
+				Assert.That(entry.HistorySlots, Is.Zero, name);
 			}
 		}
 

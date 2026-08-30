@@ -107,7 +107,7 @@ namespace ShitDesigner.Nodes.Editor {
 			var exact = catalog.ValidateAgainst(runtime);
 			if (exact.IsFailure) return Result.Failure<int, Diagnostic>(exact.Error);
 			var count = manifest.Entries.Count;
-			if (count != 442) return Result.Failure<int, Diagnostic>(Failure("nodes.shader_manifest_count", "Expected 438 VJ entries plus 4 built-in shader entries, found " + count + ".").Error);
+			if (count != 452) return Result.Failure<int, Diagnostic>(Failure("nodes.shader_manifest_count", "Expected 448 VJ entries plus 4 built-in shader entries, found " + count + ".").Error);
 			EditorUtility.SetDirty(manifestAsset);
 			EditorUtility.SetDirty(catalog);
 			AssetDatabase.SaveAssets();
@@ -127,8 +127,8 @@ namespace ShitDesigner.Nodes.Editor {
 				var spatial = Read<SpatialLedger>(SpatialLedgerPath);
 				var compositing = Read<CompositingLedger>(CompositingLedgerPath);
 				var audio = Read<AudioLedger>(AudioLedgerPath);
-				if (spatial == null || spatial.variants == null || spatial.variants.Length != 246)
-					return Result.Failure<LoadedManifest, Diagnostic>(Failure("nodes.shader_ledger_spatial", "Spatial ledger must contain exactly 246 variants.").Error);
+				if (spatial == null || spatial.variants == null || spatial.variants.Length != 256)
+					return Result.Failure<LoadedManifest, Diagnostic>(Failure("nodes.shader_ledger_spatial", "Spatial ledger must contain exactly 256 variants.").Error);
 				if (compositing == null || compositing.variants == null || compositing.variants.Length != 104)
 					return Result.Failure<LoadedManifest, Diagnostic>(Failure("nodes.shader_ledger_compositing", "Compositing/temporal ledger must contain exactly 104 variants.").Error);
 				if (audio == null || audio.variants == null || audio.variants.Length != 88)
@@ -175,15 +175,15 @@ namespace ShitDesigner.Nodes.Editor {
 			// predates the pool-backed history contract and therefore does
 			// not repeat the derived slot policy on every row.
 			var stateful = IsStatefulSpatial(row);
-			var historySlots = stateful ? HistorySlotsForSpatial(row.nodeTypeId) : 0;
-			var warmupFrames = stateful ? 1 : 0;
+			var historySlots = stateful ? (row.historySlots > 0 ? row.historySlots : HistorySlotsForSpatial(row.nodeTypeId)) : 0;
+			var warmupFrames = stateful ? Math.Max(row.warmupFrames, 1) : 0;
 			var inputs = BuildSpatialInputs(row, stateful);
 			var parameters = row.parameters.Select(x => BuildParameter(x, spatial: true)).ToArray();
 			var passes = BuildPasses(row.nodeTypeId, row.variantId, family, row.variant, 0, stateful);
 			var outputPass = passes.Max(x => x.Index);
 			return new ShaderNodeManifestEntry(new NodeTypeId(row.nodeTypeId), row.name, row.category, family, row.shader,
 				row.variantId, inputs, parameters, passes, outputPass, Features(family, stateful), stateful, historySlots,
-				new[] { Slug(row.name), row.variantId }, row.testStrategy, 1, true, row.priority, 0,
+				new[] { Slug(row.name), row.variantId }, row.testStrategy, 1, true, row.priority, warmupFrames,
 				Path.GetFileName(SpatialLedgerPath), row.variant);
 		}
 
@@ -193,7 +193,7 @@ namespace ShitDesigner.Nodes.Editor {
 			// shader consumes a history ring.  Keep the policy explicit so a
 			// ledger row cannot accidentally become stateful because a name
 			// contains a generic word such as "motion".
-			return id.Contains("gray-scott") || id.Contains("game-of-life") ||
+			return row.stateful || id.Contains("gray-scott") || id.Contains("game-of-life") ||
 				id.Contains("elementary-cellular-automata") || id.Contains("reaction-diffusion") ||
 				id.Contains("geometry.optical-flow") || id.Contains("geometry.datamosh") ||
 				id.Contains("geometry.fluid-advection") || id.Contains("glitch.databend-simulation");
@@ -527,7 +527,7 @@ namespace ShitDesigner.Nodes.Editor {
 		[Serializable] private sealed class AudioLedger { public AnalysisVariant[] variants; }
 		[Serializable]
 		private sealed class SpatialVariant {
-			public string nodeTypeId; public string variantId; public string name; public string category; public string family; public string shader; public int variant; public string role; public string[] inputs; public string[] outputs; public string[] parameters; public bool stateful; public string priority; public string testStrategy;
+			public string nodeTypeId; public string variantId; public string name; public string category; public string family; public string shader; public int variant; public string role; public string[] inputs; public string[] outputs; public string[] parameters; public bool stateful; public int historySlots; public int warmupFrames; public string priority; public string testStrategy;
 		}
 		[Serializable]
 		private sealed class CompositingVariant {
