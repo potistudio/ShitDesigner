@@ -44,23 +44,6 @@
     background-color: rgb(21, 24, 29);
 }
 
-.instant-effect-cue-title {
-    width: 88px;
-    min-width: 88px;
-    max-width: 88px;
-    height: 40px;
-    margin: 0;
-    padding: 0;
-    color: rgb(117, 128, 142);
-    background-color: rgb(21, 24, 29);
-    border-right-width: 1px;
-    border-color: rgb(48, 55, 65);
-    font-size: 9px;
-    letter-spacing: 0.8px;
-    -unity-font-style: bold;
-    -unity-text-align: middle-center;
-}
-
 .instant-effect-cue-button {
     height: 40px;
     min-width: 0;

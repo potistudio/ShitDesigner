@@ -159,6 +159,7 @@ namespace ShitDesigner.Main.Tests {
 
 			Assert.That(cues.parent.ClassListContains("preview-stack"), Is.True);
 			Assert.That(cues.parent.IndexOf(cues), Is.EqualTo(cues.parent.IndexOf(root.Q<VisualElement>("sequencer-controls")) + 1));
+			Assert.That(cues.Query<Label>().ToList(), Is.Empty);
 			Assert.That(buttons.Select(button => button.name), Is.EqualTo(Enumerable.Range(1, ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount)
 				.Select(index => "instant-effect-cue-" + index)));
 			Assert.That(buttons.Select(button => button.text), Is.EqualTo(new[] { "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P" }));
