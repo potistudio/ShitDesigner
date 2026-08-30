@@ -6,6 +6,9 @@ using System.Collections;
 using System.Runtime.InteropServices;
 using AOT;
 #endif
+#if UNITY_STANDALONE_OSX
+using System.Runtime.InteropServices;
+#endif
 using ShitDesigner.Rendering;
 using UnityEngine;
 using UnityEngine.UI;
@@ -75,6 +78,7 @@ namespace ShitDesigner.Main {
 					_displayTransform.Blit(frames[frameIndex].Texture, output.Value.Texture, DisplayTransformMode.HdrAces);
 				else output.Value.Clear();
 			}
+			foreach (var output in _outputs.Values) output.Present();
 			_presentedFrameNumber = frames.Primary.FrameNumber;
 		}
 
@@ -108,33 +112,48 @@ namespace ShitDesigner.Main {
 		private void RebuildOutputs() {
 			DestroyOutputs();
 			for (var displayNumber = 2; displayNumber <= ConnectedDisplayCount; displayNumber++) {
-				var display = Display.displays[displayNumber - 1];
 				var output = CreateOutput(displayNumber);
+				// Unity's secondary Metal swapchain intermittently presents the main
+				// window on macOS. The native presenter owns that screen instead.
+#if !(UNITY_STANDALONE_OSX && !UNITY_EDITOR)
+				var display = Display.displays[displayNumber - 1];
 				if (!display.active) ActivateDisplay(display, output.WindowController);
+#endif
 				_outputs.Add(displayNumber, output);
 			}
 		}
 
 		private DisplayOutput CreateOutput(int displayNumber) {
-			var canvasObject = new GameObject($"Live External Display Canvas {displayNumber}");
-			canvasObject.transform.SetParent(transform, false);
-			var canvas = canvasObject.AddComponent<Canvas>();
-			canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-			canvas.targetDisplay = displayNumber - 1;
-			canvas.enabled = false;
 			var displayTexture = new RenderTexture(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight, 0, RenderTextureFormat.ARGB32) {
 				name = "ShitDesigner.Main.ExternalDisplay." + displayNumber,
 				useMipMap = false,
 				autoGenerateMips = false
 			};
 			if (!displayTexture.Create()) {
-				DestroyUnityObject(canvasObject);
+				DestroyUnityObject(displayTexture);
 				throw new InvalidOperationException("An external Display texture could not be created.");
 			}
 			ClearTexture(displayTexture);
+#if UNITY_STANDALONE_OSX && !UNITY_EDITOR
+			try {
+				return new DisplayOutput(new MacExternalDisplayPresenter(displayNumber - 1, displayTexture), displayTexture);
+			}
+			catch {
+				displayTexture.Release();
+				DestroyUnityObject(displayTexture);
+				throw;
+			}
+#else
+			var canvasObject = new GameObject($"Live External Display Canvas {displayNumber}");
+			canvasObject.transform.SetParent(transform, false);
+			var canvas = canvasObject.AddComponent<Canvas>();
+			canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+			canvas.targetDisplay = displayNumber - 1;
+			canvas.enabled = false;
 			var presenter = canvasObject.AddComponent<LiveProgramDisplayCanvas>();
 			presenter.Initialize(canvas, displayTexture);
 			return new DisplayOutput(canvas, canvasObject.AddComponent<WindowsDisplayWindowController>(), displayTexture);
+#endif
 		}
 
 		private bool OutputsDoNotMatchConnectedDisplays() {
@@ -173,30 +192,97 @@ namespace ShitDesigner.Main {
 			public Canvas Canvas { get; }
 			public WindowsDisplayWindowController WindowController { get; }
 			public RenderTexture Texture { get; }
+#if UNITY_STANDALONE_OSX && !UNITY_EDITOR
+			private readonly MacExternalDisplayPresenter m_MacPresenter;
+
+			public DisplayOutput(MacExternalDisplayPresenter presenter, RenderTexture texture) {
+				Canvas = null;
+				WindowController = null;
+				Texture = texture;
+				m_MacPresenter = presenter;
+			}
+#endif
 
 			public DisplayOutput(Canvas canvas, WindowsDisplayWindowController windowController, RenderTexture texture) {
 				Canvas = canvas;
 				WindowController = windowController;
 				Texture = texture;
+#if UNITY_STANDALONE_OSX && !UNITY_EDITOR
+				m_MacPresenter = null;
+#endif
 			}
 
 			public void SetVisible(bool visible) {
-				// Unity cannot deactivate a Display after Activate(). On macOS,
-				// keep rendering the cleared black texture so the secondary Metal
-				// surface cannot retain or expose the control-window backbuffer.
-				Canvas.enabled = visible || UnityEngine.Application.platform == RuntimePlatform.OSXPlayer;
+#if UNITY_STANDALONE_OSX && !UNITY_EDITOR
+				if (m_MacPresenter != null) {
+					m_MacPresenter.SetVisible(visible);
+					return;
+				}
+#endif
+				Canvas.enabled = visible;
 				WindowController.SetOutputVisible(visible);
 			}
 
 			public void Clear() => ClearTexture(Texture);
 
+			public void Present() {
+#if UNITY_STANDALONE_OSX && !UNITY_EDITOR
+				m_MacPresenter?.Present();
+#endif
+			}
+
 			public void Dispose() {
+#if UNITY_STANDALONE_OSX && !UNITY_EDITOR
+				m_MacPresenter?.Dispose();
+#endif
 				Texture.Release();
 				DestroyUnityObject(Texture);
-				DestroyUnityObject(Canvas.gameObject);
+				if (Canvas != null) DestroyUnityObject(Canvas.gameObject);
 			}
 		}
 	}
+
+#if UNITY_STANDALONE_OSX && !UNITY_EDITOR
+	internal sealed class MacExternalDisplayPresenter : IDisposable {
+		private const string LibraryName = "shitdesigner_mac_display";
+		private readonly int m_DisplayIndex;
+		private readonly IntPtr m_RenderEvent;
+		private bool m_Disposed;
+
+		public MacExternalDisplayPresenter(int displayIndex, RenderTexture source) {
+			m_DisplayIndex = displayIndex;
+			if (!ShitDesignerMacDisplayCreate(displayIndex))
+				throw new InvalidOperationException("The native macOS external Display window could not be created.");
+			m_RenderEvent = ShitDesignerMacDisplayGetRenderEvent();
+			if (m_RenderEvent == IntPtr.Zero) {
+				ShitDesignerMacDisplayDestroy(displayIndex);
+				throw new InvalidOperationException("The native macOS external Display renderer is unavailable.");
+			}
+			ShitDesignerMacDisplaySetSource(displayIndex, source.GetNativeTexturePtr());
+		}
+
+		public void SetVisible(bool visible) {
+			if (!m_Disposed) ShitDesignerMacDisplaySetVisible(m_DisplayIndex, visible);
+		}
+
+		public void Present() {
+			if (!m_Disposed) GL.IssuePluginEvent(m_RenderEvent, m_DisplayIndex);
+		}
+
+		public void Dispose() {
+			if (m_Disposed) return;
+			m_Disposed = true;
+			ShitDesignerMacDisplayDestroy(m_DisplayIndex);
+		}
+
+		[DllImport(LibraryName)] [return: MarshalAs(UnmanagedType.I1)]
+		private static extern bool ShitDesignerMacDisplayCreate(int displayIndex);
+		[DllImport(LibraryName)] private static extern void ShitDesignerMacDisplaySetSource(int displayIndex, IntPtr sourceTexture);
+		[DllImport(LibraryName)] private static extern void ShitDesignerMacDisplaySetVisible(int displayIndex, [MarshalAs(UnmanagedType.I1)] bool visible);
+		[DllImport(LibraryName)] private static extern void ShitDesignerMacDisplayDestroy(int displayIndex);
+		[DllImport(LibraryName)] private static extern IntPtr ShitDesignerMacDisplayGetRenderEvent();
+	}
+#endif
 
 	[AddComponentMenu("")]
 	public sealed class WindowsDisplayWindowController : MonoBehaviour {
