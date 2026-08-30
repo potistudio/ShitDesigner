@@ -27,8 +27,6 @@ namespace ShitDesigner.Main {
 		[SerializeField] private PatchDefinition[] m_MainPatches = Array.Empty<PatchDefinition>();
 		[Header("Overlay")]
 		[SerializeField] private PatchDefinition[] m_OverlayPatches = Array.Empty<PatchDefinition>();
-		[Header("FX")]
-		[SerializeField] private PatchDefinition[] m_EffectPatches = Array.Empty<PatchDefinition>();
 		[SerializeField] private ShaderNodeManifestAsset _shaderManifest;
 		[Header("Video decoding")]
 		[SerializeField] private Material m_VideoConversionMaterial;
@@ -39,9 +37,20 @@ namespace ShitDesigner.Main {
 
 		public PatchDefinition[] MainPatches => m_MainPatches ?? Array.Empty<PatchDefinition>();
 		public PatchDefinition[] OverlayPatches => m_OverlayPatches ?? Array.Empty<PatchDefinition>();
-		public PatchDefinition[] EffectPatches => m_EffectPatches ?? Array.Empty<PatchDefinition>();
-		public PatchDefinition[] Patches => MainPatches.Concat(OverlayPatches).Concat(EffectPatches).ToArray();
+		public PatchDefinition[] Patches => MainPatches.Concat(OverlayPatches).ToArray();
+		public IReadOnlyList<ShaderNodeManifestEntry> EffectNodes => BuildEffectNodeCatalog(
+			_shaderManifest == null ? null : _shaderManifest.BuildRuntimeManifest());
 		public int ProgramOutputCount => Patches.Count(patch => patch != null);
+
+		internal static IReadOnlyList<ShaderNodeManifestEntry> BuildEffectNodeCatalog(ShaderNodeManifest manifest) {
+			return (manifest?.Entries ?? Array.Empty<ShaderNodeManifestEntry>())
+				.Where(entry => entry != null && entry.UserAddable && entry.Inputs.Any(input =>
+					input.Type == NodePortType.ImageFrame && input.Role != ShaderInputRole.History))
+				.OrderBy(entry => entry.Category, StringComparer.Ordinal)
+				.ThenBy(entry => entry.DisplayName, StringComparer.Ordinal)
+				.ThenBy(entry => entry.TypeId.Value, StringComparer.Ordinal)
+				.ToArray();
+		}
 
 		public LiveGraphRuntime CreateRuntime() {
 			var graph = BuildGraph(new LiveRenderSize(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight));

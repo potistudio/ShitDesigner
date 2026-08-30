@@ -41,6 +41,10 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(serializedUi.FindProperty("m_PanelRenderer").objectReferenceValue, Is.SameAs(panelRenderer));
 				Assert.That(graph.Patches.Length, Is.EqualTo(5));
 				Assert.That(graph.ProgramOutputCount, Is.EqualTo(graph.Patches.Length));
+				Assert.That(graph.EffectNodes, Is.Not.Empty);
+				Assert.That(graph.EffectNodes.All(node => node.UserAddable && node.Inputs.Any(input =>
+					input.Type == ShitDesigner.Runtime.NodePortType.ImageFrame && input.Role != ShitDesigner.Nodes.ShaderInputRole.History)), Is.True);
+				Assert.That(graph.EffectNodes.Select(node => node.TypeId).Distinct().Count(), Is.EqualTo(graph.EffectNodes.Count));
 				Assert.That(graph.Patches.All(definition => definition != null && !string.IsNullOrWhiteSpace(definition.Id)
 					&& definition.ProgramGraph.Nodes.Any(node => node != null && node.IsSceneNode && node.SceneDefinition != null)), Is.True);
 				Assert.That(graph.Patches.All(definition => definition.ProgramGraph.Nodes.Count > 0 && definition.ProgramGraph.Connections.Count > 0), Is.True);
@@ -90,6 +94,16 @@ namespace ShitDesigner.Main.Tests {
 		public void MainIsTheFirstEnabledBuildScene() {
 			var first = EditorBuildSettings.scenes.First(scene => scene.enabled);
 			Assert.That(first.path, Is.EqualTo("Assets/ShitDesigner/Scenes/Main/Main.unity"));
+		}
+
+		[Test]
+		public void EffectCatalog_ContainsImageProcessingNodesButNotGenerators() {
+			var effects = LiveGraphBootstrap.BuildEffectNodeCatalog(ShitDesigner.Nodes.ShaderNodeManifest.CreateBuiltIn());
+
+			Assert.That(effects.Select(entry => entry.TypeId.Value), Is.EqualTo(new[] {
+				"shitdesigner.shader.blend2",
+				"shitdesigner.shader.effect"
+			}));
 		}
 
 		[Test]
@@ -147,7 +161,7 @@ namespace ShitDesigner.Main.Tests {
 			var patchControls = root.Q<VisualElement>("patch-controls");
 			Assert.That(root.Q<ScrollView>("main-patch-controls").parent, Is.SameAs(patchControls));
 			Assert.That(root.Q<ScrollView>("overlay-patch-controls").parent, Is.SameAs(patchControls));
-			Assert.That(root.Q<ScrollView>("effect-patch-controls").parent, Is.SameAs(patchControls));
+			Assert.That(root.Q<ScrollView>("effect-node-controls").parent, Is.SameAs(patchControls));
 		}
 
 		[Test]

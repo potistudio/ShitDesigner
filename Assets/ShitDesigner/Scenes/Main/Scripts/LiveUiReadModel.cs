@@ -3,10 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace ShitDesigner.Main {
-	public enum LivePatchRole {
+	public enum LiveCatalogRole {
 		Main,
 		Overlay,
 		Effect
+	}
+
+	public enum LivePatchRole {
+		Main,
+		Overlay
 	}
 
 	public readonly struct LivePatchReadModel {
@@ -21,11 +26,24 @@ namespace ShitDesigner.Main {
 		}
 	}
 
+	public readonly struct LiveEffectNodeReadModel {
+		public string TypeId { get; }
+		public string Name { get; }
+		public string Category { get; }
+
+		public LiveEffectNodeReadModel(string typeId, string name, string category) {
+			TypeId = typeId;
+			Name = name;
+			Category = category;
+		}
+	}
+
 	public sealed class LiveUiReadModel {
 		public ulong FrameNumber { get; }
 		public IReadOnlyList<LivePatchReadModel> Patches { get; }
-		public LivePatchRole SelectedCatalogRole { get; }
-		public string SelectedCatalogPatchId { get; }
+		public IReadOnlyList<LiveEffectNodeReadModel> EffectNodes { get; }
+		public LiveCatalogRole SelectedCatalogRole { get; }
+		public string SelectedCatalogItemId { get; }
 		public string LoadedPatchId { get; }
 		public IReadOnlyList<RenderTexture> OverlayLanePreviews { get; }
 		public LiveParameterDefinition Bpm { get; }
@@ -42,14 +60,16 @@ namespace ShitDesigner.Main {
 		public string Diagnostic { get; }
 		public IReadOnlyList<LiveParameterApplicationResult> RequestResults { get; }
 
-		public LiveUiReadModel(ulong frameNumber, IReadOnlyList<LivePatchReadModel> patches, LivePatchRole selectedCatalogRole, string selectedCatalogPatchId,
+		public LiveUiReadModel(ulong frameNumber, IReadOnlyList<LivePatchReadModel> patches, IReadOnlyList<LiveEffectNodeReadModel> effectNodes,
+			LiveCatalogRole selectedCatalogRole, string selectedCatalogItemId,
 			string loadedPatchId, IReadOnlyList<RenderTexture> overlayLanePreviews,
 			LiveParameterDefinition bpm, IReadOnlyList<LiveParameterDefinition> parameters, IReadOnlyList<LiveSequencerReadModel> sequencers, LiveProgramFrames programFrames, LiveExternalDisplayOutput output,
 			LiveCapabilitySnapshot capabilities, string diagnostic, IReadOnlyList<LiveParameterApplicationResult> requestResults) {
 			FrameNumber = frameNumber;
 			Patches = patches ?? Array.Empty<LivePatchReadModel>();
+			EffectNodes = effectNodes ?? Array.Empty<LiveEffectNodeReadModel>();
 			SelectedCatalogRole = selectedCatalogRole;
-			SelectedCatalogPatchId = selectedCatalogPatchId ?? string.Empty;
+			SelectedCatalogItemId = selectedCatalogItemId ?? string.Empty;
 			LoadedPatchId = loadedPatchId ?? string.Empty;
 			OverlayLanePreviews = overlayLanePreviews ?? Array.Empty<RenderTexture>();
 			Bpm = bpm;

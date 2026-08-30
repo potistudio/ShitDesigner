@@ -29,7 +29,7 @@
                     <ui:VisualElement name="patch-controls" class="patch-controls">
                         <ui:ScrollView name="main-patch-controls" class="sidebar-tab-content patch-list-controls" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Auto"/>
                         <ui:ScrollView name="overlay-patch-controls" class="sidebar-tab-content patch-list-controls is-hidden" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Auto"/>
-                        <ui:ScrollView name="effect-patch-controls" class="sidebar-tab-content patch-list-controls is-hidden" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Auto"/>
+                        <ui:ScrollView name="effect-node-controls" class="sidebar-tab-content patch-list-controls is-hidden" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Auto"/>
                     </ui:VisualElement>
                     <ui:VisualElement class="sidebar-status">
                         <ui:Label name="capability-status" class="status-label"/>

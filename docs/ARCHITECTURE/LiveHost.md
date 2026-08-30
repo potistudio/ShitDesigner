@@ -105,7 +105,7 @@
 ### 2026-08-26: キーボード入力はMIDI未接続時のライブ操作手段として残す
 
 - `LiveKeyboardInput` はMonoBehaviourや独自ループを持たない軽量なC#クラスとする。
-- `ApplicationLiveHost` のライブ実行Tickが `LiveKeyboardInput.Poll()` を呼び、パッチ切替または公開パラメーター変更要求を `LiveParameterQueue` へ投入する。左右矢印はMain／Overlay／FXタブを切り替え、上下矢印は選択中タブのパッチカタログ内を移動する。
+- `ApplicationLiveHost` のライブ実行Tickが `LiveKeyboardInput.Poll()` を呼び、パッチ切替または公開パラメーター変更要求を `LiveParameterQueue` へ投入する。左右矢印はMain／Overlay／FXタブを切り替え、上下矢印は選択中タブのカタログ内を移動する。
 - Keyboard、MIDIおよびUIの操作要求は同じ `LiveParameterQueue` に入る。
 - グラフ編集、ファイル操作およびウィンドウ操作など、エディターに関するショートカットは提供しない。
 
@@ -193,10 +193,16 @@
 
 ### 2026-08-27: ライブ用キーボードは全体操作とパッチ入力を扱う
 
-- 左右矢印はMain／Overlay／FXタブを切り替え、上下矢印はタブ内のパッチカタログ選択を移動する。`1`から`8`は選択中のOverlayシーンを対応するシーケンサーレーンへ割り当て、Enterは選択パッチを直接Launchする。
+- 左右矢印はMain／Overlay／FXタブを切り替え、上下矢印はタブ内のカタログ選択を移動する。`1`から`8`は選択中のOverlayシーンを対応するシーケンサーレーンへ割り当て、MainまたはOverlayタブではEnterで選択パッチを直接Launchする。FXタブの選択ノードはLaunchしない。
 - SpaceはUIのTAPボタンと同じBPM Tap入力とする。
 - `PatchDefinition` のKeyboard Inputsは、キー押下時だけ1.0をロード中パッチの公開パラメーターへ送る。離上では要求を生成せず、キーボードの全体操作はこの設定とは別に固定される。
 - Motion、Scaleなどの連続値はMIDI入力またはUIの操作面から要求する。
+
+### 2026-08-30: FXカタログは画像処理ノードを表示する
+
+- FXカタログはパッチ一覧ではなく、Shader Manifestに登録されたノード定義を正本とする。
+- `UserAddable` かつ履歴以外の`ImageFrame`入力を持つノードを、カテゴリ、表示名、Type IDの順でFXカタログへ登録する。
+- FXカタログで行うのはノード型の選択だけとする。FXの発火には、対象ノードをパッチグラフへ追加し、トリガー駆動の場合のTrigger入力を含む必要な配線を行う。
 
 ### 2026-08-26: 各3Dシーンのルートが公開パラメーターAPIを提供する
 

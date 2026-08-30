@@ -37,14 +37,15 @@ namespace ShitDesigner.Main {
 		private LiveMidiInput _midi;
 		private string[] _patchIds = Array.Empty<string>();
 		private LivePatchReadModel[] _patches = Array.Empty<LivePatchReadModel>();
+		private LiveEffectNodeReadModel[] m_EffectNodes = Array.Empty<LiveEffectNodeReadModel>();
 		private string[] m_MainPatchIds = Array.Empty<string>();
 		private string[] m_OverlayPatchIds = Array.Empty<string>();
-		private string[] m_EffectPatchIds = Array.Empty<string>();
+		private string[] m_EffectNodeTypeIds = Array.Empty<string>();
 		private ulong _tickFrameNumber;
-		private LivePatchRole m_SelectedPatchRole;
+		private LiveCatalogRole m_SelectedCatalogRole;
 		private int m_SelectedMainPatchIndex;
 		private int m_SelectedOverlayPatchIndex;
-		private int m_SelectedEffectPatchIndex;
+		private int m_SelectedEffectNodeIndex;
 
 		public ApplicationLiveHostState State { get; private set; } = ApplicationLiveHostState.Cold;
 		public LiveUiReadModel ReadModel { get; private set; }
@@ -69,17 +70,18 @@ namespace ShitDesigner.Main {
 				_shutdown.Add(() => { _runtime?.Dispose(); _runtime = null; });
 				_patchIds = _runtime.Patches.Select(patch => patch.Id).ToArray();
 				var mainPatchIds = new HashSet<string>(_graphBootstrap.MainPatches.Where(patch => patch != null).Select(patch => patch.Id), StringComparer.Ordinal);
-				var overlayPatchIds = new HashSet<string>(_graphBootstrap.OverlayPatches.Where(patch => patch != null).Select(patch => patch.Id), StringComparer.Ordinal);
 				_patches = _runtime.Patches.Select(patch => new LivePatchReadModel(patch.Id, patch.DisplayName,
-					mainPatchIds.Contains(patch.Id) ? LivePatchRole.Main : overlayPatchIds.Contains(patch.Id) ? LivePatchRole.Overlay : LivePatchRole.Effect)).ToArray();
+					mainPatchIds.Contains(patch.Id) ? LivePatchRole.Main : LivePatchRole.Overlay)).ToArray();
 				m_MainPatchIds = _patches.Where(patch => patch.Role == LivePatchRole.Main).Select(patch => patch.Id).ToArray();
 				m_OverlayPatchIds = _patches.Where(patch => patch.Role == LivePatchRole.Overlay).Select(patch => patch.Id).ToArray();
-				m_EffectPatchIds = _patches.Where(patch => patch.Role == LivePatchRole.Effect).Select(patch => patch.Id).ToArray();
-				m_SelectedPatchRole = m_MainPatchIds.Length > 0 ? LivePatchRole.Main
-					: m_OverlayPatchIds.Length > 0 ? LivePatchRole.Overlay : LivePatchRole.Effect;
+				m_EffectNodes = _graphBootstrap.EffectNodes.Select(entry => new LiveEffectNodeReadModel(
+					entry.TypeId.Value, entry.DisplayName, entry.Category)).ToArray();
+				m_EffectNodeTypeIds = m_EffectNodes.Select(node => node.TypeId).ToArray();
+				m_SelectedCatalogRole = m_MainPatchIds.Length > 0 ? LiveCatalogRole.Main
+					: m_OverlayPatchIds.Length > 0 ? LiveCatalogRole.Overlay : LiveCatalogRole.Effect;
 				m_SelectedMainPatchIndex = 0;
 				m_SelectedOverlayPatchIndex = 0;
-				m_SelectedEffectPatchIndex = 0;
+				m_SelectedEffectNodeIndex = 0;
 				UpdateOverlayComposition(_runtime.BpmFrame.AdjustedTotalBeats);
 				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, laneIndex => { AssignSelectedOverlayPatchToLane(laneIndex); }, MoveCatalogSelection, () => { LaunchSelectedCatalogPatch(); }, TapBpm);
 				_midiInputManager.InitializeForHostPolling();
@@ -140,24 +142,26 @@ namespace ShitDesigner.Main {
 		public void MoveCatalogSelection(int horizontalDirection, int verticalDirection) {
 			if (_patches.Length == 0 || (horizontalDirection == 0 && verticalDirection == 0)) return;
 			if (horizontalDirection != 0) {
-				var nextRoleIndex = Mathf.Clamp((int)m_SelectedPatchRole + Math.Sign(horizontalDirection), (int)LivePatchRole.Main, (int)LivePatchRole.Effect);
-				m_SelectedPatchRole = (LivePatchRole)nextRoleIndex;
+				var nextRoleIndex = Mathf.Clamp((int)m_SelectedCatalogRole + Math.Sign(horizontalDirection), (int)LiveCatalogRole.Main, (int)LiveCatalogRole.Effect);
+				m_SelectedCatalogRole = (LiveCatalogRole)nextRoleIndex;
 			}
 			if (verticalDirection == 0) return;
 
-			SetSelectedPatchIndex(m_SelectedPatchRole,
-				MoveWithinList(GetSelectedPatchIndex(m_SelectedPatchRole), verticalDirection, GetPatchIds(m_SelectedPatchRole).Length));
+			SetSelectedCatalogIndex(m_SelectedCatalogRole,
+				MoveWithinList(GetSelectedCatalogIndex(m_SelectedCatalogRole), verticalDirection, GetCatalogItemIds(m_SelectedCatalogRole).Length));
 		}
 
-		public void SelectCatalogRole(LivePatchRole role) {
-			if (role < LivePatchRole.Main || role > LivePatchRole.Effect) throw new ArgumentOutOfRangeException(nameof(role));
-			m_SelectedPatchRole = role;
+		public void SelectCatalogRole(LiveCatalogRole role) {
+			if (role < LiveCatalogRole.Main || role > LiveCatalogRole.Effect) throw new ArgumentOutOfRangeException(nameof(role));
+			m_SelectedCatalogRole = role;
 		}
 
 		public LiveParameterEnqueueResult LaunchSelectedCatalogPatch() {
-			var patchId = SelectedCatalogPatchId;
+			if (m_SelectedCatalogRole == LiveCatalogRole.Effect)
+				return LiveParameterEnqueueResult.Reject("FX nodes must be wired into a graph before they can be triggered.");
+			var patchId = SelectedCatalogItemId;
 			return string.IsNullOrEmpty(patchId)
-				? LiveParameterEnqueueResult.Reject("The patch catalog is empty.")
+				? LiveParameterEnqueueResult.Reject("The selected patch catalog is empty.")
 				: _parameterQueue.EnqueueLaunchPatch(patchId);
 		}
 
@@ -165,6 +169,13 @@ namespace ShitDesigner.Main {
 			if (!IsKnownPatch(patchId)) return LiveParameterEnqueueResult.Reject("The requested patch does not exist.");
 			SelectCatalogPatch(patchId);
 			return _parameterQueue.EnqueueLaunchPatch(patchId);
+		}
+
+		public void SelectEffectNode(string typeId) {
+			var effectIndex = Array.IndexOf(m_EffectNodeTypeIds, typeId);
+			if (effectIndex < 0) return;
+			m_SelectedCatalogRole = LiveCatalogRole.Effect;
+			m_SelectedEffectNodeIndex = effectIndex;
 		}
 
 		public void TapBpm(double time) {
@@ -184,7 +195,7 @@ namespace ShitDesigner.Main {
 		public LiveSequencerOperationResult SelectSequencerLane(LiveSequencerKind kind, int laneIndex) {
 			if (kind != LiveSequencerKind.Overlay) return LiveSequencerOperationResult.Reject("Scene assignment is available for the overlay sequencer.");
 			var result = m_Sequencers.First(sequencer => sequencer.Kind == kind).SelectLane(laneIndex);
-			if (result.Accepted) m_SelectedPatchRole = LivePatchRole.Overlay;
+			if (result.Accepted) m_SelectedCatalogRole = LiveCatalogRole.Overlay;
 			return result;
 		}
 
@@ -197,7 +208,7 @@ namespace ShitDesigner.Main {
 		}
 
 		public LiveSequencerOperationResult AssignSelectedOverlayPatchToLane(int laneIndex) {
-			var patchId = m_SelectedPatchRole == LivePatchRole.Overlay ? SelectedCatalogPatchId : string.Empty;
+			var patchId = m_SelectedCatalogRole == LiveCatalogRole.Overlay ? SelectedCatalogItemId : string.Empty;
 			return string.IsNullOrEmpty(patchId)
 				? LiveSequencerOperationResult.Reject("Select an overlay scene first.")
 				: m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).AssignLane(laneIndex, patchId);
@@ -221,7 +232,7 @@ namespace ShitDesigner.Main {
 		}
 
 		private void PublishReadModel(string diagnostic) {
-			ReadModel = new LiveUiReadModel(_tickFrameNumber, _patches, m_SelectedPatchRole, SelectedCatalogPatchId, _runtime?.LoadedPatchId, _runtime?.OverlayPreviewFrames,
+			ReadModel = new LiveUiReadModel(_tickFrameNumber, _patches, m_EffectNodes, m_SelectedCatalogRole, SelectedCatalogItemId, _runtime?.LoadedPatchId, _runtime?.OverlayPreviewFrames,
 				_runtime?.BpmDefinition ?? default, _runtime?.GetLoadedPatchParameterDefinitions(), CreateSequencerReadModels(), _runtime?.CurrentFrames ?? default(LiveProgramFrames), _externalDisplay,
 				_capabilityMonitor != null ? _capabilityMonitor.Snapshot : default(LiveCapabilitySnapshot), diagnostic,
 				_requestResults.ToArray());
@@ -234,58 +245,52 @@ namespace ShitDesigner.Main {
 
 		private bool IsKnownPatch(string patchId) => !string.IsNullOrWhiteSpace(patchId) && _patchIds.Contains(patchId);
 
-		private string SelectedCatalogPatchId {
+		private string SelectedCatalogItemId {
 			get {
-				var patchIds = GetPatchIds(m_SelectedPatchRole);
-				var selectedIndex = GetSelectedPatchIndex(m_SelectedPatchRole);
-				return selectedIndex >= 0 && selectedIndex < patchIds.Length ? patchIds[selectedIndex] : string.Empty;
+				var itemIds = GetCatalogItemIds(m_SelectedCatalogRole);
+				var selectedIndex = GetSelectedCatalogIndex(m_SelectedCatalogRole);
+				return selectedIndex >= 0 && selectedIndex < itemIds.Length ? itemIds[selectedIndex] : string.Empty;
 			}
 		}
 
 		private void SelectCatalogPatch(string patchId) {
 			var mainIndex = Array.IndexOf(m_MainPatchIds, patchId);
 			if (mainIndex >= 0) {
-				m_SelectedPatchRole = LivePatchRole.Main;
+				m_SelectedCatalogRole = LiveCatalogRole.Main;
 				m_SelectedMainPatchIndex = mainIndex;
 				return;
 			}
 
 			var overlayIndex = Array.IndexOf(m_OverlayPatchIds, patchId);
 			if (overlayIndex >= 0) {
-				m_SelectedPatchRole = LivePatchRole.Overlay;
+				m_SelectedCatalogRole = LiveCatalogRole.Overlay;
 				m_SelectedOverlayPatchIndex = overlayIndex;
-				return;
 			}
-
-			var effectIndex = Array.IndexOf(m_EffectPatchIds, patchId);
-			if (effectIndex < 0) return;
-			m_SelectedPatchRole = LivePatchRole.Effect;
-			m_SelectedEffectPatchIndex = effectIndex;
 		}
 
-		private string[] GetPatchIds(LivePatchRole role) {
+		private string[] GetCatalogItemIds(LiveCatalogRole role) {
 			switch (role) {
-				case LivePatchRole.Main: return m_MainPatchIds;
-				case LivePatchRole.Overlay: return m_OverlayPatchIds;
-				case LivePatchRole.Effect: return m_EffectPatchIds;
+				case LiveCatalogRole.Main: return m_MainPatchIds;
+				case LiveCatalogRole.Overlay: return m_OverlayPatchIds;
+				case LiveCatalogRole.Effect: return m_EffectNodeTypeIds;
 				default: throw new ArgumentOutOfRangeException(nameof(role), role, null);
 			}
 		}
 
-		private int GetSelectedPatchIndex(LivePatchRole role) {
+		private int GetSelectedCatalogIndex(LiveCatalogRole role) {
 			switch (role) {
-				case LivePatchRole.Main: return m_SelectedMainPatchIndex;
-				case LivePatchRole.Overlay: return m_SelectedOverlayPatchIndex;
-				case LivePatchRole.Effect: return m_SelectedEffectPatchIndex;
+				case LiveCatalogRole.Main: return m_SelectedMainPatchIndex;
+				case LiveCatalogRole.Overlay: return m_SelectedOverlayPatchIndex;
+				case LiveCatalogRole.Effect: return m_SelectedEffectNodeIndex;
 				default: throw new ArgumentOutOfRangeException(nameof(role), role, null);
 			}
 		}
 
-		private void SetSelectedPatchIndex(LivePatchRole role, int index) {
+		private void SetSelectedCatalogIndex(LiveCatalogRole role, int index) {
 			switch (role) {
-				case LivePatchRole.Main: m_SelectedMainPatchIndex = index; break;
-				case LivePatchRole.Overlay: m_SelectedOverlayPatchIndex = index; break;
-				case LivePatchRole.Effect: m_SelectedEffectPatchIndex = index; break;
+				case LiveCatalogRole.Main: m_SelectedMainPatchIndex = index; break;
+				case LiveCatalogRole.Overlay: m_SelectedOverlayPatchIndex = index; break;
+				case LiveCatalogRole.Effect: m_SelectedEffectNodeIndex = index; break;
 				default: throw new ArgumentOutOfRangeException(nameof(role), role, null);
 			}
 		}
