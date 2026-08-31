@@ -18,7 +18,7 @@
 ## Program Display
 
 - Output 1はMain CueとInstant FXを通ったProgram映像、Output 2はOverlay Sequencerのレーンだけを黒背景へ合成した映像とする。
-- `Display 2` はOutput 1、`Display 3` はOutput 2を表示し、ネイティブのOutputメニューから各出力を個別に開始、停止する。
+- `Display 2` はOutput 1、`Display 3` はOutput 2を既定表示とし、ネイティブのOutputメニューから各出力を個別に開始、停止、または2台間でSwapする。
 - 外部Displayが失われた場合は残りの接続済みDisplayへの出力を継続し、外部Displayがない場合はProgram Monitorへフォールバックする。
 - `Identify Displays` は各操作Displayへ番号を3秒表示するが、Program映像には重ねない。
 
