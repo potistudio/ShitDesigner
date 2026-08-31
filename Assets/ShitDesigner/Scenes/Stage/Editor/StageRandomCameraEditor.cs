@@ -8,7 +8,7 @@ namespace ShitDesigner.Stage.Editor {
 			DrawDefaultInspector();
 
 			using (new EditorGUI.DisabledScope(!Application.isPlaying)) {
-				if (GUILayout.Button("飛び")) ((StageRandomCamera)target).JumpToNextShot();
+				if (GUILayout.Button("飛び")) ((StageRandomCamera)target).Jump();
 			}
 		}
 	}
