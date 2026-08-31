@@ -18,7 +18,8 @@ namespace ShitDesigner.Main {
 		StopProgram,
 		StartOverlay,
 		StopOverlay,
-		IdentifyDisplays
+		IdentifyDisplays,
+		SwapOutputs
 	}
 
 	internal readonly struct OutputMenuState : IEquatable<OutputMenuState> {
@@ -27,13 +28,16 @@ namespace ShitDesigner.Main {
 		public bool CanStartOverlay { get; }
 		public bool CanStopOverlay { get; }
 		public bool CanIdentifyDisplays { get; }
+		public bool CanSwapOutputs { get; }
 
-		public OutputMenuState(bool canStartProgram, bool canStopProgram, bool canStartOverlay, bool canStopOverlay, bool canIdentifyDisplays) {
+		public OutputMenuState(bool canStartProgram, bool canStopProgram, bool canStartOverlay, bool canStopOverlay,
+			bool canIdentifyDisplays, bool canSwapOutputs) {
 			CanStartProgram = canStartProgram;
 			CanStopProgram = canStopProgram;
 			CanStartOverlay = canStartOverlay;
 			CanStopOverlay = canStopOverlay;
 			CanIdentifyDisplays = canIdentifyDisplays;
+			CanSwapOutputs = canSwapOutputs;
 		}
 
 		public bool Equals(OutputMenuState other) =>
@@ -41,17 +45,20 @@ namespace ShitDesigner.Main {
 			CanStopProgram == other.CanStopProgram &&
 			CanStartOverlay == other.CanStartOverlay &&
 			CanStopOverlay == other.CanStopOverlay &&
-			CanIdentifyDisplays == other.CanIdentifyDisplays;
+			CanIdentifyDisplays == other.CanIdentifyDisplays &&
+			CanSwapOutputs == other.CanSwapOutputs;
 
 		public override bool Equals(object obj) => obj is OutputMenuState other && Equals(other);
 		public override int GetHashCode() => (CanStartProgram ? 1 : 0) | (CanStopProgram ? 2 : 0) |
-			(CanStartOverlay ? 4 : 0) | (CanStopOverlay ? 8 : 0) | (CanIdentifyDisplays ? 16 : 0);
+			(CanStartOverlay ? 4 : 0) | (CanStopOverlay ? 8 : 0) | (CanIdentifyDisplays ? 16 : 0) | (CanSwapOutputs ? 32 : 0);
 	}
 
 	internal interface ILiveOutputMenuTarget {
 		bool IsActive(LiveOutputKind output);
 		bool IsOutputAvailable(LiveOutputKind output);
 		bool SetOutputActive(LiveOutputKind output, bool active);
+		bool CanSwapOutputs { get; }
+		bool SwapOutputs();
 		void IdentifyDisplay();
 	}
 
@@ -86,7 +93,7 @@ namespace ShitDesigner.Main {
 			var overlayAvailable = m_Output.IsOutputAvailable(LiveOutputKind.Overlay);
 			var overlayActive = m_Output.IsActive(LiveOutputKind.Overlay);
 			return new OutputMenuState(programAvailable && !programActive, programActive,
-				overlayAvailable && !overlayActive, overlayActive, programAvailable || overlayAvailable);
+				overlayAvailable && !overlayActive, overlayActive, programAvailable || overlayAvailable, m_Output.CanSwapOutputs);
 		}
 
 		private void Execute(OutputMenuCommand command) {
@@ -105,6 +112,9 @@ namespace ShitDesigner.Main {
 					break;
 				case OutputMenuCommand.IdentifyDisplays:
 					if (m_Output.IsOutputAvailable(LiveOutputKind.Program) || m_Output.IsOutputAvailable(LiveOutputKind.Overlay)) m_Output.IdentifyDisplay();
+					break;
+				case OutputMenuCommand.SwapOutputs:
+					if (m_Output.CanSwapOutputs) m_Output.SwapOutputs();
 					break;
 			}
 		}
@@ -151,6 +161,7 @@ namespace ShitDesigner.Main {
 		private const int StartOverlayCommandId = 0x6D03;
 		private const int StopOverlayCommandId = 0x6D04;
 		private const int IdentifyCommandId = 0x6D05;
+		private const int SwapOutputsCommandId = 0x6D06;
 		private static readonly WindowProcedure MenuWindowProcedure = HandleWindowMessage;
 		private static readonly IntPtr MenuWindowProcedurePointer = Marshal.GetFunctionPointerForDelegate(MenuWindowProcedure);
 		private static readonly Dictionary<IntPtr, WindowsNativeOutputMenuBackend> Instances = new Dictionary<IntPtr, WindowsNativeOutputMenuBackend>();
@@ -179,6 +190,7 @@ namespace ShitDesigner.Main {
 			SetEnabled(StartOverlayCommandId, state.CanStartOverlay);
 			SetEnabled(StopOverlayCommandId, state.CanStopOverlay);
 			SetEnabled(IdentifyCommandId, state.CanIdentifyDisplays);
+			SetEnabled(SwapOutputsCommandId, state.CanSwapOutputs);
 			m_AppliedState = state;
 			m_HasAppliedState = true;
 		}
@@ -224,6 +236,7 @@ namespace ShitDesigner.Main {
 			AppendMenu(outputMenu, StringItem, new UIntPtr(StartOverlayCommandId), "Start Output 2 (Overlay)");
 			AppendMenu(outputMenu, StringItem, new UIntPtr(StopOverlayCommandId), "Stop Output 2 (Overlay)");
 			AppendMenu(outputMenu, SeparatorItem, UIntPtr.Zero, null);
+			AppendMenu(outputMenu, StringItem, new UIntPtr(SwapOutputsCommandId), "Swap Output Displays");
 			AppendMenu(outputMenu, StringItem, new UIntPtr(IdentifyCommandId), "Identify Displays");
 			m_OutputMenuPosition = GetMenuItemCount(menuBar);
 			if (!AppendMenu(menuBar, PopupItem, new UIntPtr(unchecked((ulong)outputMenu.ToInt64())), "Output") || !SetMenu(window, menuBar)) {
@@ -258,6 +271,7 @@ namespace ShitDesigner.Main {
 					case StartOverlayCommandId: instance.m_Commands.Enqueue(OutputMenuCommand.StartOverlay); return IntPtr.Zero;
 					case StopOverlayCommandId: instance.m_Commands.Enqueue(OutputMenuCommand.StopOverlay); return IntPtr.Zero;
 					case IdentifyCommandId: instance.m_Commands.Enqueue(OutputMenuCommand.IdentifyDisplays); return IntPtr.Zero;
+					case SwapOutputsCommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SwapOutputs); return IntPtr.Zero;
 				}
 			}
 			return CallWindowProc(instance.m_PreviousWindowProcedure, window, message, wParam, lParam);
@@ -298,7 +312,7 @@ namespace ShitDesigner.Main {
 			ShitDesignerOutputMenuCreate();
 			if (m_HasAppliedState && m_AppliedState.Equals(state)) return;
 			ShitDesignerOutputMenuSetState(state.CanStartProgram, state.CanStopProgram,
-				state.CanStartOverlay, state.CanStopOverlay, state.CanIdentifyDisplays);
+				state.CanStartOverlay, state.CanStopOverlay, state.CanIdentifyDisplays, state.CanSwapOutputs);
 			m_AppliedState = state;
 			m_HasAppliedState = true;
 		}
@@ -316,7 +330,8 @@ namespace ShitDesigner.Main {
 			[MarshalAs(UnmanagedType.I1)] bool canStopProgram,
 			[MarshalAs(UnmanagedType.I1)] bool canStartOverlay,
 			[MarshalAs(UnmanagedType.I1)] bool canStopOverlay,
-			[MarshalAs(UnmanagedType.I1)] bool canIdentifyDisplays);
+			[MarshalAs(UnmanagedType.I1)] bool canIdentifyDisplays,
+			[MarshalAs(UnmanagedType.I1)] bool canSwapOutputs);
 		[DllImport("__Internal")] [return: MarshalAs(UnmanagedType.I1)] private static extern bool ShitDesignerOutputMenuTryDequeue(out int command);
 	}
 #endif

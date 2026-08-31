@@ -25,11 +25,13 @@ namespace ShitDesigner.Main {
 		private readonly bool[] m_OutputActive = new bool[OutputCount];
 		private ulong _presentedFrameNumber;
 		private bool _initialized;
+		private bool m_OutputsSwapped;
 
 		public int ConnectedDisplayCount => Display.displays?.Length ?? 0;
 		public IReadOnlyList<int> ConnectedExternalDisplayNumbers => Enumerable.Range(2, Math.Min(OutputCount, Math.Max(0, ConnectedDisplayCount - 1))).ToArray();
 		public bool IsOutputActive => m_OutputActive.Any(active => active);
 		public bool IsAvailable => !UnityEngine.Application.isEditor && ConnectedDisplayCount > 1;
+		public bool CanSwapOutputs => !UnityEngine.Application.isEditor && ConnectedDisplayCount > OutputCount;
 		public ulong PresentedFrameNumber => _presentedFrameNumber;
 		public string DisplayIdentity => DescribeDisplays();
 		public string LastError { get; private set; } = string.Empty;
@@ -44,12 +46,12 @@ namespace ShitDesigner.Main {
 		public bool IsActive(LiveOutputKind output) => m_OutputActive[OutputIndex(output)];
 
 		public bool IsOutputAvailable(LiveOutputKind output)
-			=> !UnityEngine.Application.isEditor && ConnectedDisplayCount > OutputIndex(output) + 1;
+			=> !UnityEngine.Application.isEditor && ConnectedDisplayCount >= DisplayNumberForOutput(OutputIndex(output));
 
 		public bool SetOutputActive(LiveOutputKind output, bool active) {
 			if (!_initialized) return Fail("External Display output is not initialized.");
 			var outputIndex = OutputIndex(output);
-			var displayNumber = outputIndex + 2;
+			var displayNumber = DisplayNumberForOutput(outputIndex);
 			if (!active) {
 				m_OutputActive[outputIndex] = false;
 				if (_outputs.TryGetValue(displayNumber, out var displayOutput)) {
@@ -71,6 +73,20 @@ namespace ShitDesigner.Main {
 			return true;
 		}
 
+		public bool SwapOutputs() {
+			if (!_initialized) return Fail("External Display output is not initialized.");
+			if (!CanSwapOutputs) return Fail("Two external Displays are required to swap outputs.");
+			foreach (var output in _outputs.Values) {
+				output.Clear();
+				output.Present();
+			}
+			m_OutputsSwapped = !m_OutputsSwapped;
+			_presentedFrameNumber = 0;
+			ApplyOutputVisibility();
+			LastError = string.Empty;
+			return true;
+		}
+
 		public void IdentifyDisplay() => Debug.Log(DisplayIdentity, this);
 
 		public void Present(LiveProgramFrames frames) {
@@ -83,17 +99,18 @@ namespace ShitDesigner.Main {
 			}
 			if (frames.Primary.FrameNumber == _presentedFrameNumber && !outputsRebuilt) return;
 			foreach (var output in _outputs) {
-				var frameIndex = output.Key - 2;
+				var frameIndex = OutputIndexForDisplay(output.Key);
 				if (m_OutputActive[frameIndex] && frameIndex < frames.Count && frames[frameIndex].Texture != null)
 					_displayTransform.Blit(frames[frameIndex].Texture, output.Value.Texture, DisplayTransformMode.HdrAces);
 				else output.Value.Clear();
 			}
-			foreach (var output in _outputs) if (m_OutputActive[output.Key - 2]) output.Value.Present();
+			foreach (var output in _outputs) if (m_OutputActive[OutputIndexForDisplay(output.Key)]) output.Value.Present();
 			_presentedFrameNumber = frames.Primary.FrameNumber;
 		}
 
 		public void Shutdown() {
 			Array.Clear(m_OutputActive, 0, m_OutputActive.Length);
+			m_OutputsSwapped = false;
 			_initialized = false;
 			_presentedFrameNumber = 0;
 			DestroyOutputs();
@@ -113,6 +130,21 @@ namespace ShitDesigner.Main {
 			if (index < 0 || index >= OutputCount) throw new ArgumentOutOfRangeException(nameof(output));
 			return index;
 		}
+
+		internal static int ResolveDisplayNumber(LiveOutputKind output, bool swapped) {
+			var outputIndex = OutputIndex(output);
+			return 2 + (swapped ? OutputCount - 1 - outputIndex : outputIndex);
+		}
+
+		internal static LiveOutputKind ResolveOutput(int displayNumber, bool swapped) {
+			var displayIndex = displayNumber - 2;
+			if (displayIndex < 0 || displayIndex >= OutputCount) throw new ArgumentOutOfRangeException(nameof(displayNumber));
+			return (LiveOutputKind)(swapped ? OutputCount - 1 - displayIndex : displayIndex);
+		}
+
+		private int DisplayNumberForOutput(int outputIndex) => ResolveDisplayNumber((LiveOutputKind)outputIndex, m_OutputsSwapped);
+
+		private int OutputIndexForDisplay(int displayNumber) => (int)ResolveOutput(displayNumber, m_OutputsSwapped);
 
 		private void ActivateDisplay(Display display, WindowsDisplayWindowController windowController) {
 #if UNITY_STANDALONE_WIN
@@ -181,7 +213,7 @@ namespace ShitDesigner.Main {
 		}
 
 		private void ApplyOutputVisibility() {
-			foreach (var output in _outputs) output.Value.SetContentVisible(m_OutputActive[output.Key - 2]);
+			foreach (var output in _outputs) output.Value.SetContentVisible(m_OutputActive[OutputIndexForDisplay(output.Key)]);
 			foreach (var output in _outputs.Values) output.SetWindowsVisible(IsOutputActive);
 		}
 
@@ -194,7 +226,8 @@ namespace ShitDesigner.Main {
 			if (!IsAvailable) return "No external Display is available.";
 			return string.Join(", ", ConnectedExternalDisplayNumbers.Select(displayNumber => {
 				var display = Display.displays[displayNumber - 1];
-				return $"Display {displayNumber} ({display.systemWidth}x{display.systemHeight})";
+				var output = OutputIndexForDisplay(displayNumber) == (int)LiveOutputKind.Program ? "Output 1 Program" : "Output 2 Overlay";
+				return $"Display {displayNumber} ({display.systemWidth}x{display.systemHeight}, {output})";
 			}));
 		}
 
