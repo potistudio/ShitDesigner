@@ -29,11 +29,13 @@ namespace ShitDesigner.Scene {
 		private readonly Dictionary<VideoClip, SharedVideoPlayback> m_VideoPlaybacks = new Dictionary<VideoClip, SharedVideoPlayback>();
 		private readonly List<Material> m_Materials = new List<Material>();
 		private Camera m_Camera;
+		private Vector2 m_MotionPosition;
+		private Vector2 m_MotionVelocity;
 
 		private void Awake() {
 			m_Camera = Camera.main;
 			if (m_Camera == null)
-				m_Camera = FindFirstObjectByType<Camera>();
+				m_Camera = FindAnyObjectByType<Camera>();
 			CreateVisuals();
 		}
 
@@ -46,14 +48,9 @@ namespace ShitDesigner.Scene {
 			if (m_Camera == null)
 				return;
 
-			for (var index = 0; index < m_Visuals.Count; index++) {
-				var visual = m_Visuals[index];
-				var velocity = visual.Velocity;
-				var position = (Vector2)visual.Object.transform.position + velocity * Time.unscaledDeltaTime;
-				ReflectWithinBounds(ref position, ref velocity, GetMovementBounds(visual.Renderer));
-				visual.Object.transform.position = new Vector3(position.x, position.y, 0f);
-				visual.Velocity = velocity;
-			}
+			m_MotionPosition += m_MotionVelocity * Time.unscaledDeltaTime;
+			ReflectWithinBounds(ref m_MotionPosition, ref m_MotionVelocity, GetSynchronizedMovementBounds());
+			SynchronizeVisualPositions();
 		}
 
 		private void OnDestroy() {
@@ -77,6 +74,11 @@ namespace ShitDesigner.Scene {
 
 			foreach (var playback in m_VideoPlaybacks.Values)
 				playback.Player.playbackSpeed = m_VideoPlaybackSpeed;
+
+			if (m_Camera != null && m_Visuals.Count > 0) {
+				ReflectWithinBounds(ref m_MotionPosition, ref m_MotionVelocity, GetSynchronizedMovementBounds());
+				SynchronizeVisualPositions();
+			}
 		}
 
 		[ContextMenu("Rebuild Visuals")]
@@ -122,13 +124,10 @@ namespace ShitDesigner.Scene {
 			if (m_Camera == null)
 				return;
 
-			for (var index = 0; index < m_Visuals.Count; index++) {
-				var visual = m_Visuals[index];
-				var position = index == 0 ? m_InitialPosition : GetSpawnPosition(index, visual.Renderer);
-				visual.Object.transform.position = new Vector3(position.x, position.y, 0f);
-				visual.Velocity = GetInitialVelocity(index);
-				KeepWithinBounds(visual);
-			}
+			m_MotionPosition = m_InitialPosition;
+			m_MotionVelocity = GetInitialVelocity();
+			ReflectWithinBounds(ref m_MotionPosition, ref m_MotionVelocity, GetSynchronizedMovementBounds());
+			SynchronizeVisualPositions();
 
 			foreach (var playback in m_VideoPlaybacks.Values)
 				playback.Player.Play();
@@ -200,18 +199,19 @@ namespace ShitDesigner.Scene {
 			return new Vector3(size.x, size.y, 1f);
 		}
 
-		private Vector2 GetInitialVelocity(int index) {
-			var direction = Quaternion.Euler(0f, 0f, index * 137.5f) * m_InitialDirection;
-			return direction.normalized * m_Speed;
+		private Vector2 GetInitialVelocity() {
+			return m_InitialDirection.normalized * m_Speed;
 		}
 
-		private Vector2 GetSpawnPosition(int index, MeshRenderer renderer) {
-			var bounds = GetMovementBounds(renderer);
-			var horizontalProgress = Mathf.Repeat(index * 0.618034f, 1f);
-			var verticalProgress = Mathf.Repeat(index * 0.414214f, 1f);
-			return new Vector2(
-				Mathf.Lerp(bounds.Minimum.x, bounds.Maximum.x, horizontalProgress),
-				Mathf.Lerp(bounds.Minimum.y, bounds.Maximum.y, verticalProgress));
+		private Bounds2D GetSynchronizedMovementBounds() {
+			var bounds = GetMovementBounds(m_Visuals[0].Renderer);
+			for (var index = 1; index < m_Visuals.Count; index++) {
+				var visualBounds = GetMovementBounds(m_Visuals[index].Renderer);
+				bounds = new Bounds2D(
+					Vector2.Max(bounds.Minimum, visualBounds.Minimum),
+					Vector2.Min(bounds.Maximum, visualBounds.Maximum));
+			}
+			return bounds;
 		}
 
 		private Bounds2D GetMovementBounds(MeshRenderer renderer) {
@@ -223,12 +223,10 @@ namespace ShitDesigner.Scene {
 				new Vector2(cameraHalfWidth - visualExtents.x, cameraHalfHeight - visualExtents.y));
 		}
 
-		private void KeepWithinBounds(BouncingVisual visual) {
-			var position = (Vector2)visual.Object.transform.position;
-			var velocity = visual.Velocity;
-			ReflectWithinBounds(ref position, ref velocity, GetMovementBounds(visual.Renderer));
-			visual.Object.transform.position = new Vector3(position.x, position.y, 0f);
-			visual.Velocity = velocity;
+		private void SynchronizeVisualPositions() {
+			var position = new Vector3(m_MotionPosition.x, m_MotionPosition.y, 0f);
+			for (var index = 0; index < m_Visuals.Count; index++)
+				m_Visuals[index].Object.transform.position = position;
 		}
 
 		private static void ReflectWithinBounds(ref Vector2 position, ref Vector2 velocity, Bounds2D bounds) {
@@ -294,7 +292,6 @@ namespace ShitDesigner.Scene {
 			public MeshRenderer Renderer { get; }
 			public Material Material { get; }
 			public VisualSource Source { get; }
-			public Vector2 Velocity { get; set; }
 
 			public BouncingVisual(GameObject visualObject, MeshRenderer renderer, Material material, VisualSource source) {
 				Object = visualObject;
