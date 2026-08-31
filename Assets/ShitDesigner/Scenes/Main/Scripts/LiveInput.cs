@@ -64,11 +64,6 @@ namespace ShitDesigner.Main {
 				m_ToggleEditMode();
 				return;
 			}
-			if (keyboard.cKey.wasPressedThisFrame && keyboard.shiftKey.isPressed) {
-				m_IsPianoMainCueSwitchHeld = false;
-				m_CompleteMainCueSwitch();
-				return;
-			}
 			if (keyboard.shiftKey.isPressed) {
 				var parameterCueIndex = PressedInstantEffectIndex(keyboard);
 				if (parameterCueIndex >= 0) {
@@ -85,7 +80,11 @@ namespace ShitDesigner.Main {
 				return;
 			}
 			if (keyboard.aKey.wasPressedThisFrame) {
-				if (!keyboard.shiftKey.isPressed) {
+				if (keyboard.shiftKey.isPressed || keyboard.leftShiftKey.wasPressedThisFrame || keyboard.rightShiftKey.wasPressedThisFrame) {
+					m_IsPianoMainCueSwitchHeld = false;
+					m_CompleteMainCueSwitch();
+				}
+				else {
 					m_IsPianoMainCueSwitchHeld = true;
 					m_BeginPianoMainCueSwitch();
 					EndPianoMainCueSwitchIfReleased(keyboard);
