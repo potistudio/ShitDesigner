@@ -46,6 +46,7 @@ namespace ShitDesigner.Main {
 		private readonly int[] m_ActiveLaneMasks;
 		private readonly string[] m_LanePatchIds;
 		private readonly LiveSequencerCellMode[] m_CellModes;
+		private readonly int m_Output2CopyLaneMask;
 
 		public LiveSequencerKind Kind { get; }
 		public string DisplayName { get; }
@@ -56,7 +57,7 @@ namespace ShitDesigner.Main {
 		public IReadOnlyList<string> LanePatchIds => m_LanePatchIds ?? Array.Empty<string>();
 
 		internal LiveSequencerReadModel(LiveSequencerKind kind, string displayName, int currentStep, int selectedLaneIndex, int[] activeLaneMasks,
-			string[] lanePatchIds, LiveSequencerCellMode[] cellModes) {
+			string[] lanePatchIds, LiveSequencerCellMode[] cellModes, int output2CopyLaneMask) {
 			Kind = kind;
 			DisplayName = displayName;
 			CurrentStep = currentStep;
@@ -64,6 +65,7 @@ namespace ShitDesigner.Main {
 			m_ActiveLaneMasks = activeLaneMasks ?? Array.Empty<int>();
 			m_LanePatchIds = lanePatchIds ?? Array.Empty<string>();
 			m_CellModes = cellModes ?? Array.Empty<LiveSequencerCellMode>();
+			m_Output2CopyLaneMask = output2CopyLaneMask;
 		}
 
 		public bool IsActive(int laneIndex, int stepIndex) {
@@ -76,6 +78,10 @@ namespace ShitDesigner.Main {
 				return LiveSequencerCellMode.Off;
 			var index = laneIndex * LiveStepSequencer.StepCount + stepIndex;
 			return m_CellModes != null && index < m_CellModes.Length ? m_CellModes[index] : LiveSequencerCellMode.Off;
+		}
+
+		public bool IsCopiedToOutput2(int laneIndex) {
+			return laneIndex >= 0 && laneIndex < LaneCount && (m_Output2CopyLaneMask & (1 << laneIndex)) != 0;
 		}
 
 		public IReadOnlyList<LiveSequencerLayer> GetActiveLayers() {
@@ -99,6 +105,7 @@ namespace ShitDesigner.Main {
 		private readonly int[] m_ActiveLaneMasks = new int[StepCount];
 		private readonly string[] m_LanePatchIds;
 		private readonly LiveSequencerCellMode[] m_CellModes;
+		private int m_Output2CopyLaneMask;
 
 		public LiveSequencerKind Kind { get; }
 		public string DisplayName { get; }
@@ -147,6 +154,13 @@ namespace ShitDesigner.Main {
 			return LiveSequencerOperationResult.Accept();
 		}
 
+		public LiveSequencerOperationResult ToggleOutput2Copy(int laneIndex) {
+			if (Kind != LiveSequencerKind.Overlay) return LiveSequencerOperationResult.Reject("Only overlay lanes can be copied to Output 2.");
+			if (laneIndex < 0 || laneIndex >= LaneCount) return LiveSequencerOperationResult.Reject("The sequencer lane does not exist.");
+			m_Output2CopyLaneMask ^= 1 << laneIndex;
+			return LiveSequencerOperationResult.Accept();
+		}
+
 		public LiveSequencerReadModel CreateReadModel(double adjustedTotalBeats, IReadOnlyList<int> laneTakeOverrides = null) {
 			if (double.IsNaN(adjustedTotalBeats) || double.IsInfinity(adjustedTotalBeats))
 				throw new ArgumentOutOfRangeException(nameof(adjustedTotalBeats), "Sequencer timing must be finite.");
@@ -165,7 +179,7 @@ namespace ShitDesigner.Main {
 				}
 			}
 			return new LiveSequencerReadModel(Kind, DisplayName, currentStep, SelectedLaneIndex, activeLaneMasks,
-				(string[])m_LanePatchIds.Clone(), cellModes);
+				(string[])m_LanePatchIds.Clone(), cellModes, m_Output2CopyLaneMask);
 		}
 	}
 }

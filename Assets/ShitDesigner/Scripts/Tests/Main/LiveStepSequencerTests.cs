@@ -123,5 +123,17 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(taken.GetCellMode(1, 3), Is.EqualTo(LiveSequencerCellMode.Normal));
 			Assert.That(sequencer.CreateReadModel(3d).GetActiveLayers().Select(layer => layer.LaneIndex), Is.EqualTo(new[] { 0 }));
 		}
+
+		[Test]
+		public void OverlayLaneOutput2CopyIsOffByDefaultAndTogglesIndependently() {
+			var overlay = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
+			var effect = new LiveStepSequencer(LiveSequencerKind.Effect, "EFFECT");
+
+			Assert.That(overlay.CreateReadModel(0d).IsCopiedToOutput2(3), Is.False);
+			Assert.That(overlay.ToggleOutput2Copy(3).Accepted, Is.True);
+			Assert.That(overlay.CreateReadModel(0d).IsCopiedToOutput2(3), Is.True);
+			Assert.That(overlay.CreateReadModel(0d).IsCopiedToOutput2(2), Is.False);
+			Assert.That(effect.ToggleOutput2Copy(0).Accepted, Is.False);
+		}
 	}
 }

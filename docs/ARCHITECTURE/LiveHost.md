@@ -78,7 +78,7 @@
 ### 2026-08-26: 固定ライブグラフの `ProgramOutput` をProgram映像の正本にする
 
 - 固定ライブグラフの `ProgramOutput` がProgram映像の唯一の正本となるTextureを生成する。
-- `LiveGraphBootstrap` はMain/Instant FXのOutput 1とOverlay専用のOutput 2に独立したRenderTextureを構成する。外部Display専用スクリプトはDisplay 2、Display 3へ順に対応するTextureだけを受け取り提示する。
+- `LiveGraphBootstrap` はMainへOverlayを合成してInstant FXを通すOutput 1と、コピー指定されたOverlayレーンだけを黒背景へ合成するOutput 2に独立したRenderTextureを構成する。外部Display専用スクリプトはDisplay 2、Display 3へ順に対応するTextureだけを受け取り提示する。
 - `MainLiveOutput` が `OutputSurfaceBridge` へsource overrideを渡す方式は、新構成へ持ち込まない。
 
 ### 2026-08-26: Mainのライブ実行Tickは `ApplicationLiveHost` に一本化する
@@ -195,6 +195,7 @@
 
 - 左右矢印はMain／Overlay／FXタブを切り替え、上下矢印はタブ内のカタログ選択を移動する。`1`から`8`は対応するOverlayレーンを押している間だけTakeし、`Shift+1`から`Shift+8`はそのレーンのTake状態を完全切替する。MainまたはOverlayタブではEnterで選択パッチを直接Launchする。FXタブの選択ノードはLaunchしない。
 - 同じOverlayシーンを複数レーンへ割り当てた場合、フル解像度のScene Runtimeは共有し、評価・物理更新・描画をフレームごとに1回だけ行う。各レーンの合成モードは共有出力へ独立して適用する。
+- Overlayレーンは既定でOutput 1だけへ合成する。Ctrl/Cmdを押しながらシーケンサー行をクリックすると、そのレーンの共有出力をOutput 2へもコピーする状態を切り替える。
 - SpaceはUIのTAPボタンと同じBPM Tap入力とする。
 - 通常操作中の`Q`から`P`または対応するCueボタンは、押下時点では発火せず、共有BPMクロックの次の整数拍へ予約する。同じCueが発火前に複数回押された場合は1回へまとめる。
 - `PatchDefinition` のKeyboard Inputsは、キー押下時だけ1.0をロード中パッチの公開パラメーターへ送る。離上では要求を生成せず、キーボードの全体操作はこの設定とは別に固定される。

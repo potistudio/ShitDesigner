@@ -385,6 +385,10 @@ namespace ShitDesigner.Main {
 				: sequencer.CycleCellMode(laneIndex, stepIndex);
 		}
 
+		public LiveSequencerOperationResult ToggleOverlayLaneOutput2Copy(int laneIndex) {
+			return m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).ToggleOutput2Copy(laneIndex);
+		}
+
 		public bool IsSelectingSequencerLane => m_Sequencers.Any(sequencer => sequencer.SelectedLaneIndex >= 0);
 
 		public LiveSequencerOperationResult SelectSequencerLane(LiveSequencerKind kind, int laneIndex) {
