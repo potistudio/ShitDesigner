@@ -83,6 +83,7 @@ MonoBehaviour:
   m_Camera: {fileID: 2000000000000000001}
   m_Surface: {fileID: 2200000000000000003}
   m_AssetFlash: {fileID: 1140000000000000002}
+  m_FullScreen: 1
 --- !u!1 &1100000000000000002
 GameObject:
   m_ObjectHideFlags: 0
