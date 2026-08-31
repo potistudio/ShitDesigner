@@ -2903,6 +2903,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4223b168810471686380408a1d8f01a, type: 3}
   m_Name:
   m_EditorClassIdentifier: ShitDesigner.Stage::ShitDesigner.Stage.StageRandomCamera
+  m_JumpParameterId: camera_jump
+  m_JumpParameterDisplayName: Camera Jump
   m_Camera: {fileID: 8891327183107775140}
   m_Target: {fileID: 789263807182799040}
   m_AudienceReference: {fileID: 2895099285174166594}

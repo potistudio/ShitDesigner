@@ -1,4 +1,5 @@
 using System;
+using ShitDesigner.Main;
 using ShitDesigner.Scene;
 using UnityEngine;
 
@@ -6,7 +7,13 @@ namespace ShitDesigner.Stage {
 	/// <summary>Moves the Stage camera indefinitely in one direction until the next manual jump.</summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
-	public sealed class StageRandomCamera : MonoBehaviour, ISceneGraphClockReceiver {
+	public sealed class StageRandomCamera : MonoBehaviour, ISceneGraphClockReceiver, ILiveSceneParameter, ILiveSceneTriggerParameter {
+		public const string JumpParameterId = "camera_jump";
+
+		[Header("Live Parameter")]
+		[SerializeField] private string m_JumpParameterId = JumpParameterId;
+		[SerializeField] private string m_JumpParameterDisplayName = "Camera Jump";
+
 		[Header("References")]
 		[SerializeField] private Camera m_Camera;
 		[SerializeField] private Transform m_Target;
@@ -27,6 +34,9 @@ namespace ShitDesigner.Stage {
 		private float m_MovementSpeed;
 		private Vector3 m_MovementDirection;
 		private System.Random m_Random;
+
+		public LiveParameterDefinition Definition => new LiveParameterDefinition(
+			m_JumpParameterId, m_JumpParameterDisplayName, 0f, 1f, 0f);
 
 		private void OnEnable() {
 			m_GraphClockDriven = false;
@@ -64,6 +74,18 @@ namespace ShitDesigner.Stage {
 				return;
 
 			Advance((float)Math.Min(deltaSeconds, float.MaxValue));
+		}
+
+		public bool TrySetValue(float value, out string rejectionReason) {
+			if (float.IsNaN(value) || float.IsInfinity(value)) {
+				rejectionReason = "The camera jump parameter value must be finite.";
+				return false;
+			}
+
+			if (value > Mathf.Epsilon)
+				Jump();
+			rejectionReason = string.Empty;
+			return true;
 		}
 
 		public void Jump() {
