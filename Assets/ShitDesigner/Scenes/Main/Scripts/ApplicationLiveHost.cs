@@ -176,6 +176,21 @@ namespace ShitDesigner.Main {
 			return _parameterQueue.EnqueueLaunchPatch(patchId);
 		}
 
+		public bool SelectCatalogPatch(string patchId) {
+			var mainIndex = Array.IndexOf(m_MainPatchIds, patchId);
+			if (mainIndex >= 0) {
+				m_SelectedCatalogRole = LiveCatalogRole.Main;
+				m_SelectedMainPatchIndex = mainIndex;
+				return true;
+			}
+
+			var overlayIndex = Array.IndexOf(m_OverlayPatchIds, patchId);
+			if (overlayIndex < 0) return false;
+			m_SelectedCatalogRole = LiveCatalogRole.Overlay;
+			m_SelectedOverlayPatchIndex = overlayIndex;
+			return true;
+		}
+
 		public bool AssignMainPatchToCue(int cueIndex, string patchId) {
 			if (cueIndex < 0 || cueIndex >= m_MainCuePatchIds.Length || !m_MainPatchIds.Contains(patchId)) return false;
 			m_MainCuePatchIds[cueIndex] = patchId;
@@ -261,21 +276,6 @@ namespace ShitDesigner.Main {
 				var itemIds = GetCatalogItemIds(m_SelectedCatalogRole);
 				var selectedIndex = GetSelectedCatalogIndex(m_SelectedCatalogRole);
 				return selectedIndex >= 0 && selectedIndex < itemIds.Length ? itemIds[selectedIndex] : string.Empty;
-			}
-		}
-
-		private void SelectCatalogPatch(string patchId) {
-			var mainIndex = Array.IndexOf(m_MainPatchIds, patchId);
-			if (mainIndex >= 0) {
-				m_SelectedCatalogRole = LiveCatalogRole.Main;
-				m_SelectedMainPatchIndex = mainIndex;
-				return;
-			}
-
-			var overlayIndex = Array.IndexOf(m_OverlayPatchIds, patchId);
-			if (overlayIndex >= 0) {
-				m_SelectedCatalogRole = LiveCatalogRole.Overlay;
-				m_SelectedOverlayPatchIndex = overlayIndex;
 			}
 		}
 

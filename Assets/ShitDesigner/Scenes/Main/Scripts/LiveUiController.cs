@@ -648,7 +648,7 @@ namespace ShitDesigner.Main {
 				ShowSequencerRejection(_host.AssignSelectedSequencerPatch(patchId));
 				return;
 			}
-			ShowEnqueueRejection(_host.LaunchCatalogPatch(patchId));
+			if (!_host.SelectCatalogPatch(patchId)) _diagnosticLabel.text = "The selected scene does not exist.";
 		}
 
 		private void CenterCatalogSelection(LiveCatalogRole role, string itemId) {
