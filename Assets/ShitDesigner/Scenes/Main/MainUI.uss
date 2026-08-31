@@ -223,6 +223,19 @@
     background-color: rgb(255, 190, 74);
 }
 
+.main-cue-drag-stroke {
+    display: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+
+.main-cue-drag-stroke.is-active {
+    display: flex;
+}
+
 .control-panel {
     flex-grow: 1;
     min-width: 0;

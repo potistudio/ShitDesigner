@@ -17,6 +17,7 @@ namespace ShitDesigner.Main {
 		[SerializeField] private PanelRenderer m_PanelRenderer;
 
 		private VisualElement m_Root;
+		private VisualElement m_MainUi;
 		private ApplicationLiveHost _host;
 		private LiveExternalDisplayOutput _output;
 		private VisualElement _programMonitor;
@@ -30,6 +31,7 @@ namespace ShitDesigner.Main {
 		private VisualElement _parameterControls;
 		private VisualElement _tempoControls;
 		private VisualElement[] m_MainCueSlots = Array.Empty<VisualElement>();
+		private VisualElement m_MainCueDragStroke;
 		private Button[] m_SidebarTabButtons = Array.Empty<Button>();
 		private Button[] m_InstantEffectCueButtons = Array.Empty<Button>();
 		private VisualElement[] m_SidebarTabContents = Array.Empty<VisualElement>();
@@ -52,6 +54,7 @@ namespace ShitDesigner.Main {
 		private string m_DraggedMainPatchId = string.Empty;
 		private int m_MainPatchDragPointerId = -1;
 		private Vector2 m_MainPatchDragStart;
+		private Vector2 m_MainPatchDragCurrent;
 		private bool m_IsMainPatchDragging;
 		private VisualElement m_MainCueDropTarget;
 
@@ -101,6 +104,7 @@ namespace ShitDesigner.Main {
 			if (root == null || root.childCount == 0 || _host == null || _output == null) return;
 			UnbindVisualTree();
 			m_Root = root;
+			m_MainUi = Required<VisualElement>(root, "main-ui");
 
 			_programMonitor = Required<VisualElement>(root, "program-monitor");
 			m_Output2Preview = Required<VisualElement>(root, "output-2-preview");
@@ -114,6 +118,13 @@ namespace ShitDesigner.Main {
 			m_MainCueSlots = Enumerable.Range(1, ApplicationLiveHost.MainCueCount)
 				.Select(index => Required<VisualElement>(root, "cue-slot-" + index))
 				.ToArray();
+			m_MainCueDragStroke = new VisualElement {
+				name = "main-cue-drag-stroke",
+				pickingMode = PickingMode.Ignore
+			};
+			m_MainCueDragStroke.AddToClassList("main-cue-drag-stroke");
+			m_MainCueDragStroke.generateVisualContent += DrawMainCueDragStroke;
+			m_MainUi.Add(m_MainCueDragStroke);
 			m_SidebarTabButtons = new[] {
 				Required<Button>(root, "main-tab"),
 				Required<Button>(root, "overlay-tab"),
@@ -172,7 +183,12 @@ namespace ShitDesigner.Main {
 				m_Root.UnregisterCallback<PointerUpEvent>(OnMainPatchPointerUp, TrickleDown.TrickleDown);
 				m_Root.UnregisterCallback<PointerCancelEvent>(OnMainPatchPointerCancel, TrickleDown.TrickleDown);
 			}
+			if (m_MainCueDragStroke != null) {
+				m_MainCueDragStroke.generateVisualContent -= DrawMainCueDragStroke;
+				m_MainCueDragStroke.RemoveFromHierarchy();
+			}
 			m_MainCueSlots = Array.Empty<VisualElement>();
+			m_MainCueDragStroke = null;
 			if (m_SequencerControls != null) m_SequencerControls.UnregisterCallback<ClickEvent>(OnSequencerCellClicked);
 			foreach (var button in m_SidebarTabButtons) button.UnregisterCallback<ClickEvent>(OnSidebarTabClicked);
 			m_SidebarTabButtons = Array.Empty<Button>();
@@ -187,6 +203,7 @@ namespace ShitDesigner.Main {
 			if (m_BeatAlignmentButton != null) m_BeatAlignmentButton.clicked -= AlignBeat;
 			_initialized = false;
 			m_Root = null;
+			m_MainUi = null;
 			_renderedPatchId = string.Empty;
 			m_CenteredCatalogItemId = string.Empty;
 			m_PendingCenteredCatalogItemId = string.Empty;
@@ -595,15 +612,19 @@ namespace ShitDesigner.Main {
 			m_DraggedMainPatchId = patchId;
 			m_MainPatchDragPointerId = evt.pointerId;
 			m_MainPatchDragStart = evt.position;
+			m_MainPatchDragCurrent = evt.position;
+			m_IsMainPatchDragging = true;
+			m_MainPatchDragSource.AddToClassList("is-dragging");
+			m_MainCueDragStroke.AddToClassList("is-active");
+			m_MainCueDragStroke.MarkDirtyRepaint();
+			m_Root.CapturePointer(evt.pointerId);
+			evt.StopImmediatePropagation();
 		}
 
 		private void OnMainPatchPointerMove(PointerMoveEvent evt) {
 			if (evt.pointerId != m_MainPatchDragPointerId || m_MainPatchDragSource == null) return;
-			if (!m_IsMainPatchDragging && Vector2.Distance(m_MainPatchDragStart, evt.position) < 6f) return;
-			if (!m_IsMainPatchDragging) {
-				m_IsMainPatchDragging = true;
-				m_MainPatchDragSource.AddToClassList("is-dragging");
-			}
+			m_MainPatchDragCurrent = evt.position;
+			m_MainCueDragStroke.MarkDirtyRepaint();
 			UpdateMainCueDropTarget(evt.position);
 			evt.StopImmediatePropagation();
 		}
@@ -624,6 +645,17 @@ namespace ShitDesigner.Main {
 			if (evt.pointerId == m_MainPatchDragPointerId) CancelMainPatchDrag();
 		}
 
+		private void DrawMainCueDragStroke(MeshGenerationContext context) {
+			if (!m_IsMainPatchDragging || m_MainCueDragStroke == null) return;
+			var painter = context.painter2D;
+			painter.lineWidth = 2f;
+			painter.strokeColor = new Color32(255, 190, 74, 255);
+			painter.BeginPath();
+			painter.MoveTo(m_MainCueDragStroke.WorldToLocal(m_MainPatchDragStart));
+			painter.LineTo(m_MainCueDragStroke.WorldToLocal(m_MainPatchDragCurrent));
+			painter.Stroke();
+		}
+
 		private void UpdateMainCueDropTarget(Vector2 pointerPosition) {
 			var target = m_MainCueSlots.FirstOrDefault(slot => slot.worldBound.Contains(pointerPosition));
 			if (target == m_MainCueDropTarget) return;
@@ -633,8 +665,12 @@ namespace ShitDesigner.Main {
 		}
 
 		private void CancelMainPatchDrag() {
+			var pointerId = m_MainPatchDragPointerId;
 			m_MainPatchDragSource?.RemoveFromClassList("is-dragging");
 			m_MainCueDropTarget?.RemoveFromClassList("is-drop-target");
+			m_MainCueDragStroke?.RemoveFromClassList("is-active");
+			m_MainCueDragStroke?.MarkDirtyRepaint();
+			if (pointerId >= 0 && m_Root?.HasPointerCapture(pointerId) == true) m_Root.ReleasePointer(pointerId);
 			m_MainPatchDragSource = null;
 			m_DraggedMainPatchId = string.Empty;
 			m_MainPatchDragPointerId = -1;
