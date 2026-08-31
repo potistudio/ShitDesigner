@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using ShitDesigner.AssetFlush;
+using ShitDesigner.Main;
 using ShitDesigner.Media;
 using UnityEngine;
 
@@ -75,6 +76,35 @@ namespace ShitDesigner.Tests.Media {
 			}
 			finally {
 				Object.DestroyImmediate(image);
+				Object.DestroyImmediate(host);
+			}
+		}
+
+		[Test]
+		public void Scene_LiveParameterTriggersAssetWithMatchingId() {
+			var host = new GameObject("AssetFlushLiveParameterTest");
+			var first = new Texture2D(2, 2);
+			var second = new Texture2D(2, 2);
+			try {
+				var scene = host.AddComponent<AssetFlushScene>();
+				scene.SetImageEntries(
+					new AssetFlushImageEntry("first", first),
+					new AssetFlushImageEntry("second", second));
+				var liveRoot = host.AddComponent<LiveSceneRoot>();
+				liveRoot.Initialize("asset-flush-test");
+
+				Assert.That(liveRoot.PublicParameterIds, Is.EquivalentTo(new[] { "first", "second" }));
+				Assert.That(liveRoot.IsTriggerParameter("second"), Is.True);
+				Assert.That(liveRoot.TrySetParameter("second", 0f, out var inactiveRejection), Is.True);
+				Assert.That(inactiveRejection, Is.Empty);
+				Assert.That(scene.OutputTexture, Is.Null);
+				Assert.That(liveRoot.TrySetParameter("second", 1f, out var triggerRejection), Is.True);
+				Assert.That(triggerRejection, Is.Empty);
+				Assert.That(scene.OutputTexture, Is.SameAs(second));
+			}
+			finally {
+				Object.DestroyImmediate(first);
+				Object.DestroyImmediate(second);
 				Object.DestroyImmediate(host);
 			}
 		}

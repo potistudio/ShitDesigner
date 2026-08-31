@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ShitDesigner.Main {
@@ -5,6 +6,11 @@ namespace ShitDesigner.Main {
 	public interface ILiveSceneParameter {
 		LiveParameterDefinition Definition { get; }
 		bool TrySetValue(float value, out string rejectionReason);
+	}
+
+	/// <summary>Publishes a dynamic collection of live-scene controls from one component.</summary>
+	public interface ILiveSceneParameterProvider {
+		IReadOnlyList<ILiveSceneParameter> LiveParameters { get; }
 	}
 
 	/// <summary>Marks a scene parameter whose active transition invokes a one-shot action.</summary>

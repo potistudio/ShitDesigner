@@ -92,7 +92,11 @@ namespace ShitDesigner.Main {
 			if (m_ParametersCollected)
 				return;
 
-			var attachedParameters = GetComponents<MonoBehaviour>().OfType<ILiveSceneParameter>().ToArray();
+			var attachedComponents = GetComponents<MonoBehaviour>();
+			var attachedParameters = attachedComponents.OfType<ILiveSceneParameter>()
+				.Concat(attachedComponents.OfType<ILiveSceneParameterProvider>()
+					.SelectMany(provider => provider.LiveParameters ?? Array.Empty<ILiveSceneParameter>()))
+				.ToArray();
 			foreach (var parameter in attachedParameters) {
 				var definition = parameter.Definition;
 				ValidateDefinition(definition, parameter);
