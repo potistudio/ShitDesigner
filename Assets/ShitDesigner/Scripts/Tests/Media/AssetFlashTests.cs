@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using ShitDesigner.AssetFlush;
 using ShitDesigner.Media;
 using UnityEngine;
 
@@ -35,17 +36,17 @@ namespace ShitDesigner.Tests.Media {
 		}
 
 		[Test]
-		public void Component_CanRandomlyTriggerWithoutGraphRuntime() {
-			var host = new GameObject("AssetFlashComponentTest");
+		public void Scene_CanRandomlyTriggerWithoutGraphRuntime() {
+			var host = new GameObject("AssetFlushSceneTest");
 			var image = new Texture2D(2, 2);
 			try {
-				var component = host.AddComponent<AssetFlashComponent>();
-				component.SetImages(image);
+				var scene = host.AddComponent<AssetFlushScene>();
+				scene.SetImages(image);
 
-				Assert.That(component.TryTriggerRandom(), Is.True);
-				Assert.That(component.OutputTexture, Is.SameAs(image));
-				component.Clear();
-				Assert.That(component.OutputTexture, Is.Null);
+				Assert.That(scene.TryTriggerRandom(), Is.True);
+				Assert.That(scene.OutputTexture, Is.SameAs(image));
+				scene.Clear();
+				Assert.That(scene.OutputTexture, Is.Null);
 			}
 			finally {
 				Object.DestroyImmediate(image);
@@ -54,23 +55,23 @@ namespace ShitDesigner.Tests.Media {
 		}
 
 		[Test]
-		public void Component_RandomTriggerSupportsVariableAssetCounts() {
+		public void Scene_RandomTriggerSupportsVariableAssetCounts() {
 			var host = new GameObject("AssetFlashRandomTest");
 			var image = new Texture2D(2, 2);
 			try {
-				var component = host.AddComponent<AssetFlashComponent>();
+				var scene = host.AddComponent<AssetFlushScene>();
 				var images = new Texture2D[13];
 				for (var index = 0; index < 12; index++) images[index] = image;
-				component.SetImages(images);
+				scene.SetImages(images);
 
-				Assert.That(component.AvailableAssetCount, Is.EqualTo(12));
-				Assert.That(component.TryTriggerRandom(), Is.True);
-				Assert.That(component.OutputTexture, Is.SameAs(image));
+				Assert.That(scene.AvailableAssetCount, Is.EqualTo(12));
+				Assert.That(scene.TryTriggerRandom(), Is.True);
+				Assert.That(scene.OutputTexture, Is.SameAs(image));
 
-				component.SetImages(null, null);
-				Assert.That(component.AvailableAssetCount, Is.Zero);
-				Assert.That(component.TryTriggerRandom(), Is.False);
-				Assert.That(component.OutputTexture, Is.Null);
+				scene.SetImages(null, null);
+				Assert.That(scene.AvailableAssetCount, Is.Zero);
+				Assert.That(scene.TryTriggerRandom(), Is.False);
+				Assert.That(scene.OutputTexture, Is.Null);
 			}
 			finally {
 				Object.DestroyImmediate(image);

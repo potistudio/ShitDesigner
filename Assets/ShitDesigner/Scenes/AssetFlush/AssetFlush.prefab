@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 2200000000000000001}
   - component: {fileID: 1140000000000000001}
-  - component: {fileID: 1140000000000000002}
   - component: {fileID: 1140000000000000003}
   m_Layer: 0
   m_Name: AssetFlush
@@ -48,26 +47,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 398c17eaef8e41318d623bd76888d12a, type: 3}
   m_Name:
   m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.LiveSceneRoot
---- !u!114 &1140000000000000002
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1100000000000000001}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 90bdf7958b6d47edb6930338fcfc4ec2, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: ShitDesigner.Media::ShitDesigner.Media.AssetFlashComponent
-  m_DurationSeconds: 0.25
-  m_UseUnscaledTime: 1
-  m_TargetRenderer: {fileID: 2300000000000000001}
-  m_TextureProperty: _BaseMap
-  m_DisableRendererWhenIdle: 1
-  m_Images:
-  - {fileID: 2800000, guid: 7811e043fc896e74592668a1a45cd6bc, type: 3}
-  m_Videos: []
 --- !u!114 &1140000000000000003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -82,7 +61,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: ShitDesigner.AssetFlush::ShitDesigner.AssetFlush.AssetFlushScene
   m_Camera: {fileID: 2000000000000000001}
   m_Surface: {fileID: 2200000000000000003}
-  m_AssetFlash: {fileID: 1140000000000000002}
+  m_DurationSeconds: 0.25
+  m_UseUnscaledTime: 1
+  m_TargetRenderer: {fileID: 2300000000000000001}
+  m_TextureProperty: _BaseMap
+  m_DisableRendererWhenIdle: 1
+  m_Images:
+  - {fileID: 2800000, guid: 7811e043fc896e74592668a1a45cd6bc, type: 3}
+  m_Videos: []
   m_FullScreen: 1
   m_Size: {x: 1, y: 1}
 --- !u!1 &1100000000000000002
