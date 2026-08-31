@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using ShitDesigner.Core;
+using ShitDesigner.Main;
 using ShitDesigner.Nodes;
 using ShitDesigner.Scene;
 using UnityEditor;
@@ -672,6 +673,17 @@ namespace ShitDesigner.Editor {
 			var seen = new HashSet<string>(StringComparer.Ordinal);
 			foreach (var component in definition.Prefab.GetComponentsInChildren<MonoBehaviour>(true)) {
 				if (component == null) continue;
+				if (component is ILiveSceneParameterProvider provider) {
+					foreach (var liveParameter in provider.LiveParameters ?? Array.Empty<ILiveSceneParameter>()) {
+						if (liveParameter == null) continue;
+						var liveDefinition = liveParameter.Definition;
+						if (string.IsNullOrWhiteSpace(liveDefinition.Id) || !seen.Add(liveDefinition.Id)) continue;
+						options.Add(new ParameterOption(liveDefinition.Id,
+							string.IsNullOrWhiteSpace(liveDefinition.DisplayName)
+								? liveDefinition.Id
+								: liveDefinition.DisplayName + " (" + liveDefinition.Id + ")"));
+					}
+				}
 				var definitionProperty = component.GetType().GetProperty("Definition", BindingFlags.Instance | BindingFlags.Public);
 				if (definitionProperty == null || definitionProperty.GetIndexParameters().Length != 0) continue;
 				object parameter;

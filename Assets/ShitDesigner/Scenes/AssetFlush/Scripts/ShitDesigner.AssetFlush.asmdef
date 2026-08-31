@@ -2,6 +2,7 @@
   "name": "ShitDesigner.AssetFlush",
   "rootNamespace": "ShitDesigner.AssetFlush",
   "references": [
+    "ShitDesigner.Main",
     "ShitDesigner.Scene"
   ],
   "includePlatforms": [],
