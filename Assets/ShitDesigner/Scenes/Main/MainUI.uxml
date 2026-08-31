@@ -69,5 +69,6 @@
                 <ui:Button name="beat-alignment-button" text="ALIGN BEAT" class="tempo-alignment-button"/>
             </ui:VisualElement>
         </ui:VisualElement>
+        <ui:VisualElement name="edit-mode-highlight" class="edit-mode-highlight" picking-mode="Ignore"/>
     </ui:VisualElement>
 </ui:UXML>

@@ -132,4 +132,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a25a5c7c6eb14a5db5001a8bbcc6d8e4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShitDesigner.Stage.StageImpactBurst
+  m_PlayEventName: OnPlay
+  m_ImpactTextureName: Impact Texture
+  m_VisualEffect: {fileID: 8784225190322806549}
   m_Textures: []

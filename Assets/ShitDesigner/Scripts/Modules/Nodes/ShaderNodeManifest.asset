@@ -14785,7 +14785,7 @@ MonoBehaviour:
     userAddable: 1
     description: finite-deterministic-reference
     priority: P2
-    warmupFrames: 0
+    warmupFrames: 1
     sourceLedger: spatial-variants.json
     sourceVariant: 44
     outputPass: 1
@@ -15142,7 +15142,7 @@ MonoBehaviour:
     userAddable: 1
     description: finite-deterministic-reference
     priority: P2
-    warmupFrames: 0
+    warmupFrames: 1
     sourceLedger: spatial-variants.json
     sourceVariant: 45
     outputPass: 1
@@ -15499,7 +15499,7 @@ MonoBehaviour:
     userAddable: 1
     description: finite-deterministic-reference
     priority: P2
-    warmupFrames: 0
+    warmupFrames: 1
     sourceLedger: spatial-variants.json
     sourceVariant: 46
     outputPass: 1
@@ -15856,7 +15856,7 @@ MonoBehaviour:
     userAddable: 1
     description: finite-deterministic-reference
     priority: P2
-    warmupFrames: 0
+    warmupFrames: 1
     sourceLedger: spatial-variants.json
     sourceVariant: 47
     outputPass: 1
@@ -43606,7 +43606,7 @@ MonoBehaviour:
     userAddable: 1
     description: finite-deterministic-reference
     priority: P2
-    warmupFrames: 0
+    warmupFrames: 1
     sourceLedger: spatial-variants.json
     sourceVariant: 39
     outputPass: 1
@@ -44014,7 +44014,7 @@ MonoBehaviour:
     userAddable: 1
     description: finite-deterministic-reference
     priority: P2
-    warmupFrames: 0
+    warmupFrames: 1
     sourceLedger: spatial-variants.json
     sourceVariant: 40
     outputPass: 1
@@ -44422,7 +44422,7 @@ MonoBehaviour:
     userAddable: 1
     description: finite-deterministic-reference
     priority: P2
-    warmupFrames: 0
+    warmupFrames: 1
     sourceLedger: spatial-variants.json
     sourceVariant: 41
     outputPass: 1
@@ -56455,7 +56455,7 @@ MonoBehaviour:
     userAddable: 1
     description: finite-deterministic-reference
     priority: P1
-    warmupFrames: 0
+    warmupFrames: 1
     sourceLedger: spatial-variants.json
     sourceVariant: 31
     outputPass: 0

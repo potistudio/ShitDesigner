@@ -148,6 +148,132 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void EditModeUsesQwertyRowForEffectReplacementAndSuppressesLiveControls() {
+			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.Q));
+			Keyboard keyboard = null;
+			try {
+				keyboard = InputSystem.AddDevice<Keyboard>();
+				keyboard.MakeCurrent();
+				var queue = new LiveParameterQueue();
+				var editMode = false;
+				var assignedEffects = new List<int>();
+				var launched = false;
+				var categoryToggleCount = 0;
+				var input = new LiveKeyboardInput(queue, new[] { patch }, _ => { }, (_, _) => { }, () => { launched = true; }, _ => { },
+					() => { editMode = !editMode; }, assignedEffects.Add, () => editMode,
+					toggleSelectedEffectCategory: () => { categoryToggleCount++; });
+
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift, Key.Tab));
+				InputSystem.Update();
+				input.Poll("patch-a");
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+				InputSystem.Update();
+				input.Poll("patch-a");
+				PollKey(input, keyboard, Key.Q);
+				PollKey(input, keyboard, Key.Space);
+				PollKey(input, keyboard, Key.Enter);
+
+				Assert.That(editMode, Is.True);
+				Assert.That(assignedEffects, Is.EqualTo(new[] { 0 }));
+				Assert.That(launched, Is.False);
+				Assert.That(categoryToggleCount, Is.EqualTo(1));
+				Assert.That(queue.Count, Is.Zero);
+			}
+			finally {
+				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
+				Object.DestroyImmediate(patch);
+			}
+		}
+
+		[Test]
+		public void InstantEffectKeysQueueGlobalCuesWithoutDrivingPatchBindings() {
+			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.Q));
+			Keyboard keyboard = null;
+			try {
+				keyboard = InputSystem.AddDevice<Keyboard>();
+				keyboard.MakeCurrent();
+				var queue = new LiveParameterQueue();
+				var cues = new List<int>();
+				var input = new LiveKeyboardInput(queue, new[] { patch }, _ => { }, (_, _) => { }, () => { }, _ => { },
+					cueInstantEffect: cues.Add);
+
+				PollKey(input, keyboard, Key.Q);
+
+				var requests = new List<LiveParameterRequest>();
+				queue.Drain(requests);
+				Assert.That(cues, Is.EqualTo(new[] { 1 }));
+				Assert.That(requests, Is.Empty);
+			}
+			finally {
+				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
+				Object.DestroyImmediate(patch);
+			}
+		}
+
+		[Test]
+		public void ShiftQwertyRowFocusesInstantEffectParametersWithoutTriggeringOrAssigning() {
+			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.Q));
+			Keyboard keyboard = null;
+			try {
+				keyboard = InputSystem.AddDevice<Keyboard>();
+				keyboard.MakeCurrent();
+				var queue = new LiveParameterQueue();
+				var assigned = new List<int>();
+				var triggered = new List<int>();
+				var focused = new List<int>();
+				var input = new LiveKeyboardInput(queue, new[] { patch }, _ => { }, (_, _) => { }, () => { }, _ => { },
+					assignInstantEffect: assigned.Add, cueInstantEffect: triggered.Add, focusInstantEffectParameters: focused.Add);
+
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift, Key.Q));
+				InputSystem.Update();
+				input.Poll("patch-a");
+
+				Assert.That(focused, Is.EqualTo(new[] { 0 }));
+				Assert.That(assigned, Is.Empty);
+				Assert.That(triggered, Is.Empty);
+				Assert.That(queue.Count, Is.Zero);
+			}
+			finally {
+				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
+				Object.DestroyImmediate(patch);
+			}
+		}
+
+		[Test]
+		public void InstantEffectTriggersWaitForTheNextBeatAndDeduplicatePerCue() {
+			var queue = new LiveBeatQuantizedTriggerQueue();
+
+			queue.Enqueue(3, 12.25d);
+			queue.Enqueue(3, 12.75d);
+			queue.Enqueue(1, 12.9d);
+
+			Assert.That(queue.DrainDue(12.999d), Is.Empty);
+			Assert.That(queue.DrainDue(13d), Is.EqualTo(new[] { 1, 3 }));
+			Assert.That(queue.DrainDue(14d), Is.Empty);
+		}
+
+		[Test]
+		public void InstantEffectTriggerOnABeatWaitsForTheFollowingBeat() {
+			var queue = new LiveBeatQuantizedTriggerQueue();
+
+			queue.Enqueue(1, 8d);
+
+			Assert.That(queue.DrainDue(8.999d), Is.Empty);
+			Assert.That(queue.DrainDue(9d), Is.EqualTo(new[] { 1 }));
+		}
+
+		[Test]
+		public void FiredInstantEffectRemainsActiveUntilTheFollowingBeat() {
+			var gate = new LiveBeatEffectGate();
+
+			gate.Activate(new[] { 3, 1 }, 13d);
+
+			Assert.That(gate.GetActive(13d), Is.EqualTo(new[] { 1, 3 }));
+			Assert.That(gate.GetActive(13.999d), Is.EqualTo(new[] { 1, 3 }));
+			Assert.That(gate.GetActive(14d), Is.Empty);
+		}
+
+		[Test]
 		public void MidiMappingQueuesPreloadedPatchLoadAndParameterRequestsInEventOrder() {
 			var owner = new GameObject("MIDI");
 			var patchA = CreatePatch("patch-a", new PatchMidiInputBinding("motion", MidiControlKind.ControlChange, 1, 74));

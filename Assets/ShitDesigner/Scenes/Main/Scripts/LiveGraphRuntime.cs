@@ -71,13 +71,16 @@ namespace ShitDesigner.Main {
 		private readonly Func<PatchDefinition, LiveRenderSize, LiveProgramOutput> _createOutput;
 		public IReadOnlyList<PatchDefinition> PatchDefinitions { get; }
 		public LiveOverlayCompositor Compositor { get; }
+		public LiveInstantEffectRenderer InstantEffects { get; }
 
 		public LiveGraph(SceneIsolationManager sceneManager, RenderTexturePool renderPool, IEnumerable<PatchDefinition> patchDefinitions,
-			Func<PatchDefinition, LiveRenderSize, LiveProgramOutput> createOutput, LiveOverlayCompositor compositor) {
+			Func<PatchDefinition, LiveRenderSize, LiveProgramOutput> createOutput, LiveOverlayCompositor compositor,
+			LiveInstantEffectRenderer instantEffects) {
 			_sceneManager = sceneManager ?? throw new ArgumentNullException(nameof(sceneManager));
 			_renderPool = renderPool ?? throw new ArgumentNullException(nameof(renderPool));
 			_createOutput = createOutput ?? throw new ArgumentNullException(nameof(createOutput));
 			Compositor = compositor ?? throw new ArgumentNullException(nameof(compositor));
+			InstantEffects = instantEffects ?? throw new ArgumentNullException(nameof(instantEffects));
 			PatchDefinitions = (patchDefinitions ?? throw new ArgumentNullException(nameof(patchDefinitions))).ToArray();
 			if (PatchDefinitions.Count == 0) throw new ArgumentException("A live graph requires patches.");
 		}
@@ -86,6 +89,7 @@ namespace ShitDesigner.Main {
 			=> _createOutput(patch, renderSize);
 
 		public void Dispose() {
+			InstantEffects.Dispose();
 			Compositor.Dispose();
 			_sceneManager.Dispose();
 			_renderPool.Dispose();
@@ -362,6 +366,298 @@ namespace ShitDesigner.Main {
 			if (texture.Create()) return texture;
 			ReleaseTexture(texture);
 			throw new InvalidOperationException("An overlay compositor texture could not be created.");
+		}
+
+		private static void ReleaseTexture(RenderTexture texture) {
+			if (texture == null) return;
+			texture.Release();
+			if (UnityEngine.Application.isPlaying) UnityEngine.Object.Destroy(texture);
+			else UnityEngine.Object.DestroyImmediate(texture);
+		}
+	}
+
+	internal sealed class LiveInstantEffectRenderer : IDisposable {
+		internal const int LiveParameterCount = 8;
+		private const string ParameterIdPrefix = "instant-fx/";
+		private static readonly string[] m_DefaultLiveParameterOrder = { "amount", "mix", "gain", "radius", "scale", "frequency", "detail", "speed" };
+
+		private sealed class Slot : IDisposable {
+			public ShaderPassGraphRuntimeNode Node { get; }
+			public ShaderNodeBinding Binding { get; }
+			public ShaderNodeManifestEntry Entry { get; }
+			public Dictionary<string, ParameterValue> ParameterValues { get; }
+
+			public Slot(ShaderPassGraphRuntimeNode node, ShaderNodeBinding binding, ShaderNodeManifestEntry entry,
+				IEnumerable<RuntimeParameterSnapshot> parameters) {
+				Node = node ?? throw new ArgumentNullException(nameof(node));
+				Binding = binding ?? throw new ArgumentNullException(nameof(binding));
+				Entry = entry ?? throw new ArgumentNullException(nameof(entry));
+				ParameterValues = (parameters ?? throw new ArgumentNullException(nameof(parameters)))
+					.ToDictionary(parameter => parameter.Id.Value, parameter => parameter.Value, StringComparer.Ordinal);
+			}
+
+			public void Dispose() => Node.Dispose();
+		}
+
+		private readonly IReadOnlyDictionary<NodeTypeId, LiveProgramShaderDefinition> m_ShaderDefinitions;
+		private readonly RenderTexturePool m_RenderPool;
+		private readonly Slot[] m_Slots = new Slot[InstantEffectTriggerContract.TriggerCount];
+		private readonly RenderTexture[] m_Scratch = new RenderTexture[2];
+		private bool m_Disposed;
+
+		public LiveInstantEffectRenderer(IReadOnlyDictionary<NodeTypeId, LiveProgramShaderDefinition> shaderDefinitions,
+			RenderTexturePool renderPool, LiveRenderSize renderSize) {
+			m_ShaderDefinitions = shaderDefinitions ?? throw new ArgumentNullException(nameof(shaderDefinitions));
+			m_RenderPool = renderPool ?? throw new ArgumentNullException(nameof(renderPool));
+			try {
+				m_Scratch[0] = CreateTexture("ShitDesigner.Main.InstantEffect.Scratch.0", renderSize);
+				m_Scratch[1] = CreateTexture("ShitDesigner.Main.InstantEffect.Scratch.1", renderSize);
+			}
+			catch {
+				foreach (var texture in m_Scratch) ReleaseTexture(texture);
+				throw;
+			}
+		}
+
+		public bool TryAssign(int cueIndex, string typeId, out string rejectionReason) {
+			if (m_Disposed) throw new ObjectDisposedException(nameof(LiveInstantEffectRenderer));
+			if (cueIndex < 0 || cueIndex >= m_Slots.Length) throw new ArgumentOutOfRangeException(nameof(cueIndex));
+			if (!NodeTypeId.TryParse(typeId, out var nodeTypeId) || !m_ShaderDefinitions.TryGetValue(nodeTypeId, out var definition)) {
+				rejectionReason = "The requested FX node is unavailable.";
+				return false;
+			}
+
+			ShaderPassGraphRuntimeNode node = null;
+			Slot replacement;
+			try {
+				var binding = definition.Entry.ToShaderBinding();
+				var parameters = BuildInstantEffectParameters(definition.Entry, definition.Shader);
+				var record = new RuntimeNodeCreateInfo(NodeInstanceId.New(), nodeTypeId, definition.Entry.SchemaVersion,
+					definition.Entry.DisplayName, true, 0f, 0f, parameters);
+				node = new ShaderPassGraphRuntimeNode(record, 1UL,
+					new ShaderMaterialBinding(binding.ShaderKey, definition.Shader, outputPass: binding.OutputPass, descriptor: binding),
+					m_RenderPool, "shitdesigner.main.instant_effect." + cueIndex, binding.Family == ShaderNodeFamily.Generator,
+					binding.Family == ShaderNodeFamily.Composite);
+				replacement = new Slot(node, binding, definition.Entry, parameters);
+				ConfigureFullStrength(replacement);
+			}
+			catch (Exception exception) {
+				node?.Dispose();
+				rejectionReason = exception.Message;
+				return false;
+			}
+
+			var previous = m_Slots[cueIndex];
+			m_Slots[cueIndex] = replacement;
+			previous?.Dispose();
+			rejectionReason = string.Empty;
+			return true;
+		}
+
+		public LiveParameterDefinition[] GetParameterDefinitions(int cueIndex) {
+			if (m_Disposed) throw new ObjectDisposedException(nameof(LiveInstantEffectRenderer));
+			if (cueIndex < 0 || cueIndex >= m_Slots.Length) return Array.Empty<LiveParameterDefinition>();
+			var slot = m_Slots[cueIndex];
+			if (slot == null) return Array.Empty<LiveParameterDefinition>();
+			return LiveParameters(slot).Select(parameter => ToDefinition(cueIndex, parameter, slot.ParameterValues[parameter.Id.Value])).ToArray();
+		}
+
+		public bool TrySetParameter(int cueIndex, string parameterId, ParameterValue value, out string rejectionReason) {
+			if (m_Disposed) throw new ObjectDisposedException(nameof(LiveInstantEffectRenderer));
+			if (cueIndex < 0 || cueIndex >= m_Slots.Length) {
+				rejectionReason = "The instant FX Cue does not exist.";
+				return false;
+			}
+			var slot = m_Slots[cueIndex];
+			var parameter = slot?.Entry.Parameters.FirstOrDefault(candidate => candidate.Id.Value == parameterId);
+			if (parameter == null || !LiveParameters(slot).Contains(parameter)) {
+				rejectionReason = "The instant FX parameter is not exposed for live control.";
+				return false;
+			}
+			if (parameter.Type != value.Type) {
+				rejectionReason = "The instant FX parameter type does not match.";
+				return false;
+			}
+			if (parameter.Minimum.HasValue && parameter.Maximum.HasValue && ParameterValue.IsLogicalControlTargetType(parameter.Type)) {
+				var clamped = ParameterValue.Clamp(value, parameter.Minimum.Value, parameter.Maximum.Value);
+				if (clamped.IsFailure) {
+					rejectionReason = clamped.Error.Message;
+					return false;
+				}
+				value = clamped.Value;
+			}
+			if (!slot.Node.TrySetDirectParameter(parameterId, value, out rejectionReason)) return false;
+			slot.ParameterValues[parameterId] = value;
+			return true;
+		}
+
+		internal static string ParameterAddress(int cueIndex, string parameterId)
+			=> ParameterIdPrefix + cueIndex + "/" + parameterId;
+
+		internal static bool TryParseParameterAddress(string address, out int cueIndex, out string parameterId) {
+			cueIndex = -1;
+			parameterId = string.Empty;
+			if (string.IsNullOrEmpty(address) || !address.StartsWith(ParameterIdPrefix, StringComparison.Ordinal)) return false;
+			var separator = address.IndexOf('/', ParameterIdPrefix.Length);
+			if (separator < 0 || !int.TryParse(address.Substring(ParameterIdPrefix.Length, separator - ParameterIdPrefix.Length), out cueIndex)) return false;
+			parameterId = address.Substring(separator + 1);
+			return cueIndex >= 0 && cueIndex < InstantEffectTriggerContract.TriggerCount && !string.IsNullOrEmpty(parameterId);
+		}
+
+		public RenderTexture Render(RenderTexture source, IReadOnlyList<int> triggerNumbers, ulong frameNumber, double graphTime) {
+			if (m_Disposed) throw new ObjectDisposedException(nameof(LiveInstantEffectRenderer));
+			if (source == null) throw new ArgumentNullException(nameof(source));
+			if (triggerNumbers == null || triggerNumbers.Count == 0) return source;
+			var output = source;
+			var scratchIndex = 0;
+			foreach (var triggerNumber in triggerNumbers.Distinct().OrderBy(value => value)) {
+				InstantEffectTriggerContract.Validate(triggerNumber);
+				var slot = m_Slots[triggerNumber - 1];
+				if (slot == null) continue;
+				var rendered = slot.Node.Render(BuildInputs(slot.Binding, output), m_Scratch[scratchIndex], frameNumber, graphTime);
+				if (rendered.IsFailure) throw new InvalidOperationException(rendered.Error.Message);
+				output = m_Scratch[scratchIndex];
+				scratchIndex = 1 - scratchIndex;
+			}
+			return output;
+		}
+
+		internal static IReadOnlyDictionary<PortId, Texture> BuildInputs(ShaderNodeBinding binding, Texture source) {
+			if (binding == null) throw new ArgumentNullException(nameof(binding));
+			if (source == null) throw new ArgumentNullException(nameof(source));
+			var imageInputs = binding.Inputs.Where(input => input.Type == NodePortType.ImageFrame && input.Role != ShaderInputRole.History).ToArray();
+			var primary = imageInputs.FirstOrDefault(input => input.Role == ShaderInputRole.Primary) ?? imageInputs.FirstOrDefault();
+			return imageInputs.Where(input => ReferenceEquals(input, primary) || input.Required)
+				.ToDictionary(input => input.PortId, input => source);
+		}
+
+		public void Dispose() {
+			if (m_Disposed) return;
+			m_Disposed = true;
+			for (var index = 0; index < m_Slots.Length; index++) {
+				m_Slots[index]?.Dispose();
+				m_Slots[index] = null;
+			}
+			foreach (var texture in m_Scratch) ReleaseTexture(texture);
+		}
+
+		private static void ConfigureFullStrength(Slot slot) {
+			foreach (var parameterId in new[] { "amount", "mix" }) {
+				var parameter = slot.Entry.Parameters.FirstOrDefault(candidate => candidate.Id.Value == parameterId && candidate.Type == ParameterType.Float);
+				if (parameter == null) continue;
+				var value = ParameterValue.FromFloat(1f);
+				if (!slot.Node.TrySetDirectParameter(parameterId, value, out var rejectionReason))
+					throw new InvalidOperationException("The instant FX strength could not be configured: " + rejectionReason);
+				slot.ParameterValues[parameterId] = value;
+			}
+		}
+
+		private static RuntimeParameterSnapshot[] BuildInstantEffectParameters(ShaderNodeManifestEntry entry, Shader shader) {
+			if (entry == null) throw new ArgumentNullException(nameof(entry));
+			if (shader == null) throw new ArgumentNullException(nameof(shader));
+			var material = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
+			try {
+				return entry.Parameters.Select(parameter => new RuntimeParameterSnapshot(parameter.Id, parameter.Type,
+					ReadShaderDefault(material, parameter), parameter.Definition.RuntimeStateful)).ToArray();
+			}
+			finally {
+				if (UnityEngine.Application.isPlaying) UnityEngine.Object.Destroy(material);
+				else UnityEngine.Object.DestroyImmediate(material);
+			}
+		}
+
+		private static ParameterValue ReadShaderDefault(Material material, ShaderNodeManifestParameter parameter) {
+			if (!material.HasProperty(parameter.Property)) return parameter.DefaultValue;
+			switch (parameter.Type) {
+				case ParameterType.Float:
+					return ParameterValue.FromFloat(material.GetFloat(parameter.Property));
+				case ParameterType.Int:
+					return ParameterValue.FromInt(Mathf.RoundToInt(material.GetFloat(parameter.Property)));
+				case ParameterType.Bool:
+					return ParameterValue.FromBool(!Mathf.Approximately(material.GetFloat(parameter.Property), 0f));
+				case ParameterType.Vector2:
+					var vector2 = material.GetVector(parameter.Property);
+					return ParameterValue.FromVector2(new Vector2Value(vector2.x, vector2.y));
+				case ParameterType.Vector3:
+					var vector3 = material.GetVector(parameter.Property);
+					return ParameterValue.FromVector3(new Vector3Value(vector3.x, vector3.y, vector3.z));
+				case ParameterType.Vector4:
+					var vector4 = material.GetVector(parameter.Property);
+					return ParameterValue.FromVector4(new Vector4Value(vector4.x, vector4.y, vector4.z, vector4.w));
+				case ParameterType.Color:
+					var color = material.GetColor(parameter.Property);
+					return ParameterValue.FromColor(new ColorValue(color.r, color.g, color.b, color.a));
+				case ParameterType.Enum:
+					var enumValue = Mathf.RoundToInt(material.GetFloat(parameter.Property));
+					var option = parameter.EnumMapping.FirstOrDefault(item => item.Value == enumValue).Key;
+					return string.IsNullOrEmpty(option) ? parameter.DefaultValue : ParameterValue.FromEnum(option);
+				default:
+					return parameter.DefaultValue;
+			}
+		}
+
+		private static IEnumerable<ShaderNodeManifestParameter> LiveParameters(Slot slot) {
+			var available = slot.Entry.Parameters.Where(parameter => !parameter.Definition.IsHidden && !parameter.Definition.IsReadOnly
+				&& IsLiveParameterType(parameter.Type)).ToDictionary(parameter => parameter.Id.Value, StringComparer.Ordinal);
+			var selected = new List<ShaderNodeManifestParameter>(LiveParameterCount);
+			foreach (var parameterId in LiveParameterOrder(slot.Entry.Family))
+				if (available.TryGetValue(parameterId, out var parameter) && !selected.Contains(parameter)) selected.Add(parameter);
+			foreach (var parameter in slot.Entry.Parameters)
+				if (selected.Count < LiveParameterCount && available.ContainsKey(parameter.Id.Value) && !selected.Contains(parameter)) selected.Add(parameter);
+			return selected.Take(LiveParameterCount);
+		}
+
+		private static IEnumerable<string> LiveParameterOrder(ShaderNodeFamily family) {
+			switch (family) {
+				case ShaderNodeFamily.Color:
+					return new[] { "amount", "mix", "gain", "exposure", "gamma", "hue", "saturation", "contrast" };
+				case ShaderNodeFamily.Geometry:
+					return new[] { "amount", "scale", "radius", "angle", "center", "frequency", "detail", "displacement" };
+				case ShaderNodeFamily.Glitch:
+					return new[] { "amount", "frequency", "detail", "speed", "phase", "seed", "scale", "radius" };
+				case ShaderNodeFamily.Convolution:
+				case ShaderNodeFamily.Stylize:
+					return new[] { "amount", "radius", "gain", "frequency", "detail", "softness", "threshold", "mix" };
+				case ShaderNodeFamily.Key:
+					return new[] { "amount", "threshold", "softness", "gain", "radius", "frequency", "center", "mix" };
+				default:
+					return m_DefaultLiveParameterOrder;
+			}
+		}
+
+		private static bool IsLiveParameterType(ParameterType type) {
+			switch (type) {
+				case ParameterType.Float:
+				case ParameterType.Int:
+				case ParameterType.Bool:
+				case ParameterType.Vector2:
+				case ParameterType.Vector3:
+				case ParameterType.Vector4:
+				case ParameterType.Color:
+				case ParameterType.Enum:
+					return true;
+				default:
+					return false;
+			}
+		}
+
+		private static LiveParameterDefinition ToDefinition(int cueIndex, ShaderNodeManifestParameter parameter, ParameterValue value) {
+			var id = ParameterAddress(cueIndex, parameter.Id.Value);
+			var displayName = "FX " + parameter.DisplayName;
+			if (parameter.Type == ParameterType.Float && parameter.Minimum.HasValue && parameter.Maximum.HasValue)
+				return new LiveParameterDefinition(id, displayName, parameter.Minimum.Value.AsFloat(), parameter.Maximum.Value.AsFloat(), value.AsFloat());
+			return new LiveParameterDefinition(id, displayName, value);
+		}
+
+		private static RenderTexture CreateTexture(string name, LiveRenderSize renderSize) {
+			var texture = new RenderTexture(renderSize.Width, renderSize.Height, 0, RenderTextureFormat.ARGBHalf) {
+				name = name,
+				useMipMap = false,
+				autoGenerateMips = false
+			};
+			if (texture.Create()) return texture;
+			ReleaseTexture(texture);
+			throw new InvalidOperationException("An instant FX output texture could not be created.");
 		}
 
 		private static void ReleaseTexture(RenderTexture texture) {
@@ -890,6 +1186,10 @@ namespace ShitDesigner.Main {
 				return _bpmClock.TrySetBpm(request.Value, out var bpmRejection) ? Accept(request) : Reject(request, bpmRejection);
 			if (request.Kind == LiveParameterRequestKind.AlignBeat)
 				return _bpmClock.TryAlignToNearestBeat(out var alignmentRejection) ? Accept(request) : Reject(request, alignmentRejection);
+			if (request.Kind == LiveParameterRequestKind.SetParameter
+				&& LiveInstantEffectRenderer.TryParseParameterAddress(request.ParameterId, out var cueIndex, out var effectParameterId))
+				return _graph.InstantEffects.TrySetParameter(cueIndex, effectParameterId, request.ParameterValue, out var effectRejection)
+					? Accept(request) : Reject(request, effectRejection);
 			if (!_patchDefinitionsById.TryGetValue(request.PatchId, out var definition)) return Reject(request, "The requested patch does not exist.");
 			if (request.Kind == LiveParameterRequestKind.PreloadPatch) {
 				AssignMainCuePatch(InactiveMainCueIndex, definition);
@@ -939,7 +1239,7 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		public LiveProgramFrames Render() {
+		public LiveProgramFrames Render(IReadOnlyList<int> instantEffectTriggers = null) {
 			EnsureUsable();
 			var nextFrame = _frameNumber + 1;
 			if (nextFrame == 0) nextFrame = 1;
@@ -957,8 +1257,9 @@ namespace ShitDesigner.Main {
 			}
 			var mainTexture = LoadedMainPatch.Outputs.Count > 0 ? LoadedMainPatch.Outputs[0].ProgramTexture : null;
 			var composite = _graph.Compositor.Render(mainTexture, overlayInputs, nextFrame, _graphTime);
+			var programOutput = _graph.InstantEffects.Render(composite, instantEffectTriggers, nextFrame, _graphTime);
 			_frameNumber = nextFrame;
-			CurrentFrames = new LiveProgramFrames(new[] { new LiveProgramFrame(composite, _frameNumber) });
+			CurrentFrames = new LiveProgramFrames(new[] { new LiveProgramFrame(programOutput, _frameNumber) });
 			CurrentFrame = CurrentFrames.Primary;
 			return CurrentFrames;
 		}
@@ -1020,6 +1321,16 @@ namespace ShitDesigner.Main {
 		}
 
 		public LiveParameterDefinition[] GetLoadedPatchParameterDefinitions() => LoadedMainPatch?.GetParameterDefinitions() ?? Array.Empty<LiveParameterDefinition>();
+
+		public LiveParameterDefinition[] GetInstantEffectParameterDefinitions(int cueIndex) {
+			EnsureUsable();
+			return _graph.InstantEffects.GetParameterDefinitions(cueIndex);
+		}
+
+		public bool TryAssignInstantEffect(int cueIndex, string typeId, out string rejectionReason) {
+			EnsureUsable();
+			return _graph.InstantEffects.TryAssign(cueIndex, typeId, out rejectionReason);
+		}
 
 		public void Dispose() {
 			if (_disposed) return;

@@ -8,17 +8,26 @@ namespace ShitDesigner.Stage {
 	[DisallowMultipleComponent]
 	[RequireComponent(typeof(VisualEffect))]
 	public sealed class StageImpactBurst : MonoBehaviour, IBpmClockReceiver {
-		private static readonly int PlayEventId = Shader.PropertyToID("OnPlay");
-		private static readonly int ImpactTextureId = Shader.PropertyToID("Impact Texture");
+		[SerializeField] private String m_PlayEventName = "OnPlay";
+		[SerializeField] private String m_ImpactTextureName = "Impact Texture";
 
+		[SerializeField] private VisualEffect m_VisualEffect;
 		[SerializeField] private Texture2D[] m_Textures = Array.Empty<Texture2D>();
 
-		private VisualEffect m_VisualEffect;
+		private int PlayEventId;
+		private int ImpactTextureId;
 		private Texture2D m_CurrentTexture;
+		private bool m_Initialized;
 		private double m_LastBeatIndex = double.NaN;
 
 		private void Awake() {
-			m_VisualEffect = GetComponent<VisualEffect>();
+			if (m_VisualEffect == null)
+				throw new InvalidOperationException($"VisualEffect component is not assigned in {nameof(StageImpactBurst)} on {gameObject.name}.");
+
+			PlayEventId = Shader.PropertyToID(m_PlayEventName);
+			ImpactTextureId = Shader.PropertyToID(m_ImpactTextureName);
+
+			m_Initialized = true;
 		}
 
 		private void OnEnable() {
@@ -43,8 +52,8 @@ namespace ShitDesigner.Stage {
 		}
 
 		public void Fire() {
-			if (m_VisualEffect == null) m_VisualEffect = GetComponent<VisualEffect>();
-			if (m_VisualEffect == null || !m_VisualEffect.enabled || m_VisualEffect.visualEffectAsset == null) return;
+			if (!m_Initialized)
+				return;
 
 			var texture = SelectTexture();
 			if (texture != null) {

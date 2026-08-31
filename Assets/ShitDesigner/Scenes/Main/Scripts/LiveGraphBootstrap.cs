@@ -69,12 +69,15 @@ namespace ShitDesigner.Main {
 			var sceneManager = new SceneIsolationManager(renderSource: new UnityCameraRenderSource());
 			var renderPool = new RenderTexturePool();
 			LiveOverlayCompositor compositor = null;
+			LiveInstantEffectRenderer instantEffects = null;
 			try {
 				compositor = new LiveOverlayCompositor(shaderDefinitions, renderPool, renderSize);
+				instantEffects = new LiveInstantEffectRenderer(shaderDefinitions, renderPool, renderSize);
 				return new LiveGraph(sceneManager, renderPool, definitions, (patch, outputSize) =>
-					BuildOutput(sceneManager, renderPool, patch, programGraphs[patch.Id], shaderDefinitions, outputSize), compositor);
+					BuildOutput(sceneManager, renderPool, patch, programGraphs[patch.Id], shaderDefinitions, outputSize), compositor, instantEffects);
 			}
 			catch {
+				instantEffects?.Dispose();
 				compositor?.Dispose();
 				sceneManager.Dispose();
 				renderPool.Dispose();
@@ -88,6 +91,7 @@ namespace ShitDesigner.Main {
 			var definitions = new Dictionary<NodeTypeId, LiveProgramShaderDefinition>();
 			var typeIds = programGraphs.SelectMany(programGraph => programGraph.Nodes.Select(node => node.TypeId))
 				.Concat(LiveOverlayCompositor.RequiredNodeTypeIds)
+				.Concat(BuildEffectNodeCatalog(manifest).Select(entry => entry.TypeId))
 				.Distinct()
 				.Where(typeId => typeId.Value != PatchGraphNode.Scene3DTypeId && typeId.Value != VideoPlayerTypeId);
 			foreach (var typeId in typeIds) {

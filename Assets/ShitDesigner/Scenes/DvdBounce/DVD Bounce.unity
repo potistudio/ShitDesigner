@@ -171,6 +171,34 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8602383494862072824, guid: 6223708dbba9b4b44921a788572b80aa, type: 3}
+      propertyPath: m_Speed
+      value: 5.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 8602383494862072824, guid: 6223708dbba9b4b44921a788572b80aa, type: 3}
+      propertyPath: m_VisualSize
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8602383494862072824, guid: 6223708dbba9b4b44921a788572b80aa, type: 3}
+      propertyPath: m_InstanceCount
+      value: 11
+      objectReference: {fileID: 0}
+    - target: {fileID: 8602383494862072824, guid: 6223708dbba9b4b44921a788572b80aa, type: 3}
+      propertyPath: m_AdditionalSources.Array.size
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8602383494862072824, guid: 6223708dbba9b4b44921a788572b80aa, type: 3}
+      propertyPath: m_AdditionalSources.Array.data[2].m_Video
+      value: 
+      objectReference: {fileID: 32900000, guid: 72d2ea14305abde4b8d7c93c68d3067e, type: 3}
+    - target: {fileID: 8602383494862072824, guid: 6223708dbba9b4b44921a788572b80aa, type: 3}
+      propertyPath: m_AdditionalSources.Array.data[3].m_Image
+      value: 
+      objectReference: {fileID: 2800000, guid: 15b824f579528024b80664e392a872a0, type: 3}
+    - target: {fileID: 8602383494862072824, guid: 6223708dbba9b4b44921a788572b80aa, type: 3}
+      propertyPath: m_AdditionalSources.Array.data[3].m_Video
+      value: 
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
