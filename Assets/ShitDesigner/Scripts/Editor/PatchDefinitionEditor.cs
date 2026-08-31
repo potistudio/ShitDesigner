@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using ShitDesigner.Core;
@@ -292,12 +291,11 @@ namespace ShitDesigner.Editor {
 				else if (typeChanged && sceneDefinition != null) {
 					sceneDefinition.objectReferenceValue = null;
 				}
-				if (IsVideoPlayer(typeId.stringValue) && videoPath != null) {
-					if (DrawVideoPath(Line(position, ref y), videoPath, videoClip)) {
-						EditorGUI.indentLevel = indent;
-						EditorGUI.EndProperty();
-						return;
-					}
+				if (IsVideoPlayer(typeId.stringValue) && videoClip != null) {
+					EditorGUI.BeginChangeCheck();
+					EditorGUI.PropertyField(Line(position, ref y), videoClip, new GUIContent("Video Clip"));
+					if (EditorGUI.EndChangeCheck() && videoPath != null)
+						videoPath.stringValue = string.Empty;
 				}
 				else if (typeChanged && videoPath != null) {
 					videoPath.stringValue = string.Empty;
@@ -468,63 +466,6 @@ namespace ShitDesigner.Editor {
 		private static bool IsVideoPlayer(string typeId) => string.Equals(typeId, VideoPlayerTypeId, StringComparison.Ordinal);
 
 		internal static bool IsSceneNode(string typeId) => string.Equals(typeId, PatchGraphNode.Scene3DTypeId, StringComparison.Ordinal);
-
-		private static bool DrawVideoPath(Rect position, SerializedProperty videoPath, SerializedProperty legacyVideoClip) {
-			var field = EditorGUI.PrefixLabel(position, new GUIContent("Video File", "Select a project video file. Hap MOV files can be selected even when Unity cannot import them as VideoClip assets."));
-			const float buttonWidth = 58f;
-			var textRect = new Rect(field.x, field.y, Mathf.Max(1f, field.width - buttonWidth - LineSpacing), field.height);
-			var buttonRect = new Rect(textRect.xMax + LineSpacing, field.y, buttonWidth, field.height);
-			var current = videoPath.stringValue ?? string.Empty;
-			var edited = EditorGUI.TextField(textRect, current);
-			if (!string.Equals(edited, current, StringComparison.Ordinal)) {
-				SetVideoPath(videoPath, legacyVideoClip, edited, false);
-			}
-
-			if (!GUI.Button(buttonRect, "Browse")) return false;
-			var selected = EditorUtility.OpenFilePanelWithFilters("Select video file", BrowseDirectory(current), new[] {
-				"Video files", "mov,mp4,webm",
-				"All files", "*"
-			});
-			if (string.IsNullOrWhiteSpace(selected)) return false;
-			SetVideoPath(videoPath, legacyVideoClip, ToStoredVideoPath(selected), true);
-			return true;
-		}
-
-		private static void SetVideoPath(SerializedProperty videoPath, SerializedProperty legacyVideoClip, string value, bool applyImmediately) {
-			videoPath.stringValue = NormalizeVideoPath(value);
-			if (legacyVideoClip != null)
-				legacyVideoClip.objectReferenceValue = null;
-			if (!applyImmediately) return;
-			videoPath.serializedObject.ApplyModifiedProperties();
-			GUI.changed = true;
-		}
-
-		private static string BrowseDirectory(string storedPath) {
-			if (!string.IsNullOrWhiteSpace(storedPath)) {
-				var candidate = storedPath.Replace('/', Path.DirectorySeparatorChar);
-				if (!Path.IsPathRooted(candidate)) candidate = Path.Combine(ProjectRoot(), candidate);
-				if (File.Exists(candidate)) return Path.GetDirectoryName(candidate);
-				if (Directory.Exists(candidate)) return candidate;
-				var directory = Path.GetDirectoryName(candidate);
-				if (!string.IsNullOrWhiteSpace(directory) && Directory.Exists(directory)) return directory;
-			}
-			return UnityEngine.Application.dataPath;
-		}
-
-		private static string ToStoredVideoPath(string selectedPath) {
-			var fullPath = Path.GetFullPath(selectedPath).Replace('\\', '/');
-			var projectRoot = ProjectRoot().Replace('\\', '/').TrimEnd('/');
-			if (fullPath.StartsWith(projectRoot + "/", StringComparison.OrdinalIgnoreCase))
-				return fullPath.Substring(projectRoot.Length + 1);
-			return fullPath;
-		}
-
-		private static string NormalizeVideoPath(string value) => (value ?? string.Empty).Trim().Replace('\\', '/');
-
-		private static string ProjectRoot() {
-			var dataPath = Path.GetFullPath(UnityEngine.Application.dataPath);
-			return Directory.GetParent(dataPath).FullName;
-		}
 
 		private static string FormatLabel(NodeCatalogEntry entry)
 			=> string.IsNullOrWhiteSpace(entry.Category)
