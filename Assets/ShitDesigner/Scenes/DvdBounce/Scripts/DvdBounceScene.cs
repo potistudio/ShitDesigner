@@ -26,6 +26,8 @@ namespace ShitDesigner.Scene {
 		[SerializeField] private Vector2 m_InitialPosition = Vector2.zero;
 
 		private readonly List<BouncingVisual> m_Visuals = new List<BouncingVisual>();
+		private readonly Dictionary<VideoClip, SharedVideoPlayback> m_VideoPlaybacks = new Dictionary<VideoClip, SharedVideoPlayback>();
+		private readonly List<Material> m_Materials = new List<Material>();
 		private Camera m_Camera;
 
 		private void Awake() {
@@ -40,6 +42,7 @@ namespace ShitDesigner.Scene {
 		}
 
 		private void Update() {
+			UpdateVideoTextures();
 			if (m_Camera == null)
 				return;
 
@@ -70,9 +73,10 @@ namespace ShitDesigner.Scene {
 				var visual = m_Visuals[index];
 				visual.Object.transform.localScale = ToScale(GetVisualSize(visual.Source));
 				ApplyImage(visual);
-				if (visual.VideoPlayer != null)
-					visual.VideoPlayer.playbackSpeed = m_VideoPlaybackSpeed;
 			}
+
+			foreach (var playback in m_VideoPlaybacks.Values)
+				playback.Player.playbackSpeed = m_VideoPlaybackSpeed;
 		}
 
 		[ContextMenu("Rebuild Visuals")]
@@ -100,7 +104,9 @@ namespace ShitDesigner.Scene {
 				Destroy(collider);
 
 			var renderer = visualObject.GetComponent<MeshRenderer>();
-			var material = CreateMaterial();
+			var material = source.Video == null
+				? CreateMaterial()
+				: GetOrCreateVideoPlayback(source.Video).Material;
 			renderer.sharedMaterial = material;
 			renderer.shadowCastingMode = ShadowCastingMode.Off;
 			renderer.receiveShadows = false;
@@ -109,7 +115,6 @@ namespace ShitDesigner.Scene {
 
 			var visual = new BouncingVisual(visualObject, renderer, material, source);
 			ApplyImage(visual);
-			ConfigureVideo(visual);
 			return visual;
 		}
 
@@ -123,26 +128,40 @@ namespace ShitDesigner.Scene {
 				visual.Object.transform.position = new Vector3(position.x, position.y, 0f);
 				visual.Velocity = GetInitialVelocity(index);
 				KeepWithinBounds(visual);
-				if (visual.VideoPlayer != null)
-					visual.VideoPlayer.Play();
 			}
+
+			foreach (var playback in m_VideoPlaybacks.Values)
+				playback.Player.Play();
 		}
 
-		private void ConfigureVideo(BouncingVisual visual) {
-			if (visual.Source.Video == null)
-				return;
+		private SharedVideoPlayback GetOrCreateVideoPlayback(VideoClip video) {
+			if (m_VideoPlaybacks.TryGetValue(video, out var existing))
+				return existing;
 
-			var player = visual.Object.AddComponent<VideoPlayer>();
+			var host = new GameObject($"Video {video.name}");
+			host.layer = gameObject.layer;
+			host.transform.SetParent(transform, false);
+			var player = host.AddComponent<VideoPlayer>();
 			player.source = VideoSource.VideoClip;
-			player.clip = visual.Source.Video;
-			player.renderMode = VideoRenderMode.MaterialOverride;
-			player.targetMaterialRenderer = visual.Renderer;
-			player.targetMaterialProperty = GetTexturePropertyName(visual.Material);
+			player.clip = video;
+			player.renderMode = VideoRenderMode.APIOnly;
 			player.audioOutputMode = VideoAudioOutputMode.None;
 			player.isLooping = true;
 			player.playOnAwake = false;
 			player.playbackSpeed = m_VideoPlaybackSpeed;
-			visual.VideoPlayer = player;
+
+			var material = CreateMaterial();
+			var playback = new SharedVideoPlayback(host, player, material, GetTexturePropertyName(material));
+			m_VideoPlaybacks.Add(video, playback);
+			return playback;
+		}
+
+		private void UpdateVideoTextures() {
+			foreach (var playback in m_VideoPlaybacks.Values) {
+				var texture = playback.Player.texture;
+				if (texture != null && playback.Material.GetTexture(playback.TexturePropertyName) != texture)
+					playback.Material.SetTexture(playback.TexturePropertyName, texture);
+			}
 		}
 
 		private void ApplyImage(BouncingVisual visual) {
@@ -228,13 +247,23 @@ namespace ShitDesigner.Scene {
 				var visual = m_Visuals[index];
 				if (visual.Object != null)
 					Destroy(visual.Object);
-				if (visual.Material != null)
-					Destroy(visual.Material);
 			}
 			m_Visuals.Clear();
+
+			foreach (var playback in m_VideoPlaybacks.Values) {
+				if (playback.Host != null)
+					Destroy(playback.Host);
+			}
+			m_VideoPlaybacks.Clear();
+
+			for (var index = 0; index < m_Materials.Count; index++) {
+				if (m_Materials[index] != null)
+					Destroy(m_Materials[index]);
+			}
+			m_Materials.Clear();
 		}
 
-		private static Material CreateMaterial() {
+		private Material CreateMaterial() {
 			var shader = Shader.Find("Universal Render Pipeline/Unlit")
 				?? Shader.Find("Unlit/Texture")
 				?? throw new InvalidOperationException("An unlit shader is required for the DVD bounce scene.");
@@ -252,6 +281,7 @@ namespace ShitDesigner.Scene {
 			if (material.HasProperty("_ZWrite"))
 				material.SetFloat("_ZWrite", 0f);
 			material.renderQueue = (int)RenderQueue.Transparent;
+			m_Materials.Add(material);
 			return material;
 		}
 
@@ -264,7 +294,6 @@ namespace ShitDesigner.Scene {
 			public MeshRenderer Renderer { get; }
 			public Material Material { get; }
 			public VisualSource Source { get; }
-			public VideoPlayer VideoPlayer { get; set; }
 			public Vector2 Velocity { get; set; }
 
 			public BouncingVisual(GameObject visualObject, MeshRenderer renderer, Material material, VisualSource source) {
@@ -272,6 +301,20 @@ namespace ShitDesigner.Scene {
 				Renderer = renderer;
 				Material = material;
 				Source = source;
+			}
+		}
+
+		private sealed class SharedVideoPlayback {
+			public GameObject Host { get; }
+			public VideoPlayer Player { get; }
+			public Material Material { get; }
+			public string TexturePropertyName { get; }
+
+			public SharedVideoPlayback(GameObject host, VideoPlayer player, Material material, string texturePropertyName) {
+				Host = host;
+				Player = player;
+				Material = material;
+				TexturePropertyName = texturePropertyName;
 			}
 		}
 
