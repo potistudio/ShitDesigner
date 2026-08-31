@@ -33,7 +33,6 @@ namespace ShitDesigner.Main {
 		[SerializeField, Range(0, 127)] private int m_SceneTimeEncoderControlNumber = 77;
 		[SerializeField, Min(.01f)] private float m_SceneTimeJogSpeedPerStep = .25f;
 		[SerializeField, Range(.01f, 1f)] private float m_SceneTimeJogMaximumSpeedOffset = 1f;
-		[SerializeField, Min(.01f)] private float m_SceneTimeJogReleaseSeconds = .08f;
 		[SerializeField, Min(0f)] private float m_ThumbnailTimeOffsetSeconds = .05f;
 
 		private readonly LiveParameterQueue _parameterQueue = new LiveParameterQueue();
@@ -96,7 +95,7 @@ namespace ShitDesigner.Main {
 					throw new InvalidOperationException("ApplicationLiveHost requires graph, MIDI, capability, Display, and UI components.");
 
 				_runtime = _graphBootstrap.CreateRuntime();
-				_runtime.ConfigureSceneTimeJog(m_SceneTimeJogMaximumSpeedOffset, m_SceneTimeJogReleaseSeconds);
+				_runtime.ConfigureSceneTimeJog(m_SceneTimeJogMaximumSpeedOffset);
 				_shutdown.Add(() => { _runtime?.Dispose(); _runtime = null; });
 				_patchIds = _runtime.Patches.Select(patch => patch.Id).ToArray();
 				var mainPatchIds = new HashSet<string>(_graphBootstrap.MainPatches.Where(patch => patch != null).Select(patch => patch.Id), StringComparer.Ordinal);
