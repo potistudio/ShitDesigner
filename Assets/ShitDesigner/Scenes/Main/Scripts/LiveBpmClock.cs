@@ -68,9 +68,11 @@ namespace ShitDesigner.Main {
 		private double m_BeatAlignmentBeats;
 		private double _totalBeats;
 		private readonly LiveTimeWarp m_TimeWarp;
+		private bool m_IsTimeEasingEnabled = true;
 
 		public float BeatsPerMinute => _beatsPerMinute;
 		public double TotalBeats => _totalBeats;
+		public bool IsTimeEasingEnabled => m_IsTimeEasingEnabled;
 		public LiveParameterDefinition Definition => new LiveParameterDefinition("bpm", "BPM", MinimumBpm, MaximumBpm, _beatsPerMinute);
 		public BeatClockFrame Frame => new BeatClockFrame(_beatsPerMinute, _totalBeats, m_BeatAlignmentBeats);
 
@@ -102,19 +104,24 @@ namespace ShitDesigner.Main {
 			return true;
 		}
 
+		public void SetTimeEasingEnabled(bool enabled) => m_IsTimeEasingEnabled = enabled;
+
 		public double Advance(double deltaSeconds) {
 			if (double.IsNaN(deltaSeconds) || double.IsInfinity(deltaSeconds) || deltaSeconds < 0d)
 				throw new ArgumentOutOfRangeException(nameof(deltaSeconds), "BPM clock delta must be finite and non-negative.");
 			var previousAdjustedBeats = _totalBeats - m_BeatAlignmentBeats;
 			_totalBeats += deltaSeconds * _beatsPerMinute / 60d;
-			var warpedDeltaSeconds = m_TimeWarp.DeltaSeconds(previousAdjustedBeats, _totalBeats - m_BeatAlignmentBeats, _beatsPerMinute);
+			var graphDeltaSeconds = m_IsTimeEasingEnabled
+				? m_TimeWarp.DeltaSeconds(previousAdjustedBeats, _totalBeats - m_BeatAlignmentBeats, _beatsPerMinute)
+				: deltaSeconds;
 			ShaderBeatClock.Publish(Frame);
-			return warpedDeltaSeconds;
+			return graphDeltaSeconds;
 		}
 
 		public double ProjectGraphDelta(double deltaSeconds) {
 			if (double.IsNaN(deltaSeconds) || double.IsInfinity(deltaSeconds) || deltaSeconds < 0d)
 				throw new ArgumentOutOfRangeException(nameof(deltaSeconds), "Projected graph delta must be finite and non-negative.");
+			if (!m_IsTimeEasingEnabled) return deltaSeconds;
 			var previousAdjustedBeats = _totalBeats - m_BeatAlignmentBeats;
 			var projectedAdjustedBeats = previousAdjustedBeats + deltaSeconds * _beatsPerMinute / 60d;
 			return m_TimeWarp.DeltaSeconds(previousAdjustedBeats, projectedAdjustedBeats, _beatsPerMinute);

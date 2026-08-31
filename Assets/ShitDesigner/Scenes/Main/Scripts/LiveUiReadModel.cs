@@ -48,6 +48,7 @@ namespace ShitDesigner.Main {
 		public IReadOnlyList<RenderTexture> OverlayLanePreviews { get; }
 		public IReadOnlyList<RenderTexture> MainCuePreviews { get; }
 		public LiveParameterDefinition Bpm { get; }
+		public bool IsTimeEasingEnabled { get; }
 		public IReadOnlyList<LiveParameterDefinition> Parameters { get; }
 		public IReadOnlyList<LiveSequencerReadModel> Sequencers { get; }
 		public IReadOnlyList<LiveProgramFrame> ProgramFrames { get; }
@@ -71,7 +72,7 @@ namespace ShitDesigner.Main {
 		public LiveUiReadModel(ulong frameNumber, IReadOnlyList<LivePatchReadModel> patches, IReadOnlyList<LiveEffectNodeReadModel> effectNodes,
 			LiveCatalogRole selectedCatalogRole, string selectedCatalogItemId,
 			string loadedPatchId, IReadOnlyList<RenderTexture> overlayLanePreviews, IReadOnlyList<RenderTexture> mainCuePreviews,
-			LiveParameterDefinition bpm, IReadOnlyList<LiveParameterDefinition> parameters, IReadOnlyList<LiveSequencerReadModel> sequencers, LiveProgramFrames programFrames, LiveExternalDisplayOutput output,
+			LiveParameterDefinition bpm, bool isTimeEasingEnabled, IReadOnlyList<LiveParameterDefinition> parameters, IReadOnlyList<LiveSequencerReadModel> sequencers, LiveProgramFrames programFrames, LiveExternalDisplayOutput output,
 			LiveCapabilitySnapshot capabilities, string diagnostic, IReadOnlyList<LiveParameterApplicationResult> requestResults,
 			bool isEditMode = false, IReadOnlyList<string> instantEffectTypeIds = null, IReadOnlyList<int> firedInstantEffectTriggers = null,
 			int focusedInstantEffectCueIndex = -1, string openEffectCategory = "", bool isEffectCategorySelected = false,
@@ -85,6 +86,7 @@ namespace ShitDesigner.Main {
 			OverlayLanePreviews = overlayLanePreviews ?? Array.Empty<RenderTexture>();
 			MainCuePreviews = mainCuePreviews ?? Array.Empty<RenderTexture>();
 			Bpm = bpm;
+			IsTimeEasingEnabled = isTimeEasingEnabled;
 			Parameters = parameters ?? Array.Empty<LiveParameterDefinition>();
 			Sequencers = sequencers ?? Array.Empty<LiveSequencerReadModel>();
 			ProgramFrames = programFrames.Frames;

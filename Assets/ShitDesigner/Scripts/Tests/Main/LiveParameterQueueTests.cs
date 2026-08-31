@@ -89,6 +89,22 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void SetTimeEasingEnabledQueuesAGlobalBooleanWithoutAPatchId() {
+			var queue = new LiveParameterQueue();
+
+			var result = queue.EnqueueSetTimeEasingEnabled(false);
+
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+			Assert.That(result.Accepted, Is.True);
+			Assert.That(requests, Has.Count.EqualTo(1));
+			Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.SetTimeEasingEnabled));
+			Assert.That(requests[0].PatchId, Is.Empty);
+			Assert.That(requests[0].ParameterValue.Type, Is.EqualTo(ParameterType.Bool));
+			Assert.That(requests[0].ParameterValue.AsBool(), Is.False);
+		}
+
+		[Test]
 		public void MainCueControlsQueueGlobalRequestsWithoutPatchIds() {
 			var queue = new LiveParameterQueue();
 

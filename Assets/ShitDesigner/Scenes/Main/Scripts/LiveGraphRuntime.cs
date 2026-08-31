@@ -1254,6 +1254,7 @@ namespace ShitDesigner.Main {
 		public IReadOnlyList<RenderTexture> MainCuePreviewFrames => m_MainCuePreviewFrames;
 		public LiveParameterDefinition BpmDefinition => m_BpmClock.Definition;
 		public BeatClockFrame BpmFrame => m_BpmClock.Frame;
+		public bool IsTimeEasingEnabled => m_BpmClock.IsTimeEasingEnabled;
 
 		internal LiveGraphRuntime(LiveGraph graph, AnimationCurve globalTimeEasing) {
 			_graph = graph ?? throw new ArgumentNullException(nameof(graph));
@@ -1275,6 +1276,10 @@ namespace ShitDesigner.Main {
 				return m_BpmClock.TrySetBpm(request.Value, out var bpmRejection) ? Accept(request) : Reject(request, bpmRejection);
 			if (request.Kind == LiveParameterRequestKind.AlignBeat)
 				return m_BpmClock.TryAlignToNearestBeat(out var alignmentRejection) ? Accept(request) : Reject(request, alignmentRejection);
+			if (request.Kind == LiveParameterRequestKind.SetTimeEasingEnabled) {
+				m_BpmClock.SetTimeEasingEnabled(request.ParameterValue.AsBool());
+				return Accept(request);
+			}
 			if (request.Kind == LiveParameterRequestKind.SetMainCueFader) {
 				m_MainCueFader.SetPosition(request.Value);
 				if (m_MainCuePatches[m_MainCueFader.AlternateCueIndex] == null)

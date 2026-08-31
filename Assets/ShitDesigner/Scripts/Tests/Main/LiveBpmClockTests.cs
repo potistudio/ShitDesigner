@@ -130,5 +130,24 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(projected, Is.GreaterThan(.125d));
 			Assert.That(clock.TotalBeats, Is.EqualTo(.25d).Within(1e-9d));
 		}
+
+		[Test]
+		public void TimeEasingCanBeDisabledAndReenabledWithoutChangingTheBeatClock() {
+			var clock = new LiveBpmClock(120f, AnimationCurve.EaseInOut(0f, 0f, 1f, 1f));
+
+			var easedFirstQuarter = clock.Advance(.125d);
+			clock.SetTimeEasingEnabled(false);
+			var linearSecondQuarter = clock.Advance(.125d);
+			var linearProjection = clock.ProjectGraphDelta(.125d);
+			clock.SetTimeEasingEnabled(true);
+			var easedThirdQuarter = clock.Advance(.125d);
+
+			Assert.That(easedFirstQuarter, Is.LessThan(.125d));
+			Assert.That(linearSecondQuarter, Is.EqualTo(.125d).Within(1e-9d));
+			Assert.That(linearProjection, Is.EqualTo(.125d).Within(1e-9d));
+			Assert.That(easedThirdQuarter, Is.GreaterThan(.125d));
+			Assert.That(clock.IsTimeEasingEnabled, Is.True);
+			Assert.That(clock.TotalBeats, Is.EqualTo(.75d).Within(1e-9d));
+		}
 	}
 }
