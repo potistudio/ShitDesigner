@@ -206,7 +206,7 @@ namespace ShitDesigner.Input {
 			LastError = string.Empty;
 
 			try {
-				_source = new WindowsMidiInputSource((uint)Math.Max(0, _deviceId));
+				_source = MidiInputDevices.Open((uint)Math.Max(0, _deviceId));
 				_ownsSource = true;
 				_reportedConnectionError = string.Empty;
 			}

@@ -34,7 +34,7 @@
 - `String`、`Enum`、`MediaAssetReference` は論理コントロールの直接対象外。
 - `PresetTrigger` はプリセット呼び出し専用で、1つにつき割り当て先は最大1つ。
 - Buttonの立ち上がり、またはアナログの0.5到達で発火し、0.4未満へ戻ると再発火可能になる。
-- 物理入力はKeyboardとWindows MIDIに対応し、KeyまたはMIDI LearnでValue／PresetTriggerへ割り当てる。
+- 物理入力はKeyboardとWindows／macOS MIDIに対応し、KeyまたはMIDI LearnでValue／PresetTriggerへ割り当てる。
 
 ## プリセット
 

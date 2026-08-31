@@ -6,12 +6,12 @@
 
 ## 対応入力
 
-- KeyboardはUnity Input System、Windows MIDI入力はWinMMを使用する。
+- KeyboardはUnity Input System、Windows MIDI入力はWinMM、macOS MIDI入力はCoreMIDIを使用する。
 - Key入力を `Value` または `PresetTrigger` へ割り当てできる。
 - Keyを `Value` へ割り当てた場合、離している間を `0.0`、押している間を `1.0` とする。
 - MIDIのNote、Control ChangeおよびPitch Bendを `Value` または `PresetTrigger` へ割り当てできる。
 - MIDI Learnはデバイス名、メッセージ種別、チャンネルおよび番号を保存する。Note／Control Changeは0～127、Pitch Bendは0～16383を0～1へ正規化する。
-- Windows MIDI入力デバイス0を既定で開き、ネイティブコールバックの入力をメインスレッドのフレーム先頭で処理する。
+- デスクトップ環境のMIDI入力デバイス0を既定で開き、ネイティブコールバックの入力をメインスレッドのフレーム先頭で処理する。
 - シーン上の `MidiInputManager` はInspectorでDevice IDとBinding一覧を保持し、各Bindingを実行中のLive Controlへ直接入力できる。Bindingがない入力はProjectのMIDI Learn／ControlMappingへ渡す。
 - `PatchDefinition` のKeyboard Inputsは、Unity Input SystemのKeyをパッチの公開パラメーターへ割り当てる。押下時だけ1.0を送り、離上時は要求を生成せず、ロード中パッチの一致する入力だけを `SetParameter` 要求へ変換する。
 - `PatchDefinition` のMIDI Inputsは、Note／Control Change／Pitch Bendをパッチの公開パラメーターへ割り当てる。メッセージ種別、チャンネル、番号、Raw Minimum、Raw Maximum、Invertおよび公開パラメーターIDをパッチごとに設定し、ロード中パッチの一致する入力だけを `SetParameter` 要求へ変換する。

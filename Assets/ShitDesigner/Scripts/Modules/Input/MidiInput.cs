@@ -194,6 +194,214 @@ namespace ShitDesigner.Input {
 		[DllImport("winmm.dll", CharSet = CharSet.Unicode, EntryPoint = "midiInGetErrorTextW")] private static extern uint midiInGetErrorText(uint error, System.Text.StringBuilder text, uint textLength);
 	}
 
+	/// <summary>macOS CoreMIDI input. CoreMIDI invokes the native callback on its
+	/// high-priority thread; decoded events are consumed later on Unity's main thread.</summary>
+	public sealed class MacOsMidiInputSource : IMidiInputSource, IMidiInputAvailability {
+		private const string CoreMidiLibrary = "/System/Library/Frameworks/CoreMIDI.framework/CoreMIDI";
+		private const string CoreFoundationLibrary = "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation";
+		private const uint Utf8Encoding = 0x08000100;
+		private const int NoError = 0;
+		private const int MidiPacketListFirstPacketOffset = 4;
+		private const int MidiPacketLengthOffset = 8;
+		private const int MidiPacketDataOffset = 10;
+		private const int MidiNameBufferCapacity = 1024;
+
+		private static readonly MidiReadCallback m_Callback = OnMidiPacketList;
+		private static readonly bool m_AlignPacketsToFourBytes = RuntimeInformation.ProcessArchitecture == Architecture.Arm ||
+			RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
+
+		private readonly ConcurrentQueue<MidiInputEvent> m_Events = new ConcurrentQueue<MidiInputEvent>();
+		private readonly uint m_DeviceId;
+		private readonly uint m_Source;
+		private uint m_Client;
+		private uint m_Port;
+		private GCHandle m_SelfHandle;
+		private bool m_HasSelfHandle;
+		private volatile bool m_Disposed;
+
+		public string DeviceName { get; }
+		public bool IsAvailable {
+			get {
+				if (m_Disposed) return false;
+				try {
+					var count = MIDIGetNumberOfSources().ToUInt64();
+					return m_DeviceId < count && MIDIGetSource(new UIntPtr(m_DeviceId)) == m_Source;
+				}
+				catch { }
+				return false;
+			}
+		}
+
+		public MacOsMidiInputSource(uint deviceId) {
+			if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) throw new PlatformNotSupportedException("CoreMIDI input is only available on macOS.");
+			var devices = GetDevices();
+			if (deviceId >= devices.Count) throw new ArgumentOutOfRangeException(nameof(deviceId), "The MIDI input device does not exist.");
+
+			m_DeviceId = deviceId;
+			m_Source = MIDIGetSource(new UIntPtr(deviceId));
+			if (m_Source == 0) throw new InvalidOperationException("The MIDI input device is no longer available.");
+			DeviceName = devices[(int)deviceId].Name;
+			m_SelfHandle = GCHandle.Alloc(this);
+			m_HasSelfHandle = true;
+
+			var clientName = CreateString("ShitDesigner MIDI Client");
+			var portName = CreateString("ShitDesigner MIDI Input");
+			try {
+				ThrowIfError(MIDIClientCreate(clientName, IntPtr.Zero, IntPtr.Zero, out m_Client), "MIDIClientCreate");
+				ThrowIfError(MIDIInputPortCreate(m_Client, portName, m_Callback, GCHandle.ToIntPtr(m_SelfHandle), out m_Port), "MIDIInputPortCreate");
+				ThrowIfError(MIDIPortConnectSource(m_Port, m_Source, IntPtr.Zero), "MIDIPortConnectSource");
+			}
+			catch {
+				ReleaseNativeResources();
+				throw;
+			}
+			finally {
+				CFRelease(clientName);
+				CFRelease(portName);
+			}
+		}
+
+		public static IReadOnlyList<MidiInputDeviceInfo> GetDevices() {
+			var devices = new List<MidiInputDeviceInfo>();
+			if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) return devices;
+			var count = MIDIGetNumberOfSources().ToUInt64();
+			for (ulong index = 0; index < count && index <= uint.MaxValue; index++) {
+				var source = MIDIGetSource(new UIntPtr(index));
+				if (source == 0) continue;
+				var name = GetStringProperty(source, "displayName");
+				if (string.IsNullOrEmpty(name)) name = GetStringProperty(source, "name");
+				if (string.IsNullOrEmpty(name)) name = "MIDI Source " + index;
+				devices.Add(new MidiInputDeviceInfo((uint)index, name));
+			}
+			return devices;
+		}
+
+		public bool TryDequeue(out MidiInputEvent inputEvent) => m_Events.TryDequeue(out inputEvent);
+
+		public void Dispose() {
+			if (m_Disposed) return;
+			m_Disposed = true;
+			ReleaseNativeResources();
+		}
+
+		private void ReleaseNativeResources() {
+			if (m_Port != 0) {
+				if (m_Source != 0) MIDIPortDisconnectSource(m_Port, m_Source);
+				MIDIPortDispose(m_Port);
+				m_Port = 0;
+			}
+			if (m_Client != 0) {
+				MIDIClientDispose(m_Client);
+				m_Client = 0;
+			}
+			if (m_HasSelfHandle) {
+				m_SelfHandle.Free();
+				m_HasSelfHandle = false;
+			}
+		}
+
+		[MonoPInvokeCallback(typeof(MidiReadCallback))]
+		private static void OnMidiPacketList(IntPtr packetList, IntPtr readContext, IntPtr sourceContext) {
+			if (packetList == IntPtr.Zero || readContext == IntPtr.Zero) return;
+			try {
+				var target = GCHandle.FromIntPtr(readContext).Target as MacOsMidiInputSource;
+				if (target == null || target.m_Disposed) return;
+				var packetCount = unchecked((uint)Marshal.ReadInt32(packetList));
+				var packet = IntPtr.Add(packetList, MidiPacketListFirstPacketOffset);
+				for (uint packetIndex = 0; packetIndex < packetCount; packetIndex++) {
+					var length = unchecked((ushort)Marshal.ReadInt16(packet, MidiPacketLengthOffset));
+					target.EnqueuePacket(IntPtr.Add(packet, MidiPacketDataOffset), length);
+					var nextAddress = packet.ToInt64() + MidiPacketDataOffset + length;
+					if (m_AlignPacketsToFourBytes) nextAddress = (nextAddress + 3L) & ~3L;
+					packet = new IntPtr(nextAddress);
+				}
+			}
+			catch {
+				// Never allow a managed exception to cross the CoreMIDI callback boundary.
+			}
+		}
+
+		private void EnqueuePacket(IntPtr data, int length) {
+			var offset = 0;
+			while (offset < length) {
+				var status = Marshal.ReadByte(data, offset);
+				if (status < 0x80 || status == 0xf0) return;
+				var messageLength = GetMessageLength(status);
+				if (offset + messageLength > length) return;
+				var data1 = messageLength > 1 ? Marshal.ReadByte(data, offset + 1) : (byte)0;
+				var data2 = messageLength > 2 ? Marshal.ReadByte(data, offset + 2) : (byte)0;
+				var packedMessage = (uint)(status | (data1 << 8) | (data2 << 16));
+				if (MidiShortMessageDecoder.TryDecode(DeviceName, packedMessage, out var inputEvent)) m_Events.Enqueue(inputEvent);
+				offset += messageLength;
+			}
+		}
+
+		private static int GetMessageLength(byte status) {
+			if (status < 0xf0) return (status & 0xf0) == 0xc0 || (status & 0xf0) == 0xd0 ? 2 : 3;
+			switch (status) {
+				case 0xf1:
+				case 0xf3:
+					return 2;
+				case 0xf2:
+					return 3;
+				default:
+					return 1;
+			}
+		}
+
+		private static string GetStringProperty(uint source, string propertyName) {
+			var property = CreateString(propertyName);
+			try {
+				if (MIDIObjectGetStringProperty(source, property, out var value) != NoError || value == IntPtr.Zero) return string.Empty;
+				var buffer = new System.Text.StringBuilder(MidiNameBufferCapacity);
+				return CFStringGetCString(value, buffer, buffer.Capacity, Utf8Encoding) ? buffer.ToString() : string.Empty;
+			}
+			finally {
+				CFRelease(property);
+			}
+		}
+
+		private static IntPtr CreateString(string value) {
+			var result = CFStringCreateWithCString(IntPtr.Zero, value, Utf8Encoding);
+			if (result == IntPtr.Zero) throw new InvalidOperationException("CoreFoundation could not create a MIDI string.");
+			return result;
+		}
+
+		private static void ThrowIfError(int result, string operation) {
+			if (result != NoError) throw new InvalidOperationException(operation + " failed with CoreMIDI OSStatus " + result + ".");
+		}
+
+		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+		private delegate void MidiReadCallback(IntPtr packetList, IntPtr readContext, IntPtr sourceContext);
+
+		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern int MIDIClientCreate(IntPtr name, IntPtr notifyProc, IntPtr notifyContext, out uint client);
+		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern int MIDIClientDispose(uint client);
+		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern int MIDIInputPortCreate(uint client, IntPtr portName, MidiReadCallback readProc, IntPtr readContext, out uint port);
+		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern int MIDIPortDispose(uint port);
+		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern int MIDIPortConnectSource(uint port, uint source, IntPtr sourceContext);
+		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern int MIDIPortDisconnectSource(uint port, uint source);
+		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern UIntPtr MIDIGetNumberOfSources();
+		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern uint MIDIGetSource(UIntPtr sourceIndex);
+		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern int MIDIObjectGetStringProperty(uint source, IntPtr property, out IntPtr value);
+		[DllImport(CoreFoundationLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern IntPtr CFStringCreateWithCString(IntPtr allocator, [MarshalAs(UnmanagedType.LPUTF8Str)] string value, uint encoding);
+		[DllImport(CoreFoundationLibrary, CallingConvention = CallingConvention.Cdecl)] [return: MarshalAs(UnmanagedType.I1)] private static extern bool CFStringGetCString(IntPtr value, System.Text.StringBuilder buffer, long bufferSize, uint encoding);
+		[DllImport(CoreFoundationLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern void CFRelease(IntPtr value);
+	}
+
+	public static class MidiInputDevices {
+		public static IReadOnlyList<MidiInputDeviceInfo> GetDevices() {
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return WindowsMidiInputSource.GetDevices();
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) return MacOsMidiInputSource.GetDevices();
+			return Array.Empty<MidiInputDeviceInfo>();
+		}
+
+		public static IMidiInputSource Open(uint deviceId) {
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return new WindowsMidiInputSource(deviceId);
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) return new MacOsMidiInputSource(deviceId);
+			throw new PlatformNotSupportedException("MIDI input is supported on Windows and macOS.");
+		}
+	}
+
 	public sealed class MidiInputRouter {
 		private const int MaximumEventsPerPoll = 4096;
 		private readonly IMidiInputApplicationPort _application;
