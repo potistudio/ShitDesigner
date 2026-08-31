@@ -87,6 +87,7 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(serializedHost.FindProperty("m_SceneTimeEncoderControlNumber").intValue, Is.EqualTo(77));
 				Assert.That(serializedHost.FindProperty("m_SceneTimeJogSpeedPerStep").floatValue, Is.EqualTo(1f));
 				Assert.That(serializedHost.FindProperty("m_SceneTimeJogMaximumSpeedOffset").floatValue, Is.EqualTo(4f));
+				Assert.That(midi.DeviceId, Is.EqualTo(1));
 				var serializedOutput = new SerializedObject(output);
 				Assert.That(serializedOutput.FindProperty("_displayTransformShader").objectReferenceValue, Is.Not.Null);
 

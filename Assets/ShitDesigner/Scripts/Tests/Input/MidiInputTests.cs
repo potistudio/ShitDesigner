@@ -39,6 +39,21 @@ namespace ShitDesigner.Input.Tests {
 		}
 
 		[Test]
+		public void LaunchControlProtocolMapsRelativeEncoderRowsAndMessages() {
+			Assert.That(LaunchControlXl3DawModeProtocol.EnableDawModeMessage, Is.EqualTo(0x007f0c9f));
+			Assert.That(LaunchControlXl3DawModeProtocol.DisableDawModeMessage, Is.EqualTo(0x00000c9f));
+			Assert.That(LaunchControlXl3DawModeProtocol.TryResolveRelativeEncoderRow(16, 77, out var firstRow), Is.True);
+			Assert.That(firstRow, Is.EqualTo(1));
+			Assert.That(LaunchControlXl3DawModeProtocol.TryResolveRelativeEncoderRow(16, 92, out var secondRow), Is.True);
+			Assert.That(secondRow, Is.EqualTo(2));
+			Assert.That(LaunchControlXl3DawModeProtocol.TryResolveRelativeEncoderRow(16, 100, out var thirdRow), Is.True);
+			Assert.That(thirdRow, Is.EqualTo(3));
+			Assert.That(LaunchControlXl3DawModeProtocol.TryResolveRelativeEncoderRow(1, 13, out _), Is.False);
+			Assert.That(LaunchControlXl3DawModeProtocol.EnableRelativeEncoderRowMessage(1), Is.EqualTo(0x007f45b6));
+			Assert.That(LaunchControlXl3DawModeProtocol.ResolveDawInputName("LCXL3 1 DAW Out"), Is.EqualTo("LCXL3 1 DAW In"));
+		}
+
+		[Test]
 		public void RouterDrainsQueuedEventsOnPoll() {
 			var first = new MidiInputEvent(new MidiControl("Device", MidiControlKind.ControlChange, 1, 10), 1);
 			var second = new MidiInputEvent(new MidiControl("Device", MidiControlKind.Note, 1, 64), 127);

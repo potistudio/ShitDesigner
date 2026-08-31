@@ -117,6 +117,7 @@ namespace ShitDesigner.Input {
 		private bool _usesInjectedSource;
 		private bool _deferOpenUntilReconnect;
 		private string _reportedConnectionError = string.Empty;
+		private int m_LaunchControlXl3RelativeEncoderRow;
 
 		public int DeviceId => _deviceId;
 		public string DeviceName => _source?.DeviceName ?? string.Empty;
@@ -177,6 +178,13 @@ namespace ShitDesigner.Input {
 			_deferOpenUntilReconnect = true;
 		}
 
+		public void ConfigureLaunchControlXl3RelativeEncoder(int channel, int controlNumber) {
+			if (!LaunchControlXl3DawModeProtocol.TryResolveRelativeEncoderRow(channel, controlNumber, out var row))
+				throw new ArgumentException("Launch Control XL 3 relative encoders must use channel 16 and CC 77 through 100.");
+			m_LaunchControlXl3RelativeEncoderRow = row;
+			ApplyRequestedDeviceMode();
+		}
+
 		/// <summary>Retries an owned device that was absent during startup or
 		/// became unavailable later. Injected sources keep their own lifetime.</summary>
 		public bool TryReconnect() {
@@ -208,15 +216,24 @@ namespace ShitDesigner.Input {
 			try {
 				_source = MidiInputDevices.Open((uint)Math.Max(0, _deviceId));
 				_ownsSource = true;
+				ApplyRequestedDeviceMode();
 				_reportedConnectionError = string.Empty;
 			}
 			catch (Exception exception) {
+				CloseOwnedSource();
 				LastError = exception.Message;
 				if (!string.Equals(_reportedConnectionError, LastError, StringComparison.Ordinal)) {
 					_reportedConnectionError = LastError;
 					Debug.LogWarning("MIDI Input Manager could not open device " + _deviceId + ": " + LastError, this);
 				}
 			}
+		}
+
+		private void ApplyRequestedDeviceMode() {
+			if (_source == null || m_LaunchControlXl3RelativeEncoderRow == 0) return;
+			if (!(_source is ILaunchControlXl3DawModeController controller))
+				throw new NotSupportedException("The selected MIDI backend cannot configure Launch Control XL 3 DAW mode.");
+			controller.EnableRelativeEncoderRow(m_LaunchControlXl3RelativeEncoderRow);
 		}
 
 		public void RefreshBindings() {
@@ -278,6 +295,7 @@ namespace ShitDesigner.Input {
 		public void Shutdown() {
 			CloseOwnedSource();
 			_source = null;
+			m_LaunchControlXl3RelativeEncoderRow = 0;
 			_usesInjectedSource = false;
 			_deferOpenUntilReconnect = false;
 			_midiApplication = null;

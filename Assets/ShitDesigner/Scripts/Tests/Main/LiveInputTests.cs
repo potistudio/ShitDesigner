@@ -414,20 +414,19 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void LaunchControlAbsoluteEncoderQueuesSceneTimeJogSpeedChanges() {
+		public void LaunchControlRelativeEncoderQueuesSceneTimeJogSpeedChanges() {
 			var owner = new GameObject("MIDI");
-			var patch = CreatePatch("patch-a", new PatchMidiInputBinding("motion", MidiControlKind.ControlChange, 1, 13));
+			var patch = CreatePatch("patch-a", new PatchMidiInputBinding("motion", MidiControlKind.ControlChange, 16, 77));
 			try {
 				var manager = owner.AddComponent<MidiInputManager>();
 				var source = new QueueMidiInputSource();
 				manager.Configure(new NullMidiApplication(), new NullLiveControlApplication(), source);
 				var queue = new LiveParameterQueue();
-				using (var input = new LiveMidiInput(manager, queue, new[] { patch }, sceneTimeEncoderChannel: 1, sceneTimeEncoderControlNumber: 13)) {
+				using (var input = new LiveMidiInput(manager, queue, new[] { patch })) {
 					input.SetSelectedPatch("patch-a");
-					source.Enqueue(new MidiInputEvent(new MidiControl("Launch Control XL 3", MidiControlKind.ControlChange, 1, 13), 96));
-					source.Enqueue(new MidiInputEvent(new MidiControl("Launch Control XL 3", MidiControlKind.ControlChange, 1, 13), 98));
-					source.Enqueue(new MidiInputEvent(new MidiControl("Launch Control XL 3", MidiControlKind.ControlChange, 1, 13), 97));
-					source.Enqueue(new MidiInputEvent(new MidiControl("Launch Control XL 3", MidiControlKind.ControlChange, 1, 13), 97));
+					source.Enqueue(new MidiInputEvent(new MidiControl("Launch Control XL 3", MidiControlKind.ControlChange, 16, 77), 66));
+					source.Enqueue(new MidiInputEvent(new MidiControl("Launch Control XL 3", MidiControlKind.ControlChange, 16, 77), 63));
+					source.Enqueue(new MidiInputEvent(new MidiControl("Launch Control XL 3", MidiControlKind.ControlChange, 16, 77), 64));
 					manager.Poll();
 				}
 

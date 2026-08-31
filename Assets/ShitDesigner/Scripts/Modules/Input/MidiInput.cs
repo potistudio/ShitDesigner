@@ -27,6 +27,42 @@ namespace ShitDesigner.Input {
 		bool IsAvailable { get; }
 	}
 
+	public interface ILaunchControlXl3DawModeController {
+		void EnableRelativeEncoderRow(int row);
+	}
+
+	public static class LaunchControlXl3DawModeProtocol {
+		public const uint EnableDawModeMessage = 0x007f0c9f;
+		public const uint DisableDawModeMessage = 0x00000c9f;
+
+		public static bool TryResolveRelativeEncoderRow(int channel, int controlNumber, out int row) {
+			row = 0;
+			if (channel != 16) return false;
+			if (controlNumber >= 77 && controlNumber <= 84) row = 1;
+			else if (controlNumber >= 85 && controlNumber <= 92) row = 2;
+			else if (controlNumber >= 93 && controlNumber <= 100) row = 3;
+			return row != 0;
+		}
+
+		public static uint EnableRelativeEncoderRowMessage(int row) {
+			int controlNumber;
+			switch (row) {
+				case 1: controlNumber = 69; break;
+				case 2: controlNumber = 72; break;
+				case 3: controlNumber = 73; break;
+				default: throw new ArgumentOutOfRangeException(nameof(row));
+			}
+			return (uint)(0xb6 | (controlNumber << 8) | (127 << 16));
+		}
+
+		public static string ResolveDawInputName(string dawOutputName) {
+			const string suffix = " DAW Out";
+			if (string.IsNullOrWhiteSpace(dawOutputName) || !dawOutputName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+				throw new ArgumentException("The Launch Control XL 3 DAW Out port is required.", nameof(dawOutputName));
+			return dawOutputName.Substring(0, dawOutputName.Length - suffix.Length) + " DAW In";
+		}
+	}
+
 	public static class MidiShortMessageDecoder {
 		public static bool TryDecode(string deviceName, uint packedMessage, out MidiInputEvent inputEvent) {
 			var status = (byte)(packedMessage & 0xff);
@@ -196,7 +232,7 @@ namespace ShitDesigner.Input {
 
 	/// <summary>macOS CoreMIDI input. CoreMIDI invokes the native callback on its
 	/// high-priority thread; decoded events are consumed later on Unity's main thread.</summary>
-	public sealed class MacOsMidiInputSource : IMidiInputSource, IMidiInputAvailability {
+	public sealed class MacOsMidiInputSource : IMidiInputSource, IMidiInputAvailability, ILaunchControlXl3DawModeController {
 		private const string CoreMidiLibrary = "/System/Library/Frameworks/CoreMIDI.framework/CoreMIDI";
 		private const string CoreFoundationLibrary = "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation";
 		private const uint Utf8Encoding = 0x08000100;
@@ -215,8 +251,11 @@ namespace ShitDesigner.Input {
 		private readonly uint m_Source;
 		private uint m_Client;
 		private uint m_Port;
+		private uint m_OutputPort;
+		private uint m_Destination;
 		private GCHandle m_SelfHandle;
 		private bool m_HasSelfHandle;
+		private bool m_DawModeEnabled;
 		private volatile bool m_Disposed;
 
 		public string DeviceName { get; }
@@ -278,13 +317,31 @@ namespace ShitDesigner.Input {
 
 		public bool TryDequeue(out MidiInputEvent inputEvent) => m_Events.TryDequeue(out inputEvent);
 
+		public void EnableRelativeEncoderRow(int row) {
+			if (m_Disposed) throw new ObjectDisposedException(nameof(MacOsMidiInputSource));
+			var relativeModeMessage = LaunchControlXl3DawModeProtocol.EnableRelativeEncoderRowMessage(row);
+			EnsureDawOutput();
+			SendShortMessage(LaunchControlXl3DawModeProtocol.EnableDawModeMessage);
+			m_DawModeEnabled = true;
+			SendShortMessage(relativeModeMessage);
+		}
+
 		public void Dispose() {
 			if (m_Disposed) return;
+			if (m_DawModeEnabled) {
+				try { SendShortMessage(LaunchControlXl3DawModeProtocol.DisableDawModeMessage); }
+				catch { }
+			}
 			m_Disposed = true;
 			ReleaseNativeResources();
 		}
 
 		private void ReleaseNativeResources() {
+			if (m_OutputPort != 0) {
+				MIDIPortDispose(m_OutputPort);
+				m_OutputPort = 0;
+				m_Destination = 0;
+			}
 			if (m_Port != 0) {
 				if (m_Source != 0) MIDIPortDisconnectSource(m_Port, m_Source);
 				MIDIPortDispose(m_Port);
@@ -298,6 +355,39 @@ namespace ShitDesigner.Input {
 				m_SelfHandle.Free();
 				m_HasSelfHandle = false;
 			}
+		}
+
+		private void EnsureDawOutput() {
+			if (m_OutputPort != 0) return;
+			var expectedName = LaunchControlXl3DawModeProtocol.ResolveDawInputName(DeviceName);
+			var count = MIDIGetNumberOfDestinations().ToUInt64();
+			for (ulong index = 0; index < count; index++) {
+				var destination = MIDIGetDestination(new UIntPtr(index));
+				if (destination == 0 || !string.Equals(GetStringProperty(destination, "displayName"), expectedName, StringComparison.OrdinalIgnoreCase)) continue;
+				m_Destination = destination;
+				break;
+			}
+			if (m_Destination == 0) throw new InvalidOperationException("MIDI destination '" + expectedName + "' was not found.");
+
+			var portName = CreateString("ShitDesigner MIDI Output");
+			try { ThrowIfError(MIDIOutputPortCreate(m_Client, portName, out m_OutputPort), "MIDIOutputPortCreate"); }
+			finally { CFRelease(portName); }
+		}
+
+		private void SendShortMessage(uint message) {
+			const int packetListSize = 272;
+			var packetList = Marshal.AllocHGlobal(packetListSize);
+			try {
+				Marshal.WriteInt32(packetList, 1);
+				var packet = IntPtr.Add(packetList, MidiPacketListFirstPacketOffset);
+				Marshal.WriteInt64(packet, 0, 0L);
+				Marshal.WriteInt16(packet, MidiPacketLengthOffset, 3);
+				Marshal.WriteByte(packet, MidiPacketDataOffset, (byte)(message & 0xff));
+				Marshal.WriteByte(packet, MidiPacketDataOffset + 1, (byte)((message >> 8) & 0x7f));
+				Marshal.WriteByte(packet, MidiPacketDataOffset + 2, (byte)((message >> 16) & 0x7f));
+				ThrowIfError(MIDISend(m_OutputPort, m_Destination, packetList), "MIDISend");
+			}
+			finally { Marshal.FreeHGlobal(packetList); }
 		}
 
 		[MonoPInvokeCallback(typeof(MidiReadCallback))]
@@ -377,11 +467,15 @@ namespace ShitDesigner.Input {
 		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern int MIDIClientCreate(IntPtr name, IntPtr notifyProc, IntPtr notifyContext, out uint client);
 		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern int MIDIClientDispose(uint client);
 		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern int MIDIInputPortCreate(uint client, IntPtr portName, MidiReadCallback readProc, IntPtr readContext, out uint port);
+		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern int MIDIOutputPortCreate(uint client, IntPtr portName, out uint port);
 		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern int MIDIPortDispose(uint port);
 		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern int MIDIPortConnectSource(uint port, uint source, IntPtr sourceContext);
 		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern int MIDIPortDisconnectSource(uint port, uint source);
+		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern int MIDISend(uint port, uint destination, IntPtr packetList);
 		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern UIntPtr MIDIGetNumberOfSources();
 		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern uint MIDIGetSource(UIntPtr sourceIndex);
+		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern UIntPtr MIDIGetNumberOfDestinations();
+		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern uint MIDIGetDestination(UIntPtr destinationIndex);
 		[DllImport(CoreMidiLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern int MIDIObjectGetStringProperty(uint source, IntPtr property, out IntPtr value);
 		[DllImport(CoreFoundationLibrary, CallingConvention = CallingConvention.Cdecl)] private static extern IntPtr CFStringCreateWithCString(IntPtr allocator, [MarshalAs(UnmanagedType.LPUTF8Str)] string value, uint encoding);
 		[DllImport(CoreFoundationLibrary, CallingConvention = CallingConvention.Cdecl)] [return: MarshalAs(UnmanagedType.I1)] private static extern bool CFStringGetCString(IntPtr value, System.Text.StringBuilder buffer, long bufferSize, uint encoding);

@@ -133,6 +133,7 @@ namespace ShitDesigner.Main {
 					cueIndex => { FocusInstantEffectParameters(cueIndex); }, ToggleSelectedEffectCategory, BeginPianoMainCueSwitch,
 					EndPianoMainCueSwitch, CompleteMainCueSwitch, EndPianoOverlayTake, CompleteOverlayTake);
 				_midiInputManager.InitializeForHostPolling();
+				_midiInputManager.ConfigureLaunchControlXl3RelativeEncoder(m_SceneTimeEncoderChannel, m_SceneTimeEncoderControlNumber);
 				_shutdown.Add(_midiInputManager.Shutdown);
 				_midi = new LiveMidiInput(_midiInputManager, _parameterQueue, _runtime.Patches,
 					m_MainCueFaderChannel, m_MainCueFaderControlNumber, m_SceneTimeEncoderChannel,
