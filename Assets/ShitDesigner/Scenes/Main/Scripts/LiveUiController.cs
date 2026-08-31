@@ -634,7 +634,8 @@ namespace ShitDesigner.Main {
 			if (m_IsMainPatchDragging) {
 				UpdateMainCueDropTarget(evt.position);
 				var cueIndex = Array.IndexOf(m_MainCueSlots, m_MainCueDropTarget);
-				if (cueIndex >= 0 && !(_host?.AssignMainPatchToCue(cueIndex, m_DraggedMainPatchId) ?? false))
+				var rejected = m_MainCueDropTarget?.ClassListContains("is-active") == true;
+				if (cueIndex >= 0 && !rejected && !(_host?.AssignMainPatchToCue(cueIndex, m_DraggedMainPatchId) ?? false))
 					_diagnosticLabel.text = "Only Main scenes can be assigned to a Cue Slot.";
 				evt.StopImmediatePropagation();
 			}
@@ -649,7 +650,9 @@ namespace ShitDesigner.Main {
 			if (!m_IsMainPatchDragging || m_MainCueDragStroke == null) return;
 			var painter = context.painter2D;
 			painter.lineWidth = 2f;
-			painter.strokeColor = new Color32(255, 190, 74, 255);
+			painter.strokeColor = m_MainCueDragStroke.ClassListContains("is-rejected")
+				? new Color32(255, 72, 72, 255)
+				: new Color32(255, 190, 74, 255);
 			painter.BeginPath();
 			painter.MoveTo(m_MainCueDragStroke.WorldToLocal(m_MainPatchDragStart));
 			painter.LineTo(m_MainCueDragStroke.WorldToLocal(m_MainPatchDragCurrent));
@@ -661,7 +664,10 @@ namespace ShitDesigner.Main {
 			if (target == m_MainCueDropTarget) return;
 			m_MainCueDropTarget?.RemoveFromClassList("is-drop-target");
 			m_MainCueDropTarget = target;
-			m_MainCueDropTarget?.AddToClassList("is-drop-target");
+			var rejected = m_MainCueDropTarget?.ClassListContains("is-active") == true;
+			if (!rejected) m_MainCueDropTarget?.AddToClassList("is-drop-target");
+			m_MainCueDragStroke.EnableInClassList("is-rejected", rejected);
+			m_MainCueDragStroke.MarkDirtyRepaint();
 		}
 
 		private void CancelMainPatchDrag() {
@@ -669,6 +675,7 @@ namespace ShitDesigner.Main {
 			m_MainPatchDragSource?.RemoveFromClassList("is-dragging");
 			m_MainCueDropTarget?.RemoveFromClassList("is-drop-target");
 			m_MainCueDragStroke?.RemoveFromClassList("is-active");
+			m_MainCueDragStroke?.RemoveFromClassList("is-rejected");
 			m_MainCueDragStroke?.MarkDirtyRepaint();
 			if (pointerId >= 0 && m_Root?.HasPointerCapture(pointerId) == true) m_Root.ReleasePointer(pointerId);
 			m_MainPatchDragSource = null;

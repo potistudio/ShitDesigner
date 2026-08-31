@@ -15,8 +15,13 @@ namespace ShitDesigner.Main {
 		private readonly Action<int, int> m_MoveCatalogSelection;
 		private readonly Action m_LaunchSelectedPatch;
 		private readonly Action<double> m_TapBpm;
+		private readonly Action m_BeginPianoMainCueSwitch;
+		private readonly Action m_EndPianoMainCueSwitch;
+		private readonly Action m_CompleteMainCueSwitch;
+		private bool m_IsPianoMainCueSwitchHeld;
 
-		public LiveKeyboardInput(LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches, Action<int> assignOverlayLane, Action<int, int> moveCatalogSelection, Action launchSelectedPatch, Action<double> tapBpm) {
+		public LiveKeyboardInput(LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches, Action<int> assignOverlayLane, Action<int, int> moveCatalogSelection, Action launchSelectedPatch, Action<double> tapBpm,
+			Action beginPianoMainCueSwitch = null, Action endPianoMainCueSwitch = null, Action completeMainCueSwitch = null) {
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));
 
@@ -30,11 +35,30 @@ namespace ShitDesigner.Main {
 			m_MoveCatalogSelection = moveCatalogSelection ?? throw new ArgumentNullException(nameof(moveCatalogSelection));
 			m_LaunchSelectedPatch = launchSelectedPatch ?? throw new ArgumentNullException(nameof(launchSelectedPatch));
 			m_TapBpm = tapBpm ?? throw new ArgumentNullException(nameof(tapBpm));
+			m_BeginPianoMainCueSwitch = beginPianoMainCueSwitch ?? (() => { });
+			m_EndPianoMainCueSwitch = endPianoMainCueSwitch ?? (() => { });
+			m_CompleteMainCueSwitch = completeMainCueSwitch ?? (() => { });
 		}
 
 		public void Poll(string loadedPatchId) {
 			var keyboard = Keyboard.current;
 			if (keyboard == null || string.IsNullOrWhiteSpace(loadedPatchId)) return;
+			if (keyboard.aKey.wasPressedThisFrame) {
+				if (keyboard.shiftKey.isPressed) {
+					m_IsPianoMainCueSwitchHeld = false;
+					m_CompleteMainCueSwitch();
+				}
+				else {
+					m_IsPianoMainCueSwitchHeld = true;
+					m_BeginPianoMainCueSwitch();
+				}
+				return;
+			}
+			if (keyboard.aKey.wasReleasedThisFrame && m_IsPianoMainCueSwitchHeld) {
+				m_IsPianoMainCueSwitchHeld = false;
+				m_EndPianoMainCueSwitch();
+				return;
+			}
 
 			if (keyboard.digit1Key.wasPressedThisFrame) m_AssignOverlayLane(0);
 			if (keyboard.digit2Key.wasPressedThisFrame) m_AssignOverlayLane(1);
