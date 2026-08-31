@@ -109,5 +109,19 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(layers.Select(layer => layer.Mode), Is.EqualTo(new[] { LiveSequencerCellMode.Normal, LiveSequencerCellMode.Add }));
 			Assert.That(sequencer.CreateReadModel(4d).GetActiveLayers(), Is.Empty);
 		}
+
+		[Test]
+		public void OverlayTakeOverridesOnlyTheCurrentStepWithoutChangingTheSequence() {
+			var sequencer = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
+			sequencer.AssignLane(0, "overlay-a");
+			sequencer.AssignLane(1, "overlay-b");
+			sequencer.CycleCellMode(0, 3);
+
+			var taken = sequencer.CreateReadModel(3d, new[] { 0, 1 });
+
+			Assert.That(taken.GetActiveLayers().Select(layer => layer.LaneIndex), Is.EqualTo(new[] { 1 }));
+			Assert.That(taken.GetCellMode(1, 3), Is.EqualTo(LiveSequencerCellMode.Normal));
+			Assert.That(sequencer.CreateReadModel(3d).GetActiveLayers().Select(layer => layer.LaneIndex), Is.EqualTo(new[] { 0 }));
+		}
 	}
 }

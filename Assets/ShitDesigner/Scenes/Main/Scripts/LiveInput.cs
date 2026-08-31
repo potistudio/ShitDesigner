@@ -7,13 +7,16 @@ using ShitDesigner.Runtime;
 using ShitDesigner.Scene;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 
 namespace ShitDesigner.Main {
 	/// <summary>Maps live keyboard controls to live requests without owning a PlayerLoop.</summary>
 	public sealed class LiveKeyboardInput {
 		private readonly LiveParameterQueue m_Queue;
 		private readonly IReadOnlyDictionary<string, PatchDefinition> m_PatchesById;
-		private readonly Action<int> m_AssignOverlayLane;
+		private readonly Action<int> m_BeginPianoOverlayTake;
+		private readonly Action<int> m_EndPianoOverlayTake;
+		private readonly Action<int> m_CompleteOverlayTake;
 		private readonly Action<int, int> m_MoveCatalogSelection;
 		private readonly Action m_LaunchSelectedPatch;
 		private readonly Action<double> m_TapBpm;
@@ -27,11 +30,13 @@ namespace ShitDesigner.Main {
 		private readonly Action m_EndPianoMainCueSwitch;
 		private readonly Action m_CompleteMainCueSwitch;
 		private bool m_IsPianoMainCueSwitchHeld;
+		private int m_HeldPianoOverlayTakeMask;
 
-		public LiveKeyboardInput(LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches, Action<int> assignOverlayLane, Action<int, int> moveCatalogSelection, Action launchSelectedPatch, Action<double> tapBpm,
+		public LiveKeyboardInput(LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches, Action<int> beginPianoOverlayTake, Action<int, int> moveCatalogSelection, Action launchSelectedPatch, Action<double> tapBpm,
 			Action toggleEditMode = null, Action<int> assignInstantEffect = null, Func<bool> isEditMode = null, Action<int> cueInstantEffect = null,
 			Action<int> focusInstantEffectParameters = null, Action toggleSelectedEffectCategory = null, Action beginPianoMainCueSwitch = null,
-			Action endPianoMainCueSwitch = null, Action completeMainCueSwitch = null) {
+			Action endPianoMainCueSwitch = null, Action completeMainCueSwitch = null, Action<int> endPianoOverlayTake = null,
+			Action<int> completeOverlayTake = null) {
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));
 
@@ -41,7 +46,9 @@ namespace ShitDesigner.Main {
 				if (!patchesById.TryAdd(patch.Id, patch)) throw new ArgumentException("Live patch IDs must be unique.", nameof(patches));
 			}
 			m_PatchesById = patchesById;
-			m_AssignOverlayLane = assignOverlayLane ?? throw new ArgumentNullException(nameof(assignOverlayLane));
+			m_BeginPianoOverlayTake = beginPianoOverlayTake ?? throw new ArgumentNullException(nameof(beginPianoOverlayTake));
+			m_EndPianoOverlayTake = endPianoOverlayTake ?? (_ => { });
+			m_CompleteOverlayTake = completeOverlayTake ?? (_ => { });
 			m_MoveCatalogSelection = moveCatalogSelection ?? throw new ArgumentNullException(nameof(moveCatalogSelection));
 			m_LaunchSelectedPatch = launchSelectedPatch ?? throw new ArgumentNullException(nameof(launchSelectedPatch));
 			m_TapBpm = tapBpm ?? throw new ArgumentNullException(nameof(tapBpm));
@@ -59,6 +66,7 @@ namespace ShitDesigner.Main {
 		public void Poll(string loadedPatchId) {
 			var keyboard = Keyboard.current;
 			if (keyboard == null || string.IsNullOrWhiteSpace(loadedPatchId)) return;
+			EndReleasedPianoOverlayTakes(keyboard);
 			if (EndPianoMainCueSwitchIfReleased(keyboard)) return;
 			if (keyboard.tabKey.wasPressedThisFrame && keyboard.shiftKey.isPressed) {
 				m_ToggleEditMode();
@@ -92,14 +100,19 @@ namespace ShitDesigner.Main {
 				return;
 			}
 
-			if (keyboard.digit1Key.wasPressedThisFrame) m_AssignOverlayLane(0);
-			if (keyboard.digit2Key.wasPressedThisFrame) m_AssignOverlayLane(1);
-			if (keyboard.digit3Key.wasPressedThisFrame) m_AssignOverlayLane(2);
-			if (keyboard.digit4Key.wasPressedThisFrame) m_AssignOverlayLane(3);
-			if (keyboard.digit5Key.wasPressedThisFrame) m_AssignOverlayLane(4);
-			if (keyboard.digit6Key.wasPressedThisFrame) m_AssignOverlayLane(5);
-			if (keyboard.digit7Key.wasPressedThisFrame) m_AssignOverlayLane(6);
-			if (keyboard.digit8Key.wasPressedThisFrame) m_AssignOverlayLane(7);
+			for (var laneIndex = 0; laneIndex < LiveStepSequencer.OverlayLaneCount; laneIndex++) {
+				var key = OverlayTakeKey(keyboard, laneIndex);
+				if (!key.wasPressedThisFrame) continue;
+				if (keyboard.shiftKey.isPressed || keyboard.leftShiftKey.wasPressedThisFrame || keyboard.rightShiftKey.wasPressedThisFrame) {
+					m_HeldPianoOverlayTakeMask &= ~(1 << laneIndex);
+					m_CompleteOverlayTake(laneIndex);
+				}
+				else {
+					m_HeldPianoOverlayTakeMask |= 1 << laneIndex;
+					m_BeginPianoOverlayTake(laneIndex);
+					if (!key.isPressed) EndPianoOverlayTake(laneIndex);
+				}
+			}
 			if (keyboard.leftArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(-1, 0);
 			if (keyboard.rightArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(1, 0);
 			if (keyboard.upArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, -1);
@@ -115,6 +128,31 @@ namespace ShitDesigner.Main {
 			m_IsPianoMainCueSwitchHeld = false;
 			m_EndPianoMainCueSwitch();
 			return true;
+		}
+
+		private void EndReleasedPianoOverlayTakes(Keyboard keyboard) {
+			for (var laneIndex = 0; laneIndex < LiveStepSequencer.OverlayLaneCount; laneIndex++)
+				if ((m_HeldPianoOverlayTakeMask & (1 << laneIndex)) != 0 && !OverlayTakeKey(keyboard, laneIndex).isPressed)
+					EndPianoOverlayTake(laneIndex);
+		}
+
+		private void EndPianoOverlayTake(int laneIndex) {
+			m_HeldPianoOverlayTakeMask &= ~(1 << laneIndex);
+			m_EndPianoOverlayTake(laneIndex);
+		}
+
+		private static KeyControl OverlayTakeKey(Keyboard keyboard, int laneIndex) {
+			switch (laneIndex) {
+				case 0: return keyboard.digit1Key;
+				case 1: return keyboard.digit2Key;
+				case 2: return keyboard.digit3Key;
+				case 3: return keyboard.digit4Key;
+				case 4: return keyboard.digit5Key;
+				case 5: return keyboard.digit6Key;
+				case 6: return keyboard.digit7Key;
+				case 7: return keyboard.digit8Key;
+				default: throw new ArgumentOutOfRangeException(nameof(laneIndex));
+			}
 		}
 
 		private bool CuePressedInstantEffects(Keyboard keyboard) {

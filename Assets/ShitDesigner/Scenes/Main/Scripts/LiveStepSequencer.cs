@@ -147,13 +147,25 @@ namespace ShitDesigner.Main {
 			return LiveSequencerOperationResult.Accept();
 		}
 
-		public LiveSequencerReadModel CreateReadModel(double adjustedTotalBeats) {
+		public LiveSequencerReadModel CreateReadModel(double adjustedTotalBeats, IReadOnlyList<int> laneTakeOverrides = null) {
 			if (double.IsNaN(adjustedTotalBeats) || double.IsInfinity(adjustedTotalBeats))
 				throw new ArgumentOutOfRangeException(nameof(adjustedTotalBeats), "Sequencer timing must be finite.");
 			var beat = (long)Math.Floor(adjustedTotalBeats);
 			var currentStep = (int)((beat % StepCount + StepCount) % StepCount);
-			return new LiveSequencerReadModel(Kind, DisplayName, currentStep, SelectedLaneIndex, (int[])m_ActiveLaneMasks.Clone(),
-				(string[])m_LanePatchIds.Clone(), (LiveSequencerCellMode[])m_CellModes.Clone());
+			var activeLaneMasks = (int[])m_ActiveLaneMasks.Clone();
+			var cellModes = (LiveSequencerCellMode[])m_CellModes.Clone();
+			if (laneTakeOverrides != null) {
+				for (var laneIndex = 0; laneIndex < Math.Min(LaneCount, laneTakeOverrides.Count); laneIndex++) {
+					var takeOverride = laneTakeOverrides[laneIndex];
+					if (takeOverride < 0) continue;
+					var cellIndex = laneIndex * StepCount + currentStep;
+					cellModes[cellIndex] = takeOverride == 0 ? LiveSequencerCellMode.Off : LiveSequencerCellMode.Normal;
+					if (takeOverride == 0) activeLaneMasks[currentStep] &= ~(1 << laneIndex);
+					else activeLaneMasks[currentStep] |= 1 << laneIndex;
+				}
+			}
+			return new LiveSequencerReadModel(Kind, DisplayName, currentStep, SelectedLaneIndex, activeLaneMasks,
+				(string[])m_LanePatchIds.Clone(), cellModes);
 		}
 	}
 }
