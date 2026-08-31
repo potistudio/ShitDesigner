@@ -172,7 +172,16 @@ namespace ShitDesigner.Main {
 		}
 
 		private DisplayOutput CreateOutput(int displayNumber) {
+			// DisplayTransform writes final sRGB-encoded bytes itself. The native
+			// macOS presenter must therefore sample an unorm texture; marking this
+			// texture as sRGB would make Metal decode it before presentation and
+			// lift the midtones when the display layer encodes them again.
+#if UNITY_STANDALONE_OSX && !UNITY_EDITOR
+			var displayTexture = new RenderTexture(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight, 0,
+				RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear) {
+#else
 			var displayTexture = new RenderTexture(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight, 0, RenderTextureFormat.ARGB32) {
+#endif
 				name = "ShitDesigner.Main.ExternalDisplay." + displayNumber,
 				useMipMap = false,
 				autoGenerateMips = false
