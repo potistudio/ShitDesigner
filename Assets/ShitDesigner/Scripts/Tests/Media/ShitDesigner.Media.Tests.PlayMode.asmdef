@@ -2,6 +2,7 @@
   "name": "ShitDesigner.Media.Tests.PlayMode",
   "rootNamespace": "ShitDesigner.Media.Tests",
   "references": [
+    "ShitDesigner.AssetFlush",
     "ShitDesigner.Media",
     "ShitDesigner.Graph",
     "ShitDesigner.Runtime",
