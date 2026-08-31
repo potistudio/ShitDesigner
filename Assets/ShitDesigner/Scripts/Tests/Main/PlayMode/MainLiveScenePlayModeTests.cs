@@ -237,6 +237,8 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(host.ReadModel.SelectedCatalogRole, Is.EqualTo(LiveCatalogRole.Main));
 			Assert.That(host.ReadModel.SelectedCatalogItemId, Is.EqualTo(rememberedMainPatch.Id));
 			Assert.That(host.AssignSelectedOverlayPatchToLane(7).Accepted, Is.False);
+			Assert.That(host.AssignOverlayPatchToLane(7, rememberedOverlayPatch.Id).Accepted, Is.True);
+			Assert.That(host.AssignOverlayPatchToLane(7, rememberedMainPatch.Id).Accepted, Is.False);
 			Assert.That(ui.Q<Button>("main-tab").ClassListContains("is-selected"), Is.True);
 			host.MoveCatalogSelection(1, 0);
 			yield return null;
