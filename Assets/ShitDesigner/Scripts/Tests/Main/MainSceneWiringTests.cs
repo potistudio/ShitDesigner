@@ -83,6 +83,9 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(serializedHost.FindProperty("_externalDisplay").objectReferenceValue, Is.SameAs(output));
 				Assert.That(serializedHost.FindProperty("_uiController").objectReferenceValue, Is.SameAs(ui));
 				Assert.That(serializedHost.FindProperty("_bootOnAwake").boolValue, Is.True);
+				Assert.That(serializedHost.FindProperty("m_SceneTimeEncoderChannel").intValue, Is.EqualTo(16));
+				Assert.That(serializedHost.FindProperty("m_SceneTimeEncoderControlNumber").intValue, Is.EqualTo(77));
+				Assert.That(serializedHost.FindProperty("m_SceneTimeOffsetStepSeconds").floatValue, Is.EqualTo(.01f));
 				var serializedOutput = new SerializedObject(output);
 				Assert.That(serializedOutput.FindProperty("_displayTransformShader").objectReferenceValue, Is.Not.Null);
 

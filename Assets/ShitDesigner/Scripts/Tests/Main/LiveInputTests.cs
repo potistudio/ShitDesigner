@@ -362,6 +362,39 @@ namespace ShitDesigner.Main.Tests {
 			}
 		}
 
+		[Test]
+		public void LaunchControlRelativeEncoderQueuesSceneTimeOffsetNudges() {
+			var owner = new GameObject("MIDI");
+			var patch = CreatePatch("patch-a", new PatchMidiInputBinding("motion", MidiControlKind.ControlChange, 16, 77));
+			try {
+				var manager = owner.AddComponent<MidiInputManager>();
+				var source = new QueueMidiInputSource();
+				manager.Configure(new NullMidiApplication(), new NullLiveControlApplication(), source);
+				var queue = new LiveParameterQueue();
+				using (var input = new LiveMidiInput(manager, queue, new[] { patch })) {
+					input.SetSelectedPatch("patch-a");
+					source.Enqueue(new MidiInputEvent(new MidiControl("Launch Control XL 3", MidiControlKind.ControlChange, 16, 77), 66));
+					source.Enqueue(new MidiInputEvent(new MidiControl("Launch Control XL 3", MidiControlKind.ControlChange, 16, 77), 63));
+					source.Enqueue(new MidiInputEvent(new MidiControl("Launch Control XL 3", MidiControlKind.ControlChange, 16, 77), 64));
+					manager.Poll();
+				}
+
+				var requests = new List<LiveParameterRequest>();
+				queue.Drain(requests);
+				Assert.That(requests, Has.Count.EqualTo(2));
+				Assert.That(requests.Select(request => request.Kind), Is.EqualTo(new[] {
+					LiveParameterRequestKind.NudgeSceneTimeOffset,
+					LiveParameterRequestKind.NudgeSceneTimeOffset
+				}));
+				Assert.That(requests[0].Value, Is.EqualTo(.02f).Within(.0001f));
+				Assert.That(requests[1].Value, Is.EqualTo(-.01f).Within(.0001f));
+			}
+			finally {
+				Object.DestroyImmediate(owner);
+				Object.DestroyImmediate(patch);
+			}
+		}
+
 		private static PatchDefinition CreatePatch(string id, params PatchMidiInputBinding[] midiInputs) {
 			var patch = ScriptableObject.CreateInstance<PatchDefinition>();
 			var serialized = new SerializedObject(patch);

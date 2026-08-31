@@ -89,6 +89,21 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void SceneTimeOffsetNudgeQueuesAGlobalRequestWithoutAPatchId() {
+			var queue = new LiveParameterQueue();
+
+			var result = queue.EnqueueNudgeSceneTimeOffset(-.02f);
+
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+			Assert.That(result.Accepted, Is.True);
+			Assert.That(requests, Has.Count.EqualTo(1));
+			Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.NudgeSceneTimeOffset));
+			Assert.That(requests[0].PatchId, Is.Empty);
+			Assert.That(requests[0].Value, Is.EqualTo(-.02f));
+		}
+
+		[Test]
 		public void SetTimeEasingEnabledQueuesAGlobalBooleanWithoutAPatchId() {
 			var queue = new LiveParameterQueue();
 

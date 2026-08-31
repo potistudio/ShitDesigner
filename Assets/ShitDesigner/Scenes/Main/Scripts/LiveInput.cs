@@ -248,23 +248,35 @@ namespace ShitDesigner.Main {
 	/// <summary>Maps MIDI events to live requests without owning the MIDI device lifecycle.</summary>
 	public sealed class LiveMidiInput : IDisposable {
 		private const int PatchSelectionChannel = 1;
+		private const int RelativeEncoderPivot = 64;
 		private readonly MidiInputManager m_Manager;
 		private readonly LiveParameterQueue m_Queue;
 		private readonly IReadOnlyList<string> m_PatchIds;
 		private readonly IReadOnlyDictionary<string, PatchDefinition> m_PatchesById;
 		private readonly int m_MainCueFaderChannel;
 		private readonly int m_MainCueFaderControlNumber;
+		private readonly int m_SceneTimeEncoderChannel;
+		private readonly int m_SceneTimeEncoderControlNumber;
+		private readonly float m_SceneTimeOffsetStepSeconds;
 		private string m_LoadedPatchId;
 
 		public LiveMidiInput(MidiInputManager manager, LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches,
-			int mainCueFaderChannel = 16, int mainCueFaderControlNumber = 5) {
+			int mainCueFaderChannel = 16, int mainCueFaderControlNumber = 5, int sceneTimeEncoderChannel = 16,
+			int sceneTimeEncoderControlNumber = 77, float sceneTimeOffsetStepSeconds = .01f) {
 			m_Manager = manager ?? throw new ArgumentNullException(nameof(manager));
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));
 			if (mainCueFaderChannel < 1 || mainCueFaderChannel > 16) throw new ArgumentOutOfRangeException(nameof(mainCueFaderChannel));
 			if (mainCueFaderControlNumber < 0 || mainCueFaderControlNumber > 127) throw new ArgumentOutOfRangeException(nameof(mainCueFaderControlNumber));
+			if (sceneTimeEncoderChannel < 1 || sceneTimeEncoderChannel > 16) throw new ArgumentOutOfRangeException(nameof(sceneTimeEncoderChannel));
+			if (sceneTimeEncoderControlNumber < 0 || sceneTimeEncoderControlNumber > 127) throw new ArgumentOutOfRangeException(nameof(sceneTimeEncoderControlNumber));
+			if (float.IsNaN(sceneTimeOffsetStepSeconds) || float.IsInfinity(sceneTimeOffsetStepSeconds) || sceneTimeOffsetStepSeconds <= 0f)
+				throw new ArgumentOutOfRangeException(nameof(sceneTimeOffsetStepSeconds));
 			m_MainCueFaderChannel = mainCueFaderChannel;
 			m_MainCueFaderControlNumber = mainCueFaderControlNumber;
+			m_SceneTimeEncoderChannel = sceneTimeEncoderChannel;
+			m_SceneTimeEncoderControlNumber = sceneTimeEncoderControlNumber;
+			m_SceneTimeOffsetStepSeconds = sceneTimeOffsetStepSeconds;
 
 			var patchIds = new List<string>(patches.Count);
 			var patchesById = new Dictionary<string, PatchDefinition>(StringComparer.Ordinal);
@@ -286,6 +298,12 @@ namespace ShitDesigner.Main {
 
 		private void OnInputReceived(MidiInputEvent inputEvent) {
 			var control = inputEvent.Control;
+			if (control.Kind == MidiControlKind.ControlChange && control.Channel == m_SceneTimeEncoderChannel
+				&& control.Number == m_SceneTimeEncoderControlNumber) {
+				var steps = inputEvent.RawValue - RelativeEncoderPivot;
+				if (steps != 0) m_Queue.EnqueueNudgeSceneTimeOffset(steps * m_SceneTimeOffsetStepSeconds);
+				return;
+			}
 			if (control.Kind == MidiControlKind.ControlChange && control.Channel == m_MainCueFaderChannel
 				&& control.Number == m_MainCueFaderControlNumber) {
 				m_Queue.EnqueueSetMainCueFader(inputEvent.RawValue / (float)control.RawMaximum);
