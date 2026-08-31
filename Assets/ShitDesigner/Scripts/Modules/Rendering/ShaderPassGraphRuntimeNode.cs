@@ -177,21 +177,21 @@ namespace ShitDesigner.Rendering {
 		/// It exercises the same pool leases, pass order and history commit as
 		/// the graph-bound Evaluate path.</summary>
 		public Result<RenderTexture, Diagnostic> Render(RenderTexture source, RenderTexture target, ulong frameNumber,
-			double graphTime = 0d, bool paused = false, bool reset = false) {
-			return RenderDirect(source, target, frameNumber, graphTime, paused, reset);
+			double graphTime = 0d, bool paused = false, bool reset = false, double deltaTime = 0d) {
+			return RenderDirect(source, target, frameNumber, graphTime, paused, reset, deltaTime);
 		}
 
 		/// <summary>Direct graph-composition seam. Bootstrap-created graphs
 		/// provide every connected ImageFrame input by its declared port.</summary>
 		public Result<RenderTexture, Diagnostic> Render(IReadOnlyDictionary<PortId, Texture> inputs, RenderTexture target,
-			ulong frameNumber, double graphTime = 0d, bool paused = false, bool reset = false) {
+			ulong frameNumber, double graphTime = 0d, bool paused = false, bool reset = false, double deltaTime = 0d) {
 			if (_disposed) return Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.disposed", "Shader pass graph node is disposed."));
 			if (target == null || !target.IsCreated()) return Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.target", "A created RenderTexture target is required."));
 			if (frameNumber == 0) return Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.frame", "Frame number must be positive."));
 			try {
 				ApplyDirectParameters();
 				var source = BindDirectInputs(inputs);
-				ShaderRuntimeUniformApplier.Apply(_material, _binding, graphTime, 0d, frameNumber,
+				ShaderRuntimeUniformApplier.Apply(_material, _binding, graphTime, deltaTime, frameNumber,
 					target.width, target.height, StableSeed(NodeId.Value));
 				_material.SetFloat("_Paused", paused ? 1f : 0f);
 				_material.SetFloat("_Reset", reset ? 1f : 0f);
@@ -207,14 +207,14 @@ namespace ShitDesigner.Rendering {
 		}
 
 		private Result<RenderTexture, Diagnostic> RenderDirect(RenderTexture source, RenderTexture target, ulong frameNumber,
-			double graphTime, bool paused, bool reset) {
+			double graphTime, bool paused, bool reset, double deltaTime) {
 			if (_disposed) return Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.disposed", "Shader pass graph node is disposed."));
 			if (target == null || !target.IsCreated()) return Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.target", "A created RenderTexture target is required."));
 			if (frameNumber == 0) return Result.Failure<RenderTexture, Diagnostic>(DiagnosticFor("rendering.shader_graph.frame", "Frame number must be positive."));
 			try {
 				ApplyDirectParameters();
 				Texture input = source ?? (Texture)Texture2D.blackTexture;
-				ShaderRuntimeUniformApplier.Apply(_material, _binding, graphTime, 0d, frameNumber,
+				ShaderRuntimeUniformApplier.Apply(_material, _binding, graphTime, deltaTime, frameNumber,
 					target.width, target.height, StableSeed(NodeId.Value));
 				_material.SetFloat("_Paused", paused ? 1f : 0f);
 				_material.SetFloat("_Reset", reset ? 1f : 0f);

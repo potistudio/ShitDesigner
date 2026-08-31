@@ -270,7 +270,7 @@ namespace ShitDesigner.Main {
 
 		public LiveMidiInput(MidiInputManager manager, LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches,
 			int mainCueFaderChannel = 16, int mainCueFaderControlNumber = 5, int sceneTimeEncoderChannel = 16,
-			int sceneTimeEncoderControlNumber = 77, float sceneTimeJogSpeedPerStep = .25f) {
+			int sceneTimeEncoderControlNumber = 77, float sceneTimeJogSpeedPerStep = 1f) {
 			m_Manager = manager ?? throw new ArgumentNullException(nameof(manager));
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));

@@ -412,8 +412,8 @@ namespace ShitDesigner.Main.Tests {
 					LiveParameterRequestKind.JogSceneTime,
 					LiveParameterRequestKind.JogSceneTime
 				}));
-				Assert.That(requests[0].Value, Is.EqualTo(.5f).Within(.0001f));
-				Assert.That(requests[1].Value, Is.EqualTo(-.25f).Within(.0001f));
+				Assert.That(requests[0].Value, Is.EqualTo(2f).Within(.0001f));
+				Assert.That(requests[1].Value, Is.EqualTo(-1f).Within(.0001f));
 			}
 			finally {
 				Object.DestroyImmediate(owner);
