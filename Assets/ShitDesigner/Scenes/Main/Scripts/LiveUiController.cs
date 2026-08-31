@@ -29,6 +29,7 @@ namespace ShitDesigner.Main {
 		private VisualElement m_SequencerControls;
 		private VisualElement _parameterControls;
 		private VisualElement _tempoControls;
+		private VisualElement[] m_MainCueSlots = Array.Empty<VisualElement>();
 		private Button[] m_SidebarTabButtons = Array.Empty<Button>();
 		private Button[] m_InstantEffectCueButtons = Array.Empty<Button>();
 		private VisualElement[] m_SidebarTabContents = Array.Empty<VisualElement>();
@@ -47,6 +48,12 @@ namespace ShitDesigner.Main {
 		private bool _initialized;
 		private bool _updating;
 		private bool _editingBpm;
+		private Button m_MainPatchDragSource;
+		private string m_DraggedMainPatchId = string.Empty;
+		private int m_MainPatchDragPointerId = -1;
+		private Vector2 m_MainPatchDragStart;
+		private bool m_IsMainPatchDragging;
+		private VisualElement m_MainCueDropTarget;
 
 		private readonly struct SequencerCellAddress {
 			public LiveSequencerKind Kind { get; }
@@ -104,6 +111,9 @@ namespace ShitDesigner.Main {
 			m_SequencerControls = Required<VisualElement>(root, "sequencer-controls");
 			_parameterControls = Required<VisualElement>(root, "parameter-controls");
 			_tempoControls = Required<VisualElement>(root, "tempo-controls");
+			m_MainCueSlots = Enumerable.Range(1, ApplicationLiveHost.MainCueCount)
+				.Select(index => Required<VisualElement>(root, "cue-slot-" + index))
+				.ToArray();
 			m_SidebarTabButtons = new[] {
 				Required<Button>(root, "main-tab"),
 				Required<Button>(root, "overlay-tab"),
@@ -127,6 +137,10 @@ namespace ShitDesigner.Main {
 			m_BeatAlignmentButton = Required<Button>(root, "beat-alignment-button");
 			_capabilityLabel = Required<Label>(root, "capability-status");
 			_diagnosticLabel = Required<Label>(root, "diagnostic-status");
+			m_Root.RegisterCallback<PointerDownEvent>(OnMainPatchPointerDown, TrickleDown.TrickleDown);
+			m_Root.RegisterCallback<PointerMoveEvent>(OnMainPatchPointerMove, TrickleDown.TrickleDown);
+			m_Root.RegisterCallback<PointerUpEvent>(OnMainPatchPointerUp, TrickleDown.TrickleDown);
+			m_Root.RegisterCallback<PointerCancelEvent>(OnMainPatchPointerCancel, TrickleDown.TrickleDown);
 			m_SequencerControls.RegisterCallback<ClickEvent>(OnSequencerCellClicked);
 			BuildSequencers(root);
 			_bpmField.RegisterValueChangedCallback(OnBpmInputChanged);
@@ -151,6 +165,14 @@ namespace ShitDesigner.Main {
 		}
 
 		private void UnbindVisualTree() {
+			if (m_Root != null) {
+				CancelMainPatchDrag();
+				m_Root.UnregisterCallback<PointerDownEvent>(OnMainPatchPointerDown, TrickleDown.TrickleDown);
+				m_Root.UnregisterCallback<PointerMoveEvent>(OnMainPatchPointerMove, TrickleDown.TrickleDown);
+				m_Root.UnregisterCallback<PointerUpEvent>(OnMainPatchPointerUp, TrickleDown.TrickleDown);
+				m_Root.UnregisterCallback<PointerCancelEvent>(OnMainPatchPointerCancel, TrickleDown.TrickleDown);
+			}
+			m_MainCueSlots = Array.Empty<VisualElement>();
 			if (m_SequencerControls != null) m_SequencerControls.UnregisterCallback<ClickEvent>(OnSequencerCellClicked);
 			foreach (var button in m_SidebarTabButtons) button.UnregisterCallback<ClickEvent>(OnSidebarTabClicked);
 			m_SidebarTabButtons = Array.Empty<Button>();
@@ -181,6 +203,7 @@ namespace ShitDesigner.Main {
 			var model = _host.ReadModel;
 			_updating = true;
 			try {
+				RefreshMainCueSlots(model);
 				ApplyPreviewTexture(_programMonitor, model.ProgramFrames.Count > 0 ? model.ProgramFrames[0].Texture : null);
 				ApplyPreviewTexture(m_Output2Preview, model.ProgramFrames.Count > 1 ? model.ProgramFrames[1].Texture : null);
 				RefreshPatchControls(model);
@@ -551,6 +574,72 @@ namespace ShitDesigner.Main {
 				case LivePatchRole.Overlay: return "patch-overlay-button";
 				default: throw new ArgumentOutOfRangeException(nameof(role), role, null);
 			}
+		}
+
+		private void RefreshMainCueSlots(LiveUiReadModel model) {
+			for (var index = 0; index < m_MainCueSlots.Length; index++) {
+				var patchId = index < _host.MainCuePatchIds.Count ? _host.MainCuePatchIds[index] : string.Empty;
+				var patch = model.Patches.FirstOrDefault(candidate => candidate.Role == LivePatchRole.Main && candidate.Id == patchId);
+				var assigned = !string.IsNullOrEmpty(patch.Id);
+				m_MainCueSlots[index].Q<Label>().text = assigned ? patch.Name : "Cue Slot " + (index + 1);
+				m_MainCueSlots[index].EnableInClassList("is-assigned", assigned);
+			}
+		}
+
+		private void OnMainPatchPointerDown(PointerDownEvent evt) {
+			if (evt.button != 0 || m_MainPatchDragPointerId >= 0) return;
+			var target = evt.target as VisualElement;
+			var button = target as Button ?? target?.GetFirstAncestorOfType<Button>();
+			if (button == null || !button.ClassListContains("patch-main-button") || button.userData is not string patchId) return;
+			m_MainPatchDragSource = button;
+			m_DraggedMainPatchId = patchId;
+			m_MainPatchDragPointerId = evt.pointerId;
+			m_MainPatchDragStart = evt.position;
+		}
+
+		private void OnMainPatchPointerMove(PointerMoveEvent evt) {
+			if (evt.pointerId != m_MainPatchDragPointerId || m_MainPatchDragSource == null) return;
+			if (!m_IsMainPatchDragging && Vector2.Distance(m_MainPatchDragStart, evt.position) < 6f) return;
+			if (!m_IsMainPatchDragging) {
+				m_IsMainPatchDragging = true;
+				m_MainPatchDragSource.AddToClassList("is-dragging");
+			}
+			UpdateMainCueDropTarget(evt.position);
+			evt.StopImmediatePropagation();
+		}
+
+		private void OnMainPatchPointerUp(PointerUpEvent evt) {
+			if (evt.pointerId != m_MainPatchDragPointerId) return;
+			if (m_IsMainPatchDragging) {
+				UpdateMainCueDropTarget(evt.position);
+				var cueIndex = Array.IndexOf(m_MainCueSlots, m_MainCueDropTarget);
+				if (cueIndex >= 0 && !(_host?.AssignMainPatchToCue(cueIndex, m_DraggedMainPatchId) ?? false))
+					_diagnosticLabel.text = "Only Main scenes can be assigned to a Cue Slot.";
+				evt.StopImmediatePropagation();
+			}
+			CancelMainPatchDrag();
+		}
+
+		private void OnMainPatchPointerCancel(PointerCancelEvent evt) {
+			if (evt.pointerId == m_MainPatchDragPointerId) CancelMainPatchDrag();
+		}
+
+		private void UpdateMainCueDropTarget(Vector2 pointerPosition) {
+			var target = m_MainCueSlots.FirstOrDefault(slot => slot.worldBound.Contains(pointerPosition));
+			if (target == m_MainCueDropTarget) return;
+			m_MainCueDropTarget?.RemoveFromClassList("is-drop-target");
+			m_MainCueDropTarget = target;
+			m_MainCueDropTarget?.AddToClassList("is-drop-target");
+		}
+
+		private void CancelMainPatchDrag() {
+			m_MainPatchDragSource?.RemoveFromClassList("is-dragging");
+			m_MainCueDropTarget?.RemoveFromClassList("is-drop-target");
+			m_MainPatchDragSource = null;
+			m_DraggedMainPatchId = string.Empty;
+			m_MainPatchDragPointerId = -1;
+			m_IsMainPatchDragging = false;
+			m_MainCueDropTarget = null;
 		}
 
 		private void ChoosePatch(string patchId) {
