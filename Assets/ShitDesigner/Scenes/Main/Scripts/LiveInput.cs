@@ -88,11 +88,11 @@ namespace ShitDesigner.Main {
 				return;
 			}
 			if (keyboard.leftBracketKey.wasPressedThisFrame) {
-				m_Queue.EnqueueRecallHotCue(0);
+				m_Queue.EnqueueRecallHotCue(0, keyboard.shiftKey.isPressed);
 				return;
 			}
 			if (keyboard.rightBracketKey.wasPressedThisFrame) {
-				m_Queue.EnqueueRecallHotCue(1);
+				m_Queue.EnqueueRecallHotCue(1, keyboard.shiftKey.isPressed);
 				return;
 			}
 			if (keyboard.aKey.wasPressedThisFrame) {

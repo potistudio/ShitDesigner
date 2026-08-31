@@ -121,6 +121,21 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void OppositeHotCueQueuesAsADistinctGlobalRequest() {
+			var queue = new LiveParameterQueue();
+
+			var result = queue.EnqueueRecallHotCue(1, true);
+
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+			Assert.That(result.Accepted, Is.True);
+			Assert.That(requests, Has.Count.EqualTo(1));
+			Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.RecallOppositeHotCue));
+			Assert.That(requests[0].PatchId, Is.Empty);
+			Assert.That(requests[0].ParameterValue.AsInt(), Is.EqualTo(1));
+		}
+
+		[Test]
 		public void SetTimeEasingEnabledQueuesAGlobalBooleanWithoutAPatchId() {
 			var queue = new LiveParameterQueue();
 
