@@ -833,6 +833,7 @@ namespace ShitDesigner.Main {
 
 	/// <summary>Evaluates Bootstrap-created patch graphs and composes their live Program output.</summary>
 	public sealed class LiveGraphRuntime : IDisposable {
+		public const int MainCueCount = 2;
 		public const int ProgramWidth = 1920;
 		public const int ProgramHeight = 1080;
 		public const int OverlayPreviewWidth = 160;
@@ -852,8 +853,9 @@ namespace ShitDesigner.Main {
 		private readonly Dictionary<string, LiveOverlayPreview> m_OverlayPreviews = new Dictionary<string, LiveOverlayPreview>(StringComparer.Ordinal);
 		private readonly HashSet<string> m_OverlayPreviewFailures = new HashSet<string>(StringComparer.Ordinal);
 		private readonly RenderTexture[] m_OverlayPreviewFrames = new RenderTexture[LiveStepSequencer.OverlayLaneCount];
-		private LivePatch _loadedPatch;
-		private LivePatch _preloadedPatch;
+		private readonly LivePatch[] m_MainCuePatches = new LivePatch[MainCueCount];
+		private readonly string[] m_MainCuePatchIds = new string[MainCueCount];
+		private int m_ActiveMainCueIndex;
 		private ulong _frameNumber;
 		private ulong m_OverlayPreviewFrameNumber;
 		private double _graphTime;
@@ -861,8 +863,10 @@ namespace ShitDesigner.Main {
 		private double m_OverlayPreviewElapsedSeconds;
 		private bool _disposed;
 
-		public string LoadedPatchId => _loadedPatch?.Definition.Id ?? string.Empty;
-		public string PreloadedPatchId => _preloadedPatch?.Definition.Id ?? string.Empty;
+		public string LoadedPatchId => LoadedMainPatch?.Definition.Id ?? string.Empty;
+		public string PreloadedPatchId => PreloadedMainPatch?.Definition.Id ?? string.Empty;
+		public IReadOnlyList<string> MainCuePatchIds => m_MainCuePatchIds;
+		public int ActiveMainCueIndex => m_ActiveMainCueIndex;
 		public IReadOnlyList<PatchDefinition> Patches => _graph.PatchDefinitions;
 		public LiveProgramFrame CurrentFrame { get; private set; }
 		public LiveProgramFrames CurrentFrames { get; private set; }
@@ -873,10 +877,11 @@ namespace ShitDesigner.Main {
 		internal LiveGraphRuntime(LiveGraph graph) {
 			_graph = graph ?? throw new ArgumentNullException(nameof(graph));
 			_patchDefinitionsById = graph.PatchDefinitions.ToDictionary(definition => definition.Id, StringComparer.Ordinal);
-			_loadedPatch = CreatePatch(graph.PatchDefinitions[0], ProgramRenderSize);
-			_preloadedPatch = _loadedPatch;
-			_loadedPatch.SetSceneActive(true);
-			CurrentFrames = new LiveProgramFrames(_loadedPatch.Outputs.Select(output => new LiveProgramFrame(output.ProgramTexture, 0)));
+			m_MainCuePatches[0] = CreatePatch(graph.PatchDefinitions[0], ProgramRenderSize);
+			m_MainCuePatchIds[0] = graph.PatchDefinitions[0].Id;
+			m_ActiveMainCueIndex = 0;
+			LoadedMainPatch.SetSceneActive(true);
+			CurrentFrames = new LiveProgramFrames(LoadedMainPatch.Outputs.Select(output => new LiveProgramFrame(output.ProgramTexture, 0)));
 			CurrentFrame = CurrentFrames.Primary;
 		}
 
@@ -887,27 +892,24 @@ namespace ShitDesigner.Main {
 				return _bpmClock.TryAlignToNearestBeat(out var alignmentRejection) ? Accept(request) : Reject(request, alignmentRejection);
 			if (!_patchDefinitionsById.TryGetValue(request.PatchId, out var definition)) return Reject(request, "The requested patch does not exist.");
 			if (request.Kind == LiveParameterRequestKind.PreloadPatch) {
-				if (_preloadedPatch?.Definition == definition) return Accept(request);
-				var nextPreloadedPatch = CreatePatch(definition, ProgramRenderSize);
-				if (_preloadedPatch != _loadedPatch) DisposePatch(_preloadedPatch);
-				_preloadedPatch = nextPreloadedPatch;
+				AssignMainCuePatch(InactiveMainCueIndex, definition);
 				return Accept(request);
 			}
 			if (request.Kind == LiveParameterRequestKind.LoadPatch) {
-				if (_preloadedPatch?.Definition != definition) return Reject(request, "The requested patch has not been preloaded.");
-				LoadPreloadedPatch();
+				if (PreloadedMainPatch?.Definition != definition) return Reject(request, "The requested patch has not been preloaded.");
+				ActivateMainCue(InactiveMainCueIndex);
 				return Accept(request);
 			}
 			if (request.Kind == LiveParameterRequestKind.LaunchPatch) {
-				if (_preloadedPatch?.Definition != definition) {
-					var nextPreloadedPatch = CreatePatch(definition, ProgramRenderSize);
-					if (_preloadedPatch != _loadedPatch) DisposePatch(_preloadedPatch);
-					_preloadedPatch = nextPreloadedPatch;
+				var mainCueIndex = Array.FindIndex(m_MainCuePatches, patch => patch?.Definition == definition);
+				if (mainCueIndex < 0) {
+					mainCueIndex = InactiveMainCueIndex;
+					AssignMainCuePatch(mainCueIndex, definition);
 				}
-				LoadPreloadedPatch();
+				ActivateMainCue(mainCueIndex);
 				return Accept(request);
 			}
-			var patch = _preloadedPatch?.Definition == definition ? _preloadedPatch : _loadedPatch?.Definition == definition ? _loadedPatch : null;
+			var patch = m_MainCuePatches.FirstOrDefault(candidate => candidate?.Definition == definition);
 			if (patch == null) return Reject(request, "The requested patch is not loaded.");
 			return patch.TrySetParameter(request.ParameterId, request.ParameterValue, out var reason) ? Accept(request) : Reject(request, reason);
 		}
@@ -917,8 +919,8 @@ namespace ShitDesigner.Main {
 			_lastDeltaSeconds = Math.Max(0d, deltaSeconds);
 			_graphTime += _lastDeltaSeconds;
 			_bpmClock.Advance(_lastDeltaSeconds);
-			_loadedPatch.ApplyResolvedParameters(_bpmClock.Frame);
-			foreach (var output in _loadedPatch.Outputs) output.Evaluate(_lastDeltaSeconds, _bpmClock.Frame);
+			LoadedMainPatch.ApplyResolvedParameters(_bpmClock.Frame);
+			foreach (var output in LoadedMainPatch.Outputs) output.Evaluate(_lastDeltaSeconds, _bpmClock.Frame);
 			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++) {
 				var overlay = m_OverlayPatches[laneIndex];
 				if (overlay == null || m_OverlayModes[laneIndex] == LiveSequencerCellMode.Off) continue;
@@ -929,7 +931,7 @@ namespace ShitDesigner.Main {
 
 		public void SceneUpdate(double deltaSeconds) {
 			EnsureUsable();
-			foreach (var output in _loadedPatch.Outputs) output.SceneUpdate(Math.Max(0d, deltaSeconds));
+			foreach (var output in LoadedMainPatch.Outputs) output.SceneUpdate(Math.Max(0d, deltaSeconds));
 			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++) {
 				var overlay = m_OverlayPatches[laneIndex];
 				if (overlay == null || m_OverlayModes[laneIndex] == LiveSequencerCellMode.Off) continue;
@@ -941,7 +943,7 @@ namespace ShitDesigner.Main {
 			EnsureUsable();
 			var nextFrame = _frameNumber + 1;
 			if (nextFrame == 0) nextFrame = 1;
-			foreach (var output in _loadedPatch.Outputs) output.Render(_graphTime, nextFrame);
+			foreach (var output in LoadedMainPatch.Outputs) output.Render(_graphTime, nextFrame);
 			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++) {
 				var overlay = m_OverlayPatches[laneIndex];
 				if (overlay == null || m_OverlayModes[laneIndex] == LiveSequencerCellMode.Off) continue;
@@ -953,7 +955,7 @@ namespace ShitDesigner.Main {
 				if (overlay == null || m_OverlayModes[laneIndex] == LiveSequencerCellMode.Off || overlay.Outputs.Count == 0) continue;
 				overlayInputs.Add(new LiveOverlayInput(m_OverlayModes[laneIndex], overlay.Outputs[0].ProgramTexture));
 			}
-			var mainTexture = _loadedPatch.Outputs.Count > 0 ? _loadedPatch.Outputs[0].ProgramTexture : null;
+			var mainTexture = LoadedMainPatch.Outputs.Count > 0 ? LoadedMainPatch.Outputs[0].ProgramTexture : null;
 			var composite = _graph.Compositor.Render(mainTexture, overlayInputs, nextFrame, _graphTime);
 			_frameNumber = nextFrame;
 			CurrentFrames = new LiveProgramFrames(new[] { new LiveProgramFrame(composite, _frameNumber) });
@@ -1017,7 +1019,7 @@ namespace ShitDesigner.Main {
 			return m_OverlayPreviewFrames;
 		}
 
-		public LiveParameterDefinition[] GetLoadedPatchParameterDefinitions() => _loadedPatch?.GetParameterDefinitions() ?? Array.Empty<LiveParameterDefinition>();
+		public LiveParameterDefinition[] GetLoadedPatchParameterDefinitions() => LoadedMainPatch?.GetParameterDefinitions() ?? Array.Empty<LiveParameterDefinition>();
 
 		public void Dispose() {
 			if (_disposed) return;
@@ -1095,17 +1097,31 @@ namespace ShitDesigner.Main {
 			DisposePatch(preview.Patch);
 		}
 
-		private void LoadPreloadedPatch() {
-			var previousLoadedPatch = _loadedPatch;
-			previousLoadedPatch?.SetSceneActive(false);
-			_loadedPatch = _preloadedPatch;
-			_loadedPatch.SetSceneActive(true);
-			if (previousLoadedPatch != _loadedPatch) DisposePatch(previousLoadedPatch);
+		private LivePatch LoadedMainPatch => m_MainCuePatches[m_ActiveMainCueIndex];
+		private LivePatch PreloadedMainPatch => m_MainCuePatches[InactiveMainCueIndex];
+		private int InactiveMainCueIndex => 1 - m_ActiveMainCueIndex;
+
+		private void AssignMainCuePatch(int cueIndex, PatchDefinition definition) {
+			if (m_MainCuePatches[cueIndex]?.Definition == definition) return;
+			var nextPatch = CreatePatch(definition, ProgramRenderSize);
+			var previousPatch = m_MainCuePatches[cueIndex];
+			m_MainCuePatches[cueIndex] = nextPatch;
+			m_MainCuePatchIds[cueIndex] = definition.Id;
+			DisposePatch(previousPatch);
+		}
+
+		private void ActivateMainCue(int cueIndex) {
+			if (cueIndex == m_ActiveMainCueIndex) return;
+			var nextPatch = m_MainCuePatches[cueIndex];
+			if (nextPatch == null) throw new InvalidOperationException("The requested Cue Slot is empty.");
+			LoadedMainPatch.SetSceneActive(false);
+			m_ActiveMainCueIndex = cueIndex;
+			nextPatch.SetSceneActive(true);
 		}
 
 		private void EnsureUsable() {
 			if (_disposed) throw new ObjectDisposedException(nameof(LiveGraphRuntime));
-			if (_loadedPatch == null) throw new InvalidOperationException("A patch is not loaded.");
+			if (LoadedMainPatch == null) throw new InvalidOperationException("A patch is not loaded.");
 		}
 
 		private static LiveParameterApplicationResult Accept(LiveParameterRequest request) => new LiveParameterApplicationResult(request.SequenceNumber, true, string.Empty);

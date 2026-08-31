@@ -16,7 +16,8 @@ namespace ShitDesigner.Main {
 	[DisallowMultipleComponent]
 	[DefaultExecutionOrder(1000)]
 	public sealed class ApplicationLiveHost : MonoBehaviour {
-		public const int MainCueCount = 2;
+		public const int MainCueCount = LiveGraphRuntime.MainCueCount;
+		private static readonly string[] m_EmptyMainCuePatchIds = new string[MainCueCount];
 
 		[SerializeField] private LiveGraphBootstrap _graphBootstrap;
 		[SerializeField] private MidiInputManager _midiInputManager;
@@ -41,7 +42,6 @@ namespace ShitDesigner.Main {
 		private LivePatchReadModel[] _patches = Array.Empty<LivePatchReadModel>();
 		private LiveEffectNodeReadModel[] m_EffectNodes = Array.Empty<LiveEffectNodeReadModel>();
 		private string[] m_MainPatchIds = Array.Empty<string>();
-		private readonly string[] m_MainCuePatchIds = new string[MainCueCount];
 		private string[] m_OverlayPatchIds = Array.Empty<string>();
 		private string[] m_EffectNodeTypeIds = Array.Empty<string>();
 		private ulong _tickFrameNumber;
@@ -54,7 +54,8 @@ namespace ShitDesigner.Main {
 		public ApplicationLiveHostState State { get; private set; } = ApplicationLiveHostState.Cold;
 		public LiveUiReadModel ReadModel { get; private set; }
 		public LiveParameterQueue ParameterQueue => _parameterQueue;
-		public IReadOnlyList<string> MainCuePatchIds => m_MainCuePatchIds;
+		public IReadOnlyList<string> MainCuePatchIds => _runtime?.MainCuePatchIds ?? m_EmptyMainCuePatchIds;
+		public int ActiveMainCueIndex => _runtime?.ActiveMainCueIndex ?? -1;
 		public string LastDiagnostic { get; private set; } = string.Empty;
 		public IReadOnlyList<LiveStepSequencer> Sequencers => m_Sequencers;
 
@@ -78,7 +79,6 @@ namespace ShitDesigner.Main {
 				_patches = _runtime.Patches.Select(patch => new LivePatchReadModel(patch.Id, patch.DisplayName,
 					mainPatchIds.Contains(patch.Id) ? LivePatchRole.Main : LivePatchRole.Overlay)).ToArray();
 				m_MainPatchIds = _patches.Where(patch => patch.Role == LivePatchRole.Main).Select(patch => patch.Id).ToArray();
-				Array.Clear(m_MainCuePatchIds, 0, m_MainCuePatchIds.Length);
 				m_OverlayPatchIds = _patches.Where(patch => patch.Role == LivePatchRole.Overlay).Select(patch => patch.Id).ToArray();
 				m_EffectNodes = _graphBootstrap.EffectNodes.Select(entry => new LiveEffectNodeReadModel(
 					entry.TypeId.Value, entry.DisplayName, entry.Category)).ToArray();
@@ -196,9 +196,9 @@ namespace ShitDesigner.Main {
 		}
 
 		public bool AssignMainPatchToCue(int cueIndex, string patchId) {
-			if (cueIndex < 0 || cueIndex >= m_MainCuePatchIds.Length || !m_MainPatchIds.Contains(patchId)) return false;
-			m_MainCuePatchIds[cueIndex] = patchId;
-			return true;
+			if (_runtime == null || cueIndex < 0 || cueIndex >= MainCueCount || cueIndex == _runtime.ActiveMainCueIndex || !m_MainPatchIds.Contains(patchId))
+				return false;
+			return _parameterQueue.EnqueuePreloadPatch(patchId).Accepted;
 		}
 
 		private void BeginPianoMainCueSwitch() {
@@ -206,23 +206,23 @@ namespace ShitDesigner.Main {
 			var targetPatchId = AlternateMainCuePatchId(_runtime.LoadedPatchId);
 			if (string.IsNullOrEmpty(targetPatchId)) return;
 			m_PianoReturnMainPatchId = _runtime.LoadedPatchId;
-			_parameterQueue.EnqueueLaunchPatch(targetPatchId);
+			_parameterQueue.EnqueueLoadPatch(targetPatchId);
 		}
 
 		private void EndPianoMainCueSwitch() {
 			var returnPatchId = m_PianoReturnMainPatchId;
 			m_PianoReturnMainPatchId = string.Empty;
-			if (!string.IsNullOrEmpty(returnPatchId)) _parameterQueue.EnqueueLaunchPatch(returnPatchId);
+			if (!string.IsNullOrEmpty(returnPatchId)) _parameterQueue.EnqueueLoadPatch(returnPatchId);
 		}
 
 		private void CompleteMainCueSwitch() {
 			m_PianoReturnMainPatchId = string.Empty;
 			var targetPatchId = AlternateMainCuePatchId(_runtime?.LoadedPatchId);
-			if (!string.IsNullOrEmpty(targetPatchId)) _parameterQueue.EnqueueLaunchPatch(targetPatchId);
+			if (!string.IsNullOrEmpty(targetPatchId)) _parameterQueue.EnqueueLoadPatch(targetPatchId);
 		}
 
 		private string AlternateMainCuePatchId(string activePatchId)
-			=> m_MainCuePatchIds.FirstOrDefault(patchId => !string.IsNullOrEmpty(patchId) && patchId != activePatchId) ?? string.Empty;
+			=> MainCuePatchIds.FirstOrDefault(patchId => !string.IsNullOrEmpty(patchId) && patchId != activePatchId) ?? string.Empty;
 
 		public void SelectEffectNode(string typeId) {
 			var effectIndex = Array.IndexOf(m_EffectNodeTypeIds, typeId);
