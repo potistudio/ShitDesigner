@@ -208,7 +208,7 @@
     border-color: rgb(48, 55, 65);
 }
 
-.cue-slot.is-assigned {
+.cue-slot.is-active {
     background-color: rgb(29, 62, 96);
     border-color: rgb(88, 166, 255);
 }

@@ -599,7 +599,7 @@ namespace ShitDesigner.Main {
 				var patch = model.Patches.FirstOrDefault(candidate => candidate.Role == LivePatchRole.Main && candidate.Id == patchId);
 				var assigned = !string.IsNullOrEmpty(patch.Id);
 				m_MainCueSlots[index].Q<Label>().text = assigned ? patch.Name : "Cue Slot " + (index + 1);
-				m_MainCueSlots[index].EnableInClassList("is-assigned", assigned);
+				m_MainCueSlots[index].EnableInClassList("is-active", assigned && patch.Id == model.LoadedPatchId);
 			}
 		}
 

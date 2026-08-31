@@ -147,7 +147,8 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(host.MainCuePatchIds, Is.EqualTo(mainPatches.Select(patch => patch.Id).Take(ApplicationLiveHost.MainCueCount)));
 			Assert.That(cueSlots.Select(slot => slot.Q<Label>().text),
 				Is.EqualTo(mainPatches.Select(patch => patch.Name).Take(ApplicationLiveHost.MainCueCount)));
-			Assert.That(cueSlots.All(slot => slot.ClassListContains("is-assigned")), Is.True);
+			Assert.That(cueSlots.Select(slot => slot.ClassListContains("is-active")),
+				Is.EqualTo(mainPatches.Take(ApplicationLiveHost.MainCueCount).Select(patch => patch.Id == host.ReadModel.LoadedPatchId)));
 			Assert.That(firstMainButton.worldBound.yMin, Is.EqualTo(mainPatchControls.contentViewport.worldBound.yMin).Within(0.5f));
 			var initialMainListTop = firstMainButton.worldBound.yMin;
 			host.MoveCatalogSelection(0, 1);
