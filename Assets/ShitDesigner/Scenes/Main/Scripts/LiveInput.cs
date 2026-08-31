@@ -64,6 +64,11 @@ namespace ShitDesigner.Main {
 				m_ToggleEditMode();
 				return;
 			}
+			if (keyboard.cKey.wasPressedThisFrame && keyboard.shiftKey.isPressed) {
+				m_IsPianoMainCueSwitchHeld = false;
+				m_CompleteMainCueSwitch();
+				return;
+			}
 			if (keyboard.shiftKey.isPressed) {
 				var parameterCueIndex = PressedInstantEffectIndex(keyboard);
 				if (parameterCueIndex >= 0) {
@@ -80,11 +85,7 @@ namespace ShitDesigner.Main {
 				return;
 			}
 			if (keyboard.aKey.wasPressedThisFrame) {
-				if (keyboard.shiftKey.isPressed) {
-					m_IsPianoMainCueSwitchHeld = false;
-					m_CompleteMainCueSwitch();
-				}
-				else {
+				if (!keyboard.shiftKey.isPressed) {
 					m_IsPianoMainCueSwitchHeld = true;
 					m_BeginPianoMainCueSwitch();
 					EndPianoMainCueSwitchIfReleased(keyboard);
@@ -214,12 +215,19 @@ namespace ShitDesigner.Main {
 		private readonly LiveParameterQueue m_Queue;
 		private readonly IReadOnlyList<string> m_PatchIds;
 		private readonly IReadOnlyDictionary<string, PatchDefinition> m_PatchesById;
+		private readonly int m_MainCueFaderChannel;
+		private readonly int m_MainCueFaderControlNumber;
 		private string m_LoadedPatchId;
 
-		public LiveMidiInput(MidiInputManager manager, LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches) {
+		public LiveMidiInput(MidiInputManager manager, LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches,
+			int mainCueFaderChannel = 16, int mainCueFaderControlNumber = 5) {
 			m_Manager = manager ?? throw new ArgumentNullException(nameof(manager));
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));
+			if (mainCueFaderChannel < 1 || mainCueFaderChannel > 16) throw new ArgumentOutOfRangeException(nameof(mainCueFaderChannel));
+			if (mainCueFaderControlNumber < 0 || mainCueFaderControlNumber > 127) throw new ArgumentOutOfRangeException(nameof(mainCueFaderControlNumber));
+			m_MainCueFaderChannel = mainCueFaderChannel;
+			m_MainCueFaderControlNumber = mainCueFaderControlNumber;
 
 			var patchIds = new List<string>(patches.Count);
 			var patchesById = new Dictionary<string, PatchDefinition>(StringComparer.Ordinal);
@@ -241,6 +249,11 @@ namespace ShitDesigner.Main {
 
 		private void OnInputReceived(MidiInputEvent inputEvent) {
 			var control = inputEvent.Control;
+			if (control.Kind == MidiControlKind.ControlChange && control.Channel == m_MainCueFaderChannel
+				&& control.Number == m_MainCueFaderControlNumber) {
+				m_Queue.EnqueueSetMainCueFader(inputEvent.RawValue / (float)control.RawMaximum);
+				return;
+			}
 			if (control.Channel == PatchSelectionChannel && control.Kind == MidiControlKind.Note && inputEvent.RawValue > 0) {
 				var sceneIndex = control.Number - 36;
 				if (sceneIndex >= 0 && sceneIndex < m_PatchIds.Count) {

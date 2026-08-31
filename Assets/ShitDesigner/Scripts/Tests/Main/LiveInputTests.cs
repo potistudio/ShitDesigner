@@ -87,7 +87,7 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void KeyboardASwitchesMainCuesInPianoOrCompleteMode() {
+		public void KeyboardAUsesPianoSwitchAndShiftCSwitchesCompletely() {
 			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.A));
 			Keyboard keyboard = null;
 			try {
@@ -110,7 +110,7 @@ namespace ShitDesigner.Main.Tests {
 				InputSystem.QueueStateEvent(keyboard, new KeyboardState());
 				InputSystem.Update();
 				input.Poll("patch-a");
-				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift, Key.A));
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift, Key.C));
 				InputSystem.Update();
 				input.Poll("patch-a");
 				InputSystem.QueueStateEvent(keyboard, new KeyboardState());
@@ -124,6 +124,27 @@ namespace ShitDesigner.Main.Tests {
 				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
 				Object.DestroyImmediate(patch);
 			}
+		}
+
+		[Test]
+		public void MainCueFaderUsesItsCurrentPositionAsTheToggleReference() {
+			var fader = new LiveMainCueFader();
+
+			fader.SetPosition(1f);
+			Assert.That(fader.ReferenceCueIndex, Is.Zero);
+			Assert.That(fader.AlternateOpacity, Is.Zero);
+
+			fader.SetPosition(0f);
+			Assert.That(fader.DominantCueIndex, Is.EqualTo(1));
+			Assert.That(fader.AlternateOpacity, Is.EqualTo(1f));
+
+			fader.ToggleReferenceCue();
+			Assert.That(fader.ReferenceCueIndex, Is.Zero);
+			Assert.That(fader.AlternateOpacity, Is.Zero);
+
+			fader.SetPosition(1f);
+			Assert.That(fader.DominantCueIndex, Is.EqualTo(1));
+			Assert.That(fader.AlternateOpacity, Is.EqualTo(1f));
 		}
 
 		[Test]
@@ -303,6 +324,33 @@ namespace ShitDesigner.Main.Tests {
 				Object.DestroyImmediate(owner);
 				Object.DestroyImmediate(patchA);
 				Object.DestroyImmediate(patchB);
+			}
+		}
+
+		[Test]
+		public void LaunchControlFirstFaderQueuesMainCueOpacityWithoutDrivingPatchParameters() {
+			var owner = new GameObject("MIDI");
+			var patch = CreatePatch("patch-a", new PatchMidiInputBinding("motion", MidiControlKind.ControlChange, 16, 5));
+			try {
+				var manager = owner.AddComponent<MidiInputManager>();
+				var source = new QueueMidiInputSource();
+				manager.Configure(new NullMidiApplication(), new NullLiveControlApplication(), source);
+				var queue = new LiveParameterQueue();
+				using (var input = new LiveMidiInput(manager, queue, new[] { patch })) {
+					input.SetSelectedPatch("patch-a");
+					source.Enqueue(new MidiInputEvent(new MidiControl("Launch Control XL 3", MidiControlKind.ControlChange, 16, 5), 32));
+					manager.Poll();
+				}
+
+				var requests = new List<LiveParameterRequest>();
+				queue.Drain(requests);
+				Assert.That(requests, Has.Count.EqualTo(1));
+				Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.SetMainCueFader));
+				Assert.That(requests[0].Value, Is.EqualTo(32f / 127f).Within(.0001f));
+			}
+			finally {
+				Object.DestroyImmediate(owner);
+				Object.DestroyImmediate(patch);
 			}
 		}
 
