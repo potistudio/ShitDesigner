@@ -10,6 +10,7 @@ using UnityEngine.Video;
 namespace ShitDesigner.Scene {
 	[Serializable]
 	public sealed class PatchGraphParameter {
+		[SerializeField] private string m_NodeId;
 		[SerializeField] private string _id;
 		[SerializeField] private ParameterType _type;
 		[SerializeField] private float _floatValue;
@@ -21,6 +22,7 @@ namespace ShitDesigner.Scene {
 		[SerializeField] private Color _colorValue = Color.white;
 		[SerializeField] private string _textValue;
 
+		public string NodeId => (m_NodeId ?? string.Empty).Trim();
 		public string Id => (_id ?? string.Empty).Trim();
 		public ParameterType Type => _type;
 		public ParameterValue Value => ToParameterValue();
@@ -43,7 +45,8 @@ namespace ShitDesigner.Scene {
 
 		public PatchGraphParameter() { }
 
-		public PatchGraphParameter(string id, ParameterValue value) {
+		public PatchGraphParameter(string id, ParameterValue value, string nodeId = null) {
+			m_NodeId = nodeId;
 			_id = id;
 			SetValue(value);
 		}
@@ -209,6 +212,17 @@ namespace ShitDesigner.Scene {
 				return Failure("patch.definition.graph.connection_duplicate", "A patch graph input port can have only one connection.");
 			if (HasCycle()) return Failure("patch.definition.graph.cycle", "Patch graph connections must be acyclic.");
 			return UnitResult.Success<Diagnostic>();
+		}
+
+		public bool TryResolveHotCueTarget(PatchGraphParameter value, out PatchGraphNode node) {
+			node = null;
+			if (value == null || string.IsNullOrWhiteSpace(value.Id)) return false;
+			var matches = Nodes.Where(candidate => candidate != null
+				&& (string.IsNullOrWhiteSpace(value.NodeId) || string.Equals(candidate.Id, value.NodeId, StringComparison.Ordinal))
+				&& candidate.FindParameter(value.Id) != null).ToArray();
+			if (matches.Length != 1) return false;
+			node = matches[0];
+			return true;
 		}
 
 		private bool HasCycle() {
@@ -455,17 +469,16 @@ namespace ShitDesigner.Scene {
 				var hotCue = GetHotCue(hotCueIndex);
 				if (hotCue == null) continue;
 				if (hotCue.Values.Any(value => value == null || string.IsNullOrWhiteSpace(value.Id) || !value.TryGetValue(out _)))
-					return Failure("patch.definition.hot_cue.value", "Every Hot Cue value requires a published parameter ID and finite value.");
-				if (hotCue.Values.GroupBy(value => value.Id, StringComparer.Ordinal).Any(group => group.Count() > 1))
-					return Failure("patch.definition.hot_cue.duplicate", "A Hot Cue cannot assign the same published parameter more than once.");
+					return Failure("patch.definition.hot_cue.value", "Every Hot Cue value requires a Program Graph parameter ID and finite value.");
+				var targets = new HashSet<string>(StringComparer.Ordinal);
 				foreach (var value in hotCue.Values) {
-					var parameter = Parameters.FirstOrDefault(candidate => string.Equals(candidate.Id, value.Id, StringComparison.Ordinal));
-					if (parameter == null)
-						return Failure("patch.definition.hot_cue.parameter", "A Hot Cue references an unknown published parameter.");
-					var graphNode = ProgramGraph.Nodes.First(node => string.Equals(node.Id, parameter.NodeId, StringComparison.Ordinal));
-					var expectedType = graphNode.IsSceneNode ? ParameterType.Float : graphNode.FindParameter(parameter.ParameterId).Type;
+					if (!ProgramGraph.TryResolveHotCueTarget(value, out var graphNode))
+						return Failure("patch.definition.hot_cue.parameter", "A Hot Cue references an unknown or ambiguous Program Graph parameter.");
+					if (!targets.Add(graphNode.Id + "\n" + value.Id))
+						return Failure("patch.definition.hot_cue.duplicate", "A Hot Cue cannot assign the same Program Graph parameter more than once.");
+					var expectedType = graphNode.FindParameter(value.Id).Type;
 					if (value.Type != expectedType)
-						return Failure("patch.definition.hot_cue.type", "A Hot Cue value type does not match its published parameter.");
+						return Failure("patch.definition.hot_cue.type", "A Hot Cue value type does not match its Program Graph parameter.");
 				}
 			}
 			if (KeyboardInputs.Any(binding => binding == null || binding.Validate().IsFailure)) return Failure("patch.definition.keyboard_input", "Every patch keyboard input must be valid.");

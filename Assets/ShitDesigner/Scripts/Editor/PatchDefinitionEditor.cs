@@ -47,8 +47,8 @@ namespace ShitDesigner.Editor {
 			EditorGUILayout.Space(6f);
 			EditorGUILayout.PropertyField(_parameters, new GUIContent("Published Parameters"), true);
 			EditorGUILayout.LabelField("Hot Cues", EditorStyles.boldLabel);
-			EditorGUILayout.PropertyField(m_HotCue1, new GUIContent("Hot Cue 1 ([)", "Values reference Published Parameter IDs."), true);
-			EditorGUILayout.PropertyField(m_HotCue2, new GUIContent("Hot Cue 2 (])", "Values reference Published Parameter IDs."), true);
+			EditorGUILayout.PropertyField(m_HotCue1, new GUIContent("Hot Cue 1 ([)", "Values reference Program Graph parameters. Node ID is optional when the parameter ID is unique."), true);
+			EditorGUILayout.PropertyField(m_HotCue2, new GUIContent("Hot Cue 2 (])", "Values reference Program Graph parameters. Node ID is optional when the parameter ID is unique."), true);
 
 			EditorGUILayout.Space(6f);
 			EditorGUILayout.PropertyField(m_KeyboardInputs, new GUIContent("Keyboard Inputs", "Maps key presses to published parameters while this patch is loaded. A press sends 1.0; release sends no request."), true);
@@ -737,17 +737,25 @@ namespace ShitDesigner.Editor {
 
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
 			EditorGUI.BeginProperty(position, label, property);
+			var nodeId = property.FindPropertyRelative("m_NodeId");
 			var id = property.FindPropertyRelative("_id");
 			var type = property.FindPropertyRelative("_type");
 			var y = position.y;
+			if (IsHotCueValue(property))
+				EditorGUI.PropertyField(Line(position, ref y), nodeId, new GUIContent("Node ID", "Optional when the parameter ID exists on exactly one Program Graph node."));
 			EditorGUI.PropertyField(Line(position, ref y), id, new GUIContent("ID"));
 			EditorGUI.PropertyField(Line(position, ref y), type, new GUIContent("Type"));
 			DrawValue(Line(position, ref y), ValueProperty(property, type), new GUIContent("Value"));
 			EditorGUI.EndProperty();
 		}
 
-		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
-			=> EditorGUIUtility.singleLineHeight * 3f + LineSpacing * 2f;
+		public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
+			var lineCount = IsHotCueValue(property) ? 4f : 3f;
+			return EditorGUIUtility.singleLineHeight * lineCount + LineSpacing * (lineCount - 1f);
+		}
+
+		private static bool IsHotCueValue(SerializedProperty property)
+			=> property.propertyPath.IndexOf("m_HotCue", StringComparison.Ordinal) >= 0;
 
 		private static Rect Line(Rect position, ref float y) {
 			var line = new Rect(position.x, y, position.width, EditorGUIUtility.singleLineHeight);

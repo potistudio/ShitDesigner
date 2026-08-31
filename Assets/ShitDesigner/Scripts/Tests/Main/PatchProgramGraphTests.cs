@@ -69,5 +69,38 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(hotCue.Values.Single(value => value.Id == "video_speed").Value.AsFloat(), Is.EqualTo(1.25f));
 			Assert.That(hotCue.Values.Single(value => value.Id == "video_loop").Value.AsBool(), Is.False);
 		}
+
+		[Test]
+		public void HotCueResolvesAUniqueProgramGraphParameterWithoutPublishingIt() {
+			var graph = new PatchProgramGraph("video", new[] {
+				new PatchGraphNode("video", VideoPlayerContract.NodeTypeId, new[] {
+					new PatchGraphParameter(VideoPlayerContract.PlayheadParameterId, ParameterValue.FromFloat(0f))
+				})
+			}, new PatchGraphConnection[0]);
+			var hotCueValue = new PatchGraphParameter(VideoPlayerContract.PlayheadParameterId, ParameterValue.FromFloat(4f));
+
+			var resolved = graph.TryResolveHotCueTarget(hotCueValue, out var node);
+
+			Assert.That(resolved, Is.True);
+			Assert.That(node.Id, Is.EqualTo("video"));
+			Assert.That(node.FindParameter(hotCueValue.Id).Value.AsFloat(), Is.Zero);
+		}
+
+		[Test]
+		public void HotCueRequiresNodeIdOnlyWhenAProgramGraphParameterIsAmbiguous() {
+			var parameters = new[] {
+				new PatchGraphParameter(VideoPlayerContract.PlayheadParameterId, ParameterValue.FromFloat(0f))
+			};
+			var graph = new PatchProgramGraph("video_a", new[] {
+				new PatchGraphNode("video_a", VideoPlayerContract.NodeTypeId, parameters),
+				new PatchGraphNode("video_b", VideoPlayerContract.NodeTypeId, parameters)
+			}, new PatchGraphConnection[0]);
+
+			Assert.That(graph.TryResolveHotCueTarget(new PatchGraphParameter(VideoPlayerContract.PlayheadParameterId,
+				ParameterValue.FromFloat(4f)), out _), Is.False);
+			Assert.That(graph.TryResolveHotCueTarget(new PatchGraphParameter(VideoPlayerContract.PlayheadParameterId,
+				ParameterValue.FromFloat(4f), "video_b"), out var node), Is.True);
+			Assert.That(node.Id, Is.EqualTo("video_b"));
+		}
 	}
 }
