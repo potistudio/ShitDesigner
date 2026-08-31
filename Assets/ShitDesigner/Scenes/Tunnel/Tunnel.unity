@@ -201,7 +201,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7787689742687978739, guid: 52d135c910953af43a7424639474c3c2, type: 3}
       propertyPath: m_Name
-      value: Cylinder Flythrough
+      value: Tunnel
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:

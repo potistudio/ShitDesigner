@@ -142,7 +142,7 @@ GameObject:
   - component: {fileID: 6129218759055021738}
   - component: {fileID: 6129218759055021739}
   m_Layer: 0
-  m_Name: Cylinder Flythrough
+  m_Name: Tunnel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

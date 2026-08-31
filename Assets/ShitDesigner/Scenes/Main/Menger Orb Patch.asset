@@ -12,18 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36a7c9fd8af84f24a8db20cf4457e4ca, type: 3}
   m_Name: Menger Orb Patch
   m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
-  _id: menger-orb
+  _id: menger_orb
   _displayName: Menger Orb
   _programGraph:
     _outputNodeId: menger_orb
     _nodes:
-    - _id: menger-orb
-      _typeId: shitdesigner.scene.3d
-      m_SceneDefinition: {fileID: 11400000, guid: 8a676b5fc1244a988621a656e867806e, type: 2}
-      _parameters: []
     - _id: menger_orb
       _typeId: shitdesigner.shader.raymarch.menger_sponge
-      m_VideoPath:
+      m_SceneDefinition: {fileID: 0}
+      m_VideoPath: 
       m_VideoClip: {fileID: 0}
       _parameters:
       - _id: steps
@@ -35,7 +32,7 @@ MonoBehaviour:
         _vector3Value: {x: 0, y: 0, z: 0}
         _vector4Value: {x: 0, y: 0, z: 0, w: 0}
         _colorValue: {r: 0, g: 0, b: 0, a: 0}
-        _textValue:
+        _textValue: 
       - _id: far_distance
         _type: 0
         _floatValue: 50
@@ -45,7 +42,7 @@ MonoBehaviour:
         _vector3Value: {x: 0, y: 0, z: 0}
         _vector4Value: {x: 0, y: 0, z: 0, w: 0}
         _colorValue: {r: 0, g: 0, b: 0, a: 0}
-        _textValue:
+        _textValue: 
     _connections: []
   _parameters: []
   m_KeyboardInputs: []

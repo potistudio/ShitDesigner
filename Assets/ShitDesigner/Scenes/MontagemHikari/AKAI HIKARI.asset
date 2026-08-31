@@ -22,8 +22,45 @@ MonoBehaviour:
       m_SceneDefinition: {fileID: 0}
       m_VideoPath: 
       m_VideoClip: {fileID: 32900000, guid: 59e96dc6ec182204f93896932ee99e30, type: 3}
-      _parameters: []
+      _parameters:
+      - m_NodeId: 
+        _id: transport.playhead_seconds
+        _type: 0
+        _floatValue: 0
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 0, g: 0, b: 0, a: 0}
+        _textValue: 
     _connections: []
   _parameters: []
+  m_HotCue1:
+    m_Values:
+    - m_NodeId: video
+      _id: transport.playhead_seconds
+      _type: 0
+      _floatValue: 10
+      _intValue: 0
+      _boolValue: 0
+      _vector2Value: {x: 0, y: 0}
+      _vector3Value: {x: 0, y: 0, z: 0}
+      _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+      _colorValue: {r: 0, g: 0, b: 0, a: 0}
+      _textValue: 
+  m_HotCue2:
+    m_Values:
+    - m_NodeId: video
+      _id: transport.playhead_seconds
+      _type: 0
+      _floatValue: 20
+      _intValue: 0
+      _boolValue: 0
+      _vector2Value: {x: 0, y: 0}
+      _vector3Value: {x: 0, y: 0, z: 0}
+      _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+      _colorValue: {r: 0, g: 0, b: 0, a: 0}
+      _textValue: 
   m_KeyboardInputs: []
   m_MidiInputs: []
