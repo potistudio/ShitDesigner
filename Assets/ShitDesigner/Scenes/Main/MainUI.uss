@@ -255,12 +255,13 @@
     border-color: rgb(255, 190, 74);
 }
 
-.patch-main-button.is-dragging {
+.patch-main-button.is-dragging,
+.patch-overlay-button.is-dragging {
     color: rgb(13, 15, 18);
     background-color: rgb(255, 190, 74);
 }
 
-.main-cue-drag-stroke {
+.patch-drag-stroke {
     display: none;
     position: absolute;
     left: 0;
@@ -269,7 +270,7 @@
     bottom: 0;
 }
 
-.main-cue-drag-stroke.is-active {
+.patch-drag-stroke.is-active {
     display: flex;
 }
 
@@ -380,6 +381,12 @@
 .sequencer-lane-label.is-selecting {
     color: rgb(13, 15, 18);
     background-color: rgb(255, 190, 74);
+}
+
+.sequencer-lane.is-drop-target .sequencer-lane-label,
+.sequencer-lane.is-drop-target .sequencer-step {
+    border-color: rgb(255, 190, 74);
+    background-color: rgb(58, 48, 28);
 }
 
 .sequencer-beat-label,

@@ -365,6 +365,12 @@ namespace ShitDesigner.Main {
 			var patchId = m_SelectedCatalogRole == LiveCatalogRole.Overlay ? SelectedCatalogItemId : string.Empty;
 			return string.IsNullOrEmpty(patchId)
 				? LiveSequencerOperationResult.Reject("Select an overlay scene first.")
+				: AssignOverlayPatchToLane(laneIndex, patchId);
+		}
+
+		public LiveSequencerOperationResult AssignOverlayPatchToLane(int laneIndex, string patchId) {
+			return !m_OverlayPatchIds.Contains(patchId)
+				? LiveSequencerOperationResult.Reject("Only overlay scenes can be assigned to the overlay sequencer.")
 				: m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).AssignLane(laneIndex, patchId);
 		}
 
