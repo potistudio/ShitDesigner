@@ -22,6 +22,9 @@ namespace ShitDesigner.Main {
 		private const string PlayheadParameterId = "transport.playhead_seconds";
 		private const string SpeedParameterId = "transport.speed";
 		private const string LoopParameterId = "transport.loop";
+		[Header("Timing")]
+		[Tooltip("Maps normalized beat phase to normalized graph time. The curve repeats once per beat.")]
+		[SerializeField] private AnimationCurve m_GlobalTimeEasing = AnimationCurve.Linear(0f, 0f, 1f, 1f);
 		[Header("Main")]
 		[FormerlySerializedAs("_patches")]
 		[SerializeField] private PatchDefinition[] m_MainPatches = Array.Empty<PatchDefinition>();
@@ -54,7 +57,7 @@ namespace ShitDesigner.Main {
 
 		public LiveGraphRuntime CreateRuntime() {
 			var graph = BuildGraph(new LiveRenderSize(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight));
-			try { return new LiveGraphRuntime(graph); }
+			try { return new LiveGraphRuntime(graph, m_GlobalTimeEasing); }
 			catch {
 				graph.Dispose();
 				throw;

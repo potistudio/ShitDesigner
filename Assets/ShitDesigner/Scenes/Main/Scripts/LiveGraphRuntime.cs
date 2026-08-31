@@ -1222,7 +1222,7 @@ namespace ShitDesigner.Main {
 
 		private readonly LiveGraph _graph;
 		private readonly Dictionary<string, PatchDefinition> _patchDefinitionsById;
-		private readonly LiveBpmClock _bpmClock = new LiveBpmClock();
+		private readonly LiveBpmClock m_BpmClock;
 		private readonly List<LivePatch> _createdPatches = new List<LivePatch>();
 		private readonly LivePatch[] m_OverlayPatches = new LivePatch[LiveStepSequencer.OverlayLaneCount];
 		private readonly LiveSequencerCellMode[] m_OverlayModes = new LiveSequencerCellMode[LiveStepSequencer.OverlayLaneCount];
@@ -1237,8 +1237,8 @@ namespace ShitDesigner.Main {
 		private int m_ActiveMainCueIndex;
 		private ulong _frameNumber;
 		private ulong m_PreviewFrameNumber;
-		private double _graphTime;
-		private double _lastDeltaSeconds;
+		private double m_GraphTime;
+		private double m_LastGraphDeltaSeconds;
 		private double m_PreviewElapsedSeconds;
 		private bool _disposed;
 
@@ -1252,11 +1252,12 @@ namespace ShitDesigner.Main {
 		public LiveProgramFrames CurrentFrames { get; private set; }
 		public IReadOnlyList<RenderTexture> OverlayPreviewFrames => m_OverlayPreviewFrames;
 		public IReadOnlyList<RenderTexture> MainCuePreviewFrames => m_MainCuePreviewFrames;
-		public LiveParameterDefinition BpmDefinition => _bpmClock.Definition;
-		public BeatClockFrame BpmFrame => _bpmClock.Frame;
+		public LiveParameterDefinition BpmDefinition => m_BpmClock.Definition;
+		public BeatClockFrame BpmFrame => m_BpmClock.Frame;
 
-		internal LiveGraphRuntime(LiveGraph graph) {
+		internal LiveGraphRuntime(LiveGraph graph, AnimationCurve globalTimeEasing) {
 			_graph = graph ?? throw new ArgumentNullException(nameof(graph));
+			m_BpmClock = new LiveBpmClock(LiveBpmClock.DefaultBpm, globalTimeEasing);
 			_patchDefinitionsById = graph.PatchDefinitions.ToDictionary(definition => definition.Id, StringComparer.Ordinal);
 			m_MainCuePatches[0] = CreatePatch(graph.PatchDefinitions[0], ProgramRenderSize);
 			m_MainCuePatchIds[0] = graph.PatchDefinitions[0].Id;
@@ -1271,9 +1272,9 @@ namespace ShitDesigner.Main {
 
 		public LiveParameterApplicationResult Apply(LiveParameterRequest request) {
 			if (request.Kind == LiveParameterRequestKind.SetBpm)
-				return _bpmClock.TrySetBpm(request.Value, out var bpmRejection) ? Accept(request) : Reject(request, bpmRejection);
+				return m_BpmClock.TrySetBpm(request.Value, out var bpmRejection) ? Accept(request) : Reject(request, bpmRejection);
 			if (request.Kind == LiveParameterRequestKind.AlignBeat)
-				return _bpmClock.TryAlignToNearestBeat(out var alignmentRejection) ? Accept(request) : Reject(request, alignmentRejection);
+				return m_BpmClock.TryAlignToNearestBeat(out var alignmentRejection) ? Accept(request) : Reject(request, alignmentRejection);
 			if (request.Kind == LiveParameterRequestKind.SetMainCueFader) {
 				m_MainCueFader.SetPosition(request.Value);
 				if (m_MainCuePatches[m_MainCueFader.AlternateCueIndex] == null)
@@ -1317,25 +1318,25 @@ namespace ShitDesigner.Main {
 
 		public void Evaluate(double deltaSeconds) {
 			EnsureUsable();
-			_lastDeltaSeconds = Math.Max(0d, deltaSeconds);
-			_graphTime += _lastDeltaSeconds;
-			_bpmClock.Advance(_lastDeltaSeconds);
+			var sourceDeltaSeconds = Math.Max(0d, deltaSeconds);
+			m_LastGraphDeltaSeconds = m_BpmClock.Advance(sourceDeltaSeconds);
+			m_GraphTime += m_LastGraphDeltaSeconds;
 			foreach (var patch in ActiveMainCuePatches()) {
-				patch.ApplyResolvedParameters(_bpmClock.Frame);
-				foreach (var output in patch.Outputs) output.Evaluate(_lastDeltaSeconds, _bpmClock.Frame);
+				patch.ApplyResolvedParameters(m_BpmClock.Frame);
+				foreach (var output in patch.Outputs) output.Evaluate(m_LastGraphDeltaSeconds, m_BpmClock.Frame);
 			}
 			foreach (var overlay in ActiveOverlayPatches()) {
-				overlay.ApplyResolvedParameters(_bpmClock.Frame);
-				foreach (var output in overlay.Outputs) output.Evaluate(_lastDeltaSeconds, _bpmClock.Frame);
+				overlay.ApplyResolvedParameters(m_BpmClock.Frame);
+				foreach (var output in overlay.Outputs) output.Evaluate(m_LastGraphDeltaSeconds, m_BpmClock.Frame);
 			}
 		}
 
-		public void SceneUpdate(double deltaSeconds) {
+		public void SceneUpdate() {
 			EnsureUsable();
 			foreach (var patch in ActiveMainCuePatches())
-				foreach (var output in patch.Outputs) output.SceneUpdate(Math.Max(0d, deltaSeconds));
+				foreach (var output in patch.Outputs) output.SceneUpdate(m_LastGraphDeltaSeconds);
 			foreach (var overlay in ActiveOverlayPatches())
-				foreach (var output in overlay.Outputs) output.SceneUpdate(Math.Max(0d, deltaSeconds));
+				foreach (var output in overlay.Outputs) output.SceneUpdate(m_LastGraphDeltaSeconds);
 		}
 
 		public LiveProgramFrames Render(IReadOnlyList<int> instantEffectTriggers = null) {
@@ -1343,9 +1344,9 @@ namespace ShitDesigner.Main {
 			var nextFrame = _frameNumber + 1;
 			if (nextFrame == 0) nextFrame = 1;
 			foreach (var patch in ActiveMainCuePatches())
-				foreach (var output in patch.Outputs) output.Render(_graphTime, nextFrame);
+				foreach (var output in patch.Outputs) output.Render(m_GraphTime, nextFrame);
 			foreach (var overlay in ActiveOverlayPatches())
-				foreach (var output in overlay.Outputs) output.Render(_graphTime, nextFrame);
+				foreach (var output in overlay.Outputs) output.Render(m_GraphTime, nextFrame);
 			var overlayInputs = new List<LiveOverlayInput>();
 			var output2Inputs = new List<LiveOverlayInput>();
 			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++) {
@@ -1360,10 +1361,10 @@ namespace ShitDesigner.Main {
 			var mainTexture = referencePatch?.Outputs.Count > 0 ? referencePatch.Outputs[0].ProgramTexture : null;
 			var alternateTexture = alternatePatch?.Outputs.Count > 0 ? alternatePatch.Outputs[0].ProgramTexture : null;
 			var composite = _graph.Compositor.Render(mainTexture, alternateTexture, m_MainCueFader.AlternateOpacity,
-				overlayInputs, nextFrame, _graphTime);
-			var programOutput = _graph.InstantEffects.Render(composite, instantEffectTriggers, nextFrame, _graphTime);
+				overlayInputs, nextFrame, m_GraphTime);
+			var programOutput = _graph.InstantEffects.Render(composite, instantEffectTriggers, nextFrame, m_GraphTime);
 			var overlayOutput = _graph.OverlayOutputCompositor.Render(Texture2D.blackTexture, null, 0f,
-				output2Inputs, nextFrame, _graphTime);
+				output2Inputs, nextFrame, m_GraphTime);
 			_frameNumber = nextFrame;
 			CurrentFrames = new LiveProgramFrames(new[] {
 				new LiveProgramFrame(programOutput, _frameNumber),
@@ -1419,8 +1420,8 @@ namespace ShitDesigner.Main {
 					if (nextFrame == 0) nextFrame = 1;
 					var previewTimeOffset = double.IsNaN(timeOffsetSeconds) || double.IsInfinity(timeOffsetSeconds)
 						? 0d : Math.Max(0d, timeOffsetSeconds);
-					RenderPreviewPatches(nextFrame, _graphTime + previewTimeOffset,
-						OffsetBeatClockFrame(_bpmClock.Frame, previewTimeOffset));
+					RenderPreviewPatches(nextFrame, m_GraphTime + m_BpmClock.ProjectGraphDelta(previewTimeOffset),
+						OffsetBeatClockFrame(m_BpmClock.Frame, previewTimeOffset));
 					m_PreviewFrameNumber = nextFrame;
 				}
 			}
@@ -1454,7 +1455,7 @@ namespace ShitDesigner.Main {
 		private LivePatch CreatePatch(PatchDefinition definition, LiveRenderSize renderSize) {
 			var patch = new LivePatch(definition, _graph.CreateOutput, renderSize);
 			try {
-				patch.ApplyResolvedParameters(_bpmClock.Frame);
+				patch.ApplyResolvedParameters(m_BpmClock.Frame);
 				_createdPatches.Add(patch);
 				return patch;
 			}
