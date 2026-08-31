@@ -164,7 +164,7 @@ MonoBehaviour:
   m_SceneTimeEncoderControlNumber: 77
   m_SceneTimeJogSpeedPerStep: 1
   m_SceneTimeJogMaximumSpeedOffset: 4
-  m_ThumbnailTimeOffsetSeconds: 0.05
+  m_ThumbnailTimeOffsetSeconds: 1.14
 --- !u!114 &444072068
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -208,12 +208,12 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 0
       value: 0
-      inSlope: 0
-      outSlope: 0
+      inSlope: 3.015873
+      outSlope: 3.015873
       tangentMode: 0
       weightedMode: 0
       inWeight: 0
-      outWeight: 0
+      outWeight: 0.075
     - serializedVersion: 3
       time: 1
       value: 1
@@ -237,6 +237,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: ccdc081ed877cef45820be53eb386e77, type: 2}
   - {fileID: 11400000, guid: 2d9ac1370a6614be380b87d895f01977, type: 2}
   m_OverlayPatches:
+  - {fileID: 11400000, guid: 5bedcb1c18bc4b47aa077176dc6042b8, type: 2}
   - {fileID: 11400000, guid: f5c5327b2f9e10544aa82240c82735cb, type: 2}
   - {fileID: 11400000, guid: c7e98bd2a7f64fe2b2539ceae6b0b9b4, type: 2}
   - {fileID: 11400000, guid: 5ae0f18f4c334a4a98a7b7d9d4adcb75, type: 2}

@@ -10,34 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 36a7c9fd8af84f24a8db20cf4457e4ca, type: 3}
-  m_Name: AssetFlush Patch
-  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
-  _id: asset_flush
-  _displayName: Asset Flush
+  m_Name: Tunnel Patch
+  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.ShitDesignerSceneDefinition
+  _id: tunnel
+  _displayName: Tunnel
   _programGraph:
     _outputNodeId: scene
     _nodes:
     - _id: scene
       _typeId: shitdesigner.scene.3d
-      m_SceneDefinition: {fileID: 11400000, guid: ba78b5050e0c4f0c880ce7a5d52a32ed, type: 2}
+      m_SceneDefinition: {fileID: 11400000, guid: 47f250965d7e4f42a8e166033822bd8b, type: 2}
       m_VideoPath: 
       m_VideoClip: {fileID: 0}
       _parameters: []
     _connections: []
-  _parameters:
-  - _id: 1
-    _displayName: 1
-    _nodeId: scene
-    _parameterId: asset_1
-    m_BeatModulation:
-      m_Enabled: 0
-      m_Signal: 0
-      m_Strength: 1
-      m_Minimum: 0
-      m_Maximum: 1
-  m_HotCue1:
-    m_Values: []
-  m_HotCue2:
-    m_Values: []
+  _parameters: []
   m_KeyboardInputs: []
   m_MidiInputs: []
