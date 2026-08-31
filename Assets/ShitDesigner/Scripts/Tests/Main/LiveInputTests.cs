@@ -363,7 +363,7 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void LaunchControlRelativeEncoderQueuesSceneTimeOffsetNudges() {
+		public void LaunchControlRelativeEncoderQueuesSceneTimeJogSpeedChanges() {
 			var owner = new GameObject("MIDI");
 			var patch = CreatePatch("patch-a", new PatchMidiInputBinding("motion", MidiControlKind.ControlChange, 16, 77));
 			try {
@@ -383,11 +383,11 @@ namespace ShitDesigner.Main.Tests {
 				queue.Drain(requests);
 				Assert.That(requests, Has.Count.EqualTo(2));
 				Assert.That(requests.Select(request => request.Kind), Is.EqualTo(new[] {
-					LiveParameterRequestKind.NudgeSceneTimeOffset,
-					LiveParameterRequestKind.NudgeSceneTimeOffset
+					LiveParameterRequestKind.JogSceneTime,
+					LiveParameterRequestKind.JogSceneTime
 				}));
-				Assert.That(requests[0].Value, Is.EqualTo(.02f).Within(.0001f));
-				Assert.That(requests[1].Value, Is.EqualTo(-.01f).Within(.0001f));
+				Assert.That(requests[0].Value, Is.EqualTo(.5f).Within(.0001f));
+				Assert.That(requests[1].Value, Is.EqualTo(-.25f).Within(.0001f));
 			}
 			finally {
 				Object.DestroyImmediate(owner);

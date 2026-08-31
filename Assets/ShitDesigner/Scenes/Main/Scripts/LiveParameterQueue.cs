@@ -11,7 +11,7 @@ namespace ShitDesigner.Main {
 		SetBpm,
 		AlignBeat,
 		SetTimeEasingEnabled,
-		NudgeSceneTimeOffset,
+		JogSceneTime,
 		SetMainCueFader,
 		ToggleMainCue
 	}
@@ -85,10 +85,10 @@ namespace ShitDesigner.Main {
 		public LiveParameterEnqueueResult EnqueueSetTimeEasingEnabled(bool enabled)
 			=> Enqueue(LiveParameterRequestKind.SetTimeEasingEnabled, string.Empty, string.Empty, ParameterValue.FromBool(enabled));
 
-		public LiveParameterEnqueueResult EnqueueNudgeSceneTimeOffset(float deltaSeconds)
-			=> float.IsNaN(deltaSeconds) || float.IsInfinity(deltaSeconds)
-				? LiveParameterEnqueueResult.Reject("The scene time offset delta must be finite.")
-				: Enqueue(LiveParameterRequestKind.NudgeSceneTimeOffset, string.Empty, string.Empty, ParameterValue.FromFloat(deltaSeconds));
+		public LiveParameterEnqueueResult EnqueueJogSceneTime(float speedOffsetDelta)
+			=> float.IsNaN(speedOffsetDelta) || float.IsInfinity(speedOffsetDelta)
+				? LiveParameterEnqueueResult.Reject("The scene time jog speed delta must be finite.")
+				: Enqueue(LiveParameterRequestKind.JogSceneTime, string.Empty, string.Empty, ParameterValue.FromFloat(speedOffsetDelta));
 
 		public LiveParameterEnqueueResult EnqueueSetMainCueFader(float normalizedValue)
 			=> float.IsNaN(normalizedValue) || float.IsInfinity(normalizedValue)
@@ -120,7 +120,7 @@ namespace ShitDesigner.Main {
 
 		private static bool IsGlobalRequest(LiveParameterRequestKind kind)
 			=> kind == LiveParameterRequestKind.SetBpm || kind == LiveParameterRequestKind.AlignBeat || kind == LiveParameterRequestKind.SetTimeEasingEnabled
-				|| kind == LiveParameterRequestKind.NudgeSceneTimeOffset || kind == LiveParameterRequestKind.SetMainCueFader
+				|| kind == LiveParameterRequestKind.JogSceneTime || kind == LiveParameterRequestKind.SetMainCueFader
 				|| kind == LiveParameterRequestKind.ToggleMainCue;
 
 		private ulong NextSequenceNumber() {
