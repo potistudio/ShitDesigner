@@ -843,6 +843,7 @@ namespace ShitDesigner.Main {
 
 	internal sealed class LiveProgramShaderGraphNode : ILiveProgramGraphNode {
 		private readonly ShaderPassGraphRuntimeNode _runtime;
+		private double m_DeltaSeconds;
 		public string Id { get; }
 		public RenderTexture Target { get; }
 		public IReadOnlyDictionary<PortId, string> Inputs { get; }
@@ -854,13 +855,13 @@ namespace ShitDesigner.Main {
 			Inputs = inputs ?? throw new ArgumentNullException(nameof(inputs));
 		}
 
-		public void Evaluate(double deltaSeconds, BeatClockFrame bpmFrame) { }
+		public void Evaluate(double deltaSeconds, BeatClockFrame bpmFrame) => m_DeltaSeconds = Math.Max(0d, deltaSeconds);
 
 		public void SceneUpdate(double deltaSeconds) { }
 
 		public void Render(IReadOnlyDictionary<string, Texture> outputs, double graphTime, ulong frameNumber) {
 			var inputs = Inputs.ToDictionary(input => input.Key, input => outputs.TryGetValue(input.Value, out var texture) ? texture : null);
-			var result = _runtime.Render(inputs, Target, frameNumber, graphTime);
+			var result = _runtime.Render(inputs, Target, frameNumber, graphTime, deltaTime: m_DeltaSeconds);
 			if (result.IsFailure) throw new InvalidOperationException(result.Error.Message);
 		}
 
@@ -1349,7 +1350,7 @@ namespace ShitDesigner.Main {
 		private ulong m_PreviewFrameNumber;
 		private double m_GraphTime;
 		private double m_SceneTimeJogSpeedOffset;
-		private double m_SceneTimeJogMaximumSpeedOffset = 1d;
+		private double m_SceneTimeJogMaximumSpeedOffset = 4d;
 		private double m_LastGraphDeltaSeconds;
 		private double m_GraphTimeScale = 1d;
 		private double m_PreviewElapsedSeconds;
@@ -1387,10 +1388,10 @@ namespace ShitDesigner.Main {
 		}
 
 		public void ConfigureSceneTimeJog(float maximumSpeedOffset) {
-			if (float.IsNaN(maximumSpeedOffset) || float.IsInfinity(maximumSpeedOffset) || maximumSpeedOffset <= 0f || maximumSpeedOffset > 1f)
+			if (float.IsNaN(maximumSpeedOffset) || float.IsInfinity(maximumSpeedOffset) || maximumSpeedOffset <= 0f)
 				throw new ArgumentOutOfRangeException(nameof(maximumSpeedOffset));
 			m_SceneTimeJogMaximumSpeedOffset = maximumSpeedOffset;
-			m_SceneTimeJogSpeedOffset = Math.Max(-maximumSpeedOffset, Math.Min(maximumSpeedOffset, m_SceneTimeJogSpeedOffset));
+			m_SceneTimeJogSpeedOffset = Math.Max(-1d, Math.Min(maximumSpeedOffset, m_SceneTimeJogSpeedOffset));
 		}
 
 		public LiveParameterApplicationResult Apply(LiveParameterRequest request) {
@@ -1405,7 +1406,7 @@ namespace ShitDesigner.Main {
 			if (request.Kind == LiveParameterRequestKind.JogSceneTime) {
 				var nextSpeedOffset = m_SceneTimeJogSpeedOffset + request.Value;
 				if (double.IsNaN(nextSpeedOffset) || double.IsInfinity(nextSpeedOffset)) return Reject(request, "The scene time jog speed must be finite.");
-				m_SceneTimeJogSpeedOffset = Math.Max(-m_SceneTimeJogMaximumSpeedOffset,
+				m_SceneTimeJogSpeedOffset = Math.Max(-1d,
 					Math.Min(m_SceneTimeJogMaximumSpeedOffset, nextSpeedOffset));
 				return Accept(request);
 			}

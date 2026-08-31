@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using ShitDesigner.Core;
 using ShitDesigner.Nodes;
@@ -128,8 +129,13 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 				var source = NewTexture(16, 16);
 				var target = NewTexture(16, 16);
 				try {
-					var result = node.Render(source, target, 1);
+					var result = node.Render(source, target, 1, graphTime: .25d, deltaTime: .125d);
 					Assert.That(result.IsSuccess, Is.True, result.IsFailure ? result.Error.Message : string.Empty);
+					var material = (Material)typeof(ShaderPassGraphRuntimeNode)
+						.GetField("_material", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(node);
+					Assert.That(material, Is.Not.Null);
+					Assert.That(material.GetFloat(ShaderFrameUniformNames.Time), Is.EqualTo(.25f).Within(.0001f));
+					Assert.That(material.GetFloat(ShaderFrameUniformNames.DeltaTime), Is.EqualTo(.125f).Within(.0001f));
 					Assert.That(node.LastPassCount, Is.EqualTo(4));
 					Assert.That(node.LastTemporaryLeaseCount, Is.EqualTo(3));
 					Assert.That(node.ActiveTemporaryLeaseCount, Is.EqualTo(0));
