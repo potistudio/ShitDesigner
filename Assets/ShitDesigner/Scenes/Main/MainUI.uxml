@@ -42,7 +42,7 @@
                 </ui:VisualElement>
             </ui:VisualElement>
             <ui:VisualElement class="inspector-column">
-                <ui:VisualElement class="sidebar-tabs">
+                <ui:VisualElement name="sidebar-tabs" class="sidebar-tabs">
                     <ui:Button name="main-tab" text="MAIN" class="sidebar-tab is-selected"/>
                     <ui:Button name="overlay-tab" text="OVERLAY" class="sidebar-tab"/>
                     <ui:Button name="effect-tab" text="FX" class="sidebar-tab"/>
