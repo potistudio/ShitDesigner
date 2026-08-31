@@ -19,6 +19,8 @@ namespace ShitDesigner.Media {
 		public Texture2D Image => m_Image;
 		public VideoClip Video => m_Video;
 		public Key KeyboardKey => m_KeyboardKey;
+		public bool IsConfigured => m_Kind == AssetFlashComponentMediaKind.Image && m_Image != null
+			|| m_Kind == AssetFlashComponentMediaKind.Video && m_Video != null;
 
 		internal void EnsureKeyboardKey(Key defaultKey) {
 			if (m_KeyboardKeyConfigured) return;
@@ -41,8 +43,8 @@ namespace ShitDesigner.Media {
 
 	/// <summary>
 	/// Standalone Unity component facade for an eight-slot image/video flash.
-	/// Press the configured keyboard key, call Trigger(1..8), or wire
-	/// FireSlot1..FireSlot8 directly to UnityEvents.
+	/// Press the configured keyboard key, trigger a configured slot at random,
+	/// call Trigger(1..8), or wire FireSlot1..FireSlot8 directly to UnityEvents.
 	/// </summary>
 	[DisallowMultipleComponent]
 	public sealed class AssetFlashComponent : MonoBehaviour {
@@ -139,6 +141,24 @@ namespace ShitDesigner.Media {
 			else if (slot.Kind == AssetFlashComponentMediaKind.Video) RestartVideo(index);
 			else ApplyOutput(null);
 			return true;
+		}
+
+		public bool TryTriggerRandom() {
+			EnsureInitialized();
+			var configuredSlotCount = 0;
+			for (var index = 0; index < m_Slots.Length; index++)
+				if (m_Slots[index].IsConfigured) configuredSlotCount++;
+			if (configuredSlotCount == 0) {
+				Clear();
+				return false;
+			}
+
+			var selection = UnityEngine.Random.Range(0, configuredSlotCount);
+			for (var index = 0; index < m_Slots.Length; index++) {
+				if (!m_Slots[index].IsConfigured) continue;
+				if (selection-- == 0) return TryTrigger(index + 1);
+			}
+			return false;
 		}
 
 		public void Clear() {
