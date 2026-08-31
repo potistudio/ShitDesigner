@@ -375,6 +375,7 @@ namespace ShitDesigner.Main {
 					if (laneLabel != null) {
 						var patchId = sequencer.LanePatchIds.Count > laneIndex ? sequencer.LanePatchIds[laneIndex] : string.Empty;
 						var patch = model.Patches.FirstOrDefault(candidate => candidate.Id == patchId);
+						var isCopiedToOutput2 = sequencer.IsCopiedToOutput2(laneIndex);
 						if (sequencer.Kind == LiveSequencerKind.Overlay) {
 							var preview = laneIndex < model.OverlayLanePreviews.Count ? model.OverlayLanePreviews[laneIndex] : null;
 							if (m_OverlayLanePreviewTextures[laneIndex] != preview) {
@@ -386,8 +387,10 @@ namespace ShitDesigner.Main {
 						laneLabel.tooltip = string.IsNullOrEmpty(patchId)
 							? "LANE " + (laneIndex + 1) + " · SELECT OVERLAY SCENE"
 							: "LANE " + (laneIndex + 1) + " · " + (string.IsNullOrEmpty(patch.Name) ? patchId : patch.Name);
+						if (isCopiedToOutput2) laneLabel.tooltip += " · OUTPUT 2 COPY";
 						laneLabel.EnableInClassList("is-assigned", !string.IsNullOrEmpty(patchId));
 						laneLabel.EnableInClassList("is-selecting", sequencer.SelectedLaneIndex == laneIndex);
+						laneLabel.parent?.EnableInClassList("is-output-2-copy", isCopiedToOutput2);
 					}
 					for (var stepIndex = 0; stepIndex < LiveStepSequencer.StepCount; stepIndex++) {
 						var button = m_SequencerControls.Q<Button>(GetSequencerCellName(sequencer.Kind, laneIndex, stepIndex));
@@ -405,6 +408,15 @@ namespace ShitDesigner.Main {
 
 		private void OnSequencerCellClicked(ClickEvent change) {
 			var target = change.target as VisualElement;
+			var lane = target;
+			while (lane != null && lane.userData is not SequencerLaneAddress) lane = lane.parent;
+			if (_host != null && lane?.userData is SequencerLaneAddress outputLaneAddress
+				&& outputLaneAddress.Kind == LiveSequencerKind.Overlay
+				&& (change.modifiers & (EventModifiers.Control | EventModifiers.Command)) != 0) {
+				ShowSequencerRejection(_host.ToggleOverlayLaneOutput2Copy(outputLaneAddress.LaneIndex));
+				change.StopImmediatePropagation();
+				return;
+			}
 			var button = target as Button ?? target?.GetFirstAncestorOfType<Button>();
 			if (_host == null || button == null) return;
 			if (button.userData is SequencerCellAddress cellAddress) {

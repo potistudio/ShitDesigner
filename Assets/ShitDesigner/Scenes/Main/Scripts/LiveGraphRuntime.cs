@@ -1226,6 +1226,7 @@ namespace ShitDesigner.Main {
 		private readonly List<LivePatch> _createdPatches = new List<LivePatch>();
 		private readonly LivePatch[] m_OverlayPatches = new LivePatch[LiveStepSequencer.OverlayLaneCount];
 		private readonly LiveSequencerCellMode[] m_OverlayModes = new LiveSequencerCellMode[LiveStepSequencer.OverlayLaneCount];
+		private readonly bool[] m_OverlayOutput2Copies = new bool[LiveStepSequencer.OverlayLaneCount];
 		private readonly Dictionary<string, LivePatchPreview> m_Previews = new Dictionary<string, LivePatchPreview>(StringComparer.Ordinal);
 		private readonly HashSet<string> m_PreviewFailures = new HashSet<string>(StringComparer.Ordinal);
 		private readonly RenderTexture[] m_OverlayPreviewFrames = new RenderTexture[LiveStepSequencer.OverlayLaneCount];
@@ -1346,20 +1347,23 @@ namespace ShitDesigner.Main {
 			foreach (var overlay in ActiveOverlayPatches())
 				foreach (var output in overlay.Outputs) output.Render(_graphTime, nextFrame);
 			var overlayInputs = new List<LiveOverlayInput>();
+			var output2Inputs = new List<LiveOverlayInput>();
 			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++) {
 				var overlay = m_OverlayPatches[laneIndex];
 				if (overlay == null || m_OverlayModes[laneIndex] == LiveSequencerCellMode.Off || overlay.Outputs.Count == 0) continue;
-				overlayInputs.Add(new LiveOverlayInput(m_OverlayModes[laneIndex], overlay.Outputs[0].ProgramTexture));
+				var input = new LiveOverlayInput(m_OverlayModes[laneIndex], overlay.Outputs[0].ProgramTexture);
+				overlayInputs.Add(input);
+				if (m_OverlayOutput2Copies[laneIndex]) output2Inputs.Add(input);
 			}
 			var referencePatch = m_MainCuePatches[m_MainCueFader.ReferenceCueIndex];
 			var alternatePatch = m_MainCuePatches[m_MainCueFader.AlternateCueIndex];
 			var mainTexture = referencePatch?.Outputs.Count > 0 ? referencePatch.Outputs[0].ProgramTexture : null;
 			var alternateTexture = alternatePatch?.Outputs.Count > 0 ? alternatePatch.Outputs[0].ProgramTexture : null;
 			var composite = _graph.Compositor.Render(mainTexture, alternateTexture, m_MainCueFader.AlternateOpacity,
-				Array.Empty<LiveOverlayInput>(), nextFrame, _graphTime);
+				overlayInputs, nextFrame, _graphTime);
 			var programOutput = _graph.InstantEffects.Render(composite, instantEffectTriggers, nextFrame, _graphTime);
 			var overlayOutput = _graph.OverlayOutputCompositor.Render(Texture2D.blackTexture, null, 0f,
-				overlayInputs, nextFrame, _graphTime);
+				output2Inputs, nextFrame, _graphTime);
 			_frameNumber = nextFrame;
 			CurrentFrames = new LiveProgramFrames(new[] {
 				new LiveProgramFrame(programOutput, _frameNumber),
@@ -1392,6 +1396,7 @@ namespace ShitDesigner.Main {
 					DisposeUnreferencedOverlayPatch(current);
 				}
 				m_OverlayModes[laneIndex] = activeModes.TryGetValue(laneIndex, out var mode) ? mode : LiveSequencerCellMode.Off;
+				m_OverlayOutput2Copies[laneIndex] = composition.IsCopiedToOutput2(laneIndex);
 			}
 			foreach (var patch in m_OverlayPatches.Where(patch => patch != null).Distinct())
 				patch.SetSceneActive(IsOverlayPatchActive(patch));

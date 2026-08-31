@@ -326,6 +326,9 @@ namespace ShitDesigner.Main.Tests {
 			var overlaySequencer = host.ReadModel.Sequencers.Single(sequencer => sequencer.Kind == LiveSequencerKind.Overlay);
 			var triggerStep = (overlaySequencer.CurrentStep + 1) % LiveStepSequencer.StepCount;
 			Assert.That(host.CycleSequencerCellMode(LiveSequencerKind.Overlay, 0, triggerStep).Accepted, Is.True);
+			Assert.That(host.ToggleOverlayLaneOutput2Copy(0).Accepted, Is.True);
+			yield return null;
+			Assert.That(host.ReadModel.Sequencers.Single(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).IsCopiedToOutput2(0), Is.True);
 			for (var frame = 0; frame < 120 && host.ReadModel.Sequencers.Single(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).CurrentStep != triggerStep; frame++) yield return null;
 			Assert.That(host.ReadModel.LoadedPatchId, Is.EqualTo(rememberedMainPatch.Id));
 			Assert.That(host.ReadModel.ProgramTexture, Is.Not.Null);

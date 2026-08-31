@@ -389,6 +389,11 @@
     background-color: rgb(58, 48, 28);
 }
 
+.sequencer-lane.is-output-2-copy .sequencer-lane-label,
+.sequencer-lane.is-output-2-copy .sequencer-step {
+    border-color: rgb(76, 205, 255);
+}
+
 .sequencer-beat-label,
 .sequencer-step {
     width: 72px;
