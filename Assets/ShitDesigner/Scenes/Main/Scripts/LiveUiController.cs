@@ -26,6 +26,7 @@ namespace ShitDesigner.Main {
 		private VisualElement m_Output2Preview;
 		private VisualElement m_PatchControls;
 		private readonly RenderTexture[] m_OverlayLanePreviewTextures = new RenderTexture[LiveStepSequencer.OverlayLaneCount];
+		private readonly RenderTexture[] m_MainCuePreviewTextures = new RenderTexture[ApplicationLiveHost.MainCueCount];
 		private ScrollView m_MainPatchControls;
 		private ScrollView m_OverlayPatchControls;
 		private ScrollView m_EffectNodeControls;
@@ -220,6 +221,7 @@ namespace ShitDesigner.Main {
 			m_RenderedPatchCount = -1;
 			m_RenderedEffectNodeCount = -1;
 			Array.Clear(m_OverlayLanePreviewTextures, 0, m_OverlayLanePreviewTextures.Length);
+			Array.Clear(m_MainCuePreviewTextures, 0, m_MainCuePreviewTextures.Length);
 		}
 
 		private void LateUpdate() {
@@ -675,6 +677,11 @@ namespace ShitDesigner.Main {
 				var assigned = !string.IsNullOrEmpty(patch.Id);
 				m_MainCueSlots[index].Q<Label>().text = assigned ? patch.Name : "Cue Slot " + (index + 1);
 				m_MainCueSlots[index].EnableInClassList("is-active", assigned && index == _host.ActiveMainCueIndex);
+				var preview = index < model.MainCuePreviews.Count ? model.MainCuePreviews[index] : null;
+				if (m_MainCuePreviewTextures[index] == preview) continue;
+				m_MainCuePreviewTextures[index] = preview;
+				ApplyPreviewTexture(m_MainCueSlots[index], preview);
+				m_MainCueSlots[index].EnableInClassList("has-preview", preview != null);
 			}
 		}
 

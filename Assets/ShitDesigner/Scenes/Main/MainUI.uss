@@ -246,6 +246,10 @@
     border-color: rgb(88, 166, 255);
 }
 
+.cue-slot.has-preview {
+    -unity-background-scale-mode: scale-and-crop;
+}
+
 .cue-slot.is-drop-target {
     background-color: rgb(58, 48, 28);
     border-color: rgb(255, 190, 74);

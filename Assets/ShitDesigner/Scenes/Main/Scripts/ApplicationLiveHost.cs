@@ -156,7 +156,7 @@ namespace ShitDesigner.Main {
 				_runtime.Evaluate(deltaSeconds);
 				_runtime.SceneUpdate(deltaSeconds);
 				var frames = _runtime.Render(m_FiredInstantEffectTriggers);
-				_runtime.RenderOverlayPreviews(overlayComposition.LanePatchIds, deltaSeconds);
+				_runtime.RenderPreviews(overlayComposition.LanePatchIds, _runtime.MainCuePatchIds, deltaSeconds);
 				_externalDisplay.Present(frames);
 				LastDiagnostic = string.Empty;
 				PublishReadModel(string.Empty);
@@ -386,7 +386,7 @@ namespace ShitDesigner.Main {
 		}
 
 		private void PublishReadModel(string diagnostic) {
-			ReadModel = new LiveUiReadModel(_tickFrameNumber, _patches, m_EffectNodes, m_SelectedCatalogRole, SelectedCatalogItemId, _runtime?.LoadedPatchId, _runtime?.OverlayPreviewFrames,
+			ReadModel = new LiveUiReadModel(_tickFrameNumber, _patches, m_EffectNodes, m_SelectedCatalogRole, SelectedCatalogItemId, _runtime?.LoadedPatchId, _runtime?.OverlayPreviewFrames, _runtime?.MainCuePreviewFrames,
 				_runtime?.BpmDefinition ?? default, CreateLiveParameterDefinitions(), CreateSequencerReadModels(), _runtime?.CurrentFrames ?? default(LiveProgramFrames), _externalDisplay,
 				_capabilityMonitor != null ? _capabilityMonitor.Snapshot : default(LiveCapabilitySnapshot), diagnostic,
 				_requestResults.ToArray(), m_IsEditMode, m_InstantEffectTypeIds, m_FiredInstantEffectTriggers, m_LiveParameterCueIndex, m_OpenEffectCategory,
