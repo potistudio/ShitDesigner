@@ -34,6 +34,11 @@ namespace ShitDesigner.Input.Tests {
 		}
 
 		[Test]
+		public void DesktopDeviceDiscoveryUsesTheCurrentPlatformBackend() {
+			Assert.That(MidiInputDevices.GetDevices(), Is.Not.Null);
+		}
+
+		[Test]
 		public void RouterDrainsQueuedEventsOnPoll() {
 			var first = new MidiInputEvent(new MidiControl("Device", MidiControlKind.ControlChange, 1, 10), 1);
 			var second = new MidiInputEvent(new MidiControl("Device", MidiControlKind.Note, 1, 64), 127);

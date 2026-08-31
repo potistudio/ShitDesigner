@@ -203,7 +203,7 @@ namespace ShitDesigner.Editor {
 
 		private void RefreshDevices() {
 			try {
-				_devices = WindowsMidiInputSource.GetDevices();
+				_devices = MidiInputDevices.GetDevices();
 				_deviceScanError = string.Empty;
 			}
 			catch (Exception exception) {
