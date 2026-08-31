@@ -35,21 +35,17 @@ namespace ShitDesigner.Tests.Media {
 		}
 
 		[Test]
-		public void Component_CanBeConfiguredAndTriggeredWithoutGraphRuntime() {
+		public void Component_CanRandomlyTriggerWithoutGraphRuntime() {
 			var host = new GameObject("AssetFlashComponentTest");
 			var image = new Texture2D(2, 2);
 			try {
 				var component = host.AddComponent<AssetFlashComponent>();
-				component.SetImage(3, image);
+				component.SetImages(image);
 
-				component.Trigger(3);
-
-				Assert.That(component.ActiveSlot, Is.EqualTo(3));
+				Assert.That(component.TryTriggerRandom(), Is.True);
 				Assert.That(component.OutputTexture, Is.SameAs(image));
 				component.Clear();
-				Assert.That(component.ActiveSlot, Is.Zero);
 				Assert.That(component.OutputTexture, Is.Null);
-				Assert.That(component.TryTrigger(0), Is.False);
 			}
 			finally {
 				Object.DestroyImmediate(image);
@@ -58,20 +54,22 @@ namespace ShitDesigner.Tests.Media {
 		}
 
 		[Test]
-		public void Component_RandomTriggerSelectsOnlyConfiguredSlots() {
+		public void Component_RandomTriggerSupportsVariableAssetCounts() {
 			var host = new GameObject("AssetFlashRandomTest");
 			var image = new Texture2D(2, 2);
 			try {
 				var component = host.AddComponent<AssetFlashComponent>();
-				component.SetImage(6, image);
+				var images = new Texture2D[13];
+				for (var index = 0; index < 12; index++) images[index] = image;
+				component.SetImages(images);
 
+				Assert.That(component.AvailableAssetCount, Is.EqualTo(12));
 				Assert.That(component.TryTriggerRandom(), Is.True);
-				Assert.That(component.ActiveSlot, Is.EqualTo(6));
 				Assert.That(component.OutputTexture, Is.SameAs(image));
 
-				component.SetImage(6, null);
+				component.SetImages(null, null);
+				Assert.That(component.AvailableAssetCount, Is.Zero);
 				Assert.That(component.TryTriggerRandom(), Is.False);
-				Assert.That(component.ActiveSlot, Is.Zero);
 				Assert.That(component.OutputTexture, Is.Null);
 			}
 			finally {
