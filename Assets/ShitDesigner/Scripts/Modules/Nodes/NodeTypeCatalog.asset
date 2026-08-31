@@ -150718,17 +150718,17 @@ MonoBehaviour:
       type: 8
       defaultValue: enum:horizontal
       hasMinimum: 0
-      minimumValue:
+      minimumValue: 
       hasMaximum: 0
-      maximumValue:
+      maximumValue: 
       runtimeStateful: 0
       enumOptions:
       - horizontal
       - vertical
       group: Sort
       displayOrder: 0
-      description:
-      unit:
+      description: 
+      unit: 
       step: 0
       isReadOnly: 0
       isHidden: 0
@@ -150737,15 +150737,15 @@ MonoBehaviour:
       type: 2
       defaultValue: bool:true
       hasMinimum: 0
-      minimumValue:
+      minimumValue: 
       hasMaximum: 0
-      maximumValue:
+      maximumValue: 
       runtimeStateful: 0
       enumOptions: []
       group: Sort
       displayOrder: 1
-      description:
-      unit:
+      description: 
+      unit: 
       step: 0
       isReadOnly: 0
       isHidden: 0
@@ -150761,8 +150761,8 @@ MonoBehaviour:
       enumOptions: []
       group: Threshold
       displayOrder: 0
-      description:
-      unit:
+      description: 
+      unit: 
       step: 0.01
       isReadOnly: 0
       isHidden: 0
@@ -150778,17 +150778,17 @@ MonoBehaviour:
       enumOptions: []
       group: Threshold
       displayOrder: 1
-      description:
-      unit:
+      description: 
+      unit: 
       step: 0.01
       isReadOnly: 0
       isHidden: 0
-    shaderKey:
+    shaderKey: 
     shader: {fileID: 0}
     templateMaterial: {fileID: 0}
     outputPass: 0
     shaderFamily: 13
-    shaderVariantId:
+    shaderVariantId: 
     shaderSourceVariant: 0
     shaderRequiredFeatures: 0
     shaderStateful: 0

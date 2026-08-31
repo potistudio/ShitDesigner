@@ -15,8 +15,8 @@ namespace ShitDesigner.Scene {
 		[Header("Visual")]
 		[SerializeField] private Texture2D m_Image;
 		[SerializeField] private VideoClip m_Video;
-		[Min(0.01f)][SerializeField] private float m_VisualSize = 1.6f;
-		[Range(MinimumInstanceCount, MaximumInstanceCount)][SerializeField] private int m_InstanceCount = 1;
+		[Min(0.01f)][SerializeField] private float m_VisualSize = 2.0f;
+		[Range(MinimumInstanceCount, MaximumInstanceCount)][SerializeField] private int m_InstanceCount = 3;
 
 		[Header("Additional Sources")]
 		[SerializeField] private VisualSource[] m_AdditionalSources = Array.Empty<VisualSource>();

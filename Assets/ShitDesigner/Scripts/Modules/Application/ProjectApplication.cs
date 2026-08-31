@@ -1338,9 +1338,11 @@ namespace ShitDesigner.Application {
 				return learned;
 			}
 
+			var isInstantEffectTrigger = TryGetInstantEffectTrigger(key, out var instantEffectTrigger);
+			if (isInstantEffectTrigger && InstantEffectInputMode.IsEditing) return ApplicationCommandResult.Ignored(_sessionId);
 			var request = BeginRequest(Guid.Empty);
 			if (_frames == null || _document == null) return Complete(request, ApplicationCommandStatus.Rejected, Failure("application.project.missing", "There is no current project."), _state);
-			if (TryGetInstantEffectTrigger(key, out var instantEffectTrigger)) {
+			if (isInstantEffectTrigger) {
 				if (!pressed) return Complete(request, ApplicationCommandStatus.Applied, null, _state);
 				var queued = _frames.EnqueueInstantEffectTrigger(instantEffectTrigger);
 				return queued.IsFailure

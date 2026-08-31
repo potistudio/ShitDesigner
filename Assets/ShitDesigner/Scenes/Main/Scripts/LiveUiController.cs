@@ -14,6 +14,8 @@ namespace ShitDesigner.Main {
 	[DisallowMultipleComponent]
 	[DefaultExecutionOrder(1100)]
 	public sealed class LiveUiController : MonoBehaviour {
+		private static readonly string[] m_InstantEffectCueKeys = { "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P" };
+
 		[SerializeField] private PanelRenderer m_PanelRenderer;
 
 		private VisualElement m_Root;
@@ -28,6 +30,7 @@ namespace ShitDesigner.Main {
 		private ScrollView m_OverlayPatchControls;
 		private ScrollView m_EffectNodeControls;
 		private VisualElement m_SequencerControls;
+		private VisualElement m_InstantEffectCueControls;
 		private VisualElement _parameterControls;
 		private VisualElement _tempoControls;
 		private VisualElement[] m_MainCueSlots = Array.Empty<VisualElement>();
@@ -43,6 +46,7 @@ namespace ShitDesigner.Main {
 		private LiveOutputMenuController m_OutputMenu;
 		private Coroutine m_ReloadRoutine;
 		private string _renderedPatchId = string.Empty;
+		private string m_RenderedParameterIds = string.Empty;
 		private string m_CenteredCatalogItemId = string.Empty;
 		private string m_PendingCenteredCatalogItemId = string.Empty;
 		private int m_RenderedPatchCount = -1;
@@ -113,6 +117,7 @@ namespace ShitDesigner.Main {
 			m_OverlayPatchControls = Required<ScrollView>(root, "overlay-patch-controls");
 			m_EffectNodeControls = Required<ScrollView>(root, "effect-node-controls");
 			m_SequencerControls = Required<VisualElement>(root, "sequencer-controls");
+			m_InstantEffectCueControls = Required<VisualElement>(root, "instant-effect-cues");
 			_parameterControls = Required<VisualElement>(root, "parameter-controls");
 			_tempoControls = Required<VisualElement>(root, "tempo-controls");
 			m_MainCueSlots = Enumerable.Range(1, ApplicationLiveHost.MainCueCount)
@@ -138,6 +143,7 @@ namespace ShitDesigner.Main {
 			m_InstantEffectCueButtons = Enumerable.Range(1, InstantEffectTriggerContract.TriggerCount)
 				.Select(index => Required<Button>(root, "instant-effect-cue-" + index))
 				.ToArray();
+			for (var index = 0; index < m_InstantEffectCueButtons.Length; index++) m_InstantEffectCueButtons[index].userData = index + 1;
 			for (var tabIndex = 0; tabIndex < m_SidebarTabButtons.Length; tabIndex++) {
 				m_SidebarTabButtons[tabIndex].userData = (LiveCatalogRole)tabIndex;
 				m_SidebarTabButtons[tabIndex].RegisterCallback<ClickEvent>(OnSidebarTabClicked);
@@ -153,6 +159,7 @@ namespace ShitDesigner.Main {
 			m_Root.RegisterCallback<PointerUpEvent>(OnMainPatchPointerUp, TrickleDown.TrickleDown);
 			m_Root.RegisterCallback<PointerCancelEvent>(OnMainPatchPointerCancel, TrickleDown.TrickleDown);
 			m_SequencerControls.RegisterCallback<ClickEvent>(OnSequencerCellClicked);
+			m_InstantEffectCueControls.RegisterCallback<ClickEvent>(OnInstantEffectCueClicked);
 			BuildSequencers(root);
 			_bpmField.RegisterValueChangedCallback(OnBpmInputChanged);
 			_bpmField.RegisterCallback<FocusInEvent>(OnBpmFocusIn);
@@ -190,10 +197,12 @@ namespace ShitDesigner.Main {
 			m_MainCueSlots = Array.Empty<VisualElement>();
 			m_MainCueDragStroke = null;
 			if (m_SequencerControls != null) m_SequencerControls.UnregisterCallback<ClickEvent>(OnSequencerCellClicked);
+			if (m_InstantEffectCueControls != null) m_InstantEffectCueControls.UnregisterCallback<ClickEvent>(OnInstantEffectCueClicked);
 			foreach (var button in m_SidebarTabButtons) button.UnregisterCallback<ClickEvent>(OnSidebarTabClicked);
 			m_SidebarTabButtons = Array.Empty<Button>();
 			m_SidebarTabContents = Array.Empty<VisualElement>();
 			m_InstantEffectCueButtons = Array.Empty<Button>();
+			m_InstantEffectCueControls = null;
 			if (_bpmField != null) {
 				_bpmField.UnregisterValueChangedCallback(OnBpmInputChanged);
 				_bpmField.UnregisterCallback<FocusInEvent>(OnBpmFocusIn);
@@ -205,6 +214,7 @@ namespace ShitDesigner.Main {
 			m_Root = null;
 			m_MainUi = null;
 			_renderedPatchId = string.Empty;
+			m_RenderedParameterIds = string.Empty;
 			m_CenteredCatalogItemId = string.Empty;
 			m_PendingCenteredCatalogItemId = string.Empty;
 			m_RenderedPatchCount = -1;
@@ -224,11 +234,12 @@ namespace ShitDesigner.Main {
 				ApplyPreviewTexture(_programMonitor, model.ProgramFrames.Count > 0 ? model.ProgramFrames[0].Texture : null);
 				ApplyPreviewTexture(m_Output2Preview, model.ProgramFrames.Count > 1 ? model.ProgramFrames[1].Texture : null);
 				RefreshPatchControls(model);
+				RefreshEditMode(model);
 				RefreshSequencers(model);
 				RefreshTempoControls(model);
 				_capabilityLabel.text = $"MIDI: {(model.Capabilities.MidiAvailable ? "READY" : "UNAVAILABLE")}  DISPLAY: {(model.Capabilities.ExternalDisplayAvailable ? "READY" : "UNAVAILABLE")}  FRAME: {model.ProgramFrameNumber}";
 				_diagnosticLabel.text = ResolveDiagnostic(model);
-				if (_renderedPatchId != model.LoadedPatchId) RebuildParameters(model);
+				if (_renderedPatchId != model.LoadedPatchId || m_RenderedParameterIds != ParameterIds(model)) RebuildParameters(model);
 				else RefreshParameterValues(model);
 			}
 			finally { _updating = false; }
@@ -237,7 +248,37 @@ namespace ShitDesigner.Main {
 		private void RefreshInstantEffectCueHighlights() {
 			var keyboard = Keyboard.current;
 			for (var index = 0; index < m_InstantEffectCueButtons.Length; index++)
-				m_InstantEffectCueButtons[index].EnableInClassList("is-keyboard-active", IsInstantEffectCueKeyPressed(keyboard, index));
+				m_InstantEffectCueButtons[index].EnableInClassList("is-keyboard-active", !(_host?.IsEditMode ?? false) && IsInstantEffectCueKeyPressed(keyboard, index));
+		}
+
+		private void RefreshEditMode(LiveUiReadModel model) {
+			m_MainUi.EnableInClassList("is-edit-mode", model.IsEditMode);
+			m_SequencerControls.SetEnabled(!model.IsEditMode);
+			_parameterControls.SetEnabled(!model.IsEditMode);
+			_tempoControls.SetEnabled(!model.IsEditMode);
+			for (var tabIndex = 0; tabIndex < m_SidebarTabButtons.Length; tabIndex++)
+				m_SidebarTabButtons[tabIndex].SetEnabled(!model.IsEditMode || tabIndex == (int)LiveCatalogRole.Effect);
+			for (var index = 0; index < m_InstantEffectCueButtons.Length; index++) {
+				var typeId = index < model.InstantEffectTypeIds.Count ? model.InstantEffectTypeIds[index] : string.Empty;
+				var effect = model.EffectNodes.FirstOrDefault(candidate => candidate.TypeId == typeId);
+				var effectName = string.IsNullOrEmpty(effect.Name) ? typeId : effect.Name;
+				m_InstantEffectCueButtons[index].text = string.IsNullOrEmpty(typeId) ? m_InstantEffectCueKeys[index] : effectName;
+				m_InstantEffectCueButtons[index].tooltip = string.IsNullOrEmpty(typeId)
+					? m_InstantEffectCueKeys[index] + " · Instant Effect Trigger " + (index + 1)
+					: m_InstantEffectCueKeys[index] + " · " + (model.IsEditMode ? "Replace " : string.Empty) + effectName;
+				m_InstantEffectCueButtons[index].EnableInClassList("is-assigned", !string.IsNullOrEmpty(typeId));
+				m_InstantEffectCueButtons[index].EnableInClassList("is-edit-key-active", model.IsEditMode && IsInstantEffectCueKeyPressed(Keyboard.current, index));
+				m_InstantEffectCueButtons[index].EnableInClassList("is-trigger-fired", model.FiredInstantEffectTriggers.Contains(index + 1));
+				m_InstantEffectCueButtons[index].EnableInClassList("is-parameter-focused", model.FocusedInstantEffectCueIndex == index);
+			}
+		}
+
+		private void OnInstantEffectCueClicked(ClickEvent click) {
+			var target = click.target as VisualElement;
+			var button = target as Button ?? target?.GetFirstAncestorOfType<Button>();
+			if (_host == null || button?.userData is not int triggerNumber) return;
+			if (_host.IsEditMode) _host.AssignSelectedEffectToCue(triggerNumber - 1);
+			else _host.QueueInstantEffectTrigger(triggerNumber);
 		}
 
 		private static bool IsInstantEffectCueKeyPressed(Keyboard keyboard, int index) {
@@ -412,7 +453,11 @@ namespace ShitDesigner.Main {
 				_parameterControls.Add(channel);
 			}
 			_renderedPatchId = model.LoadedPatchId;
+			m_RenderedParameterIds = ParameterIds(model);
 		}
+
+		private static string ParameterIds(LiveUiReadModel model)
+			=> string.Join("\n", model.Parameters.Select(parameter => parameter.Id));
 
 		private void RefreshParameterValues(LiveUiReadModel model) {
 			foreach (var parameter in model.Parameters) {
@@ -533,9 +578,21 @@ namespace ShitDesigner.Main {
 			}
 			foreach (var effect in model.EffectNodes) {
 				var button = m_EffectNodeControls.Q<Button>("effect-node-" + effect.TypeId);
-				if (button != null) button.EnableInClassList("is-selected", effect.TypeId == model.SelectedCatalogItemId);
+				if (button != null) button.EnableInClassList("is-selected", !model.IsEffectCategorySelected && effect.TypeId == model.SelectedCatalogItemId);
 			}
-			var selectedItemId = model.SelectedCatalogItemId;
+			foreach (var header in m_EffectNodeControls.Query<Button>(className: "effect-category-button").ToList()) {
+				var category = header.userData as string ?? string.Empty;
+				var isOpen = string.Equals(category, model.OpenEffectCategory, StringComparison.Ordinal);
+				header.text = (isOpen ? "▼ " : "▶ ") + category;
+				header.EnableInClassList("is-open", isOpen);
+				header.EnableInClassList("is-selected", model.SelectedCatalogRole == LiveCatalogRole.Effect && model.IsEffectCategorySelected
+					&& string.Equals(model.SelectedEffectCategory, category, StringComparison.Ordinal));
+			}
+			foreach (var items in m_EffectNodeControls.Query<VisualElement>(className: "effect-category-items").ToList())
+				items.EnableInClassList("is-hidden", !string.Equals(items.userData as string, model.OpenEffectCategory, StringComparison.Ordinal));
+			var selectedItemId = model.SelectedCatalogRole == LiveCatalogRole.Effect && model.IsEffectCategorySelected
+				? "category:" + model.SelectedEffectCategory
+				: model.SelectedCatalogItemId;
 			if (m_CenteredCatalogItemId != selectedItemId && m_PendingCenteredCatalogItemId != selectedItemId)
 				CenterCatalogSelection(model.SelectedCatalogRole, selectedItemId);
 		}
@@ -571,17 +628,35 @@ namespace ShitDesigner.Main {
 		}
 
 		private void AddEffectNodeButtons(IEnumerable<LiveEffectNodeReadModel> effects) {
-			foreach (var effect in effects) {
-				var typeId = effect.TypeId;
-				var button = new Button(() => _host?.SelectEffectNode(typeId)) {
-					name = "effect-node-" + typeId,
-					text = effect.Name,
-					tooltip = effect.Category + " · " + typeId,
-					userData = typeId
+			var categoryIndex = 0;
+			foreach (var categoryGroup in effects.GroupBy(effect => effect.Category, StringComparer.Ordinal)) {
+				var category = categoryGroup.Key;
+				var header = new Button(() => _host?.ToggleEffectCategory(category)) {
+					name = "effect-category-" + categoryIndex,
+					text = "▶ " + category,
+					userData = category
 				};
-				button.AddToClassList("catalog-button");
-				button.AddToClassList("effect-node-button");
-				m_EffectNodeControls.Add(button);
+				header.AddToClassList("effect-category-button");
+				m_EffectNodeControls.Add(header);
+				var items = new VisualElement {
+					name = "effect-category-items-" + categoryIndex,
+					userData = category
+				};
+				items.AddToClassList("effect-category-items");
+				foreach (var effect in categoryGroup) {
+					var typeId = effect.TypeId;
+					var button = new Button(() => _host?.SelectEffectNode(typeId)) {
+						name = "effect-node-" + typeId,
+						text = effect.Name,
+						tooltip = effect.Category + " · " + typeId,
+						userData = typeId
+					};
+					button.AddToClassList("catalog-button");
+					button.AddToClassList("effect-node-button");
+					items.Add(button);
+				}
+				m_EffectNodeControls.Add(items);
+				categoryIndex++;
 			}
 		}
 
@@ -700,7 +775,10 @@ namespace ShitDesigner.Main {
 			m_PatchControls.schedule.Execute(() => {
 				if (m_PendingCenteredCatalogItemId != itemId) return;
 				var selected = role == LiveCatalogRole.Effect
-					? m_EffectNodeControls.Q<Button>("effect-node-" + itemId)
+					? itemId.StartsWith("category:", StringComparison.Ordinal)
+						? m_EffectNodeControls.Query<Button>(className: "effect-category-button").ToList()
+							.FirstOrDefault(header => string.Equals(header.userData as string, itemId.Substring("category:".Length), StringComparison.Ordinal))
+						: m_EffectNodeControls.Q<Button>("effect-node-" + itemId)
 					: m_PatchControls.Q<Button>("patch-" + itemId);
 				if (selected == null) {
 					m_PendingCenteredCatalogItemId = string.Empty;

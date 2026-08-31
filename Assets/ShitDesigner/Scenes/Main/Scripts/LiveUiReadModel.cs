@@ -34,7 +34,7 @@ namespace ShitDesigner.Main {
 		public LiveEffectNodeReadModel(string typeId, string name, string category) {
 			TypeId = typeId;
 			Name = name;
-			Category = category;
+			Category = string.IsNullOrWhiteSpace(category) ? "Other" : category;
 		}
 	}
 
@@ -59,12 +59,22 @@ namespace ShitDesigner.Main {
 		public LiveCapabilitySnapshot Capabilities { get; }
 		public string Diagnostic { get; }
 		public IReadOnlyList<LiveParameterApplicationResult> RequestResults { get; }
+		public bool IsEditMode { get; }
+		public IReadOnlyList<string> InstantEffectTypeIds { get; }
+		public IReadOnlyList<int> FiredInstantEffectTriggers { get; }
+		public int FocusedInstantEffectCueIndex { get; }
+		public string OpenEffectCategory { get; }
+		public bool IsEffectCategorySelected { get; }
+		public string SelectedEffectCategory { get; }
 
 		public LiveUiReadModel(ulong frameNumber, IReadOnlyList<LivePatchReadModel> patches, IReadOnlyList<LiveEffectNodeReadModel> effectNodes,
 			LiveCatalogRole selectedCatalogRole, string selectedCatalogItemId,
 			string loadedPatchId, IReadOnlyList<RenderTexture> overlayLanePreviews,
 			LiveParameterDefinition bpm, IReadOnlyList<LiveParameterDefinition> parameters, IReadOnlyList<LiveSequencerReadModel> sequencers, LiveProgramFrames programFrames, LiveExternalDisplayOutput output,
-			LiveCapabilitySnapshot capabilities, string diagnostic, IReadOnlyList<LiveParameterApplicationResult> requestResults) {
+			LiveCapabilitySnapshot capabilities, string diagnostic, IReadOnlyList<LiveParameterApplicationResult> requestResults,
+			bool isEditMode = false, IReadOnlyList<string> instantEffectTypeIds = null, IReadOnlyList<int> firedInstantEffectTriggers = null,
+			int focusedInstantEffectCueIndex = -1, string openEffectCategory = "", bool isEffectCategorySelected = false,
+			string selectedEffectCategory = "") {
 			FrameNumber = frameNumber;
 			Patches = patches ?? Array.Empty<LivePatchReadModel>();
 			EffectNodes = effectNodes ?? Array.Empty<LiveEffectNodeReadModel>();
@@ -85,6 +95,13 @@ namespace ShitDesigner.Main {
 			Capabilities = capabilities;
 			Diagnostic = diagnostic ?? string.Empty;
 			RequestResults = requestResults ?? Array.Empty<LiveParameterApplicationResult>();
+			IsEditMode = isEditMode;
+			InstantEffectTypeIds = instantEffectTypeIds == null ? Array.Empty<string>() : new List<string>(instantEffectTypeIds);
+			FiredInstantEffectTriggers = firedInstantEffectTriggers == null ? Array.Empty<int>() : new List<int>(firedInstantEffectTriggers);
+			FocusedInstantEffectCueIndex = focusedInstantEffectCueIndex;
+			OpenEffectCategory = openEffectCategory ?? string.Empty;
+			IsEffectCategorySelected = isEffectCategorySelected;
+			SelectedEffectCategory = selectedEffectCategory ?? string.Empty;
 		}
 	}
 }

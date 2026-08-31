@@ -255,8 +255,9 @@ MonoBehaviour:
   m_ImpactTextureName: Impact Texture
   m_VisualEffect: {fileID: 507346947}
   m_Textures:
-  - {fileID: 5114368020222828517, guid: 7923732e0c5622c4a9f726ef31392170, type: 2}
-  - {fileID: -467849966315801283, guid: 7923732e0c5622c4a9f726ef31392170, type: 2}
+  - {fileID: 2800000, guid: 15b824f579528024b80664e392a872a0, type: 3}
+  - {fileID: 2800000, guid: 01111eb0e60c759418df20438bbc6046, type: 3}
+  - {fileID: 2800000, guid: def68c563d7297b4b91f0166009b5e38, type: 3}
 --- !u!1 &1919859527
 GameObject:
   m_ObjectHideFlags: 0

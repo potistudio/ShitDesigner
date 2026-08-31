@@ -102,8 +102,11 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(mainPatchControls, Is.Not.SameAs(overlayPatchControls));
 			Assert.That(mainPatchControls.Query<Button>().ToList().Count, Is.EqualTo(host.ReadModel.Patches.Count(patch => patch.Role == LivePatchRole.Main)));
 			Assert.That(overlayPatchControls.Query<Button>().ToList().Count, Is.EqualTo(host.ReadModel.Patches.Count(patch => patch.Role == LivePatchRole.Overlay)));
-			Assert.That(effectNodeControls.Query<Button>().ToList().Count, Is.EqualTo(host.ReadModel.EffectNodes.Count));
+			Assert.That(effectNodeControls.Query<Button>(className: "effect-node-button").ToList().Count, Is.EqualTo(host.ReadModel.EffectNodes.Count));
 			Assert.That(host.ReadModel.EffectNodes, Is.Not.Empty);
+			Assert.That(effectNodeControls.Query<Button>(className: "effect-category-button").ToList().Count,
+				Is.EqualTo(host.ReadModel.EffectNodes.Select(effect => effect.Category).Distinct().Count()));
+			Assert.That(effectNodeControls.Query<VisualElement>(className: "effect-category-items").ToList().Count(items => !items.ClassListContains("is-hidden")), Is.EqualTo(1));
 			Assert.That(effectNodeControls.Query<Button>(className: "effect-node-button").ToList().All(button =>
 				host.ReadModel.EffectNodes.Any(node => node.TypeId == (string)button.userData)), Is.True);
 			var firstMainButton = mainPatchControls.Query<Button>().First();
@@ -237,6 +240,59 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(host.ReadModel.SelectedCatalogItemId, Is.EqualTo(host.ReadModel.EffectNodes[0].TypeId));
 			Assert.That(host.LaunchSelectedCatalogPatch().Accepted, Is.False);
 			Assert.That(ui.Q<Button>("effect-tab").ClassListContains("is-selected"), Is.True);
+			var mainUi = ui.Q<VisualElement>("main-ui");
+			var layoutBeforeEditMode = mainUi.layout;
+			host.ToggleEditMode();
+			yield return null;
+			Assert.That(host.ReadModel.IsEffectCategorySelected, Is.True);
+			Assert.That(host.AssignSelectedEffectToCue(0), Is.False);
+			host.MoveCatalogSelection(0, 1);
+			yield return null;
+			Assert.That(host.ReadModel.IsEffectCategorySelected, Is.False);
+			Assert.That(host.AssignSelectedEffectToCue(0), Is.True);
+			yield return null;
+			Assert.That(host.ReadModel.IsEditMode, Is.True);
+			Assert.That(host.ReadModel.InstantEffectTypeIds[0], Is.EqualTo(host.ReadModel.SelectedCatalogItemId));
+			Assert.That(mainUi.ClassListContains("is-edit-mode"), Is.True);
+			Assert.That(mainUi.layout.width, Is.EqualTo(layoutBeforeEditMode.width).Within(0.01f));
+			Assert.That(mainUi.layout.height, Is.EqualTo(layoutBeforeEditMode.height).Within(0.01f));
+			Assert.That(ui.Q<VisualElement>("edit-mode-highlight").resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+			Assert.That(ui.Q<VisualElement>("sequencer-controls").enabledSelf, Is.False);
+			Assert.That(ui.Q<Button>("instant-effect-cue-1").ClassListContains("is-assigned"), Is.True);
+			Assert.That(ui.Q<Button>("instant-effect-cue-1").text,
+				Is.EqualTo(host.ReadModel.EffectNodes.First(effect => effect.TypeId == host.ReadModel.InstantEffectTypeIds[0]).Name));
+			Assert.That(ui.Q<Button>("main-tab").enabledSelf, Is.False);
+			var effectCategories = host.ReadModel.EffectNodes.Select(effect => effect.Category).Distinct().ToArray();
+			if (effectCategories.Length > 1) {
+				var openCategory = host.ReadModel.OpenEffectCategory;
+				var openCategoryEffectCount = host.ReadModel.EffectNodes.Count(effect => effect.Category == openCategory);
+				for (var index = 0; index < openCategoryEffectCount; index++) host.MoveCatalogSelection(0, 1);
+				yield return null;
+				Assert.That(host.ReadModel.IsEffectCategorySelected, Is.True);
+				Assert.That(host.ReadModel.SelectedEffectCategory, Is.Not.EqualTo(openCategory));
+				host.MoveCatalogSelection(0, -1);
+				yield return null;
+				Assert.That(host.ReadModel.IsEffectCategorySelected, Is.False);
+			}
+			var anotherCategory = effectCategories.FirstOrDefault(category => category != host.ReadModel.OpenEffectCategory);
+			if (anotherCategory != null) {
+				host.ToggleEffectCategory(anotherCategory);
+				yield return null;
+				Assert.That(host.ReadModel.OpenEffectCategory, Is.EqualTo(anotherCategory));
+				Assert.That(host.ReadModel.IsEffectCategorySelected, Is.True);
+				Assert.That(host.ReadModel.SelectedEffectCategory, Is.EqualTo(anotherCategory));
+				Assert.That(effectNodeControls.Query<VisualElement>(className: "effect-category-items").ToList().Count(items => !items.ClassListContains("is-hidden")), Is.EqualTo(1));
+			}
+			host.ToggleSelectedEffectCategory();
+			yield return null;
+			Assert.That(host.ReadModel.OpenEffectCategory, Is.Empty);
+			Assert.That(effectNodeControls.Query<VisualElement>(className: "effect-category-items").ToList().All(items => items.ClassListContains("is-hidden")), Is.True);
+			host.ToggleSelectedEffectCategory();
+			yield return null;
+			Assert.That(host.ReadModel.OpenEffectCategory, Is.Not.Empty);
+			host.ToggleEditMode();
+			yield return null;
+			Assert.That(mainUi.ClassListContains("is-edit-mode"), Is.False);
 			host.MoveCatalogSelection(-1, 0);
 			yield return null;
 			host.MoveCatalogSelection(0, 1);

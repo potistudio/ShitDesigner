@@ -124,6 +124,26 @@ namespace ShitDesigner.Application.Tests {
 		}
 
 		[Test]
+		public void EditModeSuppressesGlobalInstantEffectPulses() {
+			var target = Path.Combine(_root, "InstantEffectEditMode");
+			try {
+				using (var application = new ProjectApplication(new LocalProjectFileSystem())) {
+					Assert.That(application.NewProject("Instant Effect Edit Mode", target).IsSuccess, Is.True);
+					var runtimeField = typeof(ProjectApplication).GetField("_runtime", BindingFlags.Instance | BindingFlags.NonPublic);
+					Assert.That(runtimeField, Is.Not.Null);
+					var runtime = (RuntimeSession)runtimeField.GetValue(application);
+
+					InstantEffectInputMode.SetEditing(true);
+					Assert.That(application.HandleKeyboard(new PhysicalKey("q", "<Keyboard>/q"), true).Status, Is.EqualTo(ApplicationCommandStatus.Ignored));
+					application.Tick(0d);
+
+					Assert.That(runtime.LastSnapshot.InstantEffectTriggers, Is.Empty);
+				}
+			}
+			finally { InstantEffectInputMode.SetEditing(false); }
+		}
+
+		[Test]
 		public void LearnMidiMapsAndNormalizesControlChangeInput() {
 			var target = Path.Combine(_root, "MidiInput");
 			using (var application = new ProjectApplication(new LocalProjectFileSystem())) {

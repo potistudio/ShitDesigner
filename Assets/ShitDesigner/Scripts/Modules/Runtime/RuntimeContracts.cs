@@ -20,6 +20,13 @@ namespace ShitDesigner.Runtime {
 		}
 	}
 
+	/// <summary>Process-wide interaction mode for the global instant-effect keys.</summary>
+	public static class InstantEffectInputMode {
+		public static bool IsEditing { get; private set; }
+
+		public static void SetEditing(bool isEditing) => IsEditing = isEditing;
+	}
+
 	/// <summary>Optional node-local scalar health seam. Runtime aggregates
 	/// without depending on Media or other concrete node modules.</summary>
 	public interface IRuntimePerformanceHealthNode {

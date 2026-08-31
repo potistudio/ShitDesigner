@@ -49,6 +49,15 @@ namespace ShitDesigner.Main {
 		private int m_SelectedMainPatchIndex;
 		private int m_SelectedOverlayPatchIndex;
 		private int m_SelectedEffectNodeIndex;
+		private readonly string[] m_InstantEffectTypeIds = new string[ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount];
+		private readonly LiveBeatQuantizedTriggerQueue m_InstantEffectTriggerQueue = new LiveBeatQuantizedTriggerQueue();
+		private readonly LiveBeatEffectGate m_InstantEffectGate = new LiveBeatEffectGate();
+		private IReadOnlyList<int> m_FiredInstantEffectTriggers = Array.Empty<int>();
+		private int m_LiveParameterCueIndex = -1;
+		private bool m_IsEditMode;
+		private string m_OpenEffectCategory = string.Empty;
+		private bool m_IsEffectCategorySelected;
+		private string m_SelectedEffectCategory = string.Empty;
 		private string m_PianoReturnMainPatchId = string.Empty;
 
 		public ApplicationLiveHostState State { get; private set; } = ApplicationLiveHostState.Cold;
@@ -58,6 +67,8 @@ namespace ShitDesigner.Main {
 		public int ActiveMainCueIndex => _runtime?.ActiveMainCueIndex ?? -1;
 		public string LastDiagnostic { get; private set; } = string.Empty;
 		public IReadOnlyList<LiveStepSequencer> Sequencers => m_Sequencers;
+		public bool IsEditMode => m_IsEditMode;
+		public event Action<IReadOnlyList<int>> InstantEffectTriggersFired;
 
 		private void Awake() {
 			if (_bootOnAwake) Boot();
@@ -88,11 +99,17 @@ namespace ShitDesigner.Main {
 				m_SelectedMainPatchIndex = 0;
 				m_SelectedOverlayPatchIndex = 0;
 				m_SelectedEffectNodeIndex = 0;
+				m_OpenEffectCategory = m_EffectNodes.Length > 0 ? m_EffectNodes[0].Category : string.Empty;
+				m_SelectedEffectCategory = m_OpenEffectCategory;
+				m_IsEffectCategorySelected = false;
 				UpdateOverlayComposition(_runtime.BpmFrame.AdjustedTotalBeats);
+				m_IsEditMode = false;
 				m_PianoReturnMainPatchId = string.Empty;
+				ShitDesigner.Runtime.InstantEffectInputMode.SetEditing(false);
 				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, laneIndex => { AssignSelectedOverlayPatchToLane(laneIndex); }, MoveCatalogSelection, () => { LaunchSelectedCatalogPatch(); }, TapBpm,
-					beginPianoMainCueSwitch: BeginPianoMainCueSwitch, endPianoMainCueSwitch: EndPianoMainCueSwitch,
-					completeMainCueSwitch: CompleteMainCueSwitch);
+					ToggleEditMode, cueIndex => { AssignSelectedEffectToCue(cueIndex); }, () => m_IsEditMode, QueueInstantEffectTrigger,
+					cueIndex => { FocusInstantEffectParameters(cueIndex); }, ToggleSelectedEffectCategory, BeginPianoMainCueSwitch,
+					EndPianoMainCueSwitch, CompleteMainCueSwitch);
 				_midiInputManager.InitializeForHostPolling();
 				_shutdown.Add(_midiInputManager.Shutdown);
 				_midi = new LiveMidiInput(_midiInputManager, _parameterQueue, _runtime.Patches);
@@ -127,10 +144,15 @@ namespace ShitDesigner.Main {
 			try {
 				var deltaSeconds = Math.Max(0d, Time.unscaledDeltaTime);
 				ApplyRequests();
-				var overlayComposition = UpdateOverlayComposition(_runtime.BpmFrame.AdjustedTotalBeats + deltaSeconds * _runtime.BpmFrame.Bpm / 60d);
+				var projectedBeatPosition = _runtime.BpmFrame.AdjustedTotalBeats + deltaSeconds * _runtime.BpmFrame.Bpm / 60d;
+				var firedInstantEffectTriggers = m_InstantEffectTriggerQueue.DrainDue(projectedBeatPosition);
+				if (firedInstantEffectTriggers.Count > 0) InstantEffectTriggersFired?.Invoke(firedInstantEffectTriggers);
+				m_InstantEffectGate.Activate(firedInstantEffectTriggers, projectedBeatPosition);
+				m_FiredInstantEffectTriggers = m_InstantEffectGate.GetActive(projectedBeatPosition);
+				var overlayComposition = UpdateOverlayComposition(projectedBeatPosition);
 				_runtime.Evaluate(deltaSeconds);
 				_runtime.SceneUpdate(deltaSeconds);
-				var frames = _runtime.Render();
+				var frames = _runtime.Render(m_FiredInstantEffectTriggers);
 				_runtime.RenderOverlayPreviews(overlayComposition.LanePatchIds, deltaSeconds);
 				_externalDisplay.Present(frames);
 				LastDiagnostic = string.Empty;
@@ -145,11 +167,60 @@ namespace ShitDesigner.Main {
 		public void Shutdown() {
 			if (State == ApplicationLiveHostState.Cold || State == ApplicationLiveHostState.Offline) return;
 			ShutdownStartedComponents();
+			m_IsEditMode = false;
+			ShitDesigner.Runtime.InstantEffectInputMode.SetEditing(false);
 			State = ApplicationLiveHostState.Offline;
+		}
+
+		public void ToggleEditMode() {
+			m_IsEditMode = !m_IsEditMode;
+			ShitDesigner.Runtime.InstantEffectInputMode.SetEditing(m_IsEditMode);
+			if (m_IsEditMode) {
+				m_SelectedCatalogRole = LiveCatalogRole.Effect;
+				OpenSelectedEffectCategory();
+				m_SelectedEffectCategory = m_OpenEffectCategory;
+				m_IsEffectCategorySelected = !string.IsNullOrEmpty(m_SelectedEffectCategory);
+			}
+			else {
+				m_IsEffectCategorySelected = false;
+			}
+		}
+
+		public bool AssignSelectedEffectToCue(int cueIndex) {
+			if (!m_IsEditMode || cueIndex < 0 || cueIndex >= m_InstantEffectTypeIds.Length || m_SelectedCatalogRole != LiveCatalogRole.Effect || m_IsEffectCategorySelected)
+				return false;
+			var typeId = SelectedCatalogItemId;
+			if (string.IsNullOrEmpty(typeId)) return false;
+			if (!_runtime.TryAssignInstantEffect(cueIndex, typeId, out var rejectionReason)) {
+				LastDiagnostic = rejectionReason;
+				return false;
+			}
+			m_InstantEffectTypeIds[cueIndex] = typeId;
+			m_LiveParameterCueIndex = cueIndex;
+			return true;
+		}
+
+		public void QueueInstantEffectTrigger(int triggerNumber) {
+			if (State != ApplicationLiveHostState.Running || m_IsEditMode || _runtime == null) return;
+			ShitDesigner.Runtime.InstantEffectTriggerContract.Validate(triggerNumber);
+			if (string.IsNullOrEmpty(m_InstantEffectTypeIds[triggerNumber - 1])) return;
+			m_InstantEffectTriggerQueue.Enqueue(triggerNumber, _runtime.BpmFrame.AdjustedTotalBeats);
+		}
+
+		public bool FocusInstantEffectParameters(int cueIndex) {
+			if (cueIndex < 0 || cueIndex >= m_InstantEffectTypeIds.Length || string.IsNullOrEmpty(m_InstantEffectTypeIds[cueIndex])) return false;
+			m_LiveParameterCueIndex = cueIndex;
+			return true;
 		}
 
 		public void MoveCatalogSelection(int horizontalDirection, int verticalDirection) {
 			if (_patches.Length == 0 || (horizontalDirection == 0 && verticalDirection == 0)) return;
+			if (m_IsEditMode) {
+				m_SelectedCatalogRole = LiveCatalogRole.Effect;
+				horizontalDirection = 0;
+				if (verticalDirection != 0) MoveEffectTreeSelection(verticalDirection);
+				return;
+			}
 			if (horizontalDirection != 0) {
 				var nextRoleIndex = Mathf.Clamp((int)m_SelectedCatalogRole + Math.Sign(horizontalDirection), (int)LiveCatalogRole.Main, (int)LiveCatalogRole.Effect);
 				m_SelectedCatalogRole = (LiveCatalogRole)nextRoleIndex;
@@ -158,11 +229,17 @@ namespace ShitDesigner.Main {
 
 			SetSelectedCatalogIndex(m_SelectedCatalogRole,
 				MoveWithinList(GetSelectedCatalogIndex(m_SelectedCatalogRole), verticalDirection, GetCatalogItemIds(m_SelectedCatalogRole).Length));
+			if (m_SelectedCatalogRole == LiveCatalogRole.Effect) OpenSelectedEffectCategory();
 		}
 
 		public void SelectCatalogRole(LiveCatalogRole role) {
 			if (role < LiveCatalogRole.Main || role > LiveCatalogRole.Effect) throw new ArgumentOutOfRangeException(nameof(role));
+			if (m_IsEditMode && role != LiveCatalogRole.Effect) return;
 			m_SelectedCatalogRole = role;
+			if (role == LiveCatalogRole.Effect) {
+				m_IsEffectCategorySelected = false;
+				OpenSelectedEffectCategory();
+			}
 		}
 
 		public LiveParameterEnqueueResult LaunchSelectedCatalogPatch() {
@@ -229,6 +306,28 @@ namespace ShitDesigner.Main {
 			if (effectIndex < 0) return;
 			m_SelectedCatalogRole = LiveCatalogRole.Effect;
 			m_SelectedEffectNodeIndex = effectIndex;
+			m_SelectedEffectCategory = m_EffectNodes[effectIndex].Category;
+			m_IsEffectCategorySelected = false;
+			OpenSelectedEffectCategory();
+		}
+
+		public void ToggleEffectCategory(string category) {
+			if (string.IsNullOrEmpty(category)) return;
+			var effectIndex = Array.FindIndex(m_EffectNodes, effect => string.Equals(effect.Category, category, StringComparison.Ordinal));
+			if (effectIndex < 0) return;
+			m_SelectedCatalogRole = LiveCatalogRole.Effect;
+			m_SelectedEffectCategory = category;
+			m_IsEffectCategorySelected = true;
+			if (string.Equals(m_OpenEffectCategory, category, StringComparison.Ordinal)) {
+				m_OpenEffectCategory = string.Empty;
+				return;
+			}
+			m_OpenEffectCategory = category;
+		}
+
+		public void ToggleSelectedEffectCategory() {
+			if (!m_IsEditMode || !m_IsEffectCategorySelected || string.IsNullOrEmpty(m_SelectedEffectCategory)) return;
+			ToggleEffectCategory(m_SelectedEffectCategory);
 		}
 
 		public void TapBpm(double time) {
@@ -286,9 +385,17 @@ namespace ShitDesigner.Main {
 
 		private void PublishReadModel(string diagnostic) {
 			ReadModel = new LiveUiReadModel(_tickFrameNumber, _patches, m_EffectNodes, m_SelectedCatalogRole, SelectedCatalogItemId, _runtime?.LoadedPatchId, _runtime?.OverlayPreviewFrames,
-				_runtime?.BpmDefinition ?? default, _runtime?.GetLoadedPatchParameterDefinitions(), CreateSequencerReadModels(), _runtime?.CurrentFrames ?? default(LiveProgramFrames), _externalDisplay,
+				_runtime?.BpmDefinition ?? default, CreateLiveParameterDefinitions(), CreateSequencerReadModels(), _runtime?.CurrentFrames ?? default(LiveProgramFrames), _externalDisplay,
 				_capabilityMonitor != null ? _capabilityMonitor.Snapshot : default(LiveCapabilitySnapshot), diagnostic,
-				_requestResults.ToArray());
+				_requestResults.ToArray(), m_IsEditMode, m_InstantEffectTypeIds, m_FiredInstantEffectTriggers, m_LiveParameterCueIndex, m_OpenEffectCategory,
+				m_IsEffectCategorySelected, m_SelectedEffectCategory);
+		}
+
+		private LiveParameterDefinition[] CreateLiveParameterDefinitions() {
+			if (_runtime == null) return Array.Empty<LiveParameterDefinition>();
+			var patchParameters = _runtime.GetLoadedPatchParameterDefinitions();
+			if (m_LiveParameterCueIndex < 0) return patchParameters;
+			return patchParameters.Concat(_runtime.GetInstantEffectParameterDefinitions(m_LiveParameterCueIndex)).ToArray();
 		}
 
 		private LiveSequencerReadModel[] CreateSequencerReadModels() {
@@ -324,11 +431,57 @@ namespace ShitDesigner.Main {
 			}
 		}
 
+		private void OpenSelectedEffectCategory() {
+			if (m_SelectedEffectNodeIndex < 0 || m_SelectedEffectNodeIndex >= m_EffectNodes.Length) return;
+			m_OpenEffectCategory = m_EffectNodes[m_SelectedEffectNodeIndex].Category;
+		}
+
+		private void MoveEffectTreeSelection(int direction) {
+			var rows = CreateVisibleEffectTreeRows();
+			if (rows.Count == 0) return;
+			var selectedRowIndex = rows.FindIndex(row => m_IsEffectCategorySelected
+				? row.IsCategory && string.Equals(row.Category, m_SelectedEffectCategory, StringComparison.Ordinal)
+				: !row.IsCategory && row.EffectIndex == m_SelectedEffectNodeIndex);
+			if (selectedRowIndex < 0) selectedRowIndex = 0;
+			var row = rows[Mathf.Clamp(selectedRowIndex + Math.Sign(direction), 0, rows.Count - 1)];
+			m_SelectedEffectCategory = row.Category;
+			m_IsEffectCategorySelected = row.IsCategory;
+			if (!row.IsCategory) m_SelectedEffectNodeIndex = row.EffectIndex;
+		}
+
+		private List<EffectTreeRow> CreateVisibleEffectTreeRows() {
+			var rows = new List<EffectTreeRow>();
+			foreach (var category in m_EffectNodes.Select(effect => effect.Category).Distinct(StringComparer.Ordinal)) {
+				rows.Add(new EffectTreeRow(category, -1));
+				if (!string.Equals(category, m_OpenEffectCategory, StringComparison.Ordinal)) continue;
+				for (var effectIndex = 0; effectIndex < m_EffectNodes.Length; effectIndex++) {
+					if (string.Equals(m_EffectNodes[effectIndex].Category, category, StringComparison.Ordinal))
+						rows.Add(new EffectTreeRow(category, effectIndex));
+				}
+			}
+			return rows;
+		}
+
+		private readonly struct EffectTreeRow {
+			public string Category { get; }
+			public int EffectIndex { get; }
+			public bool IsCategory => EffectIndex < 0;
+
+			public EffectTreeRow(string category, int effectIndex) {
+				Category = category;
+				EffectIndex = effectIndex;
+			}
+		}
+
 		private void SetSelectedCatalogIndex(LiveCatalogRole role, int index) {
 			switch (role) {
 				case LiveCatalogRole.Main: m_SelectedMainPatchIndex = index; break;
 				case LiveCatalogRole.Overlay: m_SelectedOverlayPatchIndex = index; break;
-				case LiveCatalogRole.Effect: m_SelectedEffectNodeIndex = index; break;
+				case LiveCatalogRole.Effect:
+					m_SelectedEffectNodeIndex = index;
+					m_IsEffectCategorySelected = false;
+					if (index >= 0 && index < m_EffectNodes.Length) m_SelectedEffectCategory = m_EffectNodes[index].Category;
+					break;
 				default: throw new ArgumentOutOfRangeException(nameof(role), role, null);
 			}
 		}

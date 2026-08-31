@@ -1,8 +1,11 @@
+using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using ShitDesigner.Bootstrap;
 using ShitDesigner.Input;
+using ShitDesigner.Nodes;
 using ShitDesigner.Rendering;
+using ShitDesigner.Runtime;
 using ShitDesigner.Scene;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -104,6 +107,82 @@ namespace ShitDesigner.Main.Tests {
 				"shitdesigner.shader.blend2",
 				"shitdesigner.shader.effect"
 			}));
+		}
+
+		[Test]
+		public void InstantEffectWiringConnectsTheProgramImageToPrimaryAndRequiredImageInputs() {
+			var entry = new ShaderNodeManifestEntry(new NodeTypeId("test.instant.effect"), "Test", "Test",
+				ShaderNodeFamily.Custom, "test.shader", inputs: new[] {
+					new ShaderNodeManifestInput(new PortId("input"), "Input", "_MainTex"),
+					new ShaderNodeManifestInput(new PortId("secondary"), "Secondary", "_SecondaryTex", ShaderInputRole.Secondary),
+					new ShaderNodeManifestInput(new PortId("mask"), "Mask", "_MaskTex", ShaderInputRole.Mask,
+						required: false, defaultImage: RuntimeDefaultImageKind.White)
+				});
+
+			var inputs = LiveInstantEffectRenderer.BuildInputs(entry.ToShaderBinding(), Texture2D.blackTexture);
+
+			Assert.That(inputs.Keys.Select(port => port.Value), Is.EquivalentTo(new[] { "input", "secondary" }));
+			Assert.That(inputs.Values.All(texture => texture == Texture2D.blackTexture), Is.True);
+		}
+
+		[Test]
+		public void InstantEffectLiveParameterAddressIdentifiesCueAndParameter() {
+			var address = LiveInstantEffectRenderer.ParameterAddress(7, "amount");
+
+			Assert.That(LiveInstantEffectRenderer.TryParseParameterAddress(address, out var cueIndex, out var parameterId), Is.True);
+			Assert.That(cueIndex, Is.EqualTo(7));
+			Assert.That(parameterId, Is.EqualTo("amount"));
+			Assert.That(LiveInstantEffectRenderer.LiveParameterCount, Is.EqualTo(8));
+		}
+
+		[Test]
+		public void InstantEffectRendererChangesProgramPixelsWhenInvertCueFires() {
+			var asset = AssetDatabase.LoadAssetAtPath<ShaderNodeManifestAsset>(
+				"Assets/ShitDesigner/Scripts/Modules/Nodes/ShaderNodeManifest.asset");
+			var entry = asset.BuildRuntimeManifest().Find("shitdesigner.shader.color.invert");
+			var assetEntry = asset.Find(entry.TypeId.Value);
+			var blurEntry = asset.BuildRuntimeManifest().Find("shitdesigner.shader.blur.box-blur");
+			var blurAssetEntry = asset.Find(blurEntry.TypeId.Value);
+			var definitions = new Dictionary<NodeTypeId, LiveProgramShaderDefinition> {
+				{ entry.TypeId, new LiveProgramShaderDefinition(entry, assetEntry.Shader) },
+				{ blurEntry.TypeId, new LiveProgramShaderDefinition(blurEntry, blurAssetEntry.Shader) }
+			};
+			var pool = new RenderTexturePool();
+			var renderer = new LiveInstantEffectRenderer(definitions, pool, new LiveRenderSize(4, 4));
+			var source = new RenderTexture(4, 4, 0, RenderTextureFormat.ARGBHalf);
+			var readback = new Texture2D(1, 1, TextureFormat.RGBAFloat, false, true);
+			var previous = RenderTexture.active;
+			try {
+				Assert.That(source.Create(), Is.True);
+				RenderTexture.active = source;
+				GL.Clear(true, true, new Color(.2f, .3f, .4f, 1f));
+				Assert.That(renderer.TryAssign(0, entry.TypeId.Value, out var rejectionReason), Is.True, rejectionReason);
+				var parameters = renderer.GetParameterDefinitions(0);
+				Assert.That(parameters, Has.Length.LessThanOrEqualTo(LiveInstantEffectRenderer.LiveParameterCount));
+				Assert.That(parameters.Single(parameter => parameter.Id.EndsWith("/amount")).Value, Is.EqualTo(1f));
+				Assert.That(renderer.TryAssign(1, blurEntry.TypeId.Value, out rejectionReason), Is.True, rejectionReason);
+				var blurParameters = renderer.GetParameterDefinitions(1);
+				Assert.That(blurParameters.Single(parameter => parameter.Id.EndsWith("/radius")).Value, Is.EqualTo(1f));
+
+				var output = renderer.Render(source, new[] { 1 }, 1UL, 0d);
+				RenderTexture.active = output;
+				readback.ReadPixels(new Rect(1f, 1f, 1f, 1f), 0, 0);
+				readback.Apply(false, false);
+				var pixel = readback.GetPixel(0, 0);
+
+				Assert.That(output, Is.Not.SameAs(source));
+				Assert.That(pixel.r, Is.EqualTo(.8f).Within(.03f));
+				Assert.That(pixel.g, Is.EqualTo(.7f).Within(.03f));
+				Assert.That(pixel.b, Is.EqualTo(.6f).Within(.03f));
+			}
+			finally {
+				RenderTexture.active = previous;
+				renderer.Dispose();
+				pool.Dispose();
+				source.Release();
+				Object.DestroyImmediate(source);
+				Object.DestroyImmediate(readback);
+			}
 		}
 
 		[Test]

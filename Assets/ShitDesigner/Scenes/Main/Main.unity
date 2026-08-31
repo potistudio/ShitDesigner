@@ -200,6 +200,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 3a59a0f015a446c4bdf4eec5dbd9e340, type: 2}
   - {fileID: 11400000, guid: bb4f5b8c1d2e4f6091a2b3c4d5e6f70a, type: 2}
   - {fileID: 11400000, guid: 8d91ecadb75036842b540e86cccb8807, type: 2}
+  - {fileID: 11400000, guid: 21c55f72e24c4e6d9d48aa5e0ff8a3d9, type: 2}
+  - {fileID: 11400000, guid: 0994206ebffc1964194ea2f04b1e7dae, type: 2}
+  - {fileID: 11400000, guid: ccdc081ed877cef45820be53eb386e77, type: 2}
   m_OverlayPatches:
   - {fileID: 11400000, guid: f5c5327b2f9e10544aa82240c82735cb, type: 2}
   - {fileID: 11400000, guid: c7e98bd2a7f64fe2b2539ceae6b0b9b4, type: 2}
@@ -207,7 +210,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 0703d35896b644c1a2f58216b4bc3785, type: 2}
   - {fileID: 11400000, guid: 3a4a512db590466bbdd86e8cd19f8d88, type: 2}
   - {fileID: 11400000, guid: f25f8cb4a4560cb4e9aae5d661ca2dbf, type: 2}
-  - {fileID: 11400000, guid: 21c55f72e24c4e6d9d48aa5e0ff8a3d9, type: 2}
   - {fileID: 11400000, guid: e9e69c563af33ab4cbb31eac7711624a, type: 2}
   - {fileID: 11400000, guid: a83332e8c962d5b42bf1410012658f77, type: 2}
   _shaderManifest: {fileID: 11400000, guid: efc5dd0248d5c714783f13454b2c4b04, type: 2}
