@@ -1323,9 +1323,7 @@ namespace ShitDesigner.Main {
 				patch.ApplyResolvedParameters(_bpmClock.Frame);
 				foreach (var output in patch.Outputs) output.Evaluate(_lastDeltaSeconds, _bpmClock.Frame);
 			}
-			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++) {
-				var overlay = m_OverlayPatches[laneIndex];
-				if (overlay == null || m_OverlayModes[laneIndex] == LiveSequencerCellMode.Off) continue;
+			foreach (var overlay in ActiveOverlayPatches()) {
 				overlay.ApplyResolvedParameters(_bpmClock.Frame);
 				foreach (var output in overlay.Outputs) output.Evaluate(_lastDeltaSeconds, _bpmClock.Frame);
 			}
@@ -1335,11 +1333,8 @@ namespace ShitDesigner.Main {
 			EnsureUsable();
 			foreach (var patch in ActiveMainCuePatches())
 				foreach (var output in patch.Outputs) output.SceneUpdate(Math.Max(0d, deltaSeconds));
-			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++) {
-				var overlay = m_OverlayPatches[laneIndex];
-				if (overlay == null || m_OverlayModes[laneIndex] == LiveSequencerCellMode.Off) continue;
+			foreach (var overlay in ActiveOverlayPatches())
 				foreach (var output in overlay.Outputs) output.SceneUpdate(Math.Max(0d, deltaSeconds));
-			}
 		}
 
 		public LiveProgramFrames Render(IReadOnlyList<int> instantEffectTriggers = null) {
@@ -1348,11 +1343,8 @@ namespace ShitDesigner.Main {
 			if (nextFrame == 0) nextFrame = 1;
 			foreach (var patch in ActiveMainCuePatches())
 				foreach (var output in patch.Outputs) output.Render(_graphTime, nextFrame);
-			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++) {
-				var overlay = m_OverlayPatches[laneIndex];
-				if (overlay == null || m_OverlayModes[laneIndex] == LiveSequencerCellMode.Off) continue;
+			foreach (var overlay in ActiveOverlayPatches())
 				foreach (var output in overlay.Outputs) output.Render(_graphTime, nextFrame);
-			}
 			var overlayInputs = new List<LiveOverlayInput>();
 			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++) {
 				var overlay = m_OverlayPatches[laneIndex];
@@ -1386,22 +1378,23 @@ namespace ShitDesigner.Main {
 				var patchId = composition.LanePatchIds.Count > laneIndex ? composition.LanePatchIds[laneIndex] : string.Empty;
 				var current = m_OverlayPatches[laneIndex];
 				if (string.IsNullOrEmpty(patchId)) {
-					DisposePatch(current);
 					m_OverlayPatches[laneIndex] = null;
 					m_OverlayModes[laneIndex] = LiveSequencerCellMode.Off;
+					DisposeUnreferencedOverlayPatch(current);
 					continue;
 				}
 				if (!_patchDefinitionsById.TryGetValue(patchId, out var definition))
 					throw new InvalidOperationException("The overlay sequencer references an unknown patch: " + patchId + ".");
 				if (current == null || current.Definition != definition) {
-					var replacement = CreatePatch(definition, ProgramRenderSize);
-					DisposePatch(current);
+					var replacement = m_OverlayPatches.FirstOrDefault(patch => patch?.Definition == definition)
+						?? CreatePatch(definition, ProgramRenderSize);
 					m_OverlayPatches[laneIndex] = replacement;
-					current = replacement;
+					DisposeUnreferencedOverlayPatch(current);
 				}
 				m_OverlayModes[laneIndex] = activeModes.TryGetValue(laneIndex, out var mode) ? mode : LiveSequencerCellMode.Off;
-				current.SetSceneActive(m_OverlayModes[laneIndex] != LiveSequencerCellMode.Off);
 			}
+			foreach (var patch in m_OverlayPatches.Where(patch => patch != null).Distinct())
+				patch.SetSceneActive(IsOverlayPatchActive(patch));
 		}
 
 		public void RenderPreviews(IReadOnlyList<string> lanePatchIds, IReadOnlyList<string> mainCuePatchIds, double deltaSeconds) {
@@ -1465,6 +1458,22 @@ namespace ShitDesigner.Main {
 		private void DisposePatch(LivePatch patch) {
 			if (patch == null || !_createdPatches.Remove(patch)) return;
 			patch.Dispose();
+		}
+
+		private IEnumerable<LivePatch> ActiveOverlayPatches() {
+			return m_OverlayPatches.Where(IsOverlayPatchActive).Distinct();
+		}
+
+		private bool IsOverlayPatchActive(LivePatch patch) {
+			if (patch == null) return false;
+			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++)
+				if (ReferenceEquals(m_OverlayPatches[laneIndex], patch) && m_OverlayModes[laneIndex] != LiveSequencerCellMode.Off)
+					return true;
+			return false;
+		}
+
+		private void DisposeUnreferencedOverlayPatch(LivePatch patch) {
+			if (patch != null && !m_OverlayPatches.Contains(patch)) DisposePatch(patch);
 		}
 
 		private static HashSet<string> CollectAssignedPreviewPatchIds(IReadOnlyList<string> lanePatchIds, IReadOnlyList<string> mainCuePatchIds) {
