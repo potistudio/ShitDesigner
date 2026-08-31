@@ -257,12 +257,12 @@ namespace ShitDesigner.Main {
 		private readonly int m_MainCueFaderControlNumber;
 		private readonly int m_SceneTimeEncoderChannel;
 		private readonly int m_SceneTimeEncoderControlNumber;
-		private readonly float m_SceneTimeOffsetStepSeconds;
+		private readonly float m_SceneTimeJogSpeedPerStep;
 		private string m_LoadedPatchId;
 
 		public LiveMidiInput(MidiInputManager manager, LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches,
 			int mainCueFaderChannel = 16, int mainCueFaderControlNumber = 5, int sceneTimeEncoderChannel = 16,
-			int sceneTimeEncoderControlNumber = 77, float sceneTimeOffsetStepSeconds = .01f) {
+			int sceneTimeEncoderControlNumber = 77, float sceneTimeJogSpeedPerStep = .25f) {
 			m_Manager = manager ?? throw new ArgumentNullException(nameof(manager));
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));
@@ -270,13 +270,13 @@ namespace ShitDesigner.Main {
 			if (mainCueFaderControlNumber < 0 || mainCueFaderControlNumber > 127) throw new ArgumentOutOfRangeException(nameof(mainCueFaderControlNumber));
 			if (sceneTimeEncoderChannel < 1 || sceneTimeEncoderChannel > 16) throw new ArgumentOutOfRangeException(nameof(sceneTimeEncoderChannel));
 			if (sceneTimeEncoderControlNumber < 0 || sceneTimeEncoderControlNumber > 127) throw new ArgumentOutOfRangeException(nameof(sceneTimeEncoderControlNumber));
-			if (float.IsNaN(sceneTimeOffsetStepSeconds) || float.IsInfinity(sceneTimeOffsetStepSeconds) || sceneTimeOffsetStepSeconds <= 0f)
-				throw new ArgumentOutOfRangeException(nameof(sceneTimeOffsetStepSeconds));
+			if (float.IsNaN(sceneTimeJogSpeedPerStep) || float.IsInfinity(sceneTimeJogSpeedPerStep) || sceneTimeJogSpeedPerStep <= 0f)
+				throw new ArgumentOutOfRangeException(nameof(sceneTimeJogSpeedPerStep));
 			m_MainCueFaderChannel = mainCueFaderChannel;
 			m_MainCueFaderControlNumber = mainCueFaderControlNumber;
 			m_SceneTimeEncoderChannel = sceneTimeEncoderChannel;
 			m_SceneTimeEncoderControlNumber = sceneTimeEncoderControlNumber;
-			m_SceneTimeOffsetStepSeconds = sceneTimeOffsetStepSeconds;
+			m_SceneTimeJogSpeedPerStep = sceneTimeJogSpeedPerStep;
 
 			var patchIds = new List<string>(patches.Count);
 			var patchesById = new Dictionary<string, PatchDefinition>(StringComparer.Ordinal);
@@ -301,7 +301,7 @@ namespace ShitDesigner.Main {
 			if (control.Kind == MidiControlKind.ControlChange && control.Channel == m_SceneTimeEncoderChannel
 				&& control.Number == m_SceneTimeEncoderControlNumber) {
 				var steps = inputEvent.RawValue - RelativeEncoderPivot;
-				if (steps != 0) m_Queue.EnqueueNudgeSceneTimeOffset(steps * m_SceneTimeOffsetStepSeconds);
+				if (steps != 0) m_Queue.EnqueueJogSceneTime(steps * m_SceneTimeJogSpeedPerStep);
 				return;
 			}
 			if (control.Kind == MidiControlKind.ControlChange && control.Channel == m_MainCueFaderChannel

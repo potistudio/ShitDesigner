@@ -31,7 +31,9 @@ namespace ShitDesigner.Main {
 		[SerializeField, Range(0, 127)] private int m_MainCueFaderControlNumber = 5;
 		[SerializeField, Range(1, 16)] private int m_SceneTimeEncoderChannel = 16;
 		[SerializeField, Range(0, 127)] private int m_SceneTimeEncoderControlNumber = 77;
-		[SerializeField, Min(.001f)] private float m_SceneTimeOffsetStepSeconds = .01f;
+		[SerializeField, Min(.01f)] private float m_SceneTimeJogSpeedPerStep = .25f;
+		[SerializeField, Range(.01f, 1f)] private float m_SceneTimeJogMaximumSpeedOffset = 1f;
+		[SerializeField, Min(.01f)] private float m_SceneTimeJogReleaseSeconds = .08f;
 		[SerializeField, Min(0f)] private float m_ThumbnailTimeOffsetSeconds = .05f;
 
 		private readonly LiveParameterQueue _parameterQueue = new LiveParameterQueue();
@@ -94,6 +96,7 @@ namespace ShitDesigner.Main {
 					throw new InvalidOperationException("ApplicationLiveHost requires graph, MIDI, capability, Display, and UI components.");
 
 				_runtime = _graphBootstrap.CreateRuntime();
+				_runtime.ConfigureSceneTimeJog(m_SceneTimeJogMaximumSpeedOffset, m_SceneTimeJogReleaseSeconds);
 				_shutdown.Add(() => { _runtime?.Dispose(); _runtime = null; });
 				_patchIds = _runtime.Patches.Select(patch => patch.Id).ToArray();
 				var mainPatchIds = new HashSet<string>(_graphBootstrap.MainPatches.Where(patch => patch != null).Select(patch => patch.Id), StringComparer.Ordinal);
@@ -128,7 +131,7 @@ namespace ShitDesigner.Main {
 				_shutdown.Add(_midiInputManager.Shutdown);
 				_midi = new LiveMidiInput(_midiInputManager, _parameterQueue, _runtime.Patches,
 					m_MainCueFaderChannel, m_MainCueFaderControlNumber, m_SceneTimeEncoderChannel,
-					m_SceneTimeEncoderControlNumber, m_SceneTimeOffsetStepSeconds);
+					m_SceneTimeEncoderControlNumber, m_SceneTimeJogSpeedPerStep);
 				_shutdown.Add(() => { _midi?.Dispose(); _midi = null; });
 				_externalDisplay.Initialize();
 				_shutdown.Add(_externalDisplay.Shutdown);

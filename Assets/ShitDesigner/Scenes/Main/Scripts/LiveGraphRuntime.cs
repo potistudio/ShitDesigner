@@ -1375,7 +1375,9 @@ namespace ShitDesigner.Main {
 		private ulong _frameNumber;
 		private ulong m_PreviewFrameNumber;
 		private double m_GraphTime;
-		private double m_SceneTimeOffsetSeconds;
+		private double m_SceneTimeJogSpeedOffset;
+		private double m_SceneTimeJogMaximumSpeedOffset = 1d;
+		private double m_SceneTimeJogReleaseSeconds = .08d;
 		private double m_LastGraphDeltaSeconds;
 		private double m_PreviewElapsedSeconds;
 		private bool _disposed;
@@ -1392,7 +1394,7 @@ namespace ShitDesigner.Main {
 		public IReadOnlyList<RenderTexture> MainCuePreviewFrames => m_MainCuePreviewFrames;
 		public LiveParameterDefinition BpmDefinition => m_BpmClock.Definition;
 		public BeatClockFrame BpmFrame => m_BpmClock.Frame;
-		public double SceneTimeOffsetSeconds => m_SceneTimeOffsetSeconds;
+		public double SceneTimePlaybackRate => Math.Max(0d, 1d + m_SceneTimeJogSpeedOffset);
 		public bool IsTimeEasingEnabled => m_BpmClock.IsTimeEasingEnabled;
 
 		internal LiveGraphRuntime(LiveGraph graph, AnimationCurve globalTimeEasing) {
@@ -1410,6 +1412,16 @@ namespace ShitDesigner.Main {
 			CurrentFrame = CurrentFrames.Primary;
 		}
 
+		public void ConfigureSceneTimeJog(float maximumSpeedOffset, float releaseSeconds) {
+			if (float.IsNaN(maximumSpeedOffset) || float.IsInfinity(maximumSpeedOffset) || maximumSpeedOffset <= 0f || maximumSpeedOffset > 1f)
+				throw new ArgumentOutOfRangeException(nameof(maximumSpeedOffset));
+			if (float.IsNaN(releaseSeconds) || float.IsInfinity(releaseSeconds) || releaseSeconds <= 0f)
+				throw new ArgumentOutOfRangeException(nameof(releaseSeconds));
+			m_SceneTimeJogMaximumSpeedOffset = maximumSpeedOffset;
+			m_SceneTimeJogReleaseSeconds = releaseSeconds;
+			m_SceneTimeJogSpeedOffset = Math.Max(-maximumSpeedOffset, Math.Min(maximumSpeedOffset, m_SceneTimeJogSpeedOffset));
+		}
+
 		public LiveParameterApplicationResult Apply(LiveParameterRequest request) {
 			if (request.Kind == LiveParameterRequestKind.SetBpm)
 				return m_BpmClock.TrySetBpm(request.Value, out var bpmRejection) ? Accept(request) : Reject(request, bpmRejection);
@@ -1419,10 +1431,11 @@ namespace ShitDesigner.Main {
 				m_BpmClock.SetTimeEasingEnabled(request.ParameterValue.AsBool());
 				return Accept(request);
 			}
-			if (request.Kind == LiveParameterRequestKind.NudgeSceneTimeOffset) {
-				var nextOffset = m_SceneTimeOffsetSeconds + request.Value;
-				if (double.IsNaN(nextOffset) || double.IsInfinity(nextOffset)) return Reject(request, "The scene time offset must be finite.");
-				m_SceneTimeOffsetSeconds = Math.Max(-m_GraphTime, nextOffset);
+			if (request.Kind == LiveParameterRequestKind.JogSceneTime) {
+				var nextSpeedOffset = m_SceneTimeJogSpeedOffset + request.Value;
+				if (double.IsNaN(nextSpeedOffset) || double.IsInfinity(nextSpeedOffset)) return Reject(request, "The scene time jog speed must be finite.");
+				m_SceneTimeJogSpeedOffset = Math.Max(-m_SceneTimeJogMaximumSpeedOffset,
+					Math.Min(m_SceneTimeJogMaximumSpeedOffset, nextSpeedOffset));
 				return Accept(request);
 			}
 			if (request.Kind == LiveParameterRequestKind.SetMainCueFader) {
@@ -1468,8 +1481,10 @@ namespace ShitDesigner.Main {
 		public void Evaluate(double deltaSeconds) {
 			EnsureUsable();
 			var sourceDeltaSeconds = Math.Max(0d, deltaSeconds);
-			m_LastGraphDeltaSeconds = m_BpmClock.Advance(sourceDeltaSeconds);
+			var clockDeltaSeconds = m_BpmClock.Advance(sourceDeltaSeconds);
+			m_LastGraphDeltaSeconds = clockDeltaSeconds * SceneTimePlaybackRate;
 			m_GraphTime += m_LastGraphDeltaSeconds;
+			ReleaseSceneTimeJog(sourceDeltaSeconds);
 			foreach (var patch in ActiveMainCuePatches()) {
 				patch.ApplyResolvedParameters(m_BpmClock.Frame);
 				foreach (var output in patch.Outputs) output.Evaluate(m_LastGraphDeltaSeconds, m_BpmClock.Frame);
@@ -1492,11 +1507,10 @@ namespace ShitDesigner.Main {
 			EnsureUsable();
 			var nextFrame = _frameNumber + 1;
 			if (nextFrame == 0) nextFrame = 1;
-			var sceneGraphTime = Math.Max(0d, m_GraphTime + m_SceneTimeOffsetSeconds);
 			foreach (var patch in ActiveMainCuePatches())
-				foreach (var output in patch.Outputs) output.Render(sceneGraphTime, nextFrame);
+				foreach (var output in patch.Outputs) output.Render(m_GraphTime, nextFrame);
 			foreach (var overlay in ActiveOverlayPatches())
-				foreach (var output in overlay.Outputs) output.Render(sceneGraphTime, nextFrame);
+				foreach (var output in overlay.Outputs) output.Render(m_GraphTime, nextFrame);
 			var overlayInputs = new List<LiveOverlayInput>();
 			var output2Inputs = new List<LiveOverlayInput>();
 			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++) {
@@ -1511,10 +1525,10 @@ namespace ShitDesigner.Main {
 			var mainTexture = referencePatch?.Outputs.Count > 0 ? referencePatch.Outputs[0].ProgramTexture : null;
 			var alternateTexture = alternatePatch?.Outputs.Count > 0 ? alternatePatch.Outputs[0].ProgramTexture : null;
 			var composite = _graph.Compositor.Render(mainTexture, alternateTexture, m_MainCueFader.AlternateOpacity,
-				overlayInputs, nextFrame, sceneGraphTime);
-			var programOutput = _graph.InstantEffects.Render(composite, instantEffectTriggers, nextFrame, sceneGraphTime);
+				overlayInputs, nextFrame, m_GraphTime);
+			var programOutput = _graph.InstantEffects.Render(composite, instantEffectTriggers, nextFrame, m_GraphTime);
 			var overlayOutput = _graph.OverlayOutputCompositor.Render(Texture2D.blackTexture, null, 0f,
-				output2Inputs, nextFrame, sceneGraphTime);
+				output2Inputs, nextFrame, m_GraphTime);
 			_frameNumber = nextFrame;
 			CurrentFrames = new LiveProgramFrames(new[] {
 				new LiveProgramFrame(programOutput, _frameNumber),
@@ -1570,7 +1584,7 @@ namespace ShitDesigner.Main {
 					if (nextFrame == 0) nextFrame = 1;
 					var previewTimeOffset = double.IsNaN(timeOffsetSeconds) || double.IsInfinity(timeOffsetSeconds)
 						? 0d : Math.Max(0d, timeOffsetSeconds);
-					RenderPreviewPatches(nextFrame, Math.Max(0d, m_GraphTime + m_SceneTimeOffsetSeconds) + m_BpmClock.ProjectGraphDelta(previewTimeOffset),
+					RenderPreviewPatches(nextFrame, m_GraphTime + m_BpmClock.ProjectGraphDelta(previewTimeOffset),
 						OffsetBeatClockFrame(m_BpmClock.Frame, previewTimeOffset));
 					m_PreviewFrameNumber = nextFrame;
 				}
@@ -1613,6 +1627,12 @@ namespace ShitDesigner.Main {
 				patch.Dispose();
 				throw;
 			}
+		}
+
+		private void ReleaseSceneTimeJog(double deltaSeconds) {
+			if (deltaSeconds <= 0d || m_SceneTimeJogSpeedOffset == 0d) return;
+			m_SceneTimeJogSpeedOffset *= Math.Exp(-deltaSeconds / m_SceneTimeJogReleaseSeconds);
+			if (Math.Abs(m_SceneTimeJogSpeedOffset) < .001d) m_SceneTimeJogSpeedOffset = 0d;
 		}
 
 		private void DisposePatch(LivePatch patch) {
