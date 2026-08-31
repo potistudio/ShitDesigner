@@ -71,7 +71,10 @@ fragment half4 fragment_main(VertexOutput input [[stage_in]], texture2d<half> so
         [[MTLRenderPipelineDescriptor alloc] init];
     descriptor.vertexFunction = vertex;
     descriptor.fragmentFunction = fragment;
-    descriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
+    // DisplayTransform has already encoded the source bytes as sRGB. Keep
+    // this render target unorm so Metal copies those bytes without applying
+    // a second transfer function.
+    descriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
     s_pipeline = [device newRenderPipelineStateWithDescriptor:descriptor
                                                         error:&error];
     if (s_pipeline == nil)
@@ -125,7 +128,10 @@ bool CreateOutputOnMainThread(int displayIndex) {
   view.wantsLayer = YES;
   CAMetalLayer *layer = [[CAMetalLayer alloc] init];
   layer.device = s_metal->MetalDevice();
-  layer.pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
+  layer.pixelFormat = MTLPixelFormatBGRA8Unorm;
+  CGColorSpaceRef colorSpace = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+  layer.colorspace = colorSpace;
+  CGColorSpaceRelease(colorSpace);
   layer.framebufferOnly = YES;
   layer.opaque = YES;
   layer.displaySyncEnabled = YES;
