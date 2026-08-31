@@ -29,6 +29,7 @@ namespace ShitDesigner.Main {
 		[SerializeField] private bool _bootOnAwake = true;
 		[SerializeField, Range(1, 16)] private int m_MainCueFaderChannel = 16;
 		[SerializeField, Range(0, 127)] private int m_MainCueFaderControlNumber = 5;
+		[SerializeField, Min(0f)] private float m_ThumbnailTimeOffsetSeconds = .05f;
 
 		private readonly LiveParameterQueue _parameterQueue = new LiveParameterQueue();
 		private readonly LiveBpmTap _bpmTap = new LiveBpmTap();
@@ -164,7 +165,8 @@ namespace ShitDesigner.Main {
 				_runtime.Evaluate(deltaSeconds);
 				_runtime.SceneUpdate(deltaSeconds);
 				var frames = _runtime.Render(m_FiredInstantEffectTriggers);
-				_runtime.RenderPreviews(overlayComposition.LanePatchIds, _runtime.MainCuePatchIds, deltaSeconds);
+				_runtime.RenderPreviews(overlayComposition.LanePatchIds, _runtime.MainCuePatchIds, deltaSeconds,
+					m_ThumbnailTimeOffsetSeconds);
 				_externalDisplay.Present(frames);
 				LastDiagnostic = string.Empty;
 				PublishReadModel(string.Empty);

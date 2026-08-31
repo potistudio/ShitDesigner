@@ -160,6 +160,7 @@ MonoBehaviour:
   _bootOnAwake: 1
   m_MainCueFaderChannel: 16
   m_MainCueFaderControlNumber: 5
+  m_ThumbnailTimeOffsetSeconds: 0.05
 --- !u!114 &444072068
 MonoBehaviour:
   m_ObjectHideFlags: 0

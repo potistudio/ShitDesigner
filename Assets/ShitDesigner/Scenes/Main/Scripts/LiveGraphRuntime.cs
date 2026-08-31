@@ -1402,7 +1402,8 @@ namespace ShitDesigner.Main {
 				patch.SetSceneActive(IsOverlayPatchActive(patch));
 		}
 
-		public void RenderPreviews(IReadOnlyList<string> lanePatchIds, IReadOnlyList<string> mainCuePatchIds, double deltaSeconds) {
+		public void RenderPreviews(IReadOnlyList<string> lanePatchIds, IReadOnlyList<string> mainCuePatchIds, double deltaSeconds,
+			double timeOffsetSeconds) {
 			EnsureUsable();
 			var activePatchIds = CollectAssignedPreviewPatchIds(lanePatchIds, mainCuePatchIds);
 			ReconcilePreviews(activePatchIds);
@@ -1416,7 +1417,10 @@ namespace ShitDesigner.Main {
 					m_PreviewElapsedSeconds %= PreviewIntervalSeconds;
 					var nextFrame = m_PreviewFrameNumber + 1;
 					if (nextFrame == 0) nextFrame = 1;
-					RenderPreviewPatches(nextFrame);
+					var previewTimeOffset = double.IsNaN(timeOffsetSeconds) || double.IsInfinity(timeOffsetSeconds)
+						? 0d : Math.Max(0d, timeOffsetSeconds);
+					RenderPreviewPatches(nextFrame, _graphTime + previewTimeOffset,
+						OffsetBeatClockFrame(_bpmClock.Frame, previewTimeOffset));
 					m_PreviewFrameNumber = nextFrame;
 				}
 			}
@@ -1525,16 +1529,22 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		private void RenderPreviewPatches(ulong frameNumber) {
+		private void RenderPreviewPatches(ulong frameNumber, double graphTime, BeatClockFrame bpmFrame) {
 			foreach (var pair in m_Previews.ToArray()) {
 				try {
-					pair.Value.Render(_graphTime, _bpmClock.Frame, frameNumber);
+					pair.Value.Render(graphTime, bpmFrame, frameNumber);
 				}
 				catch {
 					DisposePreview(pair.Key);
 					m_PreviewFailures.Add(pair.Key);
 				}
 			}
+		}
+
+		private static BeatClockFrame OffsetBeatClockFrame(BeatClockFrame frame, double offsetSeconds) {
+			if (!frame.IsAvailable || offsetSeconds <= 0d) return frame;
+			return new BeatClockFrame(frame.Bpm, frame.TotalBeats + offsetSeconds * frame.Bpm / 60d,
+				frame.BeatAlignmentBeats);
 		}
 
 		private void DisposePreview(string patchId) {
