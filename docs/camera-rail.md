@@ -13,4 +13,4 @@ The camera follows `Target` when it is assigned; otherwise it follows the spline
 
 ## Stage
 
-The `Stage` scene uses `Stage Random Camera` instead of a spline rail. It keeps the prefab's `Camera Target` in frame, adds smooth noise motion, and cuts to a deterministic random position and field of view after each configured shot duration. Select the Stage prefab root to adjust its shot bounds, duration, field-of-view range, movement, or random seed. The scene graph clock still drives the camera, so the live scene `Motion` parameter controls its playback speed.
+The `Stage` scene uses `Stage Random Camera` instead of a spline rail. It keeps the prefab's `Camera Target` in frame and moves in a straight line between deterministic random positions and fields of view. Select the Stage prefab root to adjust its shot bounds, duration, field-of-view range, or random seed. The scene graph clock still drives the camera, so the live scene `Motion` parameter controls its playback speed.
