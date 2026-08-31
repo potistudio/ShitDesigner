@@ -87,7 +87,7 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void KeyboardAUsesPianoSwitchAndShiftCSwitchesCompletely() {
+		public void KeyboardAUsesPianoSwitchAndShiftASwitchesCompletely() {
 			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.A));
 			Keyboard keyboard = null;
 			try {
@@ -110,9 +110,7 @@ namespace ShitDesigner.Main.Tests {
 				InputSystem.QueueStateEvent(keyboard, new KeyboardState());
 				InputSystem.Update();
 				input.Poll("patch-a");
-				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift, Key.C));
-				InputSystem.Update();
-				input.Poll("patch-a");
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift, Key.A));
 				InputSystem.QueueStateEvent(keyboard, new KeyboardState());
 				InputSystem.Update();
 				input.Poll("patch-a");
