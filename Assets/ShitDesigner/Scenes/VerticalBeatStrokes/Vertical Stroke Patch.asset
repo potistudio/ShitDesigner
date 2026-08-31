@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 36a7c9fd8af84f24a8db20cf4457e4ca, type: 3}
-  m_Name: MONTAGEM HIKARI Patch
+  m_Name: Vertical Stroke Patch
   m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
-  _id: montagem-hikari
-  _displayName: MONTAGEM HIKARI
+  _id: vertical_stroke
+  _displayName: Vertical Stroke
   _programGraph:
-    _outputNodeId: video
+    _outputNodeId: scene
     _nodes:
-    - _id: video
-      _typeId: shitdesigner.video.player
-      m_SceneDefinition: {fileID: 0}
-      m_VideoPath:
-      m_VideoClip: {fileID: 32900000, guid: 5e1851a21fcb14a43b2d1784bf2bb66a, type: 3}
+    - _id: scene
+      _typeId: shitdesigner.scene.3d
+      m_SceneDefinition: {fileID: 11400000, guid: 95526759361be4dfcba3f54914f63e42, type: 2}
+      m_VideoPath: 
+      m_VideoClip: {fileID: 0}
       _parameters: []
     _connections: []
   _parameters: []

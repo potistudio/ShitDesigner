@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 36a7c9fd8af84f24a8db20cf4457e4ca, type: 3}
-  m_Name: MONTAGEM HIKARI Patch
+  m_Name: AKAI HIKARI
   m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
-  _id: montagem-hikari
+  _id: akai-hikari
   _displayName: MONTAGEM HIKARI
   _programGraph:
     _outputNodeId: video
@@ -20,8 +20,8 @@ MonoBehaviour:
     - _id: video
       _typeId: shitdesigner.video.player
       m_SceneDefinition: {fileID: 0}
-      m_VideoPath:
-      m_VideoClip: {fileID: 32900000, guid: 5e1851a21fcb14a43b2d1784bf2bb66a, type: 3}
+      m_VideoPath: 
+      m_VideoClip: {fileID: 32900000, guid: 59e96dc6ec182204f93896932ee99e30, type: 3}
       _parameters: []
     _connections: []
   _parameters: []
