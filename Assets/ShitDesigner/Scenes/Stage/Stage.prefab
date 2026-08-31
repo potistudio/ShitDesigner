@@ -2905,10 +2905,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: ShitDesigner.Stage::ShitDesigner.Stage.StageRandomCamera
   m_Camera: {fileID: 8891327183107775140}
   m_Target: {fileID: 789263807182799040}
+  m_AudienceReference: {fileID: 2895099285174166594}
   m_ShotPositionCenter: {x: 0, y: 3, z: -11}
   m_ShotPositionExtents: {x: 5, y: 1.5, z: 2}
   m_ShotDurationRange: {x: 2.5, y: 6}
   m_FieldOfViewRange: {x: 30, y: 65}
+  m_MinimumAudienceSideDistance: 4
   m_RandomSeed: 2718
 --- !u!1 &1767861253710987001
 GameObject:
