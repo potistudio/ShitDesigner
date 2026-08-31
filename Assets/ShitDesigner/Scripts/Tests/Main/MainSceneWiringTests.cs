@@ -211,6 +211,21 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void MainUiDefinesGlobalTimeEasingToggle() {
+			var asset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/ShitDesigner/Scenes/Main/MainUI.uxml");
+			Assert.That(asset, Is.Not.Null);
+			var root = new VisualElement();
+			asset.CloneTree(root);
+
+			var button = root.Q<Button>("time-easing-button");
+
+			Assert.That(button, Is.Not.Null);
+			Assert.That(button.text, Is.EqualTo("TIME EASE ON"));
+			Assert.That(button.ClassListContains("tempo-alignment-button"), Is.True);
+			Assert.That(button.ClassListContains("tempo-time-easing-button"), Is.True);
+		}
+
+		[Test]
 		public void MainUiDefinesOverlayAndEffectSequencerHosts() {
 			var asset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/ShitDesigner/Scenes/Main/MainUI.uxml");
 			Assert.That(asset, Is.Not.Null);

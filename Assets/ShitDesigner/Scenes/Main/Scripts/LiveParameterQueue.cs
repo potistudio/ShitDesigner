@@ -10,6 +10,7 @@ namespace ShitDesigner.Main {
 		SetParameter,
 		SetBpm,
 		AlignBeat,
+		SetTimeEasingEnabled,
 		SetMainCueFader,
 		ToggleMainCue
 	}
@@ -80,6 +81,9 @@ namespace ShitDesigner.Main {
 		public LiveParameterEnqueueResult EnqueueAlignBeat()
 			=> Enqueue(LiveParameterRequestKind.AlignBeat, string.Empty, string.Empty, ParameterValue.FromFloat(0f));
 
+		public LiveParameterEnqueueResult EnqueueSetTimeEasingEnabled(bool enabled)
+			=> Enqueue(LiveParameterRequestKind.SetTimeEasingEnabled, string.Empty, string.Empty, ParameterValue.FromBool(enabled));
+
 		public LiveParameterEnqueueResult EnqueueSetMainCueFader(float normalizedValue)
 			=> float.IsNaN(normalizedValue) || float.IsInfinity(normalizedValue)
 				? LiveParameterEnqueueResult.Reject("The Main Cue fader value must be finite.")
@@ -109,7 +113,7 @@ namespace ShitDesigner.Main {
 		}
 
 		private static bool IsGlobalRequest(LiveParameterRequestKind kind)
-			=> kind == LiveParameterRequestKind.SetBpm || kind == LiveParameterRequestKind.AlignBeat
+			=> kind == LiveParameterRequestKind.SetBpm || kind == LiveParameterRequestKind.AlignBeat || kind == LiveParameterRequestKind.SetTimeEasingEnabled
 				|| kind == LiveParameterRequestKind.SetMainCueFader || kind == LiveParameterRequestKind.ToggleMainCue;
 
 		private ulong NextSequenceNumber() {

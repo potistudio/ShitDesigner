@@ -42,6 +42,7 @@ namespace ShitDesigner.Main {
 		private TextField _bpmField;
 		private Button _bpmTapButton;
 		private Button m_BeatAlignmentButton;
+		private Button m_TimeEasingButton;
 		private Label _capabilityLabel;
 		private Label _diagnosticLabel;
 		private LiveOutputMenuController m_OutputMenu;
@@ -154,6 +155,7 @@ namespace ShitDesigner.Main {
 			_bpmField = Required<TextField>(root, "bpm-field");
 			_bpmTapButton = Required<Button>(root, "bpm-tap");
 			m_BeatAlignmentButton = Required<Button>(root, "beat-alignment-button");
+			m_TimeEasingButton = Required<Button>(root, "time-easing-button");
 			_capabilityLabel = Required<Label>(root, "capability-status");
 			_diagnosticLabel = Required<Label>(root, "diagnostic-status");
 			m_Root.RegisterCallback<PointerDownEvent>(OnPatchPointerDown, TrickleDown.TrickleDown);
@@ -168,6 +170,7 @@ namespace ShitDesigner.Main {
 			_bpmField.RegisterCallback<FocusOutEvent>(OnBpmFocusOut);
 			_bpmTapButton.clicked += TapBpm;
 			m_BeatAlignmentButton.clicked += AlignBeat;
+			m_TimeEasingButton.clicked += ToggleTimeEasing;
 			_initialized = true;
 		}
 
@@ -212,6 +215,7 @@ namespace ShitDesigner.Main {
 			}
 			if (_bpmTapButton != null) _bpmTapButton.clicked -= TapBpm;
 			if (m_BeatAlignmentButton != null) m_BeatAlignmentButton.clicked -= AlignBeat;
+			if (m_TimeEasingButton != null) m_TimeEasingButton.clicked -= ToggleTimeEasing;
 			_initialized = false;
 			m_Root = null;
 			m_MainUi = null;
@@ -842,6 +846,8 @@ namespace ShitDesigner.Main {
 		private void RefreshTempoControls(LiveUiReadModel model) {
 			_tempoControls.RemoveFromClassList("is-hidden");
 			if (!_editingBpm) _bpmField.SetValueWithoutNotify(FormatBpm(model.Bpm.Value));
+			m_TimeEasingButton.text = model.IsTimeEasingEnabled ? "TIME EASE ON" : "TIME EASE OFF";
+			m_TimeEasingButton.EnableInClassList("is-time-easing-enabled", model.IsTimeEasingEnabled);
 		}
 
 		private void OnBpmInputChanged(ChangeEvent<string> change) {
@@ -859,6 +865,11 @@ namespace ShitDesigner.Main {
 		private void AlignBeat() {
 			if (_host == null) return;
 			ShowEnqueueRejection(_host.ParameterQueue.EnqueueAlignBeat());
+		}
+
+		private void ToggleTimeEasing() {
+			if (_host?.ReadModel == null) return;
+			ShowEnqueueRejection(_host.ParameterQueue.EnqueueSetTimeEasingEnabled(!_host.ReadModel.IsTimeEasingEnabled));
 		}
 
 		private void TapBpm() {
