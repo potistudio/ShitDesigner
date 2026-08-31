@@ -8,11 +8,15 @@ namespace ShitDesigner.Scene {
 	/// <summary>Moves multiple image or video surfaces independently within orthographic camera bounds.</summary>
 	[DisallowMultipleComponent]
 	public sealed class DvdBounceScene : MonoBehaviour {
+		public const int MinimumInstanceCount = 1;
+		public const int MaximumInstanceCount = 64;
+		public const float MinimumSpeed = 0.01f;
+
 		[Header("Visual")]
 		[SerializeField] private Texture2D m_Image;
 		[SerializeField] private VideoClip m_Video;
 		[Min(0.01f)][SerializeField] private float m_VisualSize = 1.6f;
-		[Range(1, 32)][SerializeField] private int m_InstanceCount = 1;
+		[Range(MinimumInstanceCount, MaximumInstanceCount)][SerializeField] private int m_InstanceCount = 1;
 
 		[Header("Additional Sources")]
 		[SerializeField] private VisualSource[] m_AdditionalSources = Array.Empty<VisualSource>();
@@ -21,7 +25,7 @@ namespace ShitDesigner.Scene {
 		[Min(0f)][SerializeField] private float m_VideoPlaybackSpeed = 1f;
 
 		[Header("Motion")]
-		[Min(0.01f)][SerializeField] private float m_Speed = 4.5f;
+		[Min(MinimumSpeed)][SerializeField] private float m_Speed = 4.5f;
 		[SerializeField] private Vector2 m_InitialDirection = new Vector2(1f, 0.63f);
 		[SerializeField] private Vector2 m_InitialPosition = Vector2.zero;
 
@@ -29,6 +33,9 @@ namespace ShitDesigner.Scene {
 		private readonly Dictionary<VideoClip, SharedVideoPlayback> m_VideoPlaybacks = new Dictionary<VideoClip, SharedVideoPlayback>();
 		private readonly List<Material> m_Materials = new List<Material>();
 		private Camera m_Camera;
+
+		public int InstanceCount => m_InstanceCount;
+		public float Speed => m_Speed;
 
 		private void Awake() {
 			m_Camera = Camera.main;
@@ -45,6 +52,8 @@ namespace ShitDesigner.Scene {
 			UpdateVideoTextures();
 			if (m_Camera == null)
 				return;
+			if (m_Visuals.Count != m_InstanceCount)
+				SynchronizeInstanceCount();
 
 			for (var index = 0; index < m_Visuals.Count; index++) {
 				var visual = m_Visuals[index];
@@ -62,14 +71,12 @@ namespace ShitDesigner.Scene {
 
 		private void OnValidate() {
 			m_VisualSize = Mathf.Max(0.01f, m_VisualSize);
-			m_InstanceCount = Mathf.Clamp(m_InstanceCount, 1, 32);
+			m_InstanceCount = Mathf.Clamp(m_InstanceCount, MinimumInstanceCount, MaximumInstanceCount);
 			m_VideoPlaybackSpeed = Mathf.Max(0f, m_VideoPlaybackSpeed);
-			m_Speed = Mathf.Max(0.01f, m_Speed);
+			m_Speed = Mathf.Max(MinimumSpeed, m_Speed);
 			m_AdditionalSources ??= Array.Empty<VisualSource>();
 			if (m_InitialDirection.sqrMagnitude < 0.0001f)
 				m_InitialDirection = new Vector2(1f, 0.63f);
-			if (Application.isPlaying && m_Camera != null && m_Visuals.Count != m_InstanceCount)
-				SynchronizeInstanceCount();
 
 			for (var index = 0; index < m_Visuals.Count; index++) {
 				var visual = m_Visuals[index];
@@ -84,8 +91,16 @@ namespace ShitDesigner.Scene {
 		[ContextMenu("Rebuild Visuals")]
 		public void Rebuild() {
 			CreateVisuals();
-			if (Application.isPlaying)
+			if (UnityEngine.Application.isPlaying)
 				InitializeVisuals();
+		}
+
+		public void SetInstanceCount(int instanceCount) {
+			m_InstanceCount = Mathf.Clamp(instanceCount, MinimumInstanceCount, MaximumInstanceCount);
+		}
+
+		public void SetSpeed(float speed) {
+			m_Speed = Mathf.Max(MinimumSpeed, speed);
 		}
 
 		private void CreateVisuals() {

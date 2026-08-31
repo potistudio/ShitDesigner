@@ -2,6 +2,7 @@
 	"name": "DvdBounce",
 	"rootNamespace": "ShitDesigner.Scene",
 	"references": [
-		"ShitDesigner.Scene"
+		"ShitDesigner.Scene",
+		"ShitDesigner.Main"
 	]
 }
