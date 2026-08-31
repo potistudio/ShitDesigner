@@ -122,6 +122,9 @@ namespace ShitDesigner.Main.Tests {
 			var cueSlots = Enumerable.Range(1, ApplicationLiveHost.MainCueCount)
 				.Select(index => ui.Q<VisualElement>("cue-slot-" + index)).ToArray();
 			Assert.That(cueSlots, Has.All.Not.Null);
+			Assert.That(host.ReadModel.MainCuePreviews, Has.Count.EqualTo(ApplicationLiveHost.MainCueCount));
+			Assert.That(host.ReadModel.MainCuePreviews[host.ActiveMainCueIndex], Is.Not.Null);
+			Assert.That(cueSlots[host.ActiveMainCueIndex].ClassListContains("has-preview"), Is.True);
 			var dragStroke = ui.Q<VisualElement>("main-cue-drag-stroke");
 			using (var pointerDown = PointerDownEvent.GetPooled(new Event {
 				type = EventType.MouseDown,
@@ -148,6 +151,8 @@ namespace ShitDesigner.Main.Tests {
 			}
 			yield return null;
 			Assert.That(host.MainCuePatchIds[0], Is.EqualTo(firstMainButton.userData as string));
+			Assert.That(host.ReadModel.MainCuePreviews[0], Is.Not.Null);
+			Assert.That(cueSlots[0].ClassListContains("has-preview"), Is.True);
 			Assert.That(firstMainButton.ClassListContains("is-dragging"), Is.False);
 			Assert.That(cueSlots[0].ClassListContains("is-drop-target"), Is.False);
 			Assert.That(dragStroke.ClassListContains("is-active"), Is.False);

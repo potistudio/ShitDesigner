@@ -46,6 +46,7 @@ namespace ShitDesigner.Main {
 		public string SelectedCatalogItemId { get; }
 		public string LoadedPatchId { get; }
 		public IReadOnlyList<RenderTexture> OverlayLanePreviews { get; }
+		public IReadOnlyList<RenderTexture> MainCuePreviews { get; }
 		public LiveParameterDefinition Bpm { get; }
 		public IReadOnlyList<LiveParameterDefinition> Parameters { get; }
 		public IReadOnlyList<LiveSequencerReadModel> Sequencers { get; }
@@ -69,7 +70,7 @@ namespace ShitDesigner.Main {
 
 		public LiveUiReadModel(ulong frameNumber, IReadOnlyList<LivePatchReadModel> patches, IReadOnlyList<LiveEffectNodeReadModel> effectNodes,
 			LiveCatalogRole selectedCatalogRole, string selectedCatalogItemId,
-			string loadedPatchId, IReadOnlyList<RenderTexture> overlayLanePreviews,
+			string loadedPatchId, IReadOnlyList<RenderTexture> overlayLanePreviews, IReadOnlyList<RenderTexture> mainCuePreviews,
 			LiveParameterDefinition bpm, IReadOnlyList<LiveParameterDefinition> parameters, IReadOnlyList<LiveSequencerReadModel> sequencers, LiveProgramFrames programFrames, LiveExternalDisplayOutput output,
 			LiveCapabilitySnapshot capabilities, string diagnostic, IReadOnlyList<LiveParameterApplicationResult> requestResults,
 			bool isEditMode = false, IReadOnlyList<string> instantEffectTypeIds = null, IReadOnlyList<int> firedInstantEffectTriggers = null,
@@ -82,6 +83,7 @@ namespace ShitDesigner.Main {
 			SelectedCatalogItemId = selectedCatalogItemId ?? string.Empty;
 			LoadedPatchId = loadedPatchId ?? string.Empty;
 			OverlayLanePreviews = overlayLanePreviews ?? Array.Empty<RenderTexture>();
+			MainCuePreviews = mainCuePreviews ?? Array.Empty<RenderTexture>();
 			Bpm = bpm;
 			Parameters = parameters ?? Array.Empty<LiveParameterDefinition>();
 			Sequencers = sequencers ?? Array.Empty<LiveSequencerReadModel>();

@@ -1201,13 +1201,13 @@ namespace ShitDesigner.Main {
 		public const int MainCueCount = 2;
 		public const int ProgramWidth = 1920;
 		public const int ProgramHeight = 1080;
-		public const int OverlayPreviewWidth = 160;
-		public const int OverlayPreviewHeight = 90;
-		public const int OverlayPreviewFrameRate = 10;
+		public const int PreviewWidth = 160;
+		public const int PreviewHeight = 90;
+		public const int PreviewFrameRate = 10;
 
-		private const double OverlayPreviewIntervalSeconds = 1d / OverlayPreviewFrameRate;
+		private const double PreviewIntervalSeconds = 1d / PreviewFrameRate;
 		private static readonly LiveRenderSize ProgramRenderSize = new LiveRenderSize(ProgramWidth, ProgramHeight);
-		private static readonly LiveRenderSize OverlayPreviewRenderSize = new LiveRenderSize(OverlayPreviewWidth, OverlayPreviewHeight);
+		private static readonly LiveRenderSize PreviewRenderSize = new LiveRenderSize(PreviewWidth, PreviewHeight);
 
 		private readonly LiveGraph _graph;
 		private readonly Dictionary<string, PatchDefinition> _patchDefinitionsById;
@@ -1215,18 +1215,19 @@ namespace ShitDesigner.Main {
 		private readonly List<LivePatch> _createdPatches = new List<LivePatch>();
 		private readonly LivePatch[] m_OverlayPatches = new LivePatch[LiveStepSequencer.OverlayLaneCount];
 		private readonly LiveSequencerCellMode[] m_OverlayModes = new LiveSequencerCellMode[LiveStepSequencer.OverlayLaneCount];
-		private readonly Dictionary<string, LiveOverlayPreview> m_OverlayPreviews = new Dictionary<string, LiveOverlayPreview>(StringComparer.Ordinal);
-		private readonly HashSet<string> m_OverlayPreviewFailures = new HashSet<string>(StringComparer.Ordinal);
+		private readonly Dictionary<string, LivePatchPreview> m_Previews = new Dictionary<string, LivePatchPreview>(StringComparer.Ordinal);
+		private readonly HashSet<string> m_PreviewFailures = new HashSet<string>(StringComparer.Ordinal);
 		private readonly RenderTexture[] m_OverlayPreviewFrames = new RenderTexture[LiveStepSequencer.OverlayLaneCount];
+		private readonly RenderTexture[] m_MainCuePreviewFrames = new RenderTexture[MainCueCount];
 		private readonly LivePatch[] m_MainCuePatches = new LivePatch[MainCueCount];
 		private readonly string[] m_MainCuePatchIds = new string[MainCueCount];
 		private readonly LiveMainCueFader m_MainCueFader = new LiveMainCueFader();
 		private int m_ActiveMainCueIndex;
 		private ulong _frameNumber;
-		private ulong m_OverlayPreviewFrameNumber;
+		private ulong m_PreviewFrameNumber;
 		private double _graphTime;
 		private double _lastDeltaSeconds;
-		private double m_OverlayPreviewElapsedSeconds;
+		private double m_PreviewElapsedSeconds;
 		private bool _disposed;
 
 		public string LoadedPatchId => LoadedMainPatch?.Definition.Id ?? string.Empty;
@@ -1238,6 +1239,7 @@ namespace ShitDesigner.Main {
 		public LiveProgramFrame CurrentFrame { get; private set; }
 		public LiveProgramFrames CurrentFrames { get; private set; }
 		public IReadOnlyList<RenderTexture> OverlayPreviewFrames => m_OverlayPreviewFrames;
+		public IReadOnlyList<RenderTexture> MainCuePreviewFrames => m_MainCuePreviewFrames;
 		public LiveParameterDefinition BpmDefinition => _bpmClock.Definition;
 		public BeatClockFrame BpmFrame => _bpmClock.Frame;
 
@@ -1383,33 +1385,27 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		public IReadOnlyList<RenderTexture> RenderOverlayPreviews(IReadOnlyList<string> lanePatchIds, double deltaSeconds) {
+		public void RenderPreviews(IReadOnlyList<string> lanePatchIds, IReadOnlyList<string> mainCuePatchIds, double deltaSeconds) {
 			EnsureUsable();
-			var activePatchIds = CollectAssignedOverlayPatchIds(lanePatchIds);
-			ReconcileOverlayPreviews(activePatchIds);
+			var activePatchIds = CollectAssignedPreviewPatchIds(lanePatchIds, mainCuePatchIds);
+			ReconcilePreviews(activePatchIds);
 			if (activePatchIds.Count == 0) {
-				m_OverlayPreviewElapsedSeconds = 0d;
-				m_OverlayPreviewFrameNumber = 0;
+				m_PreviewElapsedSeconds = 0d;
+				m_PreviewFrameNumber = 0;
 			}
 			else {
-				m_OverlayPreviewElapsedSeconds += Math.Max(0d, deltaSeconds);
-				if (m_OverlayPreviewFrameNumber == 0 || m_OverlayPreviewElapsedSeconds >= OverlayPreviewIntervalSeconds) {
-					m_OverlayPreviewElapsedSeconds %= OverlayPreviewIntervalSeconds;
-					var nextFrame = m_OverlayPreviewFrameNumber + 1;
+				m_PreviewElapsedSeconds += Math.Max(0d, deltaSeconds);
+				if (m_PreviewFrameNumber == 0 || m_PreviewElapsedSeconds >= PreviewIntervalSeconds) {
+					m_PreviewElapsedSeconds %= PreviewIntervalSeconds;
+					var nextFrame = m_PreviewFrameNumber + 1;
 					if (nextFrame == 0) nextFrame = 1;
-					RenderOverlayPreviewPatches(nextFrame);
-					m_OverlayPreviewFrameNumber = nextFrame;
+					RenderPreviewPatches(nextFrame);
+					m_PreviewFrameNumber = nextFrame;
 				}
 			}
 
-			Array.Clear(m_OverlayPreviewFrames, 0, m_OverlayPreviewFrames.Length);
-			if (lanePatchIds == null) return m_OverlayPreviewFrames;
-			for (var laneIndex = 0; laneIndex < Math.Min(lanePatchIds.Count, m_OverlayPreviewFrames.Length); laneIndex++) {
-				var patchId = lanePatchIds[laneIndex];
-				if (!string.IsNullOrEmpty(patchId) && m_OverlayPreviews.TryGetValue(patchId, out var preview))
-					m_OverlayPreviewFrames[laneIndex] = preview.Texture;
-			}
-			return m_OverlayPreviewFrames;
+			PopulatePreviewFrames(lanePatchIds, m_OverlayPreviewFrames);
+			PopulatePreviewFrames(mainCuePatchIds, m_MainCuePreviewFrames);
 		}
 
 		public LiveParameterDefinition[] GetLoadedPatchParameterDefinitions() => LoadedMainPatch?.GetParameterDefinitions() ?? Array.Empty<LiveParameterDefinition>();
@@ -1427,8 +1423,8 @@ namespace ShitDesigner.Main {
 		public void Dispose() {
 			if (_disposed) return;
 			_disposed = true;
-			m_OverlayPreviews.Clear();
-			m_OverlayPreviewFailures.Clear();
+			m_Previews.Clear();
+			m_PreviewFailures.Clear();
 			for (var index = _createdPatches.Count - 1; index >= 0; index--) _createdPatches[index].Dispose();
 			_createdPatches.Clear();
 			_graph.Dispose();
@@ -1452,51 +1448,65 @@ namespace ShitDesigner.Main {
 			patch.Dispose();
 		}
 
-		private static HashSet<string> CollectAssignedOverlayPatchIds(IReadOnlyList<string> lanePatchIds) {
+		private static HashSet<string> CollectAssignedPreviewPatchIds(IReadOnlyList<string> lanePatchIds, IReadOnlyList<string> mainCuePatchIds) {
 			var patchIds = new HashSet<string>(StringComparer.Ordinal);
-			if (lanePatchIds == null) return patchIds;
-			foreach (var patchId in lanePatchIds)
-				if (!string.IsNullOrEmpty(patchId)) patchIds.Add(patchId);
+			CollectAssignedPatchIds(lanePatchIds, patchIds);
+			CollectAssignedPatchIds(mainCuePatchIds, patchIds);
 			return patchIds;
 		}
 
-		private void ReconcileOverlayPreviews(ISet<string> activePatchIds) {
-			foreach (var patchId in m_OverlayPreviews.Keys.Where(patchId => !activePatchIds.Contains(patchId)).ToArray())
-				DisposeOverlayPreview(patchId);
-			foreach (var patchId in m_OverlayPreviewFailures.Where(patchId => !activePatchIds.Contains(patchId)).ToArray())
-				m_OverlayPreviewFailures.Remove(patchId);
+		private static void CollectAssignedPatchIds(IReadOnlyList<string> source, ISet<string> destination) {
+			if (source == null) return;
+			foreach (var patchId in source)
+				if (!string.IsNullOrEmpty(patchId)) destination.Add(patchId);
+		}
+
+		private void PopulatePreviewFrames(IReadOnlyList<string> patchIds, RenderTexture[] frames) {
+			Array.Clear(frames, 0, frames.Length);
+			if (patchIds == null) return;
+			for (var index = 0; index < Math.Min(patchIds.Count, frames.Length); index++) {
+				var patchId = patchIds[index];
+				if (!string.IsNullOrEmpty(patchId) && m_Previews.TryGetValue(patchId, out var preview)) frames[index] = preview.Texture;
+			}
+		}
+
+		private void ReconcilePreviews(ISet<string> activePatchIds) {
+			foreach (var patchId in m_Previews.Keys.Where(patchId => !activePatchIds.Contains(patchId)).ToArray())
+				DisposePreview(patchId);
+			foreach (var patchId in m_PreviewFailures.Where(patchId => !activePatchIds.Contains(patchId)).ToArray())
+				m_PreviewFailures.Remove(patchId);
 
 			foreach (var patchId in activePatchIds) {
-				if (m_OverlayPreviews.ContainsKey(patchId) || m_OverlayPreviewFailures.Contains(patchId)) continue;
+				if (m_Previews.ContainsKey(patchId) || m_PreviewFailures.Contains(patchId)) continue;
 				if (!_patchDefinitionsById.TryGetValue(patchId, out var definition)) {
-					m_OverlayPreviewFailures.Add(patchId);
+					m_PreviewFailures.Add(patchId);
 					continue;
 				}
 				try {
-					var patch = CreatePatch(definition, OverlayPreviewRenderSize);
-					m_OverlayPreviews.Add(patchId, new LiveOverlayPreview(patch));
+					var patch = CreatePatch(definition, PreviewRenderSize);
+					m_Previews.Add(patchId, new LivePatchPreview(patch));
 				}
 				catch {
-					m_OverlayPreviewFailures.Add(patchId);
+					m_PreviewFailures.Add(patchId);
 				}
 			}
 		}
 
-		private void RenderOverlayPreviewPatches(ulong frameNumber) {
-			foreach (var pair in m_OverlayPreviews.ToArray()) {
+		private void RenderPreviewPatches(ulong frameNumber) {
+			foreach (var pair in m_Previews.ToArray()) {
 				try {
 					pair.Value.Render(_graphTime, _bpmClock.Frame, frameNumber);
 				}
 				catch {
-					DisposeOverlayPreview(pair.Key);
-					m_OverlayPreviewFailures.Add(pair.Key);
+					DisposePreview(pair.Key);
+					m_PreviewFailures.Add(pair.Key);
 				}
 			}
 		}
 
-		private void DisposeOverlayPreview(string patchId) {
-			if (!m_OverlayPreviews.TryGetValue(patchId, out var preview)) return;
-			m_OverlayPreviews.Remove(patchId);
+		private void DisposePreview(string patchId) {
+			if (!m_Previews.TryGetValue(patchId, out var preview)) return;
+			m_Previews.Remove(patchId);
 			DisposePatch(preview.Patch);
 		}
 
@@ -1548,7 +1558,7 @@ namespace ShitDesigner.Main {
 		private static LiveParameterApplicationResult Reject(LiveParameterRequest request, string reason) => new LiveParameterApplicationResult(request.SequenceNumber, false, reason);
 	}
 
-	internal sealed class LiveOverlayPreview {
+	internal sealed class LivePatchPreview {
 		private readonly LivePatch m_Patch;
 		private double m_LastGraphTime;
 		private bool m_HasRendered;
@@ -1556,7 +1566,7 @@ namespace ShitDesigner.Main {
 		public LivePatch Patch => m_Patch;
 		public RenderTexture Texture => m_Patch.Outputs.Count == 0 ? null : m_Patch.Outputs[0].ProgramTexture;
 
-		public LiveOverlayPreview(LivePatch patch) {
+		public LivePatchPreview(LivePatch patch) {
 			m_Patch = patch ?? throw new ArgumentNullException(nameof(patch));
 		}
 
