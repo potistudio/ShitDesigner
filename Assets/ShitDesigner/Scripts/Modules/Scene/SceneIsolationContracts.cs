@@ -377,7 +377,10 @@ namespace ShitDesigner.Scene {
 			UnityEngine.SceneManagement.Scene createdScene = default(UnityEngine.SceneManagement.Scene);
 			try {
 				var parameters = new CreateSceneParameters(request.Kind == SceneNodeKind.ThreeD ? LocalPhysicsMode.Physics3D : LocalPhysicsMode.Physics2D);
-				createdScene = SceneManager.CreateScene(request.Name, parameters);
+				var sceneName = request.Name;
+				if (SceneManager.GetSceneByName(sceneName).IsValid())
+					sceneName += "." + request.NodeId.Value + "." + request.GenerationId;
+				createdScene = SceneManager.CreateScene(sceneName, parameters);
 				GameObject root;
 				Camera camera;
 				if (request.Prefab != null) {
