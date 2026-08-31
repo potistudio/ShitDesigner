@@ -1833,11 +1833,18 @@ namespace ShitDesigner.Main {
 				return true;
 			}
 			foreach (var value in hotCue.Values) {
-				if (!_parameters.TryGetValue(value.Id, out var parameter)) {
-					rejectionReason = "A Hot Cue references an unknown published parameter.";
+				if (!Definition.ProgramGraph.TryResolveHotCueTarget(value, out var graphNode)) {
+					rejectionReason = "A Hot Cue references an unknown or ambiguous Program Graph parameter.";
 					return false;
 				}
-				if (!parameter.TrySetParameter(value.Value, out rejectionReason)) return false;
+				var published = Definition.Parameters.FirstOrDefault(parameter => string.Equals(parameter.NodeId, graphNode.Id, StringComparison.Ordinal)
+					&& string.Equals(parameter.ParameterId, value.Id, StringComparison.Ordinal));
+				if (published != null) {
+					if (!_parameters[published.Id].TrySetParameter(value.Value, out rejectionReason)) return false;
+					continue;
+				}
+				foreach (var output in Outputs)
+					if (!output.TrySetGraphParameter(graphNode.Id, value.Id, value.Value, out rejectionReason)) return false;
 			}
 			rejectionReason = string.Empty;
 			return true;

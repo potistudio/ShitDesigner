@@ -218,9 +218,9 @@
 
 ### 2026-09-01: Hot CueはMain Cueから独立したパッチ状態とする
 
-- `PatchDefinition` は公開パラメーター値の組み合わせとしてHot Cueを最大2つ保持する。別ファイルやMain Cueスロットには保存しない。
+- `PatchDefinition` はProgram Graphパラメーター値の組み合わせとしてHot Cueを最大2つ保持する。別ファイルやMain Cueスロットには保存しない。
 - `[`はHot Cue 1、`]`はHot Cue 2を現在のMainパッチへ適用する。未設定のHot Cueは適用しない。
-- VideoPlayerの`Playing`、`Playhead`、`Speed`、`Loop`を公開すれば、Hot Cue値への変更と保存済みPlayheadへのSeekを同じライブTickで行う。
+- VideoPlayerの`Playing`、`Playhead`、`Speed`、`Loop`は公開パラメーターにしなくてもHot Cueから直接変更でき、保存済みPlayheadへのSeekを同じライブTickで行う。
 - Hot Cueの呼び出しはMain Cueのパッチ割り当て、優勢Cue、基準Cueおよびフェーダー位置を変更しない。MainパッチのLaunchやMain Cue切替もHot Cueを発火しない。
 
 ### 2026-08-31: Shift+TabでINSTANT FX素材の編集モードを切り替える
