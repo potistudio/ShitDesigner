@@ -43,7 +43,7 @@ namespace ShitDesigner.AssetFlush {
 	public sealed class AssetFlushScene : MonoBehaviour, ISceneActivationReceiver, ILiveSceneParameterProvider {
 		[SerializeField] private Camera m_Camera;
 		[SerializeField] private Transform m_Surface;
-		[SerializeField, Min(.01f)] private float m_DurationSeconds = .25f;
+		[SerializeField, Min(0f)] private float m_FadeOutSeconds = .15f;
 		[SerializeField] private bool m_UseUnscaledTime = true;
 		[SerializeField] private Renderer m_TargetRenderer;
 		[SerializeField] private string m_TextureProperty = "_BaseMap";
@@ -56,11 +56,15 @@ namespace ShitDesigner.AssetFlush {
 		private Vector2 m_Size = Vector2.one;
 
 		private MaterialPropertyBlock m_PropertyBlock;
+		private readonly List<string> m_HeldIds = new List<string>();
 		private VideoPlayer m_Player;
 		private VideoClip m_ActiveVideo;
-		private double m_VisibleUntil;
+		private string m_ActiveId = string.Empty;
+		private double m_FadeStartedAt;
 		private Texture m_OutputTexture;
-		private bool m_IsActive;
+		private float m_Opacity;
+		private float m_AppliedOpacity = -1f;
+		private bool m_IsFading;
 		private float m_LastAspect = -1f;
 		private float m_LastOrthographicSize = -1f;
 
@@ -71,7 +75,8 @@ namespace ShitDesigner.AssetFlush {
 			}
 		}
 		public Texture OutputTexture => m_OutputTexture;
-		public float DurationSeconds { get => m_DurationSeconds; set => m_DurationSeconds = Mathf.Max(.01f, value); }
+		public float Opacity => m_Opacity;
+		public float FadeOutSeconds { get => m_FadeOutSeconds; set => m_FadeOutSeconds = Mathf.Max(0f, value); }
 		public IReadOnlyList<ILiveSceneParameter> LiveParameters {
 			get {
 				EnsureAssetCollections();
@@ -99,14 +104,14 @@ namespace ShitDesigner.AssetFlush {
 			RefreshLayout();
 		}
 
-		private void Start() {
-			if (Application.isPlaying) TryTriggerRandom();
-		}
-
 		private void Update() {
-			if (!m_IsActive) return;
-			if (Now >= m_VisibleUntil) { Clear(); return; }
 			if (m_ActiveVideo != null) ApplyOutput(m_Player?.texture);
+			if (!m_IsFading) return;
+			var progress = m_FadeOutSeconds <= Mathf.Epsilon
+				? 1f
+				: Mathf.Clamp01((float)((Now - m_FadeStartedAt) / m_FadeOutSeconds));
+			if (progress >= 1f) { Clear(); return; }
+			SetOpacity(1f - progress);
 		}
 
 		private void LateUpdate() {
@@ -121,7 +126,7 @@ namespace ShitDesigner.AssetFlush {
 		private void OnDestroy() { DestroyPlayer(); }
 
 		private void OnValidate() {
-			m_DurationSeconds = Mathf.Max(.01f, m_DurationSeconds);
+			m_FadeOutSeconds = Mathf.Max(0f, m_FadeOutSeconds);
 			if (string.IsNullOrWhiteSpace(m_TextureProperty)) m_TextureProperty = "_BaseMap";
 			EnsureAssetCollections();
 			RefreshLayout();
@@ -129,6 +134,7 @@ namespace ShitDesigner.AssetFlush {
 
 		public bool TryTriggerRandom() {
 			EnsureAssetCollections();
+			m_HeldIds.Clear();
 			var availableAssetCount = CountAvailableAssets();
 			if (availableAssetCount == 0) {
 				Clear();
@@ -140,7 +146,7 @@ namespace ShitDesigner.AssetFlush {
 				var image = m_Images[index]?.Image;
 				if (image == null) continue;
 				if (selection-- == 0) {
-					ShowImage(image);
+					ShowImage(string.Empty, image);
 					return true;
 				}
 			}
@@ -148,30 +154,54 @@ namespace ShitDesigner.AssetFlush {
 				var video = m_Videos[index]?.Video;
 				if (video == null) continue;
 				if (selection-- == 0) {
-					ShowVideo(video);
+					ShowVideo(string.Empty, video);
 					return true;
 				}
 			}
 			return false;
 		}
 
-		public bool TryTrigger(string id) {
+		public bool TryTrigger(string id) => TrySetTrigger(id, true);
+
+		public bool TrySetTrigger(string id, bool isPressed) {
 			var normalizedId = (id ?? string.Empty).Trim();
 			if (normalizedId.Length == 0) return false;
+			if (!isPressed) {
+				ReleaseTrigger(normalizedId);
+				return true;
+			}
+			if (m_HeldIds.Contains(normalizedId)) return true;
+			if (!TryShowAsset(normalizedId)) return false;
+			m_HeldIds.Add(normalizedId);
+			return true;
+		}
+
+		private bool TryShowAsset(string id) {
 			EnsureAssetCollections();
 			for (var index = 0; index < m_Images.Length; index++) {
 				var entry = m_Images[index];
-				if (entry?.Image == null || !string.Equals(entry.Id, normalizedId, StringComparison.Ordinal)) continue;
-				ShowImage(entry.Image);
+				if (entry?.Image == null || !string.Equals(entry.Id, id, StringComparison.Ordinal)) continue;
+				ShowImage(id, entry.Image);
 				return true;
 			}
 			for (var index = 0; index < m_Videos.Length; index++) {
 				var entry = m_Videos[index];
-				if (entry?.Video == null || !string.Equals(entry.Id, normalizedId, StringComparison.Ordinal)) continue;
-				ShowVideo(entry.Video);
+				if (entry?.Video == null || !string.Equals(entry.Id, id, StringComparison.Ordinal)) continue;
+				ShowVideo(id, entry.Video);
 				return true;
 			}
 			return false;
+		}
+
+		private void ReleaseTrigger(string id) {
+			if (!m_HeldIds.Remove(id) || !string.Equals(m_ActiveId, id, StringComparison.Ordinal)) return;
+			while (m_HeldIds.Count > 0) {
+				var fallbackId = m_HeldIds[m_HeldIds.Count - 1];
+				if (TryShowAsset(fallbackId)) return;
+				m_HeldIds.RemoveAt(m_HeldIds.Count - 1);
+			}
+			m_ActiveId = string.Empty;
+			BeginFadeOut();
 		}
 
 		public void SetImages(params Texture2D[] images) {
@@ -204,9 +234,12 @@ namespace ShitDesigner.AssetFlush {
 
 		public void Clear() {
 			StopPlayer();
+			m_HeldIds.Clear();
 			m_ActiveVideo = null;
-			m_VisibleUntil = 0d;
-			m_IsActive = false;
+			m_ActiveId = string.Empty;
+			m_FadeStartedAt = 0d;
+			m_IsFading = false;
+			m_Opacity = 0f;
 			ApplyOutput(null);
 		}
 
@@ -223,7 +256,7 @@ namespace ShitDesigner.AssetFlush {
 		}
 
 		public void ActivateScene() {
-			TryTriggerRandom();
+			// Main owns trigger timing. AssetFlush stays transparent until an input is pressed.
 		}
 
 		public void DeactivateScene() {
@@ -232,27 +265,34 @@ namespace ShitDesigner.AssetFlush {
 
 		private double Now => m_UseUnscaledTime ? Time.unscaledTimeAsDouble : Time.timeAsDouble;
 
-		private void ShowImage(Texture2D image) {
+		private void ShowImage(string id, Texture2D image) {
 			StopPlayer();
 			m_ActiveVideo = null;
-			BeginFlash();
+			BeginHold(id);
 			ApplyOutput(image);
 		}
 
-		private void ShowVideo(VideoClip video) {
+		private void ShowVideo(string id, VideoClip video) {
 			EnsurePlayer();
 			m_ActiveVideo = video;
-			m_VisibleUntil = 0d;
-			m_IsActive = false;
+			BeginHold(id);
 			m_Player.Stop();
 			m_Player.clip = video;
 			m_Player.Prepare();
 			ApplyOutput(null);
 		}
 
-		private void BeginFlash() {
-			m_VisibleUntil = Now + Math.Max(.01d, m_DurationSeconds);
-			m_IsActive = true;
+		private void BeginHold(string id) {
+			m_ActiveId = id ?? string.Empty;
+			m_FadeStartedAt = 0d;
+			m_IsFading = false;
+			SetOpacity(1f);
+		}
+
+		private void BeginFadeOut() {
+			if (m_FadeOutSeconds <= Mathf.Epsilon) { Clear(); return; }
+			m_FadeStartedAt = Now;
+			m_IsFading = true;
 		}
 
 		private int CountAvailableAssets() {
@@ -287,7 +327,6 @@ namespace ShitDesigner.AssetFlush {
 
 		private void OnVideoPrepared(VideoPlayer player) {
 			if (player != m_Player || m_ActiveVideo == null || player.clip != m_ActiveVideo) return;
-			BeginFlash();
 			player.frame = 0;
 			player.Play();
 			ApplyOutput(player.texture);
@@ -307,14 +346,23 @@ namespace ShitDesigner.AssetFlush {
 		}
 
 		private void ApplyOutput(Texture texture) {
-			if (ReferenceEquals(m_OutputTexture, texture) && (m_TargetRenderer == null || m_TargetRenderer.enabled == (texture != null || !m_DisableRendererWhenIdle))) return;
+			var rendererEnabled = texture != null || !m_DisableRendererWhenIdle;
+			if (ReferenceEquals(m_OutputTexture, texture) && Mathf.Approximately(m_AppliedOpacity, m_Opacity)
+				&& (m_TargetRenderer == null || m_TargetRenderer.enabled == rendererEnabled)) return;
 			m_OutputTexture = texture;
 			if (m_TargetRenderer == null) return;
 			if (m_PropertyBlock == null) m_PropertyBlock = new MaterialPropertyBlock();
 			m_PropertyBlock.Clear();
 			if (texture != null) m_PropertyBlock.SetTexture(m_TextureProperty, texture);
+			m_PropertyBlock.SetFloat("_Opacity", m_Opacity);
 			m_TargetRenderer.SetPropertyBlock(m_PropertyBlock);
+			m_AppliedOpacity = m_Opacity;
 			if (m_DisableRendererWhenIdle) m_TargetRenderer.enabled = texture != null;
+		}
+
+		private void SetOpacity(float opacity) {
+			m_Opacity = Mathf.Clamp01(opacity);
+			ApplyOutput(m_OutputTexture);
 		}
 
 		private sealed class LiveAssetParameter : ILiveSceneParameter, ILiveSceneTriggerParameter {
@@ -333,11 +381,7 @@ namespace ShitDesigner.AssetFlush {
 					rejectionReason = "The parameter value must be finite.";
 					return false;
 				}
-				if (value <= Mathf.Epsilon) {
-					rejectionReason = string.Empty;
-					return true;
-				}
-				if (!m_Scene.TryTrigger(m_Id)) {
+				if (!m_Scene.TrySetTrigger(m_Id, value > Mathf.Epsilon)) {
 					rejectionReason = "The AssetFlush asset is no longer available: " + m_Id + ".";
 					return false;
 				}

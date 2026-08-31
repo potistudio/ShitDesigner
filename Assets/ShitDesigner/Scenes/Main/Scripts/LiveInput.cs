@@ -32,6 +32,8 @@ namespace ShitDesigner.Main {
 		private bool m_IsPianoMainCueSwitchHeld;
 		private bool m_HasCompletedMainCueSwitchForCurrentAPress;
 		private int m_HeldPianoOverlayTakeMask;
+		private readonly List<(Key Key, string PatchId, string ParameterId)> m_HeldPatchKeyboardInputs
+			= new List<(Key Key, string PatchId, string ParameterId)>();
 
 		public LiveKeyboardInput(LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches, Action<int> beginPianoOverlayTake, Action<int, int> moveCatalogSelection, Action launchSelectedPatch, Action<double> tapBpm,
 			Action toggleEditMode = null, Action<int> assignInstantEffect = null, Func<bool> isEditMode = null, Action<int> cueInstantEffect = null,
@@ -66,7 +68,9 @@ namespace ShitDesigner.Main {
 
 		public void Poll(string loadedPatchId) {
 			var keyboard = Keyboard.current;
-			if (keyboard == null || string.IsNullOrWhiteSpace(loadedPatchId)) return;
+			if (keyboard == null) return;
+			QueueReleasedPatchKeyboardInputs(keyboard);
+			if (string.IsNullOrWhiteSpace(loadedPatchId)) return;
 			if (!keyboard.aKey.isPressed) m_HasCompletedMainCueSwitchForCurrentAPress = false;
 			EndReleasedPianoOverlayTakes(keyboard);
 			if (EndPianoMainCueSwitchIfReleased(keyboard)) return;
@@ -130,7 +134,7 @@ namespace ShitDesigner.Main {
 			if (keyboard.enterKey.wasPressedThisFrame) m_LaunchSelectedPatch();
 			if (keyboard.spaceKey.wasPressedThisFrame) m_TapBpm(Time.unscaledTimeAsDouble);
 			if (CuePressedInstantEffects(keyboard)) return;
-			QueuePatchKeyboardInputs(keyboard, loadedPatchId);
+			QueuePressedPatchKeyboardInputs(keyboard, loadedPatchId);
 		}
 
 		private void RecallHotCue(Keyboard keyboard, int hotCueIndex) {
@@ -212,15 +216,31 @@ namespace ShitDesigner.Main {
 			return -1;
 		}
 
-		private void QueuePatchKeyboardInputs(Keyboard keyboard, string loadedPatchId) {
+		private void QueuePressedPatchKeyboardInputs(Keyboard keyboard, string loadedPatchId) {
 			if (!m_PatchesById.TryGetValue(loadedPatchId, out var patch)) return;
 
 			foreach (var key in keyboard.allKeys) {
 				if (!key.wasPressedThisFrame) continue;
 				foreach (var binding in patch.KeyboardInputs) {
 					if (binding == null || !binding.Matches(key.keyCode)) continue;
-					m_Queue.EnqueueSetParameter(loadedPatchId, binding.ParameterId, binding.Value());
+					m_Queue.EnqueueSetParameter(loadedPatchId, binding.ParameterId, binding.Value(true));
+					m_HeldPatchKeyboardInputs.Add((key.keyCode, loadedPatchId, binding.ParameterId));
 				}
+				if (key.wasReleasedThisFrame) ReleasePatchKeyboardInput(key.keyCode);
+			}
+		}
+
+		private void QueueReleasedPatchKeyboardInputs(Keyboard keyboard) {
+			foreach (var key in keyboard.allKeys)
+				if (key.wasReleasedThisFrame) ReleasePatchKeyboardInput(key.keyCode);
+		}
+
+		private void ReleasePatchKeyboardInput(Key key) {
+			for (var index = m_HeldPatchKeyboardInputs.Count - 1; index >= 0; index--) {
+				var held = m_HeldPatchKeyboardInputs[index];
+				if (held.Key != key) continue;
+				m_Queue.EnqueueSetParameter(held.PatchId, held.ParameterId, 0f);
+				m_HeldPatchKeyboardInputs.RemoveAt(index);
 			}
 		}
 

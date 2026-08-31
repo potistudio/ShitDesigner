@@ -14,8 +14,8 @@ namespace ShitDesigner.Main.Tests {
 	[TestFixture]
 	public sealed class LiveInputTests {
 		[Test]
-		public void KeyboardMappingQueuesPressedParameterRequestAndIgnoresReleaseForLoadedPatch() {
-			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.A));
+		public void KeyboardMappingQueuesPressedAndReleasedParameterRequestsForLoadedPatch() {
+			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.B));
 			Keyboard keyboard = null;
 			try {
 				keyboard = InputSystem.AddDevice<Keyboard>();
@@ -23,7 +23,7 @@ namespace ShitDesigner.Main.Tests {
 				var queue = new LiveParameterQueue();
 				var input = new LiveKeyboardInput(queue, new[] { patch }, _ => { }, (_, _) => { }, () => { }, _ => { });
 
-				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.A));
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.B));
 				InputSystem.Update();
 				input.Poll("patch-a");
 				InputSystem.QueueStateEvent(keyboard, new KeyboardState());
@@ -32,10 +32,10 @@ namespace ShitDesigner.Main.Tests {
 
 				var requests = new List<LiveParameterRequest>();
 				queue.Drain(requests);
-				Assert.That(requests, Has.Count.EqualTo(1));
-				Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.SetParameter));
-				Assert.That(requests[0].ParameterId, Is.EqualTo("motion"));
-				Assert.That(requests[0].Value, Is.EqualTo(1f));
+				Assert.That(requests, Has.Count.EqualTo(2));
+				Assert.That(requests.All(request => request.Kind == LiveParameterRequestKind.SetParameter), Is.True);
+				Assert.That(requests.All(request => request.ParameterId == "motion"), Is.True);
+				Assert.That(requests.Select(request => request.Value), Is.EqualTo(new[] { 1f, 0f }));
 			}
 			finally {
 				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
