@@ -68,6 +68,10 @@ namespace ShitDesigner.Scene {
 			m_AdditionalSources ??= Array.Empty<VisualSource>();
 			if (m_InitialDirection.sqrMagnitude < 0.0001f)
 				m_InitialDirection = new Vector2(1f, 0.63f);
+			if (Application.isPlaying && m_Camera != null && m_Visuals.Count != m_InstanceCount) {
+				Rebuild();
+				return;
+			}
 
 			for (var index = 0; index < m_Visuals.Count; index++) {
 				var visual = m_Visuals[index];
