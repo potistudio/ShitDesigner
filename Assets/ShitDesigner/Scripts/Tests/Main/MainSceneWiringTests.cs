@@ -39,6 +39,8 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(panelRenderer, Is.Not.Null);
 				Assert.That(panelRenderer.visualTreeAsset, Is.Not.Null);
 				Assert.That(panelRenderer.panelSettings, Is.Not.Null);
+				var serializedPanelSettings = new SerializedObject(panelRenderer.panelSettings);
+				Assert.That(serializedPanelSettings.FindProperty("themeUss").objectReferenceValue, Is.Not.Null);
 				Assert.That(root.GetComponent<UIDocument>(), Is.Null);
 				var serializedUi = new SerializedObject(ui);
 				Assert.That(serializedUi.FindProperty("m_PanelRenderer").objectReferenceValue, Is.SameAs(panelRenderer));
