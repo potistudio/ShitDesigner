@@ -163,7 +163,7 @@ namespace ShitDesigner.Main {
 				m_FiredInstantEffectTriggers = m_InstantEffectGate.GetActive(projectedBeatPosition);
 				var overlayComposition = UpdateOverlayComposition(projectedBeatPosition);
 				_runtime.Evaluate(deltaSeconds);
-				_runtime.SceneUpdate(deltaSeconds);
+				_runtime.SceneUpdate();
 				var frames = _runtime.Render(m_FiredInstantEffectTriggers);
 				_runtime.RenderPreviews(overlayComposition.LanePatchIds, _runtime.MainCuePatchIds, deltaSeconds,
 					m_ThumbnailTimeOffsetSeconds);
