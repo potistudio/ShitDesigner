@@ -200,8 +200,6 @@ namespace ShitDesigner.Main {
 
 		public void SetSceneActive(bool active) => _programGraph.SetSceneActive(active);
 
-		public void RecallPatchState() => _programGraph.RecallPatchState();
-
 		public void Render(double graphTime, ulong frameNumber) {
 			_programGraph.Render(_shaderGraphTexture, graphTime, frameNumber);
 			Graphics.Blit(_shaderGraphTexture, ProgramTexture);
@@ -757,7 +755,6 @@ namespace ShitDesigner.Main {
 		void SceneUpdate(double deltaSeconds);
 		void Render(IReadOnlyDictionary<string, Texture> outputs, double graphTime, ulong frameNumber);
 		bool TrySetParameter(string parameterId, ParameterValue value, out string rejectionReason);
-		void RecallPatchState();
 	}
 
 	internal static class LiveUnityVideoClock {
@@ -824,8 +821,6 @@ namespace ShitDesigner.Main {
 			return m_Root.TrySetParameter(parameterId, value.AsFloat(), out rejectionReason);
 		}
 
-		public void RecallPatchState() { }
-
 		public bool TryGetParameter(string parameterId, out LiveParameterDefinition definition) {
 			definition = m_Root.GetParameterDefinitions().FirstOrDefault(candidate => candidate.Id == parameterId);
 			return !string.IsNullOrWhiteSpace(definition.Id);
@@ -872,8 +867,6 @@ namespace ShitDesigner.Main {
 		public bool TrySetParameter(string parameterId, ParameterValue value, out string rejectionReason)
 			=> _runtime.TrySetDirectParameter(parameterId, value, out rejectionReason);
 
-		public void RecallPatchState() { }
-
 		public void Dispose() {
 			_runtime.Dispose();
 			ReleaseTexture(Target);
@@ -889,12 +882,7 @@ namespace ShitDesigner.Main {
 
 	internal sealed class LiveVideoTransportState {
 		private const double PositionTolerance = 1e-9d;
-		private readonly bool m_AuthoredPlaying;
-		private readonly double m_AuthoredPlayheadSeconds;
-		private readonly float m_AuthoredSpeed;
-		private readonly bool m_AuthoredLoop;
 		private double m_AnchorGraphTime;
-		private bool m_AnchorPending;
 
 		public bool Playing { get; private set; }
 		public double PlayheadSeconds { get; private set; }
@@ -908,18 +896,14 @@ namespace ShitDesigner.Main {
 				throw new ArgumentOutOfRangeException(nameof(playheadSeconds));
 			if (float.IsNaN(speed) || float.IsInfinity(speed) || speed < 0f || speed > 4f)
 				throw new ArgumentOutOfRangeException(nameof(speed));
-			m_AuthoredPlaying = Playing = playing;
-			m_AuthoredPlayheadSeconds = PlayheadSeconds = playheadSeconds;
-			m_AuthoredSpeed = Speed = speed;
-			m_AuthoredLoop = Loop = loop;
+			Playing = playing;
+			PlayheadSeconds = playheadSeconds;
+			Speed = speed;
+			Loop = loop;
 			SeekPending = playheadSeconds > PositionTolerance;
 		}
 
 		public double LogicalPosition(double graphTime, double durationSeconds) {
-			if (m_AnchorPending) {
-				m_AnchorGraphTime = graphTime;
-				m_AnchorPending = false;
-			}
 			var position = Playing
 				? PlayheadSeconds + Math.Max(0d, graphTime - m_AnchorGraphTime) * Speed
 				: PlayheadSeconds;
@@ -942,7 +926,7 @@ namespace ShitDesigner.Main {
 				if (float.IsNaN(playhead) || float.IsInfinity(playhead) || playhead < 0f)
 					return Reject("Playhead must be finite and non-negative.", out rejectionReason);
 				PlayheadSeconds = durationSeconds > 0d ? Math.Min(playhead, durationSeconds) : playhead;
-				if (!m_AnchorPending) m_AnchorGraphTime = graphTime;
+				m_AnchorGraphTime = graphTime;
 				SeekPending = true;
 				rejectionReason = string.Empty;
 				return true;
@@ -969,21 +953,10 @@ namespace ShitDesigner.Main {
 			return Reject("The video transport parameter is unknown.", out rejectionReason);
 		}
 
-		public void RecallAuthoredState() {
-			Playing = m_AuthoredPlaying;
-			PlayheadSeconds = m_AuthoredPlayheadSeconds;
-			Speed = m_AuthoredSpeed;
-			Loop = m_AuthoredLoop;
-			m_AnchorPending = true;
-			SeekPending = true;
-			SettingsPending = true;
-		}
-
 		public void MarkSeekApplied() => SeekPending = false;
 		public void MarkSettingsApplied() => SettingsPending = false;
 
 		private void Reanchor(double graphTime, double durationSeconds) {
-			if (m_AnchorPending) return;
 			PlayheadSeconds = LogicalPosition(graphTime, durationSeconds);
 			m_AnchorGraphTime = graphTime;
 		}
@@ -1118,8 +1091,6 @@ namespace ShitDesigner.Main {
 				out rejectionReason);
 		}
 
-		public void RecallPatchState() => m_Transport.RecallAuthoredState();
-
 		public void Dispose() {
 			if (m_Disposed) return;
 			m_Disposed = true;
@@ -1253,11 +1224,6 @@ namespace ShitDesigner.Main {
 				out rejectionReason);
 		}
 
-		public void RecallPatchState() {
-			m_Transport.RecallAuthoredState();
-			_playheadApplied = false;
-		}
-
 		public void Dispose() {
 			if (_disposed) return;
 			_disposed = true;
@@ -1311,10 +1277,6 @@ namespace ShitDesigner.Main {
 
 		public void SetSceneActive(bool active) {
 			foreach (var node in _nodes.OfType<LiveProgramSceneGraphNode>()) node.SetSceneActive(active);
-		}
-
-		public void RecallPatchState() {
-			foreach (var node in _nodes) node.RecallPatchState();
 		}
 
 		public void Render(RenderTexture destination, double graphTime, ulong frameNumber) {
@@ -1447,6 +1409,11 @@ namespace ShitDesigner.Main {
 					Math.Min(m_SceneTimeJogMaximumSpeedOffset, nextSpeedOffset));
 				return Accept(request);
 			}
+			if (request.Kind == LiveParameterRequestKind.RecallHotCue) {
+				var hotCueIndex = request.ParameterValue.AsInt();
+				return LoadedMainPatch.TryRecallHotCue(hotCueIndex, out var hotCueRejection)
+					? Accept(request) : Reject(request, hotCueRejection);
+			}
 			if (request.Kind == LiveParameterRequestKind.SetMainCueFader) {
 				m_MainCueFader.SetPosition(request.Value);
 				if (m_MainCuePatches[m_MainCueFader.AlternateCueIndex] == null)
@@ -1456,7 +1423,8 @@ namespace ShitDesigner.Main {
 			}
 			if (request.Kind == LiveParameterRequestKind.ToggleMainCue) {
 				if (m_MainCuePatches.Any(patch => patch == null)) return Reject(request, "Both Main Cue slots must be assigned before switching.");
-				ActivateMainCue(1 - m_MainCueFader.DominantCueIndex);
+				m_MainCueFader.ToggleReferenceCue();
+				RefreshMainCueActivation();
 				return Accept(request);
 			}
 			if (request.Kind == LiveParameterRequestKind.SetParameter
@@ -1745,7 +1713,6 @@ namespace ShitDesigner.Main {
 		private void ActivateMainCue(int cueIndex) {
 			var nextPatch = m_MainCuePatches[cueIndex];
 			if (nextPatch == null) throw new InvalidOperationException("The requested Cue Slot is empty.");
-			nextPatch.RecallAuthoredState();
 			m_MainCueFader.SetReferenceCue(cueIndex);
 			RefreshMainCueActivation();
 		}
@@ -1854,9 +1821,25 @@ namespace ShitDesigner.Main {
 					throw new InvalidOperationException("The resolved patch parameter could not be applied: " + rejectionReason);
 		}
 
-		public void RecallAuthoredState() {
-			foreach (var parameter in _parameters.Values) parameter.ResetToAuthoredValue();
-			foreach (var output in Outputs) output.RecallPatchState();
+		public bool TryRecallHotCue(int hotCueIndex, out string rejectionReason) {
+			if (hotCueIndex < 0 || hotCueIndex >= PatchDefinition.HotCueCount) {
+				rejectionReason = "The Hot Cue index must be 0 or 1.";
+				return false;
+			}
+			var hotCue = Definition.GetHotCue(hotCueIndex);
+			if (hotCue == null || hotCue.Values.Count == 0) {
+				rejectionReason = string.Empty;
+				return true;
+			}
+			foreach (var value in hotCue.Values) {
+				if (!_parameters.TryGetValue(value.Id, out var parameter)) {
+					rejectionReason = "A Hot Cue references an unknown published parameter.";
+					return false;
+				}
+				if (!parameter.TrySetParameter(value.Value, out rejectionReason)) return false;
+			}
+			rejectionReason = string.Empty;
+			return true;
 		}
 
 		public void SetSceneActive(bool active) {
@@ -1872,13 +1855,11 @@ namespace ShitDesigner.Main {
 		LiveParameterDefinition ToDefinition();
 		bool TrySetParameter(ParameterValue value, out string rejectionReason);
 		bool TryApplyResolvedValue(BeatClockFrame frame, out string rejectionReason);
-		void ResetToAuthoredValue();
 	}
 
 	internal sealed class LivePublishedParameter : ILivePublishedParameter {
 		private readonly PatchParameter _definition;
 		private readonly bool _isTriggerParameter;
-		private readonly float m_AuthoredBaseValue;
 		private float _baseValue;
 		private bool _isDirty;
 		private bool _hasResolvedValue;
@@ -1891,7 +1872,7 @@ namespace ShitDesigner.Main {
 			Root = root ?? throw new ArgumentNullException(nameof(root));
 			Source = source;
 			_isTriggerParameter = Root.IsTriggerParameter(source.Id);
-			m_AuthoredBaseValue = _baseValue = source.Value;
+			_baseValue = source.Value;
 			_lastResolvedValue = source.Value;
 			_hasResolvedValue = true;
 		}
@@ -1909,11 +1890,6 @@ namespace ShitDesigner.Main {
 			_isDirty = true;
 			rejectionReason = string.Empty;
 			return true;
-		}
-
-		public void ResetToAuthoredValue() {
-			_baseValue = m_AuthoredBaseValue;
-			_isDirty = true;
 		}
 
 		public bool TryApplyResolvedValue(BeatClockFrame frame, out string rejectionReason) {
@@ -1947,7 +1923,6 @@ namespace ShitDesigner.Main {
 	internal sealed class LivePublishedGraphParameter : ILivePublishedParameter {
 		private readonly PatchParameter _definition;
 		private readonly IReadOnlyCollection<LiveProgramOutput> _outputs;
-		private readonly ParameterValue m_AuthoredBaseValue;
 		private ParameterValue _baseValue;
 		private bool _isDirty;
 		private bool _hasResolvedValue;
@@ -1956,7 +1931,7 @@ namespace ShitDesigner.Main {
 		public LivePublishedGraphParameter(PatchParameter definition, IReadOnlyCollection<LiveProgramOutput> outputs, ParameterValue value) {
 			_definition = definition ?? throw new ArgumentNullException(nameof(definition));
 			_outputs = outputs ?? throw new ArgumentNullException(nameof(outputs));
-			m_AuthoredBaseValue = _baseValue = value;
+			_baseValue = value;
 			_lastResolvedValue = value;
 			_hasResolvedValue = true;
 		}
@@ -1973,11 +1948,6 @@ namespace ShitDesigner.Main {
 			_isDirty = true;
 			rejectionReason = string.Empty;
 			return true;
-		}
-
-		public void ResetToAuthoredValue() {
-			_baseValue = m_AuthoredBaseValue;
-			_isDirty = true;
 		}
 
 		public bool TryApplyResolvedValue(BeatClockFrame frame, out string rejectionReason) {

@@ -16,6 +16,8 @@ namespace ShitDesigner.Editor {
 		private SerializedProperty _displayName;
 		private SerializedProperty _programGraph;
 		private SerializedProperty _parameters;
+		private SerializedProperty m_HotCue1;
+		private SerializedProperty m_HotCue2;
 		private SerializedProperty m_KeyboardInputs;
 		private SerializedProperty m_MidiInputs;
 
@@ -24,6 +26,8 @@ namespace ShitDesigner.Editor {
 			_displayName = serializedObject.FindProperty("_displayName");
 			_programGraph = serializedObject.FindProperty("_programGraph");
 			_parameters = serializedObject.FindProperty("_parameters");
+			m_HotCue1 = serializedObject.FindProperty("m_HotCue1");
+			m_HotCue2 = serializedObject.FindProperty("m_HotCue2");
 			m_KeyboardInputs = serializedObject.FindProperty("m_KeyboardInputs");
 			m_MidiInputs = serializedObject.FindProperty("m_MidiInputs");
 		}
@@ -42,6 +46,9 @@ namespace ShitDesigner.Editor {
 
 			EditorGUILayout.Space(6f);
 			EditorGUILayout.PropertyField(_parameters, new GUIContent("Published Parameters"), true);
+			EditorGUILayout.LabelField("Hot Cues", EditorStyles.boldLabel);
+			EditorGUILayout.PropertyField(m_HotCue1, new GUIContent("Hot Cue 1 ([)", "Values reference Published Parameter IDs."), true);
+			EditorGUILayout.PropertyField(m_HotCue2, new GUIContent("Hot Cue 2 (])", "Values reference Published Parameter IDs."), true);
 
 			EditorGUILayout.Space(6f);
 			EditorGUILayout.PropertyField(m_KeyboardInputs, new GUIContent("Keyboard Inputs", "Maps key presses to published parameters while this patch is loaded. A press sends 1.0; release sends no request."), true);

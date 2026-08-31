@@ -104,6 +104,23 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void HotCueQueueAcceptsExactlyTwoGlobalSlots() {
+			var queue = new LiveParameterQueue();
+
+			Assert.That(queue.EnqueueRecallHotCue(-1).Accepted, Is.False);
+			Assert.That(queue.EnqueueRecallHotCue(0).Accepted, Is.True);
+			Assert.That(queue.EnqueueRecallHotCue(1).Accepted, Is.True);
+			Assert.That(queue.EnqueueRecallHotCue(2).Accepted, Is.False);
+
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+			Assert.That(requests, Has.Count.EqualTo(2));
+			Assert.That(requests, Has.All.Matches<LiveParameterRequest>(request =>
+				request.Kind == LiveParameterRequestKind.RecallHotCue && request.PatchId == string.Empty));
+			Assert.That(requests.Select(request => request.ParameterValue.AsInt()), Is.EqualTo(new[] { 0, 1 }));
+		}
+
+		[Test]
 		public void SetTimeEasingEnabledQueuesAGlobalBooleanWithoutAPatchId() {
 			var queue = new LiveParameterQueue();
 

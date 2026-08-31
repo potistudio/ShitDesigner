@@ -297,6 +297,20 @@ namespace ShitDesigner.Scene {
 	}
 
 	[Serializable]
+	public sealed class PatchHotCue {
+		[SerializeField] private List<PatchGraphParameter> m_Values = new List<PatchGraphParameter>();
+
+		public IReadOnlyList<PatchGraphParameter> Values
+			=> m_Values ?? (IReadOnlyList<PatchGraphParameter>)Array.Empty<PatchGraphParameter>();
+
+		public PatchHotCue() { }
+
+		public PatchHotCue(IEnumerable<PatchGraphParameter> values) {
+			m_Values = new List<PatchGraphParameter>(values ?? Enumerable.Empty<PatchGraphParameter>());
+		}
+	}
+
+	[Serializable]
 	public sealed class PatchKeyboardInputBinding {
 		[SerializeField] private Key m_Key = Key.None;
 		[SerializeField] private string m_ParameterId;
@@ -389,10 +403,14 @@ namespace ShitDesigner.Scene {
 	/// <summary>Logical live patch composed from graph nodes and published controls.</summary>
 	[CreateAssetMenu(fileName = "PatchDefinition", menuName = "ShitDesigner/Patch Definition")]
 	public sealed class PatchDefinition : ScriptableObject {
+		public const int HotCueCount = 2;
+
 		[SerializeField] private string _id;
 		[SerializeField] private string _displayName;
 		[SerializeField] private PatchProgramGraph _programGraph = new PatchProgramGraph();
 		[SerializeField] private List<PatchParameter> _parameters = new List<PatchParameter>();
+		[SerializeField] private PatchHotCue m_HotCue1 = new PatchHotCue();
+		[SerializeField] private PatchHotCue m_HotCue2 = new PatchHotCue();
 		[SerializeField] private List<PatchKeyboardInputBinding> m_KeyboardInputs = new List<PatchKeyboardInputBinding>();
 		[SerializeField] private List<PatchMidiInputBinding> m_MidiInputs = new List<PatchMidiInputBinding>();
 
@@ -402,6 +420,14 @@ namespace ShitDesigner.Scene {
 		public IReadOnlyList<PatchParameter> Parameters => _parameters ?? (IReadOnlyList<PatchParameter>)Array.Empty<PatchParameter>();
 		public IReadOnlyList<PatchKeyboardInputBinding> KeyboardInputs => m_KeyboardInputs ?? (IReadOnlyList<PatchKeyboardInputBinding>)Array.Empty<PatchKeyboardInputBinding>();
 		public IReadOnlyList<PatchMidiInputBinding> MidiInputs => m_MidiInputs ?? (IReadOnlyList<PatchMidiInputBinding>)Array.Empty<PatchMidiInputBinding>();
+
+		public PatchHotCue GetHotCue(int index) {
+			switch (index) {
+				case 0: return m_HotCue1;
+				case 1: return m_HotCue2;
+				default: throw new ArgumentOutOfRangeException(nameof(index));
+			}
+		}
 
 		public UnitResult<Diagnostic> Validate() {
 			if (string.IsNullOrWhiteSpace(Id)) return Failure("patch.definition.id", "A patch requires an ID.");
@@ -424,6 +450,23 @@ namespace ShitDesigner.Scene {
 					return Failure("patch.definition.parameter_graph", "A published graph parameter must reference a configured parameter supported by the live renderer.");
 				if (parameter.BeatModulation != null && parameter.BeatModulation.IsEnabled && graphParameter.Type != ParameterType.Float)
 					return Failure("patch.definition.parameter_modulation_type", "Beat-modulated graph parameters must use the float type.");
+			}
+			for (var hotCueIndex = 0; hotCueIndex < HotCueCount; hotCueIndex++) {
+				var hotCue = GetHotCue(hotCueIndex);
+				if (hotCue == null) continue;
+				if (hotCue.Values.Any(value => value == null || string.IsNullOrWhiteSpace(value.Id) || !value.TryGetValue(out _)))
+					return Failure("patch.definition.hot_cue.value", "Every Hot Cue value requires a published parameter ID and finite value.");
+				if (hotCue.Values.GroupBy(value => value.Id, StringComparer.Ordinal).Any(group => group.Count() > 1))
+					return Failure("patch.definition.hot_cue.duplicate", "A Hot Cue cannot assign the same published parameter more than once.");
+				foreach (var value in hotCue.Values) {
+					var parameter = Parameters.FirstOrDefault(candidate => string.Equals(candidate.Id, value.Id, StringComparison.Ordinal));
+					if (parameter == null)
+						return Failure("patch.definition.hot_cue.parameter", "A Hot Cue references an unknown published parameter.");
+					var graphNode = ProgramGraph.Nodes.First(node => string.Equals(node.Id, parameter.NodeId, StringComparison.Ordinal));
+					var expectedType = graphNode.IsSceneNode ? ParameterType.Float : graphNode.FindParameter(parameter.ParameterId).Type;
+					if (value.Type != expectedType)
+						return Failure("patch.definition.hot_cue.type", "A Hot Cue value type does not match its published parameter.");
+				}
 			}
 			if (KeyboardInputs.Any(binding => binding == null || binding.Validate().IsFailure)) return Failure("patch.definition.keyboard_input", "Every patch keyboard input must be valid.");
 			if (KeyboardInputs.Any(binding => !Parameters.Any(parameter => parameter != null && string.Equals(parameter.Id, binding.ParameterId, StringComparison.Ordinal))))
