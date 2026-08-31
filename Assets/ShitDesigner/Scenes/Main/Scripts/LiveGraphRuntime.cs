@@ -1410,9 +1410,13 @@ namespace ShitDesigner.Main {
 					Math.Min(m_SceneTimeJogMaximumSpeedOffset, nextSpeedOffset));
 				return Accept(request);
 			}
-			if (request.Kind == LiveParameterRequestKind.RecallHotCue) {
+			if (request.Kind == LiveParameterRequestKind.RecallHotCue
+				|| request.Kind == LiveParameterRequestKind.RecallOppositeHotCue) {
+				var targetPatch = request.Kind == LiveParameterRequestKind.RecallOppositeHotCue
+					? PreloadedMainPatch : LoadedMainPatch;
+				if (targetPatch == null) return Accept(request);
 				var hotCueIndex = request.ParameterValue.AsInt();
-				return LoadedMainPatch.TryRecallHotCue(hotCueIndex, out var hotCueRejection)
+				return targetPatch.TryRecallHotCue(hotCueIndex, out var hotCueRejection)
 					? Accept(request) : Reject(request, hotCueRejection);
 			}
 			if (request.Kind == LiveParameterRequestKind.SetMainCueFader) {

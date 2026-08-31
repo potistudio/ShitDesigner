@@ -15,7 +15,8 @@ namespace ShitDesigner.Main {
 		JogSceneTime,
 		SetMainCueFader,
 		ToggleMainCue,
-		RecallHotCue
+		RecallHotCue,
+		RecallOppositeHotCue
 	}
 
 	public readonly struct LiveParameterRequest {
@@ -92,10 +93,11 @@ namespace ShitDesigner.Main {
 				? LiveParameterEnqueueResult.Reject("The scene time jog speed delta must be finite.")
 				: Enqueue(LiveParameterRequestKind.JogSceneTime, string.Empty, string.Empty, ParameterValue.FromFloat(speedOffsetDelta));
 
-		public LiveParameterEnqueueResult EnqueueRecallHotCue(int hotCueIndex)
+		public LiveParameterEnqueueResult EnqueueRecallHotCue(int hotCueIndex, bool oppositeScene = false)
 			=> hotCueIndex < 0 || hotCueIndex >= PatchDefinition.HotCueCount
 				? LiveParameterEnqueueResult.Reject("The Hot Cue index must be 0 or 1.")
-				: Enqueue(LiveParameterRequestKind.RecallHotCue, string.Empty, string.Empty, ParameterValue.FromInt(hotCueIndex));
+				: Enqueue(oppositeScene ? LiveParameterRequestKind.RecallOppositeHotCue : LiveParameterRequestKind.RecallHotCue,
+					string.Empty, string.Empty, ParameterValue.FromInt(hotCueIndex));
 
 		public LiveParameterEnqueueResult EnqueueSetMainCueFader(float normalizedValue)
 			=> float.IsNaN(normalizedValue) || float.IsInfinity(normalizedValue)
@@ -128,6 +130,7 @@ namespace ShitDesigner.Main {
 		private static bool IsGlobalRequest(LiveParameterRequestKind kind)
 			=> kind == LiveParameterRequestKind.SetBpm || kind == LiveParameterRequestKind.AlignBeat || kind == LiveParameterRequestKind.SetTimeEasingEnabled
 				|| kind == LiveParameterRequestKind.JogSceneTime || kind == LiveParameterRequestKind.RecallHotCue
+				|| kind == LiveParameterRequestKind.RecallOppositeHotCue
 				|| kind == LiveParameterRequestKind.SetMainCueFader
 				|| kind == LiveParameterRequestKind.ToggleMainCue;
 

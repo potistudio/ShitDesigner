@@ -113,6 +113,31 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void ShiftBracketsRecallTheOppositeScenesHotCueSlots() {
+			Keyboard keyboard = null;
+			try {
+				keyboard = InputSystem.AddDevice<Keyboard>();
+				keyboard.MakeCurrent();
+				var queue = new LiveParameterQueue();
+				var input = new LiveKeyboardInput(queue, new PatchDefinition[0], _ => { }, (_, _) => { }, () => { }, _ => { });
+
+				PollKey(input, keyboard, Key.LeftBracket, Key.LeftShift);
+				PollKey(input, keyboard, Key.RightBracket, Key.LeftShift);
+
+				var requests = new List<LiveParameterRequest>();
+				queue.Drain(requests);
+				Assert.That(requests.Select(request => request.Kind), Is.EqualTo(new[] {
+					LiveParameterRequestKind.RecallOppositeHotCue,
+					LiveParameterRequestKind.RecallOppositeHotCue
+				}));
+				Assert.That(requests.Select(request => request.ParameterValue.AsInt()), Is.EqualTo(new[] { 0, 1 }));
+			}
+			finally {
+				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
+			}
+		}
+
+		[Test]
 		public void KeyboardAUsesPianoSwitchAndShiftASwitchesCompletely() {
 			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.A));
 			Keyboard keyboard = null;
@@ -443,8 +468,8 @@ namespace ShitDesigner.Main.Tests {
 			return patch;
 		}
 
-		private static void PollKey(LiveKeyboardInput input, Keyboard keyboard, Key key) {
-			InputSystem.QueueStateEvent(keyboard, new KeyboardState(key));
+		private static void PollKey(LiveKeyboardInput input, Keyboard keyboard, params Key[] keys) {
+			InputSystem.QueueStateEvent(keyboard, new KeyboardState(keys));
 			InputSystem.Update();
 			input.Poll("patch-a");
 			InputSystem.QueueStateEvent(keyboard, new KeyboardState());
