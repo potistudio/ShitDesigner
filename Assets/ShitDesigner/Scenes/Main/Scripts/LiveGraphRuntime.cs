@@ -1377,7 +1377,6 @@ namespace ShitDesigner.Main {
 		private double m_GraphTime;
 		private double m_SceneTimeJogSpeedOffset;
 		private double m_SceneTimeJogMaximumSpeedOffset = 1d;
-		private double m_SceneTimeJogReleaseSeconds = .08d;
 		private double m_LastGraphDeltaSeconds;
 		private double m_PreviewElapsedSeconds;
 		private bool _disposed;
@@ -1412,13 +1411,10 @@ namespace ShitDesigner.Main {
 			CurrentFrame = CurrentFrames.Primary;
 		}
 
-		public void ConfigureSceneTimeJog(float maximumSpeedOffset, float releaseSeconds) {
+		public void ConfigureSceneTimeJog(float maximumSpeedOffset) {
 			if (float.IsNaN(maximumSpeedOffset) || float.IsInfinity(maximumSpeedOffset) || maximumSpeedOffset <= 0f || maximumSpeedOffset > 1f)
 				throw new ArgumentOutOfRangeException(nameof(maximumSpeedOffset));
-			if (float.IsNaN(releaseSeconds) || float.IsInfinity(releaseSeconds) || releaseSeconds <= 0f)
-				throw new ArgumentOutOfRangeException(nameof(releaseSeconds));
 			m_SceneTimeJogMaximumSpeedOffset = maximumSpeedOffset;
-			m_SceneTimeJogReleaseSeconds = releaseSeconds;
 			m_SceneTimeJogSpeedOffset = Math.Max(-maximumSpeedOffset, Math.Min(maximumSpeedOffset, m_SceneTimeJogSpeedOffset));
 		}
 
@@ -1481,10 +1477,11 @@ namespace ShitDesigner.Main {
 		public void Evaluate(double deltaSeconds) {
 			EnsureUsable();
 			var sourceDeltaSeconds = Math.Max(0d, deltaSeconds);
+			var playbackRate = SceneTimePlaybackRate;
+			m_SceneTimeJogSpeedOffset = 0d;
 			var clockDeltaSeconds = m_BpmClock.Advance(sourceDeltaSeconds);
-			m_LastGraphDeltaSeconds = clockDeltaSeconds * SceneTimePlaybackRate;
+			m_LastGraphDeltaSeconds = clockDeltaSeconds * playbackRate;
 			m_GraphTime += m_LastGraphDeltaSeconds;
-			ReleaseSceneTimeJog(sourceDeltaSeconds);
 			foreach (var patch in ActiveMainCuePatches()) {
 				patch.ApplyResolvedParameters(m_BpmClock.Frame);
 				foreach (var output in patch.Outputs) output.Evaluate(m_LastGraphDeltaSeconds, m_BpmClock.Frame);
@@ -1627,12 +1624,6 @@ namespace ShitDesigner.Main {
 				patch.Dispose();
 				throw;
 			}
-		}
-
-		private void ReleaseSceneTimeJog(double deltaSeconds) {
-			if (deltaSeconds <= 0d || m_SceneTimeJogSpeedOffset == 0d) return;
-			m_SceneTimeJogSpeedOffset *= Math.Exp(-deltaSeconds / m_SceneTimeJogReleaseSeconds);
-			if (Math.Abs(m_SceneTimeJogSpeedOffset) < .001d) m_SceneTimeJogSpeedOffset = 0d;
 		}
 
 		private void DisposePatch(LivePatch patch) {

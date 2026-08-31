@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
@@ -9,6 +10,32 @@ using UnityEngine.TestTools;
 
 namespace ShitDesigner.Main.Tests {
 	public sealed class MainLiveScenePlayModeTests {
+		[UnityTest]
+		public IEnumerator SceneTimeJogReturnsToNormalAfterOneEvaluation() {
+			SceneManager.LoadScene("Main", LoadSceneMode.Single);
+			yield return null;
+
+			var host = Object.FindAnyObjectByType<ApplicationLiveHost>();
+			Assert.That(host, Is.Not.Null);
+			for (var frame = 0; frame < 60 && host.State != ApplicationLiveHostState.Running; frame++) yield return null;
+			Assert.That(host.State, Is.EqualTo(ApplicationLiveHostState.Running), host.LastDiagnostic);
+			host.enabled = false;
+
+			var runtime = (LiveGraphRuntime)typeof(ApplicationLiveHost).GetField("_runtime", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(host);
+			Assert.That(runtime, Is.Not.Null);
+			var queue = new LiveParameterQueue();
+			Assert.That(queue.EnqueueJogSceneTime(.5f).Accepted, Is.True);
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+			Assert.That(runtime.Apply(requests.Single()).Applied, Is.True);
+			Assert.That(runtime.SceneTimePlaybackRate, Is.EqualTo(1.5d));
+
+			runtime.Evaluate(1d / 60d);
+
+			Assert.That(runtime.SceneTimePlaybackRate, Is.EqualTo(1d));
+			host.Shutdown();
+		}
+
 		[UnityTest]
 		public IEnumerator MainBootsRendersAndSwitchesItsAuthoredLiveGraph() {
 			SceneManager.LoadScene("Main", LoadSceneMode.Single);
