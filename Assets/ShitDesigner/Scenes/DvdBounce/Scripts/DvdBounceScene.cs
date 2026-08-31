@@ -68,10 +68,8 @@ namespace ShitDesigner.Scene {
 			m_AdditionalSources ??= Array.Empty<VisualSource>();
 			if (m_InitialDirection.sqrMagnitude < 0.0001f)
 				m_InitialDirection = new Vector2(1f, 0.63f);
-			if (Application.isPlaying && m_Camera != null && m_Visuals.Count != m_InstanceCount) {
-				Rebuild();
-				return;
-			}
+			if (Application.isPlaying && m_Camera != null && m_Visuals.Count != m_InstanceCount)
+				SynchronizeInstanceCount();
 
 			for (var index = 0; index < m_Visuals.Count; index++) {
 				var visual = m_Visuals[index];
@@ -126,16 +124,65 @@ namespace ShitDesigner.Scene {
 			if (m_Camera == null)
 				return;
 
-			for (var index = 0; index < m_Visuals.Count; index++) {
-				var visual = m_Visuals[index];
-				var position = index == 0 ? m_InitialPosition : GetSpawnPosition(index, visual.Renderer);
-				visual.Object.transform.position = new Vector3(position.x, position.y, 0f);
-				visual.Velocity = GetInitialVelocity(index);
-				KeepWithinBounds(visual);
+			for (var index = 0; index < m_Visuals.Count; index++)
+				InitializeVisual(m_Visuals[index], index);
+
+			PlayStoppedVideoPlaybacks();
+		}
+
+		private void InitializeVisual(BouncingVisual visual, int index) {
+			var position = index == 0 ? m_InitialPosition : GetSpawnPosition(index, visual.Renderer);
+			visual.Object.transform.position = new Vector3(position.x, position.y, 0f);
+			visual.Velocity = GetInitialVelocity(index);
+			KeepWithinBounds(visual);
+		}
+
+		private void SynchronizeInstanceCount() {
+			while (m_Visuals.Count > m_InstanceCount)
+				RemoveVisualAt(m_Visuals.Count - 1);
+
+			while (m_Visuals.Count < m_InstanceCount) {
+				var index = m_Visuals.Count;
+				var visual = CreateVisual(index);
+				m_Visuals.Add(visual);
+				InitializeVisual(visual, index);
 			}
 
-			foreach (var playback in m_VideoPlaybacks.Values)
-				playback.Player.Play();
+			PlayStoppedVideoPlaybacks();
+		}
+
+		private void RemoveVisualAt(int index) {
+			var visual = m_Visuals[index];
+			m_Visuals.RemoveAt(index);
+			if (visual.Object != null)
+				Destroy(visual.Object);
+
+			if (visual.Source.Video == null) {
+				ReleaseMaterial(visual.Material);
+				return;
+			}
+
+			ReleaseVideoPlaybackIfUnused(visual.Source.Video);
+		}
+
+		private void ReleaseVideoPlaybackIfUnused(VideoClip video) {
+			for (var index = 0; index < m_Visuals.Count; index++) {
+				if (m_Visuals[index].Source.Video == video)
+					return;
+			}
+
+			if (!m_VideoPlaybacks.Remove(video, out var playback))
+				return;
+			if (playback.Host != null)
+				Destroy(playback.Host);
+			ReleaseMaterial(playback.Material);
+		}
+
+		private void PlayStoppedVideoPlaybacks() {
+			foreach (var playback in m_VideoPlaybacks.Values) {
+				if (!playback.Player.isPlaying)
+					playback.Player.Play();
+			}
 		}
 
 		private SharedVideoPlayback GetOrCreateVideoPlayback(VideoClip video) {
@@ -271,6 +318,12 @@ namespace ShitDesigner.Scene {
 					Destroy(m_Materials[index]);
 			}
 			m_Materials.Clear();
+		}
+
+		private void ReleaseMaterial(Material material) {
+			m_Materials.Remove(material);
+			if (material != null)
+				Destroy(material);
 		}
 
 		private Material CreateMaterial() {
