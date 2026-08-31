@@ -59,3 +59,7 @@ MonoBehaviour:
     _displayName: Motion
     _nodeId: a9a82432-a238-4764-b876-78d1d8258f06
     _parameterId: motion
+  - _id: camera_jump
+    _displayName: Camera Jump
+    _nodeId: a9a82432-a238-4764-b876-78d1d8258f06
+    _parameterId: camera_jump
