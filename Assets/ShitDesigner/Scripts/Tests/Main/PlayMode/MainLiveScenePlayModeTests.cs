@@ -100,6 +100,18 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(effectNodeControls.Query<Button>(className: "effect-node-button").ToList().All(button =>
 				host.ReadModel.EffectNodes.Any(node => node.TypeId == (string)button.userData)), Is.True);
 			var firstMainButton = mainPatchControls.Query<Button>().First();
+			var mainPatches = host.ReadModel.Patches.Where(patch => patch.Role == LivePatchRole.Main).ToArray();
+			var cueSlots = Enumerable.Range(1, ApplicationLiveHost.MainCueCount)
+				.Select(index => ui.Q<VisualElement>("cue-slot-" + index)).ToArray();
+			Assert.That(cueSlots, Has.All.Not.Null);
+			Assert.That(host.AssignMainPatchToCue(0, mainPatches[0].Id), Is.True);
+			Assert.That(host.AssignMainPatchToCue(1, mainPatches[1].Id), Is.True);
+			Assert.That(host.AssignMainPatchToCue(0, host.ReadModel.Patches.First(patch => patch.Role == LivePatchRole.Overlay).Id), Is.False);
+			yield return null;
+			Assert.That(host.MainCuePatchIds, Is.EqualTo(mainPatches.Select(patch => patch.Id).Take(ApplicationLiveHost.MainCueCount)));
+			Assert.That(cueSlots.Select(slot => slot.Q<Label>().text),
+				Is.EqualTo(mainPatches.Select(patch => patch.Name).Take(ApplicationLiveHost.MainCueCount)));
+			Assert.That(cueSlots.All(slot => slot.ClassListContains("is-assigned")), Is.True);
 			Assert.That(firstMainButton.worldBound.yMin, Is.EqualTo(mainPatchControls.contentViewport.worldBound.yMin).Within(0.5f));
 			var initialMainListTop = firstMainButton.worldBound.yMin;
 			host.MoveCatalogSelection(0, 1);
