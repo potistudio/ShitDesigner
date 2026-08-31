@@ -33,8 +33,9 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(runtime.MainCuePatchIds, Is.EqualTo(new[] { host.ReadModel.LoadedPatchId, string.Empty }));
 			Assert.That(host.MainCuePatchIds, Is.EqualTo(runtime.MainCuePatchIds));
 			Assert.That(runtime.ActiveMainCueIndex, Is.Zero);
-			Assert.That(runtime.CurrentFrames.Count, Is.EqualTo(1));
+			Assert.That(runtime.CurrentFrames.Count, Is.EqualTo(2));
 			Assert.That(runtime.CurrentFrames[0].Texture, Is.SameAs(host.ReadModel.ProgramTexture));
+			Assert.That(runtime.CurrentFrames[1].Texture, Is.SameAs(host.ReadModel.ProgramTexture));
 			Assert.That(HasVisiblePixels(host.ReadModel.ProgramTexture), Is.True);
 
 			var loadedPatchId = host.ReadModel.LoadedPatchId;
