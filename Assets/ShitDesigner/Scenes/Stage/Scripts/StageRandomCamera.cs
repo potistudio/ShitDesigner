@@ -10,12 +10,14 @@ namespace ShitDesigner.Stage {
 		[Header("References")]
 		[SerializeField] private Camera m_Camera;
 		[SerializeField] private Transform m_Target;
+		[SerializeField] private Transform m_AudienceReference;
 
 		[Header("Shot Selection")]
 		[SerializeField] private Vector3 m_ShotPositionCenter = new Vector3(0f, 3f, -11f);
 		[SerializeField] private Vector3 m_ShotPositionExtents = new Vector3(5f, 1.5f, 2f);
 		[SerializeField] private Vector2 m_ShotDurationRange = new Vector2(2.5f, 6f);
 		[SerializeField] private Vector2 m_FieldOfViewRange = new Vector2(30f, 65f);
+		[Min(0f)][SerializeField] private float m_MinimumAudienceSideDistance = 4f;
 		[SerializeField] private int m_RandomSeed = 2718;
 
 		private bool m_GraphClockDriven;
@@ -48,6 +50,7 @@ namespace ShitDesigner.Stage {
 			m_ShotDurationRange.y = Mathf.Max(m_ShotDurationRange.x, m_ShotDurationRange.y);
 			m_FieldOfViewRange.x = Mathf.Clamp(m_FieldOfViewRange.x, 1f, 179f);
 			m_FieldOfViewRange.y = Mathf.Clamp(m_FieldOfViewRange.y, m_FieldOfViewRange.x, 179f);
+			m_MinimumAudienceSideDistance = Mathf.Max(0f, m_MinimumAudienceSideDistance);
 			m_Initialized = false;
 		}
 
@@ -91,6 +94,8 @@ namespace ShitDesigner.Stage {
 				m_Camera = GetComponentInChildren<Camera>(true);
 			if (m_Target == null)
 				m_Target = transform.Find("Camera Target");
+			if (m_AudienceReference == null)
+				m_AudienceReference = transform.Find("Penlight");
 			if (m_Camera == null)
 				return;
 
@@ -98,20 +103,40 @@ namespace ShitDesigner.Stage {
 				return;
 
 			m_Random = new System.Random(m_RandomSeed);
-			m_FromLocalPosition = m_Camera.transform.localPosition;
+			m_FromLocalPosition = ConstrainToAudienceSide(m_Camera.transform.localPosition);
 			m_FromFieldOfView = m_Camera.fieldOfView;
 			SelectNextShot();
 			m_Initialized = true;
 		}
 
 		private void SelectNextShot() {
-			m_ToLocalPosition = m_ShotPositionCenter + new Vector3(
+			m_ToLocalPosition = ConstrainToAudienceSide(m_ShotPositionCenter + new Vector3(
 				NextFloat(-m_ShotPositionExtents.x, m_ShotPositionExtents.x),
 				NextFloat(-m_ShotPositionExtents.y, m_ShotPositionExtents.y),
-				NextFloat(-m_ShotPositionExtents.z, m_ShotPositionExtents.z));
+				NextFloat(-m_ShotPositionExtents.z, m_ShotPositionExtents.z)));
 			m_ToFieldOfView = NextFloat(m_FieldOfViewRange.x, m_FieldOfViewRange.y);
 			m_ShotDurationSeconds = NextFloat(m_ShotDurationRange.x, m_ShotDurationRange.y);
 			m_ShotElapsedSeconds = 0f;
+		}
+
+		private Vector3 ConstrainToAudienceSide(Vector3 localPosition) {
+			if (m_Camera == null || m_Target == null || m_AudienceReference == null || m_Camera.transform.parent == null)
+				return localPosition;
+
+			var cameraParent = m_Camera.transform.parent;
+			var targetLocalPosition = cameraParent.InverseTransformPoint(m_Target.position);
+			var audienceLocalPosition = cameraParent.InverseTransformPoint(m_AudienceReference.position);
+			var audienceDirection = audienceLocalPosition - targetLocalPosition;
+			audienceDirection.y = 0f;
+			if (audienceDirection.sqrMagnitude <= 0.000001f)
+				return localPosition;
+
+			audienceDirection.Normalize();
+			var audienceSideDistance = Vector3.Dot(localPosition - targetLocalPosition, audienceDirection);
+			if (audienceSideDistance >= m_MinimumAudienceSideDistance)
+				return localPosition;
+
+			return localPosition + audienceDirection * (m_MinimumAudienceSideDistance - audienceSideDistance);
 		}
 
 		private float NextFloat(float minimum, float maximum) {
