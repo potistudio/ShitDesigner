@@ -10,6 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1115750589070444966}
   - component: {fileID: 7869385937561023257}
+  - component: {fileID: 7869385937561023258}
+  - component: {fileID: 7869385937561023259}
   m_Layer: 0
   m_Name: DVD Bounce
   m_TagString: Untagged
@@ -44,8 +46,38 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 398c17eaef8e41318d623bd76888d12a, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.LiveSceneRoot
+--- !u!114 &7869385937561023258
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 926804940269573232}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e7c4b0a829b64abf9cc322ed7fcb94a1, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: DvdBounce::ShitDesigner.Scene.DvdBounceSpeedParameter
+  m_Id: speed
+  m_DisplayName: Speed
+  m_Scene: {fileID: 8602383494862072824}
+--- !u!114 &7869385937561023259
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 926804940269573232}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a38f61c26b24f01a752910f0e4ce383, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: DvdBounce::ShitDesigner.Scene.DvdBounceInstanceCountParameter
+  m_Id: instance_count
+  m_DisplayName: Instance Count
+  m_Scene: {fileID: 8602383494862072824}
 --- !u!1 &1159503830589297264
 GameObject:
   m_ObjectHideFlags: 0

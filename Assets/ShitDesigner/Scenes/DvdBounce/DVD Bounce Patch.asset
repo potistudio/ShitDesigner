@@ -24,6 +24,26 @@ MonoBehaviour:
       m_VideoClip: {fileID: 0}
       _parameters: []
     _connections: []
-  _parameters: []
+  _parameters:
+  - _id: speed
+    _displayName: Speed
+    _nodeId: item
+    _parameterId: speed
+    m_BeatModulation:
+      m_Enabled: 0
+      m_Signal: 0
+      m_Strength: 1
+      m_Minimum: 0.01
+      m_Maximum: 30
+  - _id: instance_count
+    _displayName: Instance Count
+    _nodeId: item
+    _parameterId: instance_count
+    m_BeatModulation:
+      m_Enabled: 0
+      m_Signal: 0
+      m_Strength: 1
+      m_Minimum: 1
+      m_Maximum: 64
   m_KeyboardInputs: []
   m_MidiInputs: []
