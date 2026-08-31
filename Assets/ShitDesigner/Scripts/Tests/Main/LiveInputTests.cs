@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using ShitDesigner.Application;
 using ShitDesigner.Core;
@@ -83,6 +84,31 @@ namespace ShitDesigner.Main.Tests {
 			finally {
 				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
 				Object.DestroyImmediate(patch);
+			}
+		}
+
+		[Test]
+		public void KeyboardBracketsRecallOnlyTheTwoHotCueSlots() {
+			Keyboard keyboard = null;
+			try {
+				keyboard = InputSystem.AddDevice<Keyboard>();
+				keyboard.MakeCurrent();
+				var queue = new LiveParameterQueue();
+				var input = new LiveKeyboardInput(queue, new PatchDefinition[0], _ => { }, (_, _) => { }, () => { }, _ => { });
+
+				PollKey(input, keyboard, Key.LeftBracket);
+				PollKey(input, keyboard, Key.RightBracket);
+
+				var requests = new List<LiveParameterRequest>();
+				queue.Drain(requests);
+				Assert.That(requests.Select(request => request.Kind), Is.EqualTo(new[] {
+					LiveParameterRequestKind.RecallHotCue,
+					LiveParameterRequestKind.RecallHotCue
+				}));
+				Assert.That(requests.Select(request => request.ParameterValue.AsInt()), Is.EqualTo(new[] { 0, 1 }));
+			}
+			finally {
+				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
 			}
 		}
 

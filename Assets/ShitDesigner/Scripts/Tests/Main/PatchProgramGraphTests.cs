@@ -1,3 +1,4 @@
+using System.Linq;
 using NUnit.Framework;
 using ShitDesigner.Core;
 using ShitDesigner.Media;
@@ -19,30 +20,29 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void VideoTransportRecallRestoresTheStateAuthoredByThePatch() {
+		public void VideoTransportAcceptsHotCueStateParameters() {
 			var transport = new LiveVideoTransportState(true, 12d, 2f, true);
 
 			Assert.That(transport.TrySetParameter(VideoPlayerContract.PlayheadParameterId, ParameterValue.FromFloat(30f),
 				3d, 120d, out var rejectionReason), Is.True, rejectionReason);
 			Assert.That(transport.TrySetParameter(VideoPlayerContract.SpeedParameterId, ParameterValue.FromFloat(.5f),
 				3d, 120d, out rejectionReason), Is.True, rejectionReason);
+			Assert.That(transport.TrySetParameter(VideoPlayerContract.LoopParameterId, ParameterValue.FromBool(false),
+				3d, 120d, out rejectionReason), Is.True, rejectionReason);
 			Assert.That(transport.TrySetParameter(VideoPlayerContract.PlayingParameterId, ParameterValue.FromBool(false),
-				5d, 120d, out rejectionReason), Is.True, rejectionReason);
+				3d, 120d, out rejectionReason), Is.True, rejectionReason);
 
-			transport.RecallAuthoredState();
-
-			Assert.That(transport.Playing, Is.True);
-			Assert.That(transport.PlayheadSeconds, Is.EqualTo(12d));
-			Assert.That(transport.Speed, Is.EqualTo(2f));
-			Assert.That(transport.Loop, Is.True);
-			Assert.That(transport.LogicalPosition(10d, 120d), Is.EqualTo(12d));
-			Assert.That(transport.LogicalPosition(12d, 120d), Is.EqualTo(16d));
+			Assert.That(transport.Playing, Is.False);
+			Assert.That(transport.PlayheadSeconds, Is.EqualTo(30d));
+			Assert.That(transport.Speed, Is.EqualTo(.5f));
+			Assert.That(transport.Loop, Is.False);
+			Assert.That(transport.LogicalPosition(12d, 120d), Is.EqualTo(30d));
 			Assert.That(transport.SeekPending, Is.True);
 			Assert.That(transport.SettingsPending, Is.True);
 		}
 
 		[Test]
-		public void VideoTransportRejectsInvalidLiveValuesWithoutChangingThePatchState() {
+		public void VideoTransportRejectsInvalidHotCueValuesWithoutChangingItsState() {
 			var transport = new LiveVideoTransportState(true, 4d, 1f, false);
 
 			var accepted = transport.TrySetParameter(VideoPlayerContract.SpeedParameterId, ParameterValue.FromBool(true),
@@ -55,18 +55,19 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void VideoHotCueStateIsOwnedByThePatchGraphNode() {
-			var node = new PatchGraphNode("video", VideoPlayerContract.NodeTypeId, new[] {
-				new PatchGraphParameter(VideoPlayerContract.PlayingParameterId, ParameterValue.FromBool(true)),
-				new PatchGraphParameter(VideoPlayerContract.PlayheadParameterId, ParameterValue.FromFloat(18.5f)),
-				new PatchGraphParameter(VideoPlayerContract.SpeedParameterId, ParameterValue.FromFloat(1.25f)),
-				new PatchGraphParameter(VideoPlayerContract.LoopParameterId, ParameterValue.FromBool(false))
+		public void VideoHotCueStateIsOwnedByAnIndependentPatchHotCue() {
+			var hotCue = new PatchHotCue(new[] {
+				new PatchGraphParameter("video_playing", ParameterValue.FromBool(true)),
+				new PatchGraphParameter("video_playhead", ParameterValue.FromFloat(18.5f)),
+				new PatchGraphParameter("video_speed", ParameterValue.FromFloat(1.25f)),
+				new PatchGraphParameter("video_loop", ParameterValue.FromBool(false))
 			});
 
-			Assert.That(node.FindParameter(VideoPlayerContract.PlayingParameterId).Value.AsBool(), Is.True);
-			Assert.That(node.FindParameter(VideoPlayerContract.PlayheadParameterId).Value.AsFloat(), Is.EqualTo(18.5f));
-			Assert.That(node.FindParameter(VideoPlayerContract.SpeedParameterId).Value.AsFloat(), Is.EqualTo(1.25f));
-			Assert.That(node.FindParameter(VideoPlayerContract.LoopParameterId).Value.AsBool(), Is.False);
+			Assert.That(PatchDefinition.HotCueCount, Is.EqualTo(2));
+			Assert.That(hotCue.Values.Single(value => value.Id == "video_playing").Value.AsBool(), Is.True);
+			Assert.That(hotCue.Values.Single(value => value.Id == "video_playhead").Value.AsFloat(), Is.EqualTo(18.5f));
+			Assert.That(hotCue.Values.Single(value => value.Id == "video_speed").Value.AsFloat(), Is.EqualTo(1.25f));
+			Assert.That(hotCue.Values.Single(value => value.Id == "video_loop").Value.AsBool(), Is.False);
 		}
 	}
 }

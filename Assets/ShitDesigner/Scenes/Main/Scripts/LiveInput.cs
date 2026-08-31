@@ -87,6 +87,14 @@ namespace ShitDesigner.Main {
 				if (effectIndex >= 0) m_AssignInstantEffect(effectIndex);
 				return;
 			}
+			if (keyboard.leftBracketKey.wasPressedThisFrame) {
+				m_Queue.EnqueueRecallHotCue(0);
+				return;
+			}
+			if (keyboard.rightBracketKey.wasPressedThisFrame) {
+				m_Queue.EnqueueRecallHotCue(1);
+				return;
+			}
 			if (keyboard.aKey.wasPressedThisFrame) {
 				if (keyboard.shiftKey.isPressed || keyboard.leftShiftKey.wasPressedThisFrame || keyboard.rightShiftKey.wasPressedThisFrame) {
 					m_IsPianoMainCueSwitchHeld = false;
