@@ -160,6 +160,8 @@ MonoBehaviour:
   _bootOnAwake: 1
   m_MainCueFaderChannel: 16
   m_MainCueFaderControlNumber: 5
+  m_SceneTimeEncoderChannel: 16
+  m_SceneTimeEncoderControlNumber: 77
   m_SceneTimeJogSpeedPerStep: 1
   m_SceneTimeJogMaximumSpeedOffset: 4
   m_ThumbnailTimeOffsetSeconds: 0.05
@@ -262,7 +264,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c52f4760adeb45ff980c5d0bc525fb9f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ShitDesigner.Input::ShitDesigner.Input.MidiInputManager
-  _deviceId: 0
+  _deviceId: 1
   _openOnConfigure: 1
   _bindings: []
 --- !u!4 &444072072

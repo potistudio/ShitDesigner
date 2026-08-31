@@ -256,6 +256,7 @@ namespace ShitDesigner.Main {
 	/// <summary>Maps MIDI events to live requests without owning the MIDI device lifecycle.</summary>
 	public sealed class LiveMidiInput : IDisposable {
 		private const int PatchSelectionChannel = 1;
+		private const int RelativeEncoderPivot = 64;
 		private readonly MidiInputManager m_Manager;
 		private readonly LiveParameterQueue m_Queue;
 		private readonly IReadOnlyList<string> m_PatchIds;
@@ -265,8 +266,6 @@ namespace ShitDesigner.Main {
 		private readonly int m_SceneTimeEncoderChannel;
 		private readonly int m_SceneTimeEncoderControlNumber;
 		private readonly float m_SceneTimeJogSpeedPerStep;
-		private bool m_HasSceneTimeEncoderValue;
-		private int m_LastSceneTimeEncoderValue;
 		private string m_LoadedPatchId;
 
 		public LiveMidiInput(MidiInputManager manager, LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches,
@@ -309,13 +308,7 @@ namespace ShitDesigner.Main {
 			var control = inputEvent.Control;
 			if (control.Kind == MidiControlKind.ControlChange && control.Channel == m_SceneTimeEncoderChannel
 				&& control.Number == m_SceneTimeEncoderControlNumber) {
-				if (!m_HasSceneTimeEncoderValue) {
-					m_HasSceneTimeEncoderValue = true;
-					m_LastSceneTimeEncoderValue = inputEvent.RawValue;
-					return;
-				}
-				var steps = inputEvent.RawValue - m_LastSceneTimeEncoderValue;
-				m_LastSceneTimeEncoderValue = inputEvent.RawValue;
+				var steps = inputEvent.RawValue - RelativeEncoderPivot;
 				if (steps != 0) m_Queue.EnqueueJogSceneTime(steps * m_SceneTimeJogSpeedPerStep);
 				return;
 			}
