@@ -101,6 +101,14 @@ namespace ShitDesigner.Main.Tests {
 				host.ReadModel.EffectNodes.Any(node => node.TypeId == (string)button.userData)), Is.True);
 			var firstMainButton = mainPatchControls.Query<Button>().First();
 			var mainPatches = host.ReadModel.Patches.Where(patch => patch.Role == LivePatchRole.Main).ToArray();
+			var selectedOnlyPatch = mainPatches.First(patch => patch.Id != host.ReadModel.LoadedPatchId);
+			var loadedPatchBeforeSelection = host.ReadModel.LoadedPatchId;
+			var uiController = host.GetComponent<LiveUiController>();
+			typeof(LiveUiController).GetMethod("ChoosePatch", BindingFlags.Instance | BindingFlags.NonPublic)
+				?.Invoke(uiController, new object[] { selectedOnlyPatch.Id });
+			yield return null;
+			Assert.That(host.ReadModel.SelectedCatalogItemId, Is.EqualTo(selectedOnlyPatch.Id));
+			Assert.That(host.ReadModel.LoadedPatchId, Is.EqualTo(loadedPatchBeforeSelection));
 			var cueSlots = Enumerable.Range(1, ApplicationLiveHost.MainCueCount)
 				.Select(index => ui.Q<VisualElement>("cue-slot-" + index)).ToArray();
 			Assert.That(cueSlots, Has.All.Not.Null);
