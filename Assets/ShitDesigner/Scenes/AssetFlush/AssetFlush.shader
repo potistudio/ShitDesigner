@@ -3,6 +3,7 @@ Shader "ShitDesigner/Asset Flush"
 	Properties
 	{
 		_BaseMap ("Texture", 2D) = "white" {}
+		_Opacity ("Opacity", Range(0, 1)) = 1
 	}
 
 	SubShader
@@ -45,6 +46,7 @@ Shader "ShitDesigner/Asset Flush"
 
 			CBUFFER_START(UnityPerMaterial)
 				float4 _BaseMap_ST;
+				half _Opacity;
 			CBUFFER_END
 
 			Varyings Vertex(Attributes input)
@@ -58,6 +60,7 @@ Shader "ShitDesigner/Asset Flush"
 			half4 Fragment(Varyings input) : SV_Target
 			{
 				half4 color = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv);
+				color.a *= _Opacity;
 				return half4(color.rgb * color.a, color.a);
 			}
 			ENDHLSL

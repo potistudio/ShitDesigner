@@ -52,7 +52,7 @@ namespace ShitDesigner.Editor {
 			EditorGUILayout.PropertyField(m_HotCue2, new GUIContent("Hot Cue 2 (])", "Values reference Program Graph parameters. Node ID is optional when the parameter ID is unique."), true);
 
 			EditorGUILayout.Space(6f);
-			EditorGUILayout.PropertyField(m_KeyboardInputs, new GUIContent("Keyboard Inputs", "Maps key presses to published parameters while this patch is loaded. A press sends 1.0; release sends no request."), true);
+			EditorGUILayout.PropertyField(m_KeyboardInputs, new GUIContent("Keyboard Inputs", "Maps keys to published parameters while this patch is loaded. A press sends 1.0 and release sends 0.0."), true);
 
 			EditorGUILayout.Space(6f);
 			EditorGUILayout.PropertyField(m_MidiInputs, new GUIContent("MIDI Inputs", "Maps MIDI controls to published parameters while this patch is loaded."), true);

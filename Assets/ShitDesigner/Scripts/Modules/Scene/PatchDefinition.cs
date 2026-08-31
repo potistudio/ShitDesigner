@@ -342,7 +342,7 @@ namespace ShitDesigner.Scene {
 		}
 
 		public bool Matches(Key key) => m_Key == key;
-		public float Value() => 1f;
+		public float Value(bool isPressed) => isPressed ? 1f : 0f;
 
 		public UnitResult<Diagnostic> Validate() {
 			if (m_Key == Key.None || !Enum.IsDefined(typeof(Key), m_Key))

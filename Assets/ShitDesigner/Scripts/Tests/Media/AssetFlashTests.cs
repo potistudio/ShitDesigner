@@ -1,8 +1,10 @@
+using System.Collections;
 using NUnit.Framework;
 using ShitDesigner.AssetFlush;
 using ShitDesigner.Main;
 using ShitDesigner.Media;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace ShitDesigner.Tests.Media {
 	public sealed class AssetFlashTests {
@@ -98,13 +100,58 @@ namespace ShitDesigner.Tests.Media {
 				Assert.That(liveRoot.TrySetParameter("second", 0f, out var inactiveRejection), Is.True);
 				Assert.That(inactiveRejection, Is.Empty);
 				Assert.That(scene.OutputTexture, Is.Null);
+				Assert.That(liveRoot.TrySetParameter("first", 1f, out var firstRejection), Is.True);
+				Assert.That(firstRejection, Is.Empty);
+				Assert.That(scene.OutputTexture, Is.SameAs(first));
 				Assert.That(liveRoot.TrySetParameter("second", 1f, out var triggerRejection), Is.True);
 				Assert.That(triggerRejection, Is.Empty);
 				Assert.That(scene.OutputTexture, Is.SameAs(second));
+				Assert.That(liveRoot.TrySetParameter("second", 0f, out var fallbackRejection), Is.True);
+				Assert.That(fallbackRejection, Is.Empty);
+				Assert.That(scene.OutputTexture, Is.SameAs(first));
+				scene.FadeOutSeconds = 0f;
+				Assert.That(liveRoot.TrySetParameter("first", 0f, out var releaseRejection), Is.True);
+				Assert.That(releaseRejection, Is.Empty);
+				Assert.That(scene.OutputTexture, Is.Null);
 			}
 			finally {
 				Object.DestroyImmediate(first);
 				Object.DestroyImmediate(second);
+				Object.DestroyImmediate(host);
+			}
+		}
+
+		[UnityTest]
+		public IEnumerator Scene_LiveParameterHoldsUntilReleaseThenFadesOut() {
+			var host = new GameObject("AssetFlushHoldTest");
+			var image = new Texture2D(2, 2);
+			try {
+				var scene = host.AddComponent<AssetFlushScene>();
+				scene.FadeOutSeconds = 5f;
+				scene.SetImageEntries(new AssetFlushImageEntry("held", image));
+				var liveRoot = host.AddComponent<LiveSceneRoot>();
+				liveRoot.Initialize("asset-flush-hold-test");
+
+				Assert.That(liveRoot.TrySetParameter("held", 1f, out var pressRejection), Is.True);
+				Assert.That(pressRejection, Is.Empty);
+				yield return null;
+				Assert.That(scene.OutputTexture, Is.SameAs(image));
+				Assert.That(scene.Opacity, Is.EqualTo(1f));
+
+				Assert.That(liveRoot.TrySetParameter("held", 0f, out var releaseRejection), Is.True);
+				Assert.That(releaseRejection, Is.Empty);
+				Assert.That(scene.OutputTexture, Is.SameAs(image));
+				yield return null;
+				Assert.That(scene.OutputTexture, Is.SameAs(image));
+				Assert.That(scene.Opacity, Is.GreaterThan(0f).And.LessThan(1f));
+
+				scene.FadeOutSeconds = 0f;
+				yield return null;
+				Assert.That(scene.OutputTexture, Is.Null);
+				Assert.That(scene.Opacity, Is.Zero);
+			}
+			finally {
+				Object.DestroyImmediate(image);
 				Object.DestroyImmediate(host);
 			}
 		}
