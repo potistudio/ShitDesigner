@@ -16,6 +16,7 @@
     "ShitDesigner.Presentation",
     "ShitDesigner.Bootstrap",
     "ShitDesigner.Main",
+    "ShitDesigner.AssetFlush",
     "ShitDesigner.Shower"
   ],
   "includePlatforms": [
