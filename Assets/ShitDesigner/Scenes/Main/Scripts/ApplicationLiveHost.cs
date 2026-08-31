@@ -19,6 +19,7 @@ namespace ShitDesigner.Main {
 		public const int MainCueCount = LiveGraphRuntime.MainCueCount;
 		private const int FollowOverlaySequencer = -1;
 		private const int NoPianoOverlayTake = -2;
+		private const float MaximumUnityTimeScale = 100f;
 		private static readonly string[] m_EmptyMainCuePatchIds = new string[MainCueCount];
 
 		[SerializeField] private LiveGraphBootstrap _graphBootstrap;
@@ -70,6 +71,8 @@ namespace ShitDesigner.Main {
 		private string m_PianoReturnMainPatchId = string.Empty;
 		private readonly int[] m_OverlayTakeOverrides = new int[LiveStepSequencer.OverlayLaneCount];
 		private readonly int[] m_PianoReturnOverlayTakeOverrides = new int[LiveStepSequencer.OverlayLaneCount];
+		private float m_BaseUnityTimeScale = 1f;
+		private bool m_OwnsUnityTimeScale;
 
 		public ApplicationLiveHostState State { get; private set; } = ApplicationLiveHostState.Cold;
 		public LiveUiReadModel ReadModel { get; private set; }
@@ -94,6 +97,9 @@ namespace ShitDesigner.Main {
 				if (_graphBootstrap == null || _midiInputManager == null || _capabilityMonitor == null || _externalDisplay == null || _uiController == null)
 					throw new InvalidOperationException("ApplicationLiveHost requires graph, MIDI, capability, Display, and UI components.");
 
+				m_BaseUnityTimeScale = Time.timeScale;
+				m_OwnsUnityTimeScale = true;
+				_shutdown.Add(RestoreUnityTimeScale);
 				_runtime = _graphBootstrap.CreateRuntime();
 				_runtime.ConfigureSceneTimeJog(m_SceneTimeJogMaximumSpeedOffset);
 				_shutdown.Add(() => { _runtime?.Dispose(); _runtime = null; });
@@ -169,6 +175,7 @@ namespace ShitDesigner.Main {
 				m_FiredInstantEffectTriggers = m_InstantEffectGate.GetActive(projectedBeatPosition);
 				var overlayComposition = UpdateOverlayComposition(projectedBeatPosition);
 				_runtime.Evaluate(deltaSeconds);
+				ApplyUnityTimeScale(_runtime.GraphTimeScale);
 				_runtime.SceneUpdate();
 				var frames = _runtime.Render(m_FiredInstantEffectTriggers);
 				_runtime.RenderPreviews(overlayComposition.LanePatchIds, _runtime.MainCuePatchIds, deltaSeconds,
@@ -551,6 +558,19 @@ namespace ShitDesigner.Main {
 		private static int MoveWithinList(int selectedIndex, int direction, int patchCount) {
 			if (patchCount <= 0) return 0;
 			return Mathf.Clamp(selectedIndex + Math.Sign(direction), 0, patchCount - 1);
+		}
+
+		private void ApplyUnityTimeScale(double graphTimeScale) {
+			if (!m_OwnsUnityTimeScale) return;
+			var finiteScale = double.IsNaN(graphTimeScale) || double.IsInfinity(graphTimeScale) ? 1d : graphTimeScale;
+			var requestedScale = m_BaseUnityTimeScale * finiteScale;
+			Time.timeScale = (float)Math.Min(MaximumUnityTimeScale, Math.Max(0d, requestedScale));
+		}
+
+		private void RestoreUnityTimeScale() {
+			if (!m_OwnsUnityTimeScale) return;
+			Time.timeScale = m_BaseUnityTimeScale;
+			m_OwnsUnityTimeScale = false;
 		}
 
 		private void ShutdownStartedComponents() {

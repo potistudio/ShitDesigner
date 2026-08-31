@@ -760,6 +760,14 @@ namespace ShitDesigner.Main {
 		void RecallPatchState();
 	}
 
+	internal static class LiveUnityVideoClock {
+		public static void Configure(VideoPlayer player) {
+			if (player == null) throw new ArgumentNullException(nameof(player));
+			player.timeReference = VideoTimeReference.InternalTime;
+			player.timeUpdateMode = VideoTimeUpdateMode.GameTime;
+		}
+	}
+
 	internal sealed class LiveProgramSceneGraphNode : ILiveProgramGraphNode {
 		private readonly SceneNodeRuntime m_Runtime;
 		private readonly LiveSceneRoot m_Root;
@@ -1033,7 +1041,9 @@ namespace ShitDesigner.Main {
 						new HapNativeDecoder(new PInvokeHapNativeApi(hapBridge)));
 				}
 				else {
-					backend = new UnityVideoBackend(NodeInstanceId.New(), 1UL);
+					var unityBackend = new UnityVideoBackend(NodeInstanceId.New(), 1UL);
+					LiveUnityVideoClock.Configure(unityBackend.Player);
+					backend = unityBackend;
 					conversion = new UnityVideoFrameConversionPass(videoConversionMaterial);
 				}
 
@@ -1073,8 +1083,10 @@ namespace ShitDesigner.Main {
 				m_Transport.MarkSeekApplied();
 				m_AwaitingSeekCompletion = true;
 			}
-			var sync = m_Backend.SyncToGraphClock(logicalPosition, demanded: true);
-			if (sync.IsFailure) throw new InvalidOperationException(sync.Error.Message);
+			if (m_Backend.BackendKind == VideoBackendKind.HapVideoBackend) {
+				var sync = m_Backend.SyncToGraphClock(logicalPosition, demanded: true);
+				if (sync.IsFailure) throw new InvalidOperationException(sync.Error.Message);
+			}
 
 			if (!m_AwaitingSeekCompletion && (IsReady() || m_Backend.BackendKind == VideoBackendKind.HapVideoBackend)) {
 				if (m_Transport.Playing && m_Backend.State != VideoBackendState.Playing) {
@@ -1193,6 +1205,7 @@ namespace ShitDesigner.Main {
 				_player.renderMode = VideoRenderMode.APIOnly;
 				_player.audioOutputMode = VideoAudioOutputMode.None;
 				_player.sendFrameReadyEvents = false;
+				LiveUnityVideoClock.Configure(_player);
 				_player.source = UnityEngine.Video.VideoSource.VideoClip;
 				_player.clip = clip;
 				_player.isLooping = m_Transport.Loop;
@@ -1225,8 +1238,6 @@ namespace ShitDesigner.Main {
 					m_Transport.MarkSeekApplied();
 				}
 				if (m_Transport.Playing) {
-					_player.timeReference = VideoTimeReference.ExternalTime;
-					_player.externalReferenceTime = logicalPosition;
 					if (!_player.isPlaying) _player.Play();
 				}
 				else if (_player.isPlaying) _player.Pause();
@@ -1378,6 +1389,7 @@ namespace ShitDesigner.Main {
 		private double m_SceneTimeJogSpeedOffset;
 		private double m_SceneTimeJogMaximumSpeedOffset = 1d;
 		private double m_LastGraphDeltaSeconds;
+		private double m_GraphTimeScale = 1d;
 		private double m_PreviewElapsedSeconds;
 		private bool _disposed;
 
@@ -1394,6 +1406,7 @@ namespace ShitDesigner.Main {
 		public LiveParameterDefinition BpmDefinition => m_BpmClock.Definition;
 		public BeatClockFrame BpmFrame => m_BpmClock.Frame;
 		public double SceneTimePlaybackRate => Math.Max(0d, 1d + m_SceneTimeJogSpeedOffset);
+		public double GraphTimeScale => m_GraphTimeScale;
 		public bool IsTimeEasingEnabled => m_BpmClock.IsTimeEasingEnabled;
 
 		internal LiveGraphRuntime(LiveGraph graph, AnimationCurve globalTimeEasing) {
@@ -1481,6 +1494,7 @@ namespace ShitDesigner.Main {
 			m_SceneTimeJogSpeedOffset = 0d;
 			var clockDeltaSeconds = m_BpmClock.Advance(sourceDeltaSeconds);
 			m_LastGraphDeltaSeconds = clockDeltaSeconds * playbackRate;
+			m_GraphTimeScale = sourceDeltaSeconds > 0d ? m_LastGraphDeltaSeconds / sourceDeltaSeconds : 1d;
 			m_GraphTime += m_LastGraphDeltaSeconds;
 			foreach (var patch in ActiveMainCuePatches()) {
 				patch.ApplyResolvedParameters(m_BpmClock.Frame);

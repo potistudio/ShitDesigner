@@ -2,6 +2,7 @@ using System.Reflection;
 using NUnit.Framework;
 using ShitDesigner.Rendering;
 using UnityEngine;
+using UnityEngine.Video;
 
 namespace ShitDesigner.Main.Tests {
 	[TestFixture]
@@ -124,6 +125,38 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(easedFirstQuarter + easedRemainder, Is.EqualTo(.5d).Within(1e-6d));
 			Assert.That(clock.BeatsPerMinute, Is.EqualTo(120f));
 			Assert.That(clock.TotalBeats, Is.EqualTo(1d).Within(1e-9d));
+		}
+
+		[Test]
+		public void GlobalTimeEasingPublishesItsInstantaneousTimeScale() {
+			var clock = new LiveBpmClock(120f, AnimationCurve.EaseInOut(0f, 0f, 1f, 1f));
+
+			clock.Advance(.125d);
+			var slowScale = clock.TimeScale;
+			clock.Advance(.25d);
+			var fastScale = clock.TimeScale;
+			clock.SetTimeEasingEnabled(false);
+			clock.Advance(.125d);
+
+			Assert.That(slowScale, Is.LessThan(1d));
+			Assert.That(fastScale, Is.GreaterThan(1d));
+			Assert.That(clock.TimeScale, Is.EqualTo(1d).Within(1e-9d));
+		}
+
+		[Test]
+		public void UnityVideoClockUsesScaledGameTimeWithoutExternalCorrection() {
+			var host = new GameObject("LiveUnityVideoClockTests");
+			try {
+				var player = host.AddComponent<VideoPlayer>();
+				player.timeReference = VideoTimeReference.ExternalTime;
+				player.timeUpdateMode = VideoTimeUpdateMode.UnscaledGameTime;
+
+				LiveUnityVideoClock.Configure(player);
+
+				Assert.That(player.timeReference, Is.EqualTo(VideoTimeReference.InternalTime));
+				Assert.That(player.timeUpdateMode, Is.EqualTo(VideoTimeUpdateMode.GameTime));
+			}
+			finally { Object.DestroyImmediate(host); }
 		}
 
 		[Test]
