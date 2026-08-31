@@ -1205,7 +1205,6 @@ namespace ShitDesigner.Main {
 		public const int PreviewHeight = 90;
 		public const int PreviewFrameRate = 10;
 
-		private const int ProgramOutputCount = 2;
 		private const double PreviewIntervalSeconds = 1d / PreviewFrameRate;
 		private static readonly LiveRenderSize ProgramRenderSize = new LiveRenderSize(ProgramWidth, ProgramHeight);
 		private static readonly LiveRenderSize PreviewRenderSize = new LiveRenderSize(PreviewWidth, PreviewHeight);
@@ -1251,7 +1250,7 @@ namespace ShitDesigner.Main {
 			m_MainCuePatchIds[0] = graph.PatchDefinitions[0].Id;
 			m_ActiveMainCueIndex = 0;
 			LoadedMainPatch.SetSceneActive(true);
-			CurrentFrames = CreateProgramFrames(LoadedMainPatch.Outputs[0].ProgramTexture, 0);
+			CurrentFrames = new LiveProgramFrames(LoadedMainPatch.Outputs.Select(output => new LiveProgramFrame(output.ProgramTexture, 0)));
 			CurrentFrame = CurrentFrames.Primary;
 		}
 
@@ -1354,13 +1353,10 @@ namespace ShitDesigner.Main {
 				overlayInputs, nextFrame, _graphTime);
 			var programOutput = _graph.InstantEffects.Render(composite, instantEffectTriggers, nextFrame, _graphTime);
 			_frameNumber = nextFrame;
-			CurrentFrames = CreateProgramFrames(programOutput, _frameNumber);
+			CurrentFrames = new LiveProgramFrames(new[] { new LiveProgramFrame(programOutput, _frameNumber) });
 			CurrentFrame = CurrentFrames.Primary;
 			return CurrentFrames;
 		}
-
-		private static LiveProgramFrames CreateProgramFrames(RenderTexture texture, ulong frameNumber)
-			=> new LiveProgramFrames(Enumerable.Repeat(new LiveProgramFrame(texture, frameNumber), ProgramOutputCount));
 
 		public void SetOverlayComposition(LiveSequencerReadModel composition) {
 			EnsureUsable();
