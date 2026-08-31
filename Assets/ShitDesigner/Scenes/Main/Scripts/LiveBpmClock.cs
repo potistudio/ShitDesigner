@@ -73,6 +73,7 @@ namespace ShitDesigner.Main {
 		public float BeatsPerMinute => _beatsPerMinute;
 		public double TotalBeats => _totalBeats;
 		public bool IsTimeEasingEnabled => m_IsTimeEasingEnabled;
+		public double TimeScale { get; private set; } = 1d;
 		public LiveParameterDefinition Definition => new LiveParameterDefinition("bpm", "BPM", MinimumBpm, MaximumBpm, _beatsPerMinute);
 		public BeatClockFrame Frame => new BeatClockFrame(_beatsPerMinute, _totalBeats, m_BeatAlignmentBeats);
 
@@ -114,6 +115,7 @@ namespace ShitDesigner.Main {
 			var graphDeltaSeconds = m_IsTimeEasingEnabled
 				? m_TimeWarp.DeltaSeconds(previousAdjustedBeats, _totalBeats - m_BeatAlignmentBeats, _beatsPerMinute)
 				: deltaSeconds;
+			TimeScale = deltaSeconds > 0d ? graphDeltaSeconds / deltaSeconds : 1d;
 			ShaderBeatClock.Publish(Frame);
 			return graphDeltaSeconds;
 		}
