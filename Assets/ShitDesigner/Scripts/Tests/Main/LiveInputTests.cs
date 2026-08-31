@@ -87,6 +87,42 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void KeyboardASwitchesMainCuesInPianoOrCompleteMode() {
+			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.A));
+			Keyboard keyboard = null;
+			try {
+				keyboard = InputSystem.AddDevice<Keyboard>();
+				keyboard.MakeCurrent();
+				var queue = new LiveParameterQueue();
+				var switches = new List<string>();
+				var input = new LiveKeyboardInput(queue, new[] { patch }, _ => { }, (_, _) => { }, () => { }, _ => { },
+					beginPianoMainCueSwitch: () => switches.Add("begin"),
+					endPianoMainCueSwitch: () => switches.Add("end"),
+					completeMainCueSwitch: () => switches.Add("complete"));
+
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.A));
+				InputSystem.Update();
+				input.Poll("patch-a");
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+				InputSystem.Update();
+				input.Poll("patch-a");
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift, Key.A));
+				InputSystem.Update();
+				input.Poll("patch-a");
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+				InputSystem.Update();
+				input.Poll("patch-a");
+
+				Assert.That(switches, Is.EqualTo(new[] { "begin", "end", "complete" }));
+				Assert.That(queue.Count, Is.Zero);
+			}
+			finally {
+				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
+				Object.DestroyImmediate(patch);
+			}
+		}
+
+		[Test]
 		public void KeyboardDigitsAssignTheSelectedOverlaySceneToMatchingLanes() {
 			var patch = CreatePatch("patch-a");
 			Keyboard keyboard = null;

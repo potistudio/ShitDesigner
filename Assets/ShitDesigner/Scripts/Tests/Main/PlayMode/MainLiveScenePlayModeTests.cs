@@ -149,6 +149,34 @@ namespace ShitDesigner.Main.Tests {
 				Is.EqualTo(mainPatches.Select(patch => patch.Name).Take(ApplicationLiveHost.MainCueCount)));
 			Assert.That(cueSlots.Select(slot => slot.ClassListContains("is-active")),
 				Is.EqualTo(mainPatches.Take(ApplicationLiveHost.MainCueCount).Select(patch => patch.Id == host.ReadModel.LoadedPatchId)));
+			var activeCueIndex = System.Array.FindIndex(cueSlots, slot => slot.ClassListContains("is-active"));
+			Assert.That(activeCueIndex, Is.GreaterThanOrEqualTo(0));
+			var activeCuePatchId = host.MainCuePatchIds[activeCueIndex];
+			var replacementButton = ui.Q<Button>("patch-" + mainPatches.First(patch => patch.Id != activeCuePatchId).Id);
+			using (var pointerDown = PointerDownEvent.GetPooled(new Event {
+				type = EventType.MouseDown,
+				button = 0,
+				mousePosition = replacementButton.worldBound.center
+			})) {
+				replacementButton.SendEvent(pointerDown);
+			}
+			using (var pointerMove = PointerMoveEvent.GetPooled(new Event {
+				type = EventType.MouseMove,
+				mousePosition = cueSlots[activeCueIndex].worldBound.center
+			})) {
+				ui.SendEvent(pointerMove);
+			}
+			Assert.That(cueSlots[activeCueIndex].ClassListContains("is-drop-target"), Is.False);
+			Assert.That(dragStroke.ClassListContains("is-rejected"), Is.True);
+			using (var pointerUp = PointerUpEvent.GetPooled(new Event {
+				type = EventType.MouseUp,
+				button = 0,
+				mousePosition = cueSlots[activeCueIndex].worldBound.center
+			})) {
+				ui.SendEvent(pointerUp);
+			}
+			Assert.That(host.MainCuePatchIds[activeCueIndex], Is.EqualTo(activeCuePatchId));
+			Assert.That(dragStroke.ClassListContains("is-rejected"), Is.False);
 			Assert.That(firstMainButton.worldBound.yMin, Is.EqualTo(mainPatchControls.contentViewport.worldBound.yMin).Within(0.5f));
 			var initialMainListTop = firstMainButton.worldBound.yMin;
 			host.MoveCatalogSelection(0, 1);

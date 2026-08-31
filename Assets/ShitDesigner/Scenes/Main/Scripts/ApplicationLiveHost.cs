@@ -49,6 +49,7 @@ namespace ShitDesigner.Main {
 		private int m_SelectedMainPatchIndex;
 		private int m_SelectedOverlayPatchIndex;
 		private int m_SelectedEffectNodeIndex;
+		private string m_PianoReturnMainPatchId = string.Empty;
 
 		public ApplicationLiveHostState State { get; private set; } = ApplicationLiveHostState.Cold;
 		public LiveUiReadModel ReadModel { get; private set; }
@@ -88,7 +89,10 @@ namespace ShitDesigner.Main {
 				m_SelectedOverlayPatchIndex = 0;
 				m_SelectedEffectNodeIndex = 0;
 				UpdateOverlayComposition(_runtime.BpmFrame.AdjustedTotalBeats);
-				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, laneIndex => { AssignSelectedOverlayPatchToLane(laneIndex); }, MoveCatalogSelection, () => { LaunchSelectedCatalogPatch(); }, TapBpm);
+				m_PianoReturnMainPatchId = string.Empty;
+				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, laneIndex => { AssignSelectedOverlayPatchToLane(laneIndex); }, MoveCatalogSelection, () => { LaunchSelectedCatalogPatch(); }, TapBpm,
+					beginPianoMainCueSwitch: BeginPianoMainCueSwitch, endPianoMainCueSwitch: EndPianoMainCueSwitch,
+					completeMainCueSwitch: CompleteMainCueSwitch);
 				_midiInputManager.InitializeForHostPolling();
 				_shutdown.Add(_midiInputManager.Shutdown);
 				_midi = new LiveMidiInput(_midiInputManager, _parameterQueue, _runtime.Patches);
@@ -196,6 +200,29 @@ namespace ShitDesigner.Main {
 			m_MainCuePatchIds[cueIndex] = patchId;
 			return true;
 		}
+
+		private void BeginPianoMainCueSwitch() {
+			if (_runtime == null || !string.IsNullOrEmpty(m_PianoReturnMainPatchId)) return;
+			var targetPatchId = AlternateMainCuePatchId(_runtime.LoadedPatchId);
+			if (string.IsNullOrEmpty(targetPatchId)) return;
+			m_PianoReturnMainPatchId = _runtime.LoadedPatchId;
+			_parameterQueue.EnqueueLaunchPatch(targetPatchId);
+		}
+
+		private void EndPianoMainCueSwitch() {
+			var returnPatchId = m_PianoReturnMainPatchId;
+			m_PianoReturnMainPatchId = string.Empty;
+			if (!string.IsNullOrEmpty(returnPatchId)) _parameterQueue.EnqueueLaunchPatch(returnPatchId);
+		}
+
+		private void CompleteMainCueSwitch() {
+			m_PianoReturnMainPatchId = string.Empty;
+			var targetPatchId = AlternateMainCuePatchId(_runtime?.LoadedPatchId);
+			if (!string.IsNullOrEmpty(targetPatchId)) _parameterQueue.EnqueueLaunchPatch(targetPatchId);
+		}
+
+		private string AlternateMainCuePatchId(string activePatchId)
+			=> m_MainCuePatchIds.FirstOrDefault(patchId => !string.IsNullOrEmpty(patchId) && patchId != activePatchId) ?? string.Empty;
 
 		public void SelectEffectNode(string typeId) {
 			var effectIndex = Array.IndexOf(m_EffectNodeTypeIds, typeId);
