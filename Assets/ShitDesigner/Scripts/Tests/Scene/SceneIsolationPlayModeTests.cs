@@ -286,6 +286,20 @@ namespace ShitDesigner.Tests.Scene {
 		}
 
 		[UnityTest]
+		public IEnumerator AdditiveScenesAllowTheSameRequestedName() {
+			var manager = new SceneIsolationManager();
+			var first = manager.Create(new SceneCreateRequest(Node(31), SceneNodeKind.ThreeD, "SceneIsolation.SharedName"));
+			var second = manager.Create(new SceneCreateRequest(Node(32), SceneNodeKind.ThreeD, "SceneIsolation.SharedName"));
+			Assert.That(first.IsSuccess, Is.True, first.IsFailure ? first.Error.Message : string.Empty);
+			Assert.That(second.IsSuccess, Is.True, second.IsFailure ? second.Error.Message : string.Empty);
+			Assert.That(first.Value.Scene.name, Is.EqualTo("SceneIsolation.SharedName"));
+			Assert.That(second.Value.Scene.name, Is.Not.EqualTo(first.Value.Scene.name));
+			manager.Dispose();
+			yield return WaitForDisposed(first.Value, second.Value);
+			Assert.That(manager.Layers.ActiveCount, Is.EqualTo(0));
+		}
+
+		[UnityTest]
 		public IEnumerator PhysicsUsesFixedStepMaximumFourAndCarriesRemainder() {
 			var stepper = new RecordingPhysicsStepper();
 			var manager = new SceneIsolationManager(physicsStepper: stepper);
