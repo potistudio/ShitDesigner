@@ -30,6 +30,9 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(host.ReadModel.Sequencers, Has.Count.EqualTo(2));
 			Assert.That(host.ReadModel.Sequencers.All(sequencer => sequencer.ActiveLaneMasks.Count == LiveStepSequencer.StepCount), Is.True);
 			var runtime = (LiveGraphRuntime)typeof(ApplicationLiveHost).GetField("_runtime", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(host);
+			Assert.That(runtime.MainCuePatchIds, Is.EqualTo(new[] { host.ReadModel.LoadedPatchId, string.Empty }));
+			Assert.That(host.MainCuePatchIds, Is.EqualTo(runtime.MainCuePatchIds));
+			Assert.That(runtime.ActiveMainCueIndex, Is.Zero);
 			Assert.That(runtime.CurrentFrames.Count, Is.EqualTo(1));
 			Assert.That(runtime.CurrentFrames[0].Texture, Is.SameAs(host.ReadModel.ProgramTexture));
 			Assert.That(HasVisiblePixels(host.ReadModel.ProgramTexture), Is.True);
@@ -42,12 +45,16 @@ namespace ShitDesigner.Main.Tests {
 
 			Assert.That(host.ReadModel.LoadedPatchId, Is.EqualTo(loadedPatchId));
 			Assert.That(runtime.PreloadedPatchId, Is.EqualTo(nextPatch.Id));
+			Assert.That(runtime.MainCuePatchIds, Is.EqualTo(new[] { loadedPatchId, nextPatch.Id }));
+			Assert.That(runtime.ActiveMainCueIndex, Is.Zero);
 			Assert.That(host.ReadModel.RequestResults.Any(result => result.SequenceNumber == preload.SequenceNumber && result.Applied), Is.True);
 			var load = host.ParameterQueue.EnqueueLoadPatch(nextPatch.Id);
 			Assert.That(load.Accepted, Is.True);
 			for (var frame = 0; frame < 60 && host.ReadModel.LoadedPatchId != nextPatch.Id; frame++) yield return null;
 
 			Assert.That(host.ReadModel.LoadedPatchId, Is.EqualTo(nextPatch.Id));
+			Assert.That(runtime.MainCuePatchIds, Is.EqualTo(new[] { loadedPatchId, nextPatch.Id }));
+			Assert.That(runtime.ActiveMainCueIndex, Is.EqualTo(1));
 			Assert.That(host.ReadModel.RequestResults.Any(result => result.SequenceNumber == load.SequenceNumber && result.Applied), Is.True);
 			Assert.That(host.ReadModel.ProgramFrameNumber, Is.GreaterThan(1));
 			var parameter = host.ParameterQueue.EnqueueSetParameter(nextPatch.Id, "scale", 1f);
@@ -136,19 +143,19 @@ namespace ShitDesigner.Main.Tests {
 			})) {
 				ui.SendEvent(pointerUp);
 			}
+			yield return null;
 			Assert.That(host.MainCuePatchIds[0], Is.EqualTo(firstMainButton.userData as string));
 			Assert.That(firstMainButton.ClassListContains("is-dragging"), Is.False);
 			Assert.That(cueSlots[0].ClassListContains("is-drop-target"), Is.False);
 			Assert.That(dragStroke.ClassListContains("is-active"), Is.False);
-			Assert.That(host.AssignMainPatchToCue(0, mainPatches[0].Id), Is.True);
-			Assert.That(host.AssignMainPatchToCue(1, mainPatches[1].Id), Is.True);
-			Assert.That(host.AssignMainPatchToCue(0, host.ReadModel.Patches.First(patch => patch.Role == LivePatchRole.Overlay).Id), Is.False);
-			yield return null;
-			Assert.That(host.MainCuePatchIds, Is.EqualTo(mainPatches.Select(patch => patch.Id).Take(ApplicationLiveHost.MainCueCount)));
+			Assert.That(host.AssignMainPatchToCue(host.ActiveMainCueIndex, mainPatches[0].Id), Is.False);
+			Assert.That(host.AssignMainPatchToCue(1 - host.ActiveMainCueIndex,
+				host.ReadModel.Patches.First(patch => patch.Role == LivePatchRole.Overlay).Id), Is.False);
+			Assert.That(host.MainCuePatchIds, Has.All.Not.Empty);
 			Assert.That(cueSlots.Select(slot => slot.Q<Label>().text),
-				Is.EqualTo(mainPatches.Select(patch => patch.Name).Take(ApplicationLiveHost.MainCueCount)));
+				Is.EqualTo(host.MainCuePatchIds.Select(patchId => mainPatches.Single(patch => patch.Id == patchId).Name)));
 			Assert.That(cueSlots.Select(slot => slot.ClassListContains("is-active")),
-				Is.EqualTo(mainPatches.Take(ApplicationLiveHost.MainCueCount).Select(patch => patch.Id == host.ReadModel.LoadedPatchId)));
+				Is.EqualTo(Enumerable.Range(0, ApplicationLiveHost.MainCueCount).Select(index => index == host.ActiveMainCueIndex)));
 			var activeCueIndex = System.Array.FindIndex(cueSlots, slot => slot.ClassListContains("is-active"));
 			Assert.That(activeCueIndex, Is.GreaterThanOrEqualTo(0));
 			var activeCuePatchId = host.MainCuePatchIds[activeCueIndex];
