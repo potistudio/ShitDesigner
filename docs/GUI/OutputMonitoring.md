@@ -17,9 +17,9 @@
 
 ## Program Display
 
-- `LiveGraphBootstrap` はProgramOutputごとに独立したRenderTextureを構成する。`Display 2` は先頭ProgramOutput、`Display 3` は2番目のProgramOutputを表示する。
-- 接続済みDisplayはトップバーで一覧表示する。Display数がProgramOutput数を超える場合、対応する出力のないDisplayは不透明黒を表示する。
-- 外部Displayが失われた場合は残りの接続済みDisplayへ対応するProgramOutputの出力を継続し、外部Displayがない場合はProgram Monitorへフォールバックする。
+- Output 1はMain CueとInstant FXを通ったProgram映像、Output 2はOverlay Sequencerのレーンだけを黒背景へ合成した映像とする。
+- `Display 2` はOutput 1、`Display 3` はOutput 2を表示し、ネイティブのOutputメニューから各出力を個別に開始、停止する。
+- 外部Displayが失われた場合は残りの接続済みDisplayへの出力を継続し、外部Displayがない場合はProgram Monitorへフォールバックする。
 - `Identify Displays` は各操作Displayへ番号を3秒表示するが、Program映像には重ねない。
 
 ## Preview Viewer Host

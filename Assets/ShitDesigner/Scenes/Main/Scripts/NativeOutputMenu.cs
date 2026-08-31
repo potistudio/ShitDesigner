@@ -8,36 +8,50 @@ using AOT;
 [assembly: InternalsVisibleTo("ShitDesigner.Main.Tests.EditMode")]
 
 namespace ShitDesigner.Main {
+	public enum LiveOutputKind {
+		Program,
+		Overlay
+	}
+
 	internal enum OutputMenuCommand {
-		Start,
-		Stop,
+		StartProgram,
+		StopProgram,
+		StartOverlay,
+		StopOverlay,
 		IdentifyDisplays
 	}
 
 	internal readonly struct OutputMenuState : IEquatable<OutputMenuState> {
-		public bool CanStart { get; }
-		public bool CanStop { get; }
+		public bool CanStartProgram { get; }
+		public bool CanStopProgram { get; }
+		public bool CanStartOverlay { get; }
+		public bool CanStopOverlay { get; }
 		public bool CanIdentifyDisplays { get; }
 
-		public OutputMenuState(bool canStart, bool canStop, bool canIdentifyDisplays) {
-			CanStart = canStart;
-			CanStop = canStop;
+		public OutputMenuState(bool canStartProgram, bool canStopProgram, bool canStartOverlay, bool canStopOverlay, bool canIdentifyDisplays) {
+			CanStartProgram = canStartProgram;
+			CanStopProgram = canStopProgram;
+			CanStartOverlay = canStartOverlay;
+			CanStopOverlay = canStopOverlay;
 			CanIdentifyDisplays = canIdentifyDisplays;
 		}
 
 		public bool Equals(OutputMenuState other) =>
-			CanStart == other.CanStart &&
-			CanStop == other.CanStop &&
+			CanStartProgram == other.CanStartProgram &&
+			CanStopProgram == other.CanStopProgram &&
+			CanStartOverlay == other.CanStartOverlay &&
+			CanStopOverlay == other.CanStopOverlay &&
 			CanIdentifyDisplays == other.CanIdentifyDisplays;
 
 		public override bool Equals(object obj) => obj is OutputMenuState other && Equals(other);
-		public override int GetHashCode() => (CanStart ? 1 : 0) | (CanStop ? 2 : 0) | (CanIdentifyDisplays ? 4 : 0);
+		public override int GetHashCode() => (CanStartProgram ? 1 : 0) | (CanStopProgram ? 2 : 0) |
+			(CanStartOverlay ? 4 : 0) | (CanStopOverlay ? 8 : 0) | (CanIdentifyDisplays ? 16 : 0);
 	}
 
 	internal interface ILiveOutputMenuTarget {
-		bool IsOutputActive { get; }
-		bool IsAvailable { get; }
-		bool SetOutputActive(bool active);
+		bool IsActive(LiveOutputKind output);
+		bool IsOutputAvailable(LiveOutputKind output);
+		bool SetOutputActive(LiveOutputKind output, bool active);
 		void IdentifyDisplay();
 	}
 
@@ -66,23 +80,40 @@ namespace ShitDesigner.Main {
 
 		public void Dispose() => m_Backend.Dispose();
 
-		private OutputMenuState CaptureState() => new OutputMenuState(
-			m_Output.IsAvailable && !m_Output.IsOutputActive,
-			m_Output.IsOutputActive,
-			m_Output.IsAvailable);
+		private OutputMenuState CaptureState() {
+			var programAvailable = m_Output.IsOutputAvailable(LiveOutputKind.Program);
+			var programActive = m_Output.IsActive(LiveOutputKind.Program);
+			var overlayAvailable = m_Output.IsOutputAvailable(LiveOutputKind.Overlay);
+			var overlayActive = m_Output.IsActive(LiveOutputKind.Overlay);
+			return new OutputMenuState(programAvailable && !programActive, programActive,
+				overlayAvailable && !overlayActive, overlayActive, programAvailable || overlayAvailable);
+		}
 
 		private void Execute(OutputMenuCommand command) {
 			switch (command) {
-				case OutputMenuCommand.Start:
-					if (m_Output.IsAvailable && !m_Output.IsOutputActive) m_Output.SetOutputActive(true);
+				case OutputMenuCommand.StartProgram:
+					SetOutputActive(LiveOutputKind.Program, true);
 					break;
-				case OutputMenuCommand.Stop:
-					if (m_Output.IsOutputActive) m_Output.SetOutputActive(false);
+				case OutputMenuCommand.StopProgram:
+					SetOutputActive(LiveOutputKind.Program, false);
+					break;
+				case OutputMenuCommand.StartOverlay:
+					SetOutputActive(LiveOutputKind.Overlay, true);
+					break;
+				case OutputMenuCommand.StopOverlay:
+					SetOutputActive(LiveOutputKind.Overlay, false);
 					break;
 				case OutputMenuCommand.IdentifyDisplays:
-					if (m_Output.IsAvailable) m_Output.IdentifyDisplay();
+					if (m_Output.IsOutputAvailable(LiveOutputKind.Program) || m_Output.IsOutputAvailable(LiveOutputKind.Overlay)) m_Output.IdentifyDisplay();
 					break;
 			}
+		}
+
+		private void SetOutputActive(LiveOutputKind output, bool active) {
+			if (active) {
+				if (m_Output.IsOutputAvailable(output) && !m_Output.IsActive(output)) m_Output.SetOutputActive(output, true);
+			}
+			else if (m_Output.IsActive(output)) m_Output.SetOutputActive(output, false);
 		}
 	}
 
@@ -115,9 +146,11 @@ namespace ShitDesigner.Main {
 		private const uint SeparatorItem = 0x0800;
 		private const uint EnabledItem = 0x0000;
 		private const uint GrayedItem = 0x0001;
-		private const int StartCommandId = 0x6D01;
-		private const int StopCommandId = 0x6D02;
-		private const int IdentifyCommandId = 0x6D03;
+		private const int StartProgramCommandId = 0x6D01;
+		private const int StopProgramCommandId = 0x6D02;
+		private const int StartOverlayCommandId = 0x6D03;
+		private const int StopOverlayCommandId = 0x6D04;
+		private const int IdentifyCommandId = 0x6D05;
 		private static readonly WindowProcedure MenuWindowProcedure = HandleWindowMessage;
 		private static readonly IntPtr MenuWindowProcedurePointer = Marshal.GetFunctionPointerForDelegate(MenuWindowProcedure);
 		private static readonly Dictionary<IntPtr, WindowsNativeOutputMenuBackend> Instances = new Dictionary<IntPtr, WindowsNativeOutputMenuBackend>();
@@ -141,8 +174,10 @@ namespace ShitDesigner.Main {
 
 		public void Refresh(OutputMenuState state) {
 			if (m_Disposed || (!EnsureCreated() || (m_HasAppliedState && m_AppliedState.Equals(state)))) return;
-			SetEnabled(StartCommandId, state.CanStart);
-			SetEnabled(StopCommandId, state.CanStop);
+			SetEnabled(StartProgramCommandId, state.CanStartProgram);
+			SetEnabled(StopProgramCommandId, state.CanStopProgram);
+			SetEnabled(StartOverlayCommandId, state.CanStartOverlay);
+			SetEnabled(StopOverlayCommandId, state.CanStopOverlay);
 			SetEnabled(IdentifyCommandId, state.CanIdentifyDisplays);
 			m_AppliedState = state;
 			m_HasAppliedState = true;
@@ -183,8 +218,11 @@ namespace ShitDesigner.Main {
 				return false;
 			}
 
-			AppendMenu(outputMenu, StringItem, new UIntPtr(StartCommandId), "Start External Output");
-			AppendMenu(outputMenu, StringItem, new UIntPtr(StopCommandId), "Stop External Output");
+			AppendMenu(outputMenu, StringItem, new UIntPtr(StartProgramCommandId), "Start Output 1 (Program)");
+			AppendMenu(outputMenu, StringItem, new UIntPtr(StopProgramCommandId), "Stop Output 1 (Program)");
+			AppendMenu(outputMenu, SeparatorItem, UIntPtr.Zero, null);
+			AppendMenu(outputMenu, StringItem, new UIntPtr(StartOverlayCommandId), "Start Output 2 (Overlay)");
+			AppendMenu(outputMenu, StringItem, new UIntPtr(StopOverlayCommandId), "Stop Output 2 (Overlay)");
 			AppendMenu(outputMenu, SeparatorItem, UIntPtr.Zero, null);
 			AppendMenu(outputMenu, StringItem, new UIntPtr(IdentifyCommandId), "Identify Displays");
 			m_OutputMenuPosition = GetMenuItemCount(menuBar);
@@ -215,8 +253,10 @@ namespace ShitDesigner.Main {
 			if (!Instances.TryGetValue(window, out var instance)) return DefWindowProc(window, message, wParam, lParam);
 			if (message == WindowCommandMessage) {
 				switch (unchecked((ushort)wParam.ToInt64())) {
-					case StartCommandId: instance.m_Commands.Enqueue(OutputMenuCommand.Start); return IntPtr.Zero;
-					case StopCommandId: instance.m_Commands.Enqueue(OutputMenuCommand.Stop); return IntPtr.Zero;
+					case StartProgramCommandId: instance.m_Commands.Enqueue(OutputMenuCommand.StartProgram); return IntPtr.Zero;
+					case StopProgramCommandId: instance.m_Commands.Enqueue(OutputMenuCommand.StopProgram); return IntPtr.Zero;
+					case StartOverlayCommandId: instance.m_Commands.Enqueue(OutputMenuCommand.StartOverlay); return IntPtr.Zero;
+					case StopOverlayCommandId: instance.m_Commands.Enqueue(OutputMenuCommand.StopOverlay); return IntPtr.Zero;
 					case IdentifyCommandId: instance.m_Commands.Enqueue(OutputMenuCommand.IdentifyDisplays); return IntPtr.Zero;
 				}
 			}
@@ -257,7 +297,8 @@ namespace ShitDesigner.Main {
 			if (m_Disposed) return;
 			ShitDesignerOutputMenuCreate();
 			if (m_HasAppliedState && m_AppliedState.Equals(state)) return;
-			ShitDesignerOutputMenuSetState(state.CanStart, state.CanStop, state.CanIdentifyDisplays);
+			ShitDesignerOutputMenuSetState(state.CanStartProgram, state.CanStopProgram,
+				state.CanStartOverlay, state.CanStopOverlay, state.CanIdentifyDisplays);
 			m_AppliedState = state;
 			m_HasAppliedState = true;
 		}
@@ -271,8 +312,10 @@ namespace ShitDesigner.Main {
 		[DllImport("__Internal")] private static extern void ShitDesignerOutputMenuCreate();
 		[DllImport("__Internal")] private static extern void ShitDesignerOutputMenuDestroy();
 		[DllImport("__Internal")] private static extern void ShitDesignerOutputMenuSetState(
-			[MarshalAs(UnmanagedType.I1)] bool canStart,
-			[MarshalAs(UnmanagedType.I1)] bool canStop,
+			[MarshalAs(UnmanagedType.I1)] bool canStartProgram,
+			[MarshalAs(UnmanagedType.I1)] bool canStopProgram,
+			[MarshalAs(UnmanagedType.I1)] bool canStartOverlay,
+			[MarshalAs(UnmanagedType.I1)] bool canStopOverlay,
 			[MarshalAs(UnmanagedType.I1)] bool canIdentifyDisplays);
 		[DllImport("__Internal")] [return: MarshalAs(UnmanagedType.I1)] private static extern bool ShitDesignerOutputMenuTryDequeue(out int command);
 	}

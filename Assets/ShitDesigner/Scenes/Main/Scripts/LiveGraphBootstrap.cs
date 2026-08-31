@@ -69,15 +69,18 @@ namespace ShitDesigner.Main {
 			var sceneManager = new SceneIsolationManager(renderSource: new UnityCameraRenderSource());
 			var renderPool = new RenderTexturePool();
 			LiveOverlayCompositor compositor = null;
+			LiveOverlayCompositor overlayOutputCompositor = null;
 			LiveInstantEffectRenderer instantEffects = null;
 			try {
 				compositor = new LiveOverlayCompositor(shaderDefinitions, renderPool, renderSize);
+				overlayOutputCompositor = new LiveOverlayCompositor(shaderDefinitions, renderPool, renderSize);
 				instantEffects = new LiveInstantEffectRenderer(shaderDefinitions, renderPool, renderSize);
 				return new LiveGraph(sceneManager, renderPool, definitions, (patch, outputSize) =>
-					BuildOutput(sceneManager, renderPool, patch, programGraphs[patch.Id], shaderDefinitions, outputSize), compositor, instantEffects);
+					BuildOutput(sceneManager, renderPool, patch, programGraphs[patch.Id], shaderDefinitions, outputSize), compositor, overlayOutputCompositor, instantEffects);
 			}
 			catch {
 				instantEffects?.Dispose();
+				overlayOutputCompositor?.Dispose();
 				compositor?.Dispose();
 				sceneManager.Dispose();
 				renderPool.Dispose();
