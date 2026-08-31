@@ -2910,8 +2910,6 @@ MonoBehaviour:
   m_ShotDurationRange: {x: 2.5, y: 6}
   m_FieldOfViewRange: {x: 30, y: 65}
   m_RandomSeed: 2718
-  m_MovementRange: {x: 0.35, y: 0.2, z: 0.35}
-  m_MovementSpeed: 0.18
 --- !u!1 &1767861253710987001
 GameObject:
   m_ObjectHideFlags: 0
