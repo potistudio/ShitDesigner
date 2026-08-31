@@ -232,6 +232,10 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(host.AssignSelectedSequencerPatch(rememberedOverlayPatch.Id).Accepted, Is.True);
 			yield return null;
 			Assert.That(host.ReadModel.OverlayLanePreviews[1], Is.SameAs(host.ReadModel.OverlayLanePreviews[0]));
+			var sharedOverlayScenePrefix = "ShitDesigner.Main.LiveScene." + rememberedOverlayPatch.Id + ".1920x1080.";
+			Assert.That(Enumerable.Range(0, SceneManager.sceneCount).Select(SceneManager.GetSceneAt)
+				.Count(scene => scene.name.StartsWith(sharedOverlayScenePrefix, System.StringComparison.Ordinal)), Is.EqualTo(1),
+				"Overlay lanes assigned to the same scene must share one full-resolution runtime.");
 			host.MoveCatalogSelection(-1, 0);
 			yield return null;
 			Assert.That(host.ReadModel.SelectedCatalogRole, Is.EqualTo(LiveCatalogRole.Main));
