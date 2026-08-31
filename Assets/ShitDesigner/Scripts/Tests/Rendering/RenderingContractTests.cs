@@ -904,6 +904,22 @@ namespace ShitDesigner.Rendering.Tests {
 							UnityEngine.Object.DestroyImmediate(hdrDestination);
 						}
 					}
+					{
+						var coloredHdrSource = NewHdrTexture(2, 2, new Color(4f, 1f, 0.25f, 1f));
+						var coloredHdrDestination = NewTexture(2, 2, Color.clear);
+						try {
+							pass.Blit(coloredHdrSource, coloredHdrDestination, DisplayTransformMode.HdrAces);
+							yield return null;
+							var coloredHdrPixel = ReadPixel(coloredHdrDestination, 0, 0);
+							var diagnostics = $"source={DescribeTexture(coloredHdrSource)} expected=(4,1,0.25,1); destination={DescribeTexture(coloredHdrDestination)} pixel={DescribePixel(coloredHdrPixel)}";
+							Assert.That(coloredHdrPixel.r - coloredHdrPixel.g, Is.GreaterThan(0.25f), diagnostics);
+							Assert.That(coloredHdrPixel.g, Is.GreaterThan(coloredHdrPixel.b), diagnostics);
+						}
+						finally {
+							UnityEngine.Object.DestroyImmediate(coloredHdrSource);
+							UnityEngine.Object.DestroyImmediate(coloredHdrDestination);
+						}
+					}
 				}
 				finally {
 					UnityEngine.Object.DestroyImmediate(source);

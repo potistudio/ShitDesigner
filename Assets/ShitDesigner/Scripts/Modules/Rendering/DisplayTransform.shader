@@ -43,14 +43,22 @@ Shader "Hidden/ShitDesigner/DisplayTransform"
 				return output;
 			}
 
-			float3 Aces(float3 color)
+			float Aces(float value)
 			{
 				const float a = 2.51;
 				const float b = 0.03;
 				const float c = 2.43;
 				const float d = 0.59;
 				const float e = 0.14;
-				return saturate((color * (a * color + b)) / (color * (c * color + d) + e));
+				return saturate((value * (a * value + b)) / (value * (c * value + d) + e));
+			}
+
+			float3 AcesPreservingChroma(float3 color)
+			{
+				color = max(color, 0.0);
+				float peak = max(color.r, max(color.g, color.b));
+				float mappedPeak = Aces(peak);
+				return color * (mappedPeak / max(peak, 1.0e-6));
 			}
 
 			float3 LinearToSrgb(float3 color)
@@ -75,7 +83,10 @@ Shader "Hidden/ShitDesigner/DisplayTransform"
 				float4 color = tex2D(_MainTex, input.uv);
 				color.rgb = _SourceSrgb > 0.5 ? SrgbToLinear(color.rgb) : color.rgb;
 				color.rgb = _Premultiply > 0.5 ? color.rgb * color.a : color.rgb;
-				float3 rgb = _Mode > 0.5 ? Aces(color.rgb) : max(color.rgb, 0.0);
+				// Mapping each channel independently drives bright colors toward
+				// neutral white. Map the peak once and scale all channels together
+				// so HDR highlights retain their original chroma and hue.
+				float3 rgb = _Mode > 0.5 ? AcesPreservingChroma(color.rgb) : max(color.rgb, 0.0);
 				// Internal surfaces are premultiplied; display output is opaque black.
 				return float4(saturate(LinearToSrgb(rgb)), 1.0);
 			}
