@@ -17,6 +17,8 @@ namespace ShitDesigner.Main {
 	[DefaultExecutionOrder(1000)]
 	public sealed class ApplicationLiveHost : MonoBehaviour {
 		public const int MainCueCount = LiveGraphRuntime.MainCueCount;
+		private const int FollowOverlaySequencer = -1;
+		private const int NoPianoOverlayTake = -2;
 		private static readonly string[] m_EmptyMainCuePatchIds = new string[MainCueCount];
 
 		[SerializeField] private LiveGraphBootstrap _graphBootstrap;
@@ -61,6 +63,8 @@ namespace ShitDesigner.Main {
 		private bool m_IsEffectCategorySelected;
 		private string m_SelectedEffectCategory = string.Empty;
 		private string m_PianoReturnMainPatchId = string.Empty;
+		private readonly int[] m_OverlayTakeOverrides = new int[LiveStepSequencer.OverlayLaneCount];
+		private readonly int[] m_PianoReturnOverlayTakeOverrides = new int[LiveStepSequencer.OverlayLaneCount];
 
 		public ApplicationLiveHostState State { get; private set; } = ApplicationLiveHostState.Cold;
 		public LiveUiReadModel ReadModel { get; private set; }
@@ -104,14 +108,18 @@ namespace ShitDesigner.Main {
 				m_OpenEffectCategory = m_EffectNodes.Length > 0 ? m_EffectNodes[0].Category : string.Empty;
 				m_SelectedEffectCategory = m_OpenEffectCategory;
 				m_IsEffectCategorySelected = false;
+				for (var laneIndex = 0; laneIndex < LiveStepSequencer.OverlayLaneCount; laneIndex++) {
+					m_OverlayTakeOverrides[laneIndex] = FollowOverlaySequencer;
+					m_PianoReturnOverlayTakeOverrides[laneIndex] = NoPianoOverlayTake;
+				}
 				UpdateOverlayComposition(_runtime.BpmFrame.AdjustedTotalBeats);
 				m_IsEditMode = false;
 				m_PianoReturnMainPatchId = string.Empty;
 				ShitDesigner.Runtime.InstantEffectInputMode.SetEditing(false);
-				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, laneIndex => { AssignSelectedOverlayPatchToLane(laneIndex); }, MoveCatalogSelection, () => { LaunchSelectedCatalogPatch(); }, TapBpm,
+				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, BeginPianoOverlayTake, MoveCatalogSelection, () => { LaunchSelectedCatalogPatch(); }, TapBpm,
 					ToggleEditMode, cueIndex => { AssignSelectedEffectToCue(cueIndex); }, () => m_IsEditMode, QueueInstantEffectTrigger,
 					cueIndex => { FocusInstantEffectParameters(cueIndex); }, ToggleSelectedEffectCategory, BeginPianoMainCueSwitch,
-					EndPianoMainCueSwitch, CompleteMainCueSwitch);
+					EndPianoMainCueSwitch, CompleteMainCueSwitch, EndPianoOverlayTake, CompleteOverlayTake);
 				_midiInputManager.InitializeForHostPolling();
 				_shutdown.Add(_midiInputManager.Shutdown);
 				_midi = new LiveMidiInput(_midiInputManager, _parameterQueue, _runtime.Patches,
@@ -300,6 +308,39 @@ namespace ShitDesigner.Main {
 			_parameterQueue.EnqueueToggleMainCue();
 		}
 
+		private void BeginPianoOverlayTake(int laneIndex) {
+			if (!CanTakeOverlayLane(laneIndex) || m_PianoReturnOverlayTakeOverrides[laneIndex] != NoPianoOverlayTake) return;
+			m_PianoReturnOverlayTakeOverrides[laneIndex] = m_OverlayTakeOverrides[laneIndex];
+			m_OverlayTakeOverrides[laneIndex] = IsOverlayLaneTaken(laneIndex) ? 0 : 1;
+		}
+
+		private void EndPianoOverlayTake(int laneIndex) {
+			if (laneIndex < 0 || laneIndex >= m_PianoReturnOverlayTakeOverrides.Length) return;
+			var returnOverride = m_PianoReturnOverlayTakeOverrides[laneIndex];
+			if (returnOverride == NoPianoOverlayTake) return;
+			m_PianoReturnOverlayTakeOverrides[laneIndex] = NoPianoOverlayTake;
+			m_OverlayTakeOverrides[laneIndex] = returnOverride;
+		}
+
+		private void CompleteOverlayTake(int laneIndex) {
+			if (!CanTakeOverlayLane(laneIndex)) return;
+			m_PianoReturnOverlayTakeOverrides[laneIndex] = NoPianoOverlayTake;
+			m_OverlayTakeOverrides[laneIndex] = IsOverlayLaneTaken(laneIndex) ? 0 : 1;
+		}
+
+		private bool CanTakeOverlayLane(int laneIndex) {
+			if (laneIndex < 0 || laneIndex >= LiveStepSequencer.OverlayLaneCount) return false;
+			var overlay = m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).CreateReadModel(0d);
+			return overlay.LanePatchIds.Count > laneIndex && !string.IsNullOrEmpty(overlay.LanePatchIds[laneIndex]);
+		}
+
+		private bool IsOverlayLaneTaken(int laneIndex) {
+			var adjustedTotalBeats = _runtime?.BpmFrame.AdjustedTotalBeats ?? 0d;
+			var overlay = m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay)
+				.CreateReadModel(adjustedTotalBeats, m_OverlayTakeOverrides);
+			return overlay.IsActive(laneIndex, overlay.CurrentStep);
+		}
+
 		private string AlternateMainCuePatchId(string activePatchId)
 			=> MainCuePatchIds.FirstOrDefault(patchId => !string.IsNullOrEmpty(patchId) && patchId != activePatchId) ?? string.Empty;
 
@@ -386,7 +427,7 @@ namespace ShitDesigner.Main {
 
 		private LiveSequencerReadModel UpdateOverlayComposition(double adjustedTotalBeats) {
 			var overlay = m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay)
-				.CreateReadModel(adjustedTotalBeats);
+				.CreateReadModel(adjustedTotalBeats, m_OverlayTakeOverrides);
 			_runtime.SetOverlayComposition(overlay);
 			return overlay;
 		}
@@ -408,7 +449,8 @@ namespace ShitDesigner.Main {
 
 		private LiveSequencerReadModel[] CreateSequencerReadModels() {
 			var adjustedTotalBeats = _runtime?.BpmFrame.AdjustedTotalBeats ?? 0d;
-			return m_Sequencers.Select(sequencer => sequencer.CreateReadModel(adjustedTotalBeats)).ToArray();
+			return m_Sequencers.Select(sequencer => sequencer.CreateReadModel(adjustedTotalBeats,
+				sequencer.Kind == LiveSequencerKind.Overlay ? m_OverlayTakeOverrides : null)).ToArray();
 		}
 
 		private bool IsKnownPatch(string patchId) => !string.IsNullOrWhiteSpace(patchId) && _patchIds.Contains(patchId);
