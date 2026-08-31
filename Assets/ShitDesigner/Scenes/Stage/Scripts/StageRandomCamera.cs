@@ -67,6 +67,17 @@ namespace ShitDesigner.Stage {
 			Advance((float)Math.Min(deltaSeconds, float.MaxValue));
 		}
 
+		public void JumpToNextShot() {
+			Initialize();
+			if (m_Camera == null)
+				return;
+
+			m_FromLocalPosition = m_ToLocalPosition;
+			m_FromFieldOfView = m_ToFieldOfView;
+			SelectNextShot();
+			ApplyCamera();
+		}
+
 		private void Advance(float deltaSeconds) {
 			Initialize();
 			if (m_Camera == null)
