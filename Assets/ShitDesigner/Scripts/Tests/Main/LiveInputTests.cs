@@ -106,6 +106,10 @@ namespace ShitDesigner.Main.Tests {
 				InputSystem.QueueStateEvent(keyboard, new KeyboardState());
 				InputSystem.Update();
 				input.Poll("patch-a");
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.A));
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+				InputSystem.Update();
+				input.Poll("patch-a");
 				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift, Key.A));
 				InputSystem.Update();
 				input.Poll("patch-a");
@@ -113,7 +117,7 @@ namespace ShitDesigner.Main.Tests {
 				InputSystem.Update();
 				input.Poll("patch-a");
 
-				Assert.That(switches, Is.EqualTo(new[] { "begin", "end", "complete" }));
+				Assert.That(switches, Is.EqualTo(new[] { "begin", "end", "begin", "end", "complete" }));
 				Assert.That(queue.Count, Is.Zero);
 			}
 			finally {

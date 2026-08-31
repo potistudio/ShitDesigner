@@ -43,6 +43,7 @@ namespace ShitDesigner.Main {
 		public void Poll(string loadedPatchId) {
 			var keyboard = Keyboard.current;
 			if (keyboard == null || string.IsNullOrWhiteSpace(loadedPatchId)) return;
+			if (EndPianoMainCueSwitchIfReleased(keyboard)) return;
 			if (keyboard.aKey.wasPressedThisFrame) {
 				if (keyboard.shiftKey.isPressed) {
 					m_IsPianoMainCueSwitchHeld = false;
@@ -51,12 +52,8 @@ namespace ShitDesigner.Main {
 				else {
 					m_IsPianoMainCueSwitchHeld = true;
 					m_BeginPianoMainCueSwitch();
+					EndPianoMainCueSwitchIfReleased(keyboard);
 				}
-				return;
-			}
-			if (keyboard.aKey.wasReleasedThisFrame && m_IsPianoMainCueSwitchHeld) {
-				m_IsPianoMainCueSwitchHeld = false;
-				m_EndPianoMainCueSwitch();
 				return;
 			}
 
@@ -75,6 +72,13 @@ namespace ShitDesigner.Main {
 			if (keyboard.enterKey.wasPressedThisFrame) m_LaunchSelectedPatch();
 			if (keyboard.spaceKey.wasPressedThisFrame) m_TapBpm(Time.unscaledTimeAsDouble);
 			QueuePatchKeyboardInputs(keyboard, loadedPatchId);
+		}
+
+		private bool EndPianoMainCueSwitchIfReleased(Keyboard keyboard) {
+			if (!m_IsPianoMainCueSwitchHeld || keyboard.aKey.isPressed) return false;
+			m_IsPianoMainCueSwitchHeld = false;
+			m_EndPianoMainCueSwitch();
+			return true;
 		}
 
 		private void QueuePatchKeyboardInputs(Keyboard keyboard, string loadedPatchId) {
