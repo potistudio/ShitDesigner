@@ -71,6 +71,18 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void HotCueIgnoresValuesWithoutParameterIds() {
+			var hotCue = new PatchHotCue(new PatchGraphParameter[] {
+				null,
+				new PatchGraphParameter(),
+				new PatchGraphParameter(" ", ParameterValue.FromFloat(1f)),
+				new PatchGraphParameter("motion", ParameterValue.FromFloat(2f))
+			});
+
+			Assert.That(hotCue.ConfiguredValues.Select(value => value.Id), Is.EqualTo(new[] { "motion" }));
+		}
+
+		[Test]
 		public void HotCueResolvesAUniqueProgramGraphParameterWithoutPublishingIt() {
 			var graph = new PatchProgramGraph("video", new[] {
 				new PatchGraphNode("video", VideoPlayerContract.NodeTypeId, new[] {

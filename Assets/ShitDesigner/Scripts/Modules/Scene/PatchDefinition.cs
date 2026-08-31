@@ -316,6 +316,8 @@ namespace ShitDesigner.Scene {
 
 		public IReadOnlyList<PatchGraphParameter> Values
 			=> m_Values ?? (IReadOnlyList<PatchGraphParameter>)Array.Empty<PatchGraphParameter>();
+		public IEnumerable<PatchGraphParameter> ConfiguredValues
+			=> Values.Where(value => value != null && !string.IsNullOrWhiteSpace(value.Id));
 
 		public PatchHotCue() { }
 
@@ -468,10 +470,11 @@ namespace ShitDesigner.Scene {
 			for (var hotCueIndex = 0; hotCueIndex < HotCueCount; hotCueIndex++) {
 				var hotCue = GetHotCue(hotCueIndex);
 				if (hotCue == null) continue;
-				if (hotCue.Values.Any(value => value == null || string.IsNullOrWhiteSpace(value.Id) || !value.TryGetValue(out _)))
-					return Failure("patch.definition.hot_cue.value", "Every Hot Cue value requires a Program Graph parameter ID and finite value.");
+				var values = hotCue.ConfiguredValues.ToArray();
+				if (values.Any(value => !value.TryGetValue(out _)))
+					return Failure("patch.definition.hot_cue.value", "Every configured Hot Cue value requires a finite value.");
 				var targets = new HashSet<string>(StringComparer.Ordinal);
-				foreach (var value in hotCue.Values) {
+				foreach (var value in values) {
 					if (!ProgramGraph.TryResolveHotCueTarget(value, out var graphNode))
 						return Failure("patch.definition.hot_cue.parameter", "A Hot Cue references an unknown or ambiguous Program Graph parameter.");
 					if (!targets.Add(graphNode.Id + "\n" + value.Id))

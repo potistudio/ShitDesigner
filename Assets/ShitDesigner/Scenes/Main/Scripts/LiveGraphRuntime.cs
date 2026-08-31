@@ -1832,11 +1832,11 @@ namespace ShitDesigner.Main {
 				return false;
 			}
 			var hotCue = Definition.GetHotCue(hotCueIndex);
-			if (hotCue == null || hotCue.Values.Count == 0) {
+			if (hotCue == null) {
 				rejectionReason = string.Empty;
 				return true;
 			}
-			foreach (var value in hotCue.Values) {
+			foreach (var value in hotCue.ConfiguredValues) {
 				if (!Definition.ProgramGraph.TryResolveHotCueTarget(value, out var graphNode)) {
 					rejectionReason = "A Hot Cue references an unknown or ambiguous Program Graph parameter.";
 					return false;
