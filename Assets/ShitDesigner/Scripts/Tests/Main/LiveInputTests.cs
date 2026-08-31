@@ -138,6 +138,77 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void ShiftAAndBracketRecallTheOppositeHotCueBeforeSwitching() {
+			Keyboard keyboard = null;
+			try {
+				keyboard = InputSystem.AddDevice<Keyboard>();
+				keyboard.MakeCurrent();
+				var queue = new LiveParameterQueue();
+				var input = new LiveKeyboardInput(queue, new PatchDefinition[0], _ => { }, (_, _) => { }, () => { }, _ => { },
+					completeMainCueSwitch: () => queue.EnqueueToggleMainCue());
+
+				PollKey(input, keyboard, Key.LeftShift, Key.A, Key.LeftBracket);
+
+				var requests = new List<LiveParameterRequest>();
+				queue.Drain(requests);
+				Assert.That(requests.Select(request => request.Kind), Is.EqualTo(new[] {
+					LiveParameterRequestKind.RecallOppositeHotCue,
+					LiveParameterRequestKind.ToggleMainCue
+				}));
+				Assert.That(requests[0].ParameterValue.AsInt(), Is.Zero);
+			}
+			finally {
+				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
+			}
+		}
+
+		[Test]
+		public void ShiftAAndBracketStayOnTargetAcrossAdjacentFrameOrder() {
+			Keyboard keyboard = null;
+			try {
+				keyboard = InputSystem.AddDevice<Keyboard>();
+				keyboard.MakeCurrent();
+				var queue = new LiveParameterQueue();
+				var input = new LiveKeyboardInput(queue, new PatchDefinition[0], _ => { }, (_, _) => { }, () => { }, _ => { },
+					completeMainCueSwitch: () => queue.EnqueueToggleMainCue());
+
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift, Key.A));
+				InputSystem.Update();
+				input.Poll("patch-a");
+				var requests = new List<LiveParameterRequest>();
+				queue.Drain(requests);
+				Assert.That(requests.Select(request => request.Kind), Is.EqualTo(new[] { LiveParameterRequestKind.ToggleMainCue }));
+
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift, Key.A, Key.LeftBracket));
+				InputSystem.Update();
+				input.Poll("patch-a");
+				requests.Clear();
+				queue.Drain(requests);
+				Assert.That(requests.Select(request => request.Kind), Is.EqualTo(new[] { LiveParameterRequestKind.RecallHotCue }));
+				Assert.That(requests[0].ParameterValue.AsInt(), Is.Zero);
+
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+				InputSystem.Update();
+				input.Poll("patch-a");
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift, Key.LeftBracket));
+				InputSystem.Update();
+				input.Poll("patch-a");
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift, Key.A));
+				InputSystem.Update();
+				input.Poll("patch-a");
+				requests.Clear();
+				queue.Drain(requests);
+				Assert.That(requests.Select(request => request.Kind), Is.EqualTo(new[] {
+					LiveParameterRequestKind.RecallOppositeHotCue,
+					LiveParameterRequestKind.ToggleMainCue
+				}));
+			}
+			finally {
+				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
+			}
+		}
+
+		[Test]
 		public void KeyboardAUsesPianoSwitchAndShiftASwitchesCompletely() {
 			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.A));
 			Keyboard keyboard = null;
