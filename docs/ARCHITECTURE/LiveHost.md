@@ -221,6 +221,7 @@
 - `PatchDefinition` はProgram Graphパラメーター値の組み合わせとしてHot Cueを最大2つ保持する。別ファイルやMain Cueスロットには保存しない。
 - `[`はHot Cue 1、`]`はHot Cue 2を現在のMainパッチへ適用する。未設定のHot Cueは適用しない。
 - `Shift+[`と`Shift+]`は同じ番号のHot Cueを反対側のMain Cueスロットに読み込まれたパッチへ適用する。反対側が空なら何もしない。
+- `Shift+A`と`[`または`]`を組み合わせると、キーの検出順にかかわらず切替先へHot Cueを適用し、Main Cue切替は1回だけ実行する。同時検出時はHot Cueを先に適用する。
 - VideoPlayerの`Playing`、`Playhead`、`Speed`、`Loop`は公開パラメーターにしなくてもHot Cueから直接変更でき、保存済みPlayheadへのSeekを同じライブTickで行う。
 - Hot Cueの呼び出しはMain Cueのパッチ割り当て、優勢Cue、基準Cueおよびフェーダー位置を変更しない。MainパッチのLaunchやMain Cue切替もHot Cueを発火しない。
 

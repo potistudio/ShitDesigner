@@ -30,6 +30,7 @@ namespace ShitDesigner.Main {
 		private readonly Action m_EndPianoMainCueSwitch;
 		private readonly Action m_CompleteMainCueSwitch;
 		private bool m_IsPianoMainCueSwitchHeld;
+		private bool m_HasCompletedMainCueSwitchForCurrentAPress;
 		private int m_HeldPianoOverlayTakeMask;
 
 		public LiveKeyboardInput(LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches, Action<int> beginPianoOverlayTake, Action<int, int> moveCatalogSelection, Action launchSelectedPatch, Action<double> tapBpm,
@@ -66,6 +67,7 @@ namespace ShitDesigner.Main {
 		public void Poll(string loadedPatchId) {
 			var keyboard = Keyboard.current;
 			if (keyboard == null || string.IsNullOrWhiteSpace(loadedPatchId)) return;
+			if (!keyboard.aKey.isPressed) m_HasCompletedMainCueSwitchForCurrentAPress = false;
 			EndReleasedPianoOverlayTakes(keyboard);
 			if (EndPianoMainCueSwitchIfReleased(keyboard)) return;
 			if (keyboard.tabKey.wasPressedThisFrame && keyboard.shiftKey.isPressed) {
@@ -88,17 +90,17 @@ namespace ShitDesigner.Main {
 				return;
 			}
 			if (keyboard.leftBracketKey.wasPressedThisFrame) {
-				m_Queue.EnqueueRecallHotCue(0, keyboard.shiftKey.isPressed);
+				RecallHotCue(keyboard, 0);
 				return;
 			}
 			if (keyboard.rightBracketKey.wasPressedThisFrame) {
-				m_Queue.EnqueueRecallHotCue(1, keyboard.shiftKey.isPressed);
+				RecallHotCue(keyboard, 1);
 				return;
 			}
 			if (keyboard.aKey.wasPressedThisFrame) {
 				if (keyboard.shiftKey.isPressed || keyboard.leftShiftKey.wasPressedThisFrame || keyboard.rightShiftKey.wasPressedThisFrame) {
 					m_IsPianoMainCueSwitchHeld = false;
-					m_CompleteMainCueSwitch();
+					CompleteMainCueSwitchOnceForCurrentAPress();
 				}
 				else {
 					m_IsPianoMainCueSwitchHeld = true;
@@ -129,6 +131,24 @@ namespace ShitDesigner.Main {
 			if (keyboard.spaceKey.wasPressedThisFrame) m_TapBpm(Time.unscaledTimeAsDouble);
 			if (CuePressedInstantEffects(keyboard)) return;
 			QueuePatchKeyboardInputs(keyboard, loadedPatchId);
+		}
+
+		private void RecallHotCue(Keyboard keyboard, int hotCueIndex) {
+			var shiftPressed = keyboard.shiftKey.isPressed || keyboard.leftShiftKey.wasPressedThisFrame
+				|| keyboard.rightShiftKey.wasPressedThisFrame;
+			var shouldCompleteMainCueSwitch = shiftPressed && keyboard.aKey.isPressed
+				&& !m_HasCompletedMainCueSwitchForCurrentAPress;
+			var oppositeScene = shiftPressed && (!keyboard.aKey.isPressed || shouldCompleteMainCueSwitch);
+			m_Queue.EnqueueRecallHotCue(hotCueIndex, oppositeScene);
+			if (!shouldCompleteMainCueSwitch) return;
+			m_IsPianoMainCueSwitchHeld = false;
+			CompleteMainCueSwitchOnceForCurrentAPress();
+		}
+
+		private void CompleteMainCueSwitchOnceForCurrentAPress() {
+			if (m_HasCompletedMainCueSwitchForCurrentAPress) return;
+			m_HasCompletedMainCueSwitchForCurrentAPress = true;
+			m_CompleteMainCueSwitch();
 		}
 
 		private bool EndPianoMainCueSwitchIfReleased(Keyboard keyboard) {
