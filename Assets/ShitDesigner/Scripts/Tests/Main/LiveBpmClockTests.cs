@@ -1,3 +1,4 @@
+using System.Reflection;
 using NUnit.Framework;
 using ShitDesigner.Rendering;
 using UnityEngine;
@@ -5,6 +6,21 @@ using UnityEngine;
 namespace ShitDesigner.Main.Tests {
 	[TestFixture]
 	public sealed class LiveBpmClockTests {
+		[Test]
+		public void BootstrapDefaultsToVisibleNonLinearTimeEasing() {
+			var host = new GameObject("Global Time Easing Bootstrap Test");
+			try {
+				var bootstrap = host.AddComponent<LiveGraphBootstrap>();
+				var field = typeof(LiveGraphBootstrap).GetField("m_GlobalTimeEasing", BindingFlags.Instance | BindingFlags.NonPublic);
+				var curve = field?.GetValue(bootstrap) as AnimationCurve;
+
+				Assert.That(curve, Is.Not.Null);
+				Assert.That(curve.Evaluate(.25f), Is.LessThan(.25f));
+				Assert.That(curve.Evaluate(.75f), Is.GreaterThan(.75f));
+			}
+			finally { Object.DestroyImmediate(host); }
+		}
+
 		[Test]
 		public void ChangingBpmPreservesTheAccumulatedGlobalBeat() {
 			var clock = new LiveBpmClock(120f);
