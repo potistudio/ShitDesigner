@@ -200,6 +200,8 @@ namespace ShitDesigner.Main {
 
 		public void SetSceneActive(bool active) => _programGraph.SetSceneActive(active);
 
+		public void RecallPatchState() => _programGraph.RecallPatchState();
+
 		public void Render(double graphTime, ulong frameNumber) {
 			_programGraph.Render(_shaderGraphTexture, graphTime, frameNumber);
 			Graphics.Blit(_shaderGraphTexture, ProgramTexture);
@@ -755,6 +757,7 @@ namespace ShitDesigner.Main {
 		void SceneUpdate(double deltaSeconds);
 		void Render(IReadOnlyDictionary<string, Texture> outputs, double graphTime, ulong frameNumber);
 		bool TrySetParameter(string parameterId, ParameterValue value, out string rejectionReason);
+		void RecallPatchState();
 	}
 
 	internal sealed class LiveProgramSceneGraphNode : ILiveProgramGraphNode {
@@ -813,6 +816,8 @@ namespace ShitDesigner.Main {
 			return m_Root.TrySetParameter(parameterId, value.AsFloat(), out rejectionReason);
 		}
 
+		public void RecallPatchState() { }
+
 		public bool TryGetParameter(string parameterId, out LiveParameterDefinition definition) {
 			definition = m_Root.GetParameterDefinitions().FirstOrDefault(candidate => candidate.Id == parameterId);
 			return !string.IsNullOrWhiteSpace(definition.Id);
@@ -859,6 +864,8 @@ namespace ShitDesigner.Main {
 		public bool TrySetParameter(string parameterId, ParameterValue value, out string rejectionReason)
 			=> _runtime.TrySetDirectParameter(parameterId, value, out rejectionReason);
 
+		public void RecallPatchState() { }
+
 		public void Dispose() {
 			_runtime.Dispose();
 			ReleaseTexture(Target);
@@ -872,16 +879,122 @@ namespace ShitDesigner.Main {
 		}
 	}
 
+	internal sealed class LiveVideoTransportState {
+		private const double PositionTolerance = 1e-9d;
+		private readonly bool m_AuthoredPlaying;
+		private readonly double m_AuthoredPlayheadSeconds;
+		private readonly float m_AuthoredSpeed;
+		private readonly bool m_AuthoredLoop;
+		private double m_AnchorGraphTime;
+		private bool m_AnchorPending;
+
+		public bool Playing { get; private set; }
+		public double PlayheadSeconds { get; private set; }
+		public float Speed { get; private set; }
+		public bool Loop { get; private set; }
+		public bool SeekPending { get; private set; }
+		public bool SettingsPending { get; private set; }
+
+		public LiveVideoTransportState(bool playing, double playheadSeconds, float speed, bool loop) {
+			if (double.IsNaN(playheadSeconds) || double.IsInfinity(playheadSeconds) || playheadSeconds < 0d)
+				throw new ArgumentOutOfRangeException(nameof(playheadSeconds));
+			if (float.IsNaN(speed) || float.IsInfinity(speed) || speed < 0f || speed > 4f)
+				throw new ArgumentOutOfRangeException(nameof(speed));
+			m_AuthoredPlaying = Playing = playing;
+			m_AuthoredPlayheadSeconds = PlayheadSeconds = playheadSeconds;
+			m_AuthoredSpeed = Speed = speed;
+			m_AuthoredLoop = Loop = loop;
+			SeekPending = playheadSeconds > PositionTolerance;
+		}
+
+		public double LogicalPosition(double graphTime, double durationSeconds) {
+			if (m_AnchorPending) {
+				m_AnchorGraphTime = graphTime;
+				m_AnchorPending = false;
+			}
+			var position = Playing
+				? PlayheadSeconds + Math.Max(0d, graphTime - m_AnchorGraphTime) * Speed
+				: PlayheadSeconds;
+			if (durationSeconds <= 0d) return position;
+			return Loop ? position % durationSeconds : Math.Min(position, durationSeconds);
+		}
+
+		public bool TrySetParameter(string parameterId, ParameterValue value, double graphTime, double durationSeconds,
+			out string rejectionReason) {
+			if (parameterId == VideoPlayerContract.PlayingParameterId) {
+				if (value.Type != ParameterType.Bool) return Reject("Playing requires a Bool value.", out rejectionReason);
+				Reanchor(graphTime, durationSeconds);
+				Playing = value.AsBool();
+				rejectionReason = string.Empty;
+				return true;
+			}
+			if (parameterId == VideoPlayerContract.PlayheadParameterId) {
+				if (value.Type != ParameterType.Float) return Reject("Playhead requires a Float value.", out rejectionReason);
+				var playhead = value.AsFloat();
+				if (float.IsNaN(playhead) || float.IsInfinity(playhead) || playhead < 0f)
+					return Reject("Playhead must be finite and non-negative.", out rejectionReason);
+				PlayheadSeconds = durationSeconds > 0d ? Math.Min(playhead, durationSeconds) : playhead;
+				if (!m_AnchorPending) m_AnchorGraphTime = graphTime;
+				SeekPending = true;
+				rejectionReason = string.Empty;
+				return true;
+			}
+			if (parameterId == VideoPlayerContract.SpeedParameterId) {
+				if (value.Type != ParameterType.Float) return Reject("Speed requires a Float value.", out rejectionReason);
+				var speed = value.AsFloat();
+				if (float.IsNaN(speed) || float.IsInfinity(speed) || speed < 0f || speed > 4f)
+					return Reject("Speed must be between 0 and 4.", out rejectionReason);
+				Reanchor(graphTime, durationSeconds);
+				Speed = speed;
+				SettingsPending = true;
+				rejectionReason = string.Empty;
+				return true;
+			}
+			if (parameterId == VideoPlayerContract.LoopParameterId) {
+				if (value.Type != ParameterType.Bool) return Reject("Loop requires a Bool value.", out rejectionReason);
+				Reanchor(graphTime, durationSeconds);
+				Loop = value.AsBool();
+				SettingsPending = true;
+				rejectionReason = string.Empty;
+				return true;
+			}
+			return Reject("The video transport parameter is unknown.", out rejectionReason);
+		}
+
+		public void RecallAuthoredState() {
+			Playing = m_AuthoredPlaying;
+			PlayheadSeconds = m_AuthoredPlayheadSeconds;
+			Speed = m_AuthoredSpeed;
+			Loop = m_AuthoredLoop;
+			m_AnchorPending = true;
+			SeekPending = true;
+			SettingsPending = true;
+		}
+
+		public void MarkSeekApplied() => SeekPending = false;
+		public void MarkSettingsApplied() => SettingsPending = false;
+
+		private void Reanchor(double graphTime, double durationSeconds) {
+			if (m_AnchorPending) return;
+			PlayheadSeconds = LogicalPosition(graphTime, durationSeconds);
+			m_AnchorGraphTime = graphTime;
+		}
+
+		private static bool Reject(string reason, out string rejectionReason) {
+			rejectionReason = reason;
+			return false;
+		}
+	}
+
 	internal sealed class LiveProgramFileVideoGraphNode : ILiveProgramGraphNode {
 		private readonly IVideoBackendHandle m_Backend;
 		private readonly HapUnityGraphicsBridge m_HapBridge;
 		private readonly IVideoFrameConversionPass m_Conversion;
 		private readonly VideoProbeResult m_Probe;
 		private readonly RenderTexture m_Target;
-		private readonly bool m_Playing;
-		private readonly double m_Playhead;
-		private readonly float m_Speed;
-		private readonly bool m_Loop;
+		private readonly LiveVideoTransportState m_Transport;
+		private double m_LastGraphTime;
+		private bool m_AwaitingSeekCompletion;
 		private bool m_Disposed;
 
 		public string Id { get; }
@@ -898,10 +1011,7 @@ namespace ShitDesigner.Main {
 
 			Id = id.Trim();
 			m_Target = target;
-			m_Playing = playing;
-			m_Playhead = playhead;
-			m_Speed = speed;
-			m_Loop = loop;
+			m_Transport = new LiveVideoTransportState(playing, playhead, speed, loop);
 
 			var sourcePath = ResolveSourcePath(videoPath);
 			var probe = new FileVideoMetadataProbe().Probe(sourcePath);
@@ -953,15 +1063,25 @@ namespace ShitDesigner.Main {
 
 		public void Render(IReadOnlyDictionary<string, Texture> outputs, double graphTime, ulong frameNumber) {
 			if (m_Disposed) throw new ObjectDisposedException(nameof(LiveProgramFileVideoGraphNode));
-			var sync = m_Backend.SyncToGraphClock(LogicalPosition(graphTime), demanded: true);
+			m_LastGraphTime = graphTime;
+			ApplyPendingTransportSettings();
+			var logicalPosition = m_Transport.LogicalPosition(graphTime, m_Probe.DurationSeconds);
+			if (m_AwaitingSeekCompletion && IsReady()) m_AwaitingSeekCompletion = false;
+			if (m_Transport.SeekPending && IsReady()) {
+				var seek = m_Backend.Seek(logicalPosition);
+				if (seek.IsFailure) throw new InvalidOperationException(seek.Error.Message);
+				m_Transport.MarkSeekApplied();
+				m_AwaitingSeekCompletion = true;
+			}
+			var sync = m_Backend.SyncToGraphClock(logicalPosition, demanded: true);
 			if (sync.IsFailure) throw new InvalidOperationException(sync.Error.Message);
 
-			if (IsReady() || m_Backend.BackendKind == VideoBackendKind.HapVideoBackend) {
-				if (m_Playing && m_Backend.State != VideoBackendState.Playing) {
+			if (!m_AwaitingSeekCompletion && (IsReady() || m_Backend.BackendKind == VideoBackendKind.HapVideoBackend)) {
+				if (m_Transport.Playing && m_Backend.State != VideoBackendState.Playing) {
 					var play = m_Backend.Play();
 					if (play.IsFailure) throw new InvalidOperationException(play.Error.Message);
 				}
-				else if (!m_Playing && m_Backend.State == VideoBackendState.Playing) {
+				else if (!m_Transport.Playing && m_Backend.State == VideoBackendState.Playing) {
 					var pause = m_Backend.Pause();
 					if (pause.IsFailure) throw new InvalidOperationException(pause.Error.Message);
 				}
@@ -982,9 +1102,11 @@ namespace ShitDesigner.Main {
 		}
 
 		public bool TrySetParameter(string parameterId, ParameterValue value, out string rejectionReason) {
-			rejectionReason = "Video player parameters cannot be changed by a live patch parameter.";
-			return false;
+			return m_Transport.TrySetParameter(parameterId, value, m_LastGraphTime, m_Probe.DurationSeconds,
+				out rejectionReason);
 		}
+
+		public void RecallPatchState() => m_Transport.RecallAuthoredState();
 
 		public void Dispose() {
 			if (m_Disposed) return;
@@ -1001,11 +1123,14 @@ namespace ShitDesigner.Main {
 				|| m_Backend.State == VideoBackendState.Paused;
 		}
 
-		private double LogicalPosition(double graphTime) {
-			var position = m_Playing ? m_Playhead + Math.Max(0d, graphTime) * m_Speed : m_Playhead;
-			if (m_Probe.DurationSeconds <= 0d) return position;
-			if (m_Loop) return position % m_Probe.DurationSeconds;
-			return Math.Min(position, m_Probe.DurationSeconds);
+		private void ApplyPendingTransportSettings() {
+			if (!m_Transport.SettingsPending) return;
+			if (m_Backend.BackendKind == VideoBackendKind.HapVideoBackend && !IsReady()) return;
+			var speed = m_Backend.SetSpeed(m_Transport.Speed);
+			if (speed.IsFailure) throw new InvalidOperationException(speed.Error.Message);
+			var loop = m_Backend.SetLoop(m_Transport.Loop);
+			if (loop.IsFailure) throw new InvalidOperationException(loop.Error.Message);
+			m_Transport.MarkSettingsApplied();
 		}
 
 		private static string ResolveSourcePath(string storedPath) {
@@ -1042,10 +1167,8 @@ namespace ShitDesigner.Main {
 		private readonly GameObject _host;
 		private readonly VideoPlayer _player;
 		private readonly RenderTexture _target;
-		private readonly bool _playing;
-		private readonly double _playhead;
-		private readonly float _speed;
-		private readonly bool _loop;
+		private readonly LiveVideoTransportState m_Transport;
+		private double m_LastGraphTime;
 		private bool _playheadApplied;
 		private bool _disposed;
 
@@ -1061,10 +1184,7 @@ namespace ShitDesigner.Main {
 
 			Id = id.Trim();
 			_target = target;
-			_playing = playing;
-			_playhead = playhead;
-			_speed = speed;
-			_loop = loop;
+			m_Transport = new LiveVideoTransportState(playing, playhead, speed, loop);
 			_host = new GameObject("ShitDesigner.Main.Video." + Id);
 			try {
 				_player = _host.AddComponent<VideoPlayer>();
@@ -1075,8 +1195,8 @@ namespace ShitDesigner.Main {
 				_player.sendFrameReadyEvents = false;
 				_player.source = UnityEngine.Video.VideoSource.VideoClip;
 				_player.clip = clip;
-				_player.isLooping = _loop;
-				_player.playbackSpeed = _speed;
+				_player.isLooping = m_Transport.Loop;
+				_player.playbackSpeed = m_Transport.Speed;
 				_player.Prepare();
 			}
 			catch {
@@ -1091,14 +1211,22 @@ namespace ShitDesigner.Main {
 
 		public void Render(IReadOnlyDictionary<string, Texture> outputs, double graphTime, ulong frameNumber) {
 			if (_disposed) throw new ObjectDisposedException(nameof(LiveProgramVideoGraphNode));
+			m_LastGraphTime = graphTime;
 			if (_player.isPrepared) {
-				if (!_playheadApplied) {
-					_player.time = _playhead;
-					_playheadApplied = true;
+				if (m_Transport.SettingsPending) {
+					_player.isLooping = m_Transport.Loop;
+					_player.playbackSpeed = m_Transport.Speed;
+					m_Transport.MarkSettingsApplied();
 				}
-				if (_playing) {
+				var logicalPosition = m_Transport.LogicalPosition(graphTime, _player.length);
+				if (!_playheadApplied || m_Transport.SeekPending) {
+					_player.time = logicalPosition;
+					_playheadApplied = true;
+					m_Transport.MarkSeekApplied();
+				}
+				if (m_Transport.Playing) {
 					_player.timeReference = VideoTimeReference.ExternalTime;
-					_player.externalReferenceTime = _playhead + graphTime;
+					_player.externalReferenceTime = logicalPosition;
 					if (!_player.isPlaying) _player.Play();
 				}
 				else if (_player.isPlaying) _player.Pause();
@@ -1110,8 +1238,13 @@ namespace ShitDesigner.Main {
 		}
 
 		public bool TrySetParameter(string parameterId, ParameterValue value, out string rejectionReason) {
-			rejectionReason = "Video player parameters cannot be changed by a live patch parameter.";
-			return false;
+			return m_Transport.TrySetParameter(parameterId, value, m_LastGraphTime, _player == null ? 0d : _player.length,
+				out rejectionReason);
+		}
+
+		public void RecallPatchState() {
+			m_Transport.RecallAuthoredState();
+			_playheadApplied = false;
 		}
 
 		public void Dispose() {
@@ -1167,6 +1300,10 @@ namespace ShitDesigner.Main {
 
 		public void SetSceneActive(bool active) {
 			foreach (var node in _nodes.OfType<LiveProgramSceneGraphNode>()) node.SetSceneActive(active);
+		}
+
+		public void RecallPatchState() {
+			foreach (var node in _nodes) node.RecallPatchState();
 		}
 
 		public void Render(RenderTexture destination, double graphTime, ulong frameNumber) {
@@ -1297,8 +1434,7 @@ namespace ShitDesigner.Main {
 			}
 			if (request.Kind == LiveParameterRequestKind.ToggleMainCue) {
 				if (m_MainCuePatches.Any(patch => patch == null)) return Reject(request, "Both Main Cue slots must be assigned before switching.");
-				m_MainCueFader.ToggleReferenceCue();
-				RefreshMainCueActivation();
+				ActivateMainCue(1 - m_MainCueFader.DominantCueIndex);
 				return Accept(request);
 			}
 			if (request.Kind == LiveParameterRequestKind.SetParameter
@@ -1584,6 +1720,7 @@ namespace ShitDesigner.Main {
 		private void ActivateMainCue(int cueIndex) {
 			var nextPatch = m_MainCuePatches[cueIndex];
 			if (nextPatch == null) throw new InvalidOperationException("The requested Cue Slot is empty.");
+			nextPatch.RecallAuthoredState();
 			m_MainCueFader.SetReferenceCue(cueIndex);
 			RefreshMainCueActivation();
 		}
@@ -1692,6 +1829,11 @@ namespace ShitDesigner.Main {
 					throw new InvalidOperationException("The resolved patch parameter could not be applied: " + rejectionReason);
 		}
 
+		public void RecallAuthoredState() {
+			foreach (var parameter in _parameters.Values) parameter.ResetToAuthoredValue();
+			foreach (var output in Outputs) output.RecallPatchState();
+		}
+
 		public void SetSceneActive(bool active) {
 			foreach (var output in Outputs) output.SetSceneActive(active);
 		}
@@ -1705,11 +1847,13 @@ namespace ShitDesigner.Main {
 		LiveParameterDefinition ToDefinition();
 		bool TrySetParameter(ParameterValue value, out string rejectionReason);
 		bool TryApplyResolvedValue(BeatClockFrame frame, out string rejectionReason);
+		void ResetToAuthoredValue();
 	}
 
 	internal sealed class LivePublishedParameter : ILivePublishedParameter {
 		private readonly PatchParameter _definition;
 		private readonly bool _isTriggerParameter;
+		private readonly float m_AuthoredBaseValue;
 		private float _baseValue;
 		private bool _isDirty;
 		private bool _hasResolvedValue;
@@ -1722,7 +1866,7 @@ namespace ShitDesigner.Main {
 			Root = root ?? throw new ArgumentNullException(nameof(root));
 			Source = source;
 			_isTriggerParameter = Root.IsTriggerParameter(source.Id);
-			_baseValue = source.Value;
+			m_AuthoredBaseValue = _baseValue = source.Value;
 			_lastResolvedValue = source.Value;
 			_hasResolvedValue = true;
 		}
@@ -1740,6 +1884,11 @@ namespace ShitDesigner.Main {
 			_isDirty = true;
 			rejectionReason = string.Empty;
 			return true;
+		}
+
+		public void ResetToAuthoredValue() {
+			_baseValue = m_AuthoredBaseValue;
+			_isDirty = true;
 		}
 
 		public bool TryApplyResolvedValue(BeatClockFrame frame, out string rejectionReason) {
@@ -1773,6 +1922,7 @@ namespace ShitDesigner.Main {
 	internal sealed class LivePublishedGraphParameter : ILivePublishedParameter {
 		private readonly PatchParameter _definition;
 		private readonly IReadOnlyCollection<LiveProgramOutput> _outputs;
+		private readonly ParameterValue m_AuthoredBaseValue;
 		private ParameterValue _baseValue;
 		private bool _isDirty;
 		private bool _hasResolvedValue;
@@ -1781,7 +1931,7 @@ namespace ShitDesigner.Main {
 		public LivePublishedGraphParameter(PatchParameter definition, IReadOnlyCollection<LiveProgramOutput> outputs, ParameterValue value) {
 			_definition = definition ?? throw new ArgumentNullException(nameof(definition));
 			_outputs = outputs ?? throw new ArgumentNullException(nameof(outputs));
-			_baseValue = value;
+			m_AuthoredBaseValue = _baseValue = value;
 			_lastResolvedValue = value;
 			_hasResolvedValue = true;
 		}
@@ -1798,6 +1948,11 @@ namespace ShitDesigner.Main {
 			_isDirty = true;
 			rejectionReason = string.Empty;
 			return true;
+		}
+
+		public void ResetToAuthoredValue() {
+			_baseValue = m_AuthoredBaseValue;
+			_isDirty = true;
 		}
 
 		public bool TryApplyResolvedValue(BeatClockFrame frame, out string rejectionReason) {

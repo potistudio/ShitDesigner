@@ -216,6 +216,13 @@
 - INSTANT FXの初期パラメーターはShaderが定義するMaterial既定値から取得する。Amount／Mixは適用度として1に設定するが、BlurのRadiusなどFX固有の強度はShader既定値を保持し、0で効果が消える状態を作らない。
 - 最後に割り当てた、またはパラメーターフォーカスしたCueをライブパラメーターの対象とし、そのFXノードが持つ操作可能なパラメーターを定義順で最大8本公開する。変更値は対象CueのRuntimeインスタンスに保持し、別Cueの同型FXとは共有しない。
 
+### 2026-09-01: パッチのLaunchをHot Cueとして扱う
+
+- Hot Cueの指定状態は別ファイルやセッション状態へ複製せず、`PatchDefinition` のProgram Graphノードパラメーターと公開パラメーター初期値を正本とする。
+- MainパッチのLaunch、プリロード済みCueへの完全切替、および同じパッチの再Launchでは、次のライブTickの評価前に保存済みパッチ状態を復元する。
+- VideoPlayerはパッチに保存された`Playing`、`Playhead`、`Speed`、`Loop`へ戻し、保存済みPlayheadへSeekしてから再生を継続する。同じパッチを再Launchした場合もPlayheadを再Cueする。
+- Main Cueフェーダーの連続操作はHot Cueを発火しない。フェーダー移動中の意図しない映像巻き戻しを避け、完全切替操作だけを状態復元の境界とする。
+
 ### 2026-08-31: Shift+TabでINSTANT FX素材の編集モードを切り替える
 
 - `Shift+Tab` は通常操作と編集モードを切り替える。編集モードへ入るとFXカタログを選択し、上下矢印はFXカタログ内だけを移動する。

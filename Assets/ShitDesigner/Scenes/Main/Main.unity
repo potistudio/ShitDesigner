@@ -198,6 +198,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e70675f945db47619b0d81845399094c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.LiveGraphBootstrap
+  m_GlobalTimeEasing:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
   m_MainPatches:
   - {fileID: 11400000, guid: 676bb92178ab54e4e9bc2b3470397018, type: 2}
   - {fileID: 11400000, guid: 477d17e1b62db5b44a5724c3f0583302, type: 2}
