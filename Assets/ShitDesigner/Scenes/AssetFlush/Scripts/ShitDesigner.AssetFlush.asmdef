@@ -1,7 +1,10 @@
 {
   "name": "ShitDesigner.AssetFlush",
   "rootNamespace": "ShitDesigner.AssetFlush",
-  "references": [],
+  "references": [
+    "ShitDesigner.Media",
+    "ShitDesigner.Scene"
+  ],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,

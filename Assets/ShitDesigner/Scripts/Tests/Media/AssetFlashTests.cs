@@ -56,5 +56,28 @@ namespace ShitDesigner.Tests.Media {
 				Object.DestroyImmediate(host);
 			}
 		}
+
+		[Test]
+		public void Component_RandomTriggerSelectsOnlyConfiguredSlots() {
+			var host = new GameObject("AssetFlashRandomTest");
+			var image = new Texture2D(2, 2);
+			try {
+				var component = host.AddComponent<AssetFlashComponent>();
+				component.SetImage(6, image);
+
+				Assert.That(component.TryTriggerRandom(), Is.True);
+				Assert.That(component.ActiveSlot, Is.EqualTo(6));
+				Assert.That(component.OutputTexture, Is.SameAs(image));
+
+				component.SetImage(6, null);
+				Assert.That(component.TryTriggerRandom(), Is.False);
+				Assert.That(component.ActiveSlot, Is.Zero);
+				Assert.That(component.OutputTexture, Is.Null);
+			}
+			finally {
+				Object.DestroyImmediate(image);
+				Object.DestroyImmediate(host);
+			}
+		}
 	}
 }
