@@ -25,6 +25,8 @@ namespace ShitDesigner.Main {
 		[SerializeField] private LiveExternalDisplayOutput _externalDisplay;
 		[SerializeField] private LiveUiController _uiController;
 		[SerializeField] private bool _bootOnAwake = true;
+		[SerializeField, Range(1, 16)] private int m_MainCueFaderChannel = 16;
+		[SerializeField, Range(0, 127)] private int m_MainCueFaderControlNumber = 5;
 
 		private readonly LiveParameterQueue _parameterQueue = new LiveParameterQueue();
 		private readonly LiveBpmTap _bpmTap = new LiveBpmTap();
@@ -112,7 +114,8 @@ namespace ShitDesigner.Main {
 					EndPianoMainCueSwitch, CompleteMainCueSwitch);
 				_midiInputManager.InitializeForHostPolling();
 				_shutdown.Add(_midiInputManager.Shutdown);
-				_midi = new LiveMidiInput(_midiInputManager, _parameterQueue, _runtime.Patches);
+				_midi = new LiveMidiInput(_midiInputManager, _parameterQueue, _runtime.Patches,
+					m_MainCueFaderChannel, m_MainCueFaderControlNumber);
 				_shutdown.Add(() => { _midi?.Dispose(); _midi = null; });
 				_externalDisplay.Initialize();
 				_shutdown.Add(_externalDisplay.Shutdown);
@@ -294,8 +297,7 @@ namespace ShitDesigner.Main {
 
 		private void CompleteMainCueSwitch() {
 			m_PianoReturnMainPatchId = string.Empty;
-			var targetPatchId = AlternateMainCuePatchId(_runtime?.LoadedPatchId);
-			if (!string.IsNullOrEmpty(targetPatchId)) _parameterQueue.EnqueueLoadPatch(targetPatchId);
+			_parameterQueue.EnqueueToggleMainCue();
 		}
 
 		private string AlternateMainCuePatchId(string activePatchId)

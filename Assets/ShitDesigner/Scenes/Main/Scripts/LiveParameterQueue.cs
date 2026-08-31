@@ -9,7 +9,9 @@ namespace ShitDesigner.Main {
 		LaunchPatch,
 		SetParameter,
 		SetBpm,
-		AlignBeat
+		AlignBeat,
+		SetMainCueFader,
+		ToggleMainCue
 	}
 
 	public readonly struct LiveParameterRequest {
@@ -78,6 +80,15 @@ namespace ShitDesigner.Main {
 		public LiveParameterEnqueueResult EnqueueAlignBeat()
 			=> Enqueue(LiveParameterRequestKind.AlignBeat, string.Empty, string.Empty, ParameterValue.FromFloat(0f));
 
+		public LiveParameterEnqueueResult EnqueueSetMainCueFader(float normalizedValue)
+			=> float.IsNaN(normalizedValue) || float.IsInfinity(normalizedValue)
+				? LiveParameterEnqueueResult.Reject("The Main Cue fader value must be finite.")
+				: Enqueue(LiveParameterRequestKind.SetMainCueFader, string.Empty, string.Empty,
+					ParameterValue.FromFloat(Math.Max(0f, Math.Min(1f, normalizedValue))));
+
+		public LiveParameterEnqueueResult EnqueueToggleMainCue()
+			=> Enqueue(LiveParameterRequestKind.ToggleMainCue, string.Empty, string.Empty, ParameterValue.FromFloat(0f));
+
 		public int Drain(ICollection<LiveParameterRequest> destination) {
 			if (destination == null) throw new ArgumentNullException(nameof(destination));
 
@@ -98,7 +109,8 @@ namespace ShitDesigner.Main {
 		}
 
 		private static bool IsGlobalRequest(LiveParameterRequestKind kind)
-			=> kind == LiveParameterRequestKind.SetBpm || kind == LiveParameterRequestKind.AlignBeat;
+			=> kind == LiveParameterRequestKind.SetBpm || kind == LiveParameterRequestKind.AlignBeat
+				|| kind == LiveParameterRequestKind.SetMainCueFader || kind == LiveParameterRequestKind.ToggleMainCue;
 
 		private ulong NextSequenceNumber() {
 			var sequenceNumber = _nextSequenceNumber++;

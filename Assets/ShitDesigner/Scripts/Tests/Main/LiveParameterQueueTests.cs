@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using ShitDesigner.Core;
 
@@ -85,6 +86,25 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.AlignBeat));
 			Assert.That(requests[0].PatchId, Is.Empty);
 			Assert.That(requests[0].Value, Is.Zero);
+		}
+
+		[Test]
+		public void MainCueControlsQueueGlobalRequestsWithoutPatchIds() {
+			var queue = new LiveParameterQueue();
+
+			var fader = queue.EnqueueSetMainCueFader(.75f);
+			var toggle = queue.EnqueueToggleMainCue();
+
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+			Assert.That(fader.Accepted, Is.True);
+			Assert.That(toggle.Accepted, Is.True);
+			Assert.That(requests.Select(request => request.Kind), Is.EqualTo(new[] {
+				LiveParameterRequestKind.SetMainCueFader,
+				LiveParameterRequestKind.ToggleMainCue
+			}));
+			Assert.That(requests, Has.All.Matches<LiveParameterRequest>(request => request.PatchId == string.Empty));
+			Assert.That(requests[0].Value, Is.EqualTo(.75f));
 		}
 
 		[Test]
