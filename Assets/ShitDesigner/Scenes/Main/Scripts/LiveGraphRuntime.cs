@@ -71,15 +71,17 @@ namespace ShitDesigner.Main {
 		private readonly Func<PatchDefinition, LiveRenderSize, LiveProgramOutput> _createOutput;
 		public IReadOnlyList<PatchDefinition> PatchDefinitions { get; }
 		public LiveOverlayCompositor Compositor { get; }
+		public LiveOverlayCompositor OverlayOutputCompositor { get; }
 		public LiveInstantEffectRenderer InstantEffects { get; }
 
 		public LiveGraph(SceneIsolationManager sceneManager, RenderTexturePool renderPool, IEnumerable<PatchDefinition> patchDefinitions,
-			Func<PatchDefinition, LiveRenderSize, LiveProgramOutput> createOutput, LiveOverlayCompositor compositor,
+			Func<PatchDefinition, LiveRenderSize, LiveProgramOutput> createOutput, LiveOverlayCompositor compositor, LiveOverlayCompositor overlayOutputCompositor,
 			LiveInstantEffectRenderer instantEffects) {
 			_sceneManager = sceneManager ?? throw new ArgumentNullException(nameof(sceneManager));
 			_renderPool = renderPool ?? throw new ArgumentNullException(nameof(renderPool));
 			_createOutput = createOutput ?? throw new ArgumentNullException(nameof(createOutput));
 			Compositor = compositor ?? throw new ArgumentNullException(nameof(compositor));
+			OverlayOutputCompositor = overlayOutputCompositor ?? throw new ArgumentNullException(nameof(overlayOutputCompositor));
 			InstantEffects = instantEffects ?? throw new ArgumentNullException(nameof(instantEffects));
 			PatchDefinitions = (patchDefinitions ?? throw new ArgumentNullException(nameof(patchDefinitions))).ToArray();
 			if (PatchDefinitions.Count == 0) throw new ArgumentException("A live graph requires patches.");
@@ -90,6 +92,7 @@ namespace ShitDesigner.Main {
 
 		public void Dispose() {
 			InstantEffects.Dispose();
+			OverlayOutputCompositor.Dispose();
 			Compositor.Dispose();
 			_sceneManager.Dispose();
 			_renderPool.Dispose();
@@ -330,6 +333,7 @@ namespace ShitDesigner.Main {
 			if (renderPool == null) throw new ArgumentNullException(nameof(renderPool));
 			try {
 				Output = CreateTexture("ShitDesigner.Main.Composite.Output", renderSize);
+				ClearTexture(Output);
 				m_Scratch[0] = CreateTexture("ShitDesigner.Main.Composite.Scratch.0", renderSize);
 				m_Scratch[1] = CreateTexture("ShitDesigner.Main.Composite.Scratch.1", renderSize);
 				m_InvertedOverlay = CreateTexture("ShitDesigner.Main.Composite.InvertedOverlay", renderSize);
@@ -435,6 +439,13 @@ namespace ShitDesigner.Main {
 			if (texture.Create()) return texture;
 			ReleaseTexture(texture);
 			throw new InvalidOperationException("An overlay compositor texture could not be created.");
+		}
+
+		private static void ClearTexture(RenderTexture texture) {
+			var previous = RenderTexture.active;
+			RenderTexture.active = texture;
+			GL.Clear(true, true, Color.black);
+			RenderTexture.active = previous;
 		}
 
 		private static void ReleaseTexture(RenderTexture texture) {
@@ -1250,7 +1261,10 @@ namespace ShitDesigner.Main {
 			m_MainCuePatchIds[0] = graph.PatchDefinitions[0].Id;
 			m_ActiveMainCueIndex = 0;
 			LoadedMainPatch.SetSceneActive(true);
-			CurrentFrames = new LiveProgramFrames(LoadedMainPatch.Outputs.Select(output => new LiveProgramFrame(output.ProgramTexture, 0)));
+			CurrentFrames = new LiveProgramFrames(new[] {
+				new LiveProgramFrame(LoadedMainPatch.Outputs[0].ProgramTexture, 0),
+				new LiveProgramFrame(_graph.OverlayOutputCompositor.Output, 0)
+			});
 			CurrentFrame = CurrentFrames.Primary;
 		}
 
@@ -1350,10 +1364,15 @@ namespace ShitDesigner.Main {
 			var mainTexture = referencePatch?.Outputs.Count > 0 ? referencePatch.Outputs[0].ProgramTexture : null;
 			var alternateTexture = alternatePatch?.Outputs.Count > 0 ? alternatePatch.Outputs[0].ProgramTexture : null;
 			var composite = _graph.Compositor.Render(mainTexture, alternateTexture, m_MainCueFader.AlternateOpacity,
-				overlayInputs, nextFrame, _graphTime);
+				Array.Empty<LiveOverlayInput>(), nextFrame, _graphTime);
 			var programOutput = _graph.InstantEffects.Render(composite, instantEffectTriggers, nextFrame, _graphTime);
+			var overlayOutput = _graph.OverlayOutputCompositor.Render(Texture2D.blackTexture, null, 0f,
+				overlayInputs, nextFrame, _graphTime);
 			_frameNumber = nextFrame;
-			CurrentFrames = new LiveProgramFrames(new[] { new LiveProgramFrame(programOutput, _frameNumber) });
+			CurrentFrames = new LiveProgramFrames(new[] {
+				new LiveProgramFrame(programOutput, _frameNumber),
+				new LiveProgramFrame(overlayOutput, _frameNumber)
+			});
 			CurrentFrame = CurrentFrames.Primary;
 			return CurrentFrames;
 		}

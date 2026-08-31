@@ -33,8 +33,9 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(runtime.MainCuePatchIds, Is.EqualTo(new[] { host.ReadModel.LoadedPatchId, string.Empty }));
 			Assert.That(host.MainCuePatchIds, Is.EqualTo(runtime.MainCuePatchIds));
 			Assert.That(runtime.ActiveMainCueIndex, Is.Zero);
-			Assert.That(runtime.CurrentFrames.Count, Is.EqualTo(1));
+			Assert.That(runtime.CurrentFrames.Count, Is.EqualTo(2));
 			Assert.That(runtime.CurrentFrames[0].Texture, Is.SameAs(host.ReadModel.ProgramTexture));
+			Assert.That(runtime.CurrentFrames[1].Texture, Is.Not.SameAs(runtime.CurrentFrames[0].Texture));
 			Assert.That(HasVisiblePixels(host.ReadModel.ProgramTexture), Is.True);
 
 			var loadedPatchId = host.ReadModel.LoadedPatchId;
@@ -315,16 +316,20 @@ namespace ShitDesigner.Main.Tests {
 			for (var frame = 0; frame < 60 && host.ReadModel.LoadedPatchId != rememberedMainPatch.Id; frame++) yield return null;
 			Assert.That(host.ReadModel.LoadedPatchId, Is.EqualTo(rememberedMainPatch.Id));
 			var mainOnlyProgramTexture = host.ReadModel.ProgramTexture;
+			var overlayOutputTexture = host.ReadModel.ProgramFrames[1].Texture;
 			var overlaySequencer = host.ReadModel.Sequencers.Single(sequencer => sequencer.Kind == LiveSequencerKind.Overlay);
 			var triggerStep = (overlaySequencer.CurrentStep + 1) % LiveStepSequencer.StepCount;
 			Assert.That(host.CycleSequencerCellMode(LiveSequencerKind.Overlay, 0, triggerStep).Accepted, Is.True);
 			for (var frame = 0; frame < 120 && host.ReadModel.Sequencers.Single(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).CurrentStep != triggerStep; frame++) yield return null;
 			Assert.That(host.ReadModel.LoadedPatchId, Is.EqualTo(rememberedMainPatch.Id));
 			Assert.That(host.ReadModel.ProgramTexture, Is.Not.Null);
-			Assert.That(host.ReadModel.ProgramTexture, Is.Not.SameAs(mainOnlyProgramTexture));
+			Assert.That(host.ReadModel.ProgramTexture, Is.SameAs(mainOnlyProgramTexture));
 			Assert.That(HasVisiblePixels(host.ReadModel.ProgramTexture), Is.True);
+			Assert.That(host.ReadModel.ProgramFrames[1].Texture, Is.SameAs(overlayOutputTexture));
+			Assert.That(HasVisiblePixels(overlayOutputTexture), Is.True);
 			for (var frame = 0; frame < 120 && host.ReadModel.Sequencers.Single(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).CurrentStep == triggerStep; frame++) yield return null;
 			Assert.That(host.ReadModel.ProgramTexture, Is.SameAs(mainOnlyProgramTexture));
+			Assert.That(HasVisiblePixels(overlayOutputTexture), Is.False);
 
 			var midi = (Component)typeof(ApplicationLiveHost).GetField("_midiInputManager", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(host);
 			host.Shutdown();

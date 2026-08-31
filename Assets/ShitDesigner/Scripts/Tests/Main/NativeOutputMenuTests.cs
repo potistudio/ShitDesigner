@@ -5,25 +5,32 @@ namespace ShitDesigner.Main.Tests {
 	public sealed class NativeOutputMenuTests {
 		[Test]
 		public void ControllerReflectsAvailabilityAndDispatchesNativeCommands() {
-			var target = new RecordingOutputTarget { IsAvailable = true };
+			var target = new RecordingOutputTarget(programAvailable: true, overlayAvailable: true);
 			var backend = new RecordingOutputMenuBackend();
 			using (var controller = new LiveOutputMenuController(target, backend)) {
 				controller.Tick();
-				Assert.That(backend.LastState.CanStart, Is.True);
-				Assert.That(backend.LastState.CanStop, Is.False);
+				Assert.That(backend.LastState.CanStartProgram, Is.True);
+				Assert.That(backend.LastState.CanStopProgram, Is.False);
+				Assert.That(backend.LastState.CanStartOverlay, Is.True);
+				Assert.That(backend.LastState.CanStopOverlay, Is.False);
 				Assert.That(backend.LastState.CanIdentifyDisplays, Is.True);
 
-				backend.Enqueue(OutputMenuCommand.Start);
+				backend.Enqueue(OutputMenuCommand.StartProgram);
+				backend.Enqueue(OutputMenuCommand.StartOverlay);
 				controller.Tick();
-				Assert.That(target.IsOutputActive, Is.True);
-				Assert.That(backend.LastState.CanStart, Is.False);
-				Assert.That(backend.LastState.CanStop, Is.True);
+				Assert.That(target.IsActive(LiveOutputKind.Program), Is.True);
+				Assert.That(target.IsActive(LiveOutputKind.Overlay), Is.True);
+				Assert.That(backend.LastState.CanStartProgram, Is.False);
+				Assert.That(backend.LastState.CanStopProgram, Is.True);
+				Assert.That(backend.LastState.CanStartOverlay, Is.False);
+				Assert.That(backend.LastState.CanStopOverlay, Is.True);
 
 				backend.Enqueue(OutputMenuCommand.IdentifyDisplays);
-				backend.Enqueue(OutputMenuCommand.Stop);
+				backend.Enqueue(OutputMenuCommand.StopProgram);
 				controller.Tick();
 				Assert.That(target.IdentifyCount, Is.EqualTo(1));
-				Assert.That(target.IsOutputActive, Is.False);
+				Assert.That(target.IsActive(LiveOutputKind.Program), Is.False);
+				Assert.That(target.IsActive(LiveOutputKind.Overlay), Is.True);
 			}
 
 			Assert.That(backend.Disposed, Is.True);
@@ -31,31 +38,42 @@ namespace ShitDesigner.Main.Tests {
 
 		[Test]
 		public void ControllerIgnoresCommandsThatAreUnavailable() {
-			var target = new RecordingOutputTarget();
+			var target = new RecordingOutputTarget(programAvailable: false, overlayAvailable: false);
 			var backend = new RecordingOutputMenuBackend();
 			using (var controller = new LiveOutputMenuController(target, backend)) {
-				backend.Enqueue(OutputMenuCommand.Start);
-				backend.Enqueue(OutputMenuCommand.Stop);
+				backend.Enqueue(OutputMenuCommand.StartProgram);
+				backend.Enqueue(OutputMenuCommand.StopProgram);
+				backend.Enqueue(OutputMenuCommand.StartOverlay);
+				backend.Enqueue(OutputMenuCommand.StopOverlay);
 				backend.Enqueue(OutputMenuCommand.IdentifyDisplays);
 				controller.Tick();
 			}
 
 			Assert.That(target.SetActiveCount, Is.Zero);
 			Assert.That(target.IdentifyCount, Is.Zero);
-			Assert.That(backend.LastState.CanStart, Is.False);
-			Assert.That(backend.LastState.CanStop, Is.False);
+			Assert.That(backend.LastState.CanStartProgram, Is.False);
+			Assert.That(backend.LastState.CanStopProgram, Is.False);
+			Assert.That(backend.LastState.CanStartOverlay, Is.False);
+			Assert.That(backend.LastState.CanStopOverlay, Is.False);
 			Assert.That(backend.LastState.CanIdentifyDisplays, Is.False);
 		}
 
 		private sealed class RecordingOutputTarget : ILiveOutputMenuTarget {
-			public bool IsOutputActive { get; private set; }
-			public bool IsAvailable { get; set; }
+			private readonly bool[] m_Active = new bool[2];
+			private readonly bool[] m_Available;
 			public int SetActiveCount { get; private set; }
 			public int IdentifyCount { get; private set; }
 
-			public bool SetOutputActive(bool active) {
+			public RecordingOutputTarget(bool programAvailable, bool overlayAvailable) {
+				m_Available = new[] { programAvailable, overlayAvailable };
+			}
+
+			public bool IsActive(LiveOutputKind output) => m_Active[(int)output];
+			public bool IsOutputAvailable(LiveOutputKind output) => m_Available[(int)output];
+
+			public bool SetOutputActive(LiveOutputKind output, bool active) {
 				SetActiveCount++;
-				IsOutputActive = active;
+				m_Active[(int)output] = active;
 				return true;
 			}
 

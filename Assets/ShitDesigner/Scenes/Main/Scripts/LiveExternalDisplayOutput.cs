@@ -17,16 +17,18 @@ namespace ShitDesigner.Main {
 	/// <summary>Owns external Display activation, display transform, and Program frame presentation.</summary>
 	[DisallowMultipleComponent]
 	public sealed class LiveExternalDisplayOutput : MonoBehaviour, ILiveOutputMenuTarget {
+		private const int OutputCount = 2;
 		[SerializeField] private Shader _displayTransformShader;
 
 		private DisplayTransformPass _displayTransform;
 		private readonly Dictionary<int, DisplayOutput> _outputs = new Dictionary<int, DisplayOutput>();
+		private readonly bool[] m_OutputActive = new bool[OutputCount];
 		private ulong _presentedFrameNumber;
 		private bool _initialized;
 
 		public int ConnectedDisplayCount => Display.displays?.Length ?? 0;
-		public IReadOnlyList<int> ConnectedExternalDisplayNumbers => Enumerable.Range(2, Math.Max(0, ConnectedDisplayCount - 1)).ToArray();
-		public bool IsOutputActive { get; private set; }
+		public IReadOnlyList<int> ConnectedExternalDisplayNumbers => Enumerable.Range(2, Math.Min(OutputCount, Math.Max(0, ConnectedDisplayCount - 1))).ToArray();
+		public bool IsOutputActive => m_OutputActive.Any(active => active);
 		public bool IsAvailable => !UnityEngine.Application.isEditor && ConnectedDisplayCount > 1;
 		public ulong PresentedFrameNumber => _presentedFrameNumber;
 		public string DisplayIdentity => DescribeDisplays();
@@ -39,24 +41,32 @@ namespace ShitDesigner.Main {
 			_initialized = true;
 		}
 
-		public bool SetOutputActive(bool active) {
+		public bool IsActive(LiveOutputKind output) => m_OutputActive[OutputIndex(output)];
+
+		public bool IsOutputAvailable(LiveOutputKind output)
+			=> !UnityEngine.Application.isEditor && ConnectedDisplayCount > OutputIndex(output) + 1;
+
+		public bool SetOutputActive(LiveOutputKind output, bool active) {
 			if (!_initialized) return Fail("External Display output is not initialized.");
+			var outputIndex = OutputIndex(output);
+			var displayNumber = outputIndex + 2;
 			if (!active) {
-				IsOutputActive = false;
-				foreach (var output in _outputs.Values) {
-					output.Clear();
-					output.SetVisible(false);
+				m_OutputActive[outputIndex] = false;
+				if (_outputs.TryGetValue(displayNumber, out var displayOutput)) {
+					displayOutput.Clear();
+					displayOutput.Present();
 				}
+				ApplyOutputVisibility();
 				LastError = string.Empty;
 				return true;
 			}
-			if (!IsAvailable) return Fail(UnityEngine.Application.isEditor
+			if (!IsOutputAvailable(output)) return Fail(UnityEngine.Application.isEditor
 				? "External Display output requires a standalone Player."
-				: "No external Display is connected.");
+				: $"Display {displayNumber} is not connected.");
 
 			if (OutputsDoNotMatchConnectedDisplays()) RebuildOutputs();
-			foreach (var output in _outputs.Values) output.SetVisible(true);
-			IsOutputActive = true;
+			m_OutputActive[outputIndex] = true;
+			ApplyOutputVisibility();
 			LastError = string.Empty;
 			return true;
 		}
@@ -68,22 +78,22 @@ namespace ShitDesigner.Main {
 			var outputsRebuilt = false;
 			if (IsOutputActive && OutputsDoNotMatchConnectedDisplays()) {
 				RebuildOutputs();
-				foreach (var output in _outputs.Values) output.SetVisible(true);
+				ApplyOutputVisibility();
 				outputsRebuilt = true;
 			}
 			if (frames.Primary.FrameNumber == _presentedFrameNumber && !outputsRebuilt) return;
 			foreach (var output in _outputs) {
 				var frameIndex = output.Key - 2;
-				if (frameIndex < frames.Count && frames[frameIndex].Texture != null)
+				if (m_OutputActive[frameIndex] && frameIndex < frames.Count && frames[frameIndex].Texture != null)
 					_displayTransform.Blit(frames[frameIndex].Texture, output.Value.Texture, DisplayTransformMode.HdrAces);
 				else output.Value.Clear();
 			}
-			foreach (var output in _outputs.Values) output.Present();
+			foreach (var output in _outputs) if (m_OutputActive[output.Key - 2]) output.Value.Present();
 			_presentedFrameNumber = frames.Primary.FrameNumber;
 		}
 
 		public void Shutdown() {
-			IsOutputActive = false;
+			Array.Clear(m_OutputActive, 0, m_OutputActive.Length);
 			_initialized = false;
 			_presentedFrameNumber = 0;
 			DestroyOutputs();
@@ -95,8 +105,13 @@ namespace ShitDesigner.Main {
 
 		private bool Fail(string error) {
 			LastError = error;
-			IsOutputActive = false;
 			return false;
+		}
+
+		private static int OutputIndex(LiveOutputKind output) {
+			var index = (int)output;
+			if (index < 0 || index >= OutputCount) throw new ArgumentOutOfRangeException(nameof(output));
+			return index;
 		}
 
 		private void ActivateDisplay(Display display, WindowsDisplayWindowController windowController) {
@@ -111,7 +126,7 @@ namespace ShitDesigner.Main {
 
 		private void RebuildOutputs() {
 			DestroyOutputs();
-			for (var displayNumber = 2; displayNumber <= ConnectedDisplayCount; displayNumber++) {
+			for (var displayNumber = 2; displayNumber <= Math.Min(ConnectedDisplayCount, OutputCount + 1); displayNumber++) {
 				var output = CreateOutput(displayNumber);
 				// Unity's secondary Metal swapchain intermittently presents the main
 				// window on macOS. The native presenter owns that screen instead.
@@ -121,6 +136,7 @@ namespace ShitDesigner.Main {
 #endif
 				_outputs.Add(displayNumber, output);
 			}
+			ApplyOutputVisibility();
 		}
 
 		private DisplayOutput CreateOutput(int displayNumber) {
@@ -157,10 +173,16 @@ namespace ShitDesigner.Main {
 		}
 
 		private bool OutputsDoNotMatchConnectedDisplays() {
-			if (_outputs.Count != ConnectedDisplayCount - 1) return true;
-			for (var displayNumber = 2; displayNumber <= ConnectedDisplayCount; displayNumber++)
+			var connectedOutputCount = Math.Min(OutputCount, Math.Max(0, ConnectedDisplayCount - 1));
+			if (_outputs.Count != connectedOutputCount) return true;
+			for (var displayNumber = 2; displayNumber <= connectedOutputCount + 1; displayNumber++)
 				if (!_outputs.ContainsKey(displayNumber)) return true;
 			return false;
+		}
+
+		private void ApplyOutputVisibility() {
+			foreach (var output in _outputs) output.Value.SetContentVisible(m_OutputActive[output.Key - 2]);
+			foreach (var output in _outputs.Values) output.SetWindowsVisible(IsOutputActive);
 		}
 
 		private void DestroyOutputs() {
@@ -212,7 +234,7 @@ namespace ShitDesigner.Main {
 #endif
 			}
 
-			public void SetVisible(bool visible) {
+			public void SetContentVisible(bool visible) {
 #if UNITY_STANDALONE_OSX && !UNITY_EDITOR
 				if (m_MacPresenter != null) {
 					m_MacPresenter.SetVisible(visible);
@@ -220,8 +242,9 @@ namespace ShitDesigner.Main {
 				}
 #endif
 				Canvas.enabled = visible;
-				WindowController.SetOutputVisible(visible);
 			}
+
+			public void SetWindowsVisible(bool visible) => WindowController?.SetOutputVisible(visible);
 
 			public void Clear() => ClearTexture(Texture);
 

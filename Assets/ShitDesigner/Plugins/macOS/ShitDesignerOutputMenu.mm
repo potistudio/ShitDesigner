@@ -9,9 +9,11 @@ using NativeClass = void *;
 using NativeImplementation = void (*)();
 
 enum OutputMenuCommand {
-  StartOutput = 0,
-  StopOutput = 1,
-  IdentifyDisplays = 2
+  StartProgramOutput = 0,
+  StopProgramOutput = 1,
+  StartOverlayOutput = 2,
+  StopOverlayOutput = 3,
+  IdentifyDisplays = 4
 };
 
 static void *s_appKitLibrary;
@@ -20,8 +22,10 @@ static NativeObject s_mainMenu;
 static NativeObject s_topItem;
 static NativeObject s_submenu;
 static NativeObject s_target;
-static NativeObject s_startItem;
-static NativeObject s_stopItem;
+static NativeObject s_startProgramItem;
+static NativeObject s_stopProgramItem;
+static NativeObject s_startOverlayItem;
+static NativeObject s_stopOverlayItem;
 static NativeObject s_identifyItem;
 static std::deque<int> s_commands;
 
@@ -62,7 +66,7 @@ void Release(NativeObject value) {
 
 void HandleOutputMenuItem(NativeObject, NativeSelector, NativeObject sender) {
   const auto tag = SendMessage<std::intptr_t>(sender, "tag");
-  if (tag >= StartOutput && tag <= IdentifyDisplays)
+  if (tag >= StartProgramOutput && tag <= IdentifyDisplays)
     s_commands.push_back(static_cast<int>(tag));
 }
 
@@ -146,19 +150,32 @@ ShitDesignerOutputMenuCreate(void) {
   SendMessage<void>(s_submenu,
                     "setAutoenablesItems:", static_cast<signed char>(false));
   const auto action = s_registerSelector("handleOutputMenuItem:");
-  s_startItem = CreateMenuItem("Start External Output", action, StartOutput);
-  s_stopItem = CreateMenuItem("Stop External Output", action, StopOutput);
+  s_startProgramItem =
+      CreateMenuItem("Start Output 1 (Program)", action, StartProgramOutput);
+  s_stopProgramItem =
+      CreateMenuItem("Stop Output 1 (Program)", action, StopProgramOutput);
+  s_startOverlayItem =
+      CreateMenuItem("Start Output 2 (Overlay)", action, StartOverlayOutput);
+  s_stopOverlayItem =
+      CreateMenuItem("Stop Output 2 (Overlay)", action, StopOverlayOutput);
   s_identifyItem =
       CreateMenuItem("Identify Displays", action, IdentifyDisplays);
-  for (const auto item : {s_startItem, s_stopItem, s_identifyItem})
+  for (const auto item : {s_startProgramItem, s_stopProgramItem,
+                          s_startOverlayItem, s_stopOverlayItem,
+                          s_identifyItem})
     SendMessage<void>(item, "setTarget:", s_target);
-  SendMessage<void>(s_submenu, "addItem:", s_startItem);
-  SendMessage<void>(s_submenu, "addItem:", s_stopItem);
-  const auto separator =
+  SendMessage<void>(s_submenu, "addItem:", s_startProgramItem);
+  SendMessage<void>(s_submenu, "addItem:", s_stopProgramItem);
+  auto separator =
+      SendMessage<NativeObject>(s_getClass("NSMenuItem"), "separatorItem");
+  SendMessage<void>(s_submenu, "addItem:", separator);
+  SendMessage<void>(s_submenu, "addItem:", s_startOverlayItem);
+  SendMessage<void>(s_submenu, "addItem:", s_stopOverlayItem);
+  separator =
       SendMessage<NativeObject>(s_getClass("NSMenuItem"), "separatorItem");
   SendMessage<void>(s_submenu, "addItem:", separator);
   SendMessage<void>(s_submenu, "addItem:", s_identifyItem);
-  s_topItem = CreateMenuItem("Output", nullptr, StartOutput);
+  s_topItem = CreateMenuItem("Output", nullptr, StartProgramOutput);
   SendMessage<void>(s_topItem, "setSubmenu:", s_submenu);
   SendMessage<void>(s_mainMenu, "addItem:", s_topItem);
 }
@@ -167,14 +184,18 @@ extern "C" __attribute__((visibility("default"))) void
 ShitDesignerOutputMenuDestroy(void) {
   if (s_mainMenu != nullptr && s_topItem != nullptr)
     SendMessage<void>(s_mainMenu, "removeItem:", s_topItem);
-  Release(s_startItem);
-  Release(s_stopItem);
+  Release(s_startProgramItem);
+  Release(s_stopProgramItem);
+  Release(s_startOverlayItem);
+  Release(s_stopOverlayItem);
   Release(s_identifyItem);
   Release(s_topItem);
   Release(s_submenu);
   Release(s_target);
-  s_startItem = nullptr;
-  s_stopItem = nullptr;
+  s_startProgramItem = nullptr;
+  s_stopProgramItem = nullptr;
+  s_startOverlayItem = nullptr;
+  s_stopOverlayItem = nullptr;
   s_identifyItem = nullptr;
   s_topItem = nullptr;
   s_submenu = nullptr;
@@ -184,14 +205,19 @@ ShitDesignerOutputMenuDestroy(void) {
 }
 
 extern "C" __attribute__((visibility("default"))) void
-ShitDesignerOutputMenuSetState(bool canStart, bool canStop,
+ShitDesignerOutputMenuSetState(bool canStartProgram, bool canStopProgram,
+                               bool canStartOverlay, bool canStopOverlay,
                                bool canIdentifyDisplays) {
   if (!EnsureRuntime())
     return;
-  SendMessage<void>(s_startItem,
-                    "setEnabled:", static_cast<signed char>(canStart));
-  SendMessage<void>(s_stopItem,
-                    "setEnabled:", static_cast<signed char>(canStop));
+  SendMessage<void>(s_startProgramItem, "setEnabled:",
+                    static_cast<signed char>(canStartProgram));
+  SendMessage<void>(s_stopProgramItem, "setEnabled:",
+                    static_cast<signed char>(canStopProgram));
+  SendMessage<void>(s_startOverlayItem, "setEnabled:",
+                    static_cast<signed char>(canStartOverlay));
+  SendMessage<void>(s_stopOverlayItem, "setEnabled:",
+                    static_cast<signed char>(canStopOverlay));
   SendMessage<void>(s_identifyItem, "setEnabled:",
                     static_cast<signed char>(canIdentifyDisplays));
 }
