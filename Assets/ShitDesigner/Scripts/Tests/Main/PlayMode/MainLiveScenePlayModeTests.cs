@@ -11,6 +11,32 @@ using UnityEngine.TestTools;
 namespace ShitDesigner.Main.Tests {
 	public sealed class MainLiveScenePlayModeTests {
 		[UnityTest]
+		public IEnumerator BlackoutClearsRenderedProgramAndOverlayFramesAndThenRestoresRendering() {
+			SceneManager.LoadScene("Main", LoadSceneMode.Single);
+			yield return null;
+
+			var host = Object.FindAnyObjectByType<ApplicationLiveHost>();
+			Assert.That(host, Is.Not.Null);
+			for (var frame = 0; frame < 60 && (host.State != ApplicationLiveHostState.Running || host.ReadModel?.ProgramFrameNumber == 0); frame++)
+				yield return null;
+			Assert.That(host.State, Is.EqualTo(ApplicationLiveHostState.Running), host.LastDiagnostic);
+			host.enabled = false;
+
+			var runtime = (LiveGraphRuntime)typeof(ApplicationLiveHost).GetField("_runtime", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(host);
+			Assert.That(runtime, Is.Not.Null);
+			Assert.That(HasVisiblePixels(runtime.CurrentFrames.Primary.Texture), Is.True);
+
+			var blackoutFrames = runtime.Render(blackout: true);
+			Assert.That(blackoutFrames.Count, Is.EqualTo(2));
+			Assert.That(HasVisiblePixels(blackoutFrames[0].Texture), Is.False);
+			Assert.That(HasVisiblePixels(blackoutFrames[1].Texture), Is.False);
+
+			var restoredFrames = runtime.Render();
+			Assert.That(HasVisiblePixels(restoredFrames.Primary.Texture), Is.True);
+			host.Shutdown();
+		}
+
+		[UnityTest]
 		public IEnumerator SceneTimeJogReturnsToNormalAfterOneEvaluation() {
 			SceneManager.LoadScene("Main", LoadSceneMode.Single);
 			yield return null;

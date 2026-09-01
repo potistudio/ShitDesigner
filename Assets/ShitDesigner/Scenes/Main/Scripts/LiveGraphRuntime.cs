@@ -1535,7 +1535,7 @@ namespace ShitDesigner.Main {
 				foreach (var output in overlay.Outputs) output.SceneUpdate(m_LastGraphDeltaSeconds);
 		}
 
-		public LiveProgramFrames Render(IReadOnlyList<int> instantEffectTriggers = null) {
+		public LiveProgramFrames Render(IReadOnlyList<int> instantEffectTriggers = null, bool blackout = false) {
 			EnsureUsable();
 			var nextFrame = _frameNumber + 1;
 			if (nextFrame == 0) nextFrame = 1;
@@ -1561,6 +1561,10 @@ namespace ShitDesigner.Main {
 			var programOutput = _graph.InstantEffects.Render(composite, instantEffectTriggers, nextFrame, m_GraphTime);
 			var overlayOutput = _graph.OverlayOutputCompositor.Render(Texture2D.blackTexture, null, 0f,
 				output2Inputs, nextFrame, m_GraphTime);
+			if (blackout) {
+				ClearTexture(programOutput);
+				if (overlayOutput != programOutput) ClearTexture(overlayOutput);
+			}
 			_frameNumber = nextFrame;
 			CurrentFrames = new LiveProgramFrames(new[] {
 				new LiveProgramFrame(programOutput, _frameNumber),
@@ -1568,6 +1572,14 @@ namespace ShitDesigner.Main {
 			});
 			CurrentFrame = CurrentFrames.Primary;
 			return CurrentFrames;
+		}
+
+		private static void ClearTexture(RenderTexture texture) {
+			if (texture == null) return;
+			var previous = RenderTexture.active;
+			RenderTexture.active = texture;
+			GL.Clear(true, true, Color.black);
+			RenderTexture.active = previous;
 		}
 
 		public void SetOverlayComposition(LiveSequencerReadModel composition) {

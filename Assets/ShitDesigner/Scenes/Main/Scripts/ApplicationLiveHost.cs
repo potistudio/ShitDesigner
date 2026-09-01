@@ -42,7 +42,7 @@ namespace ShitDesigner.Main {
 		[SerializeField, Min(.01f)] private float m_SceneTimeJogSpeedPerStep = 1f;
 		[SerializeField, Range(.01f, 8f)] private float m_SceneTimeJogMaximumSpeedOffset = 4f;
 		[SerializeField, Min(0f)] private float m_ThumbnailTimeOffsetSeconds = .05f;
-		[SerializeField, Tooltip("Blacks out live content while held. Test patterns are unaffected.")] private Key m_BlackoutKey = Key.Backquote;
+		[SerializeField, Tooltip("Blacks out the rendered Program and Overlay frames while held. Test patterns are unaffected.")] private Key m_BlackoutKey = Key.Backquote;
 
 		[Header("Instant Effect MIDI")]
 		[SerializeField, Tooltip("Maps each Instant Effect slot to a MIDI message. Disabled slots remain available through their on-screen control.")]
@@ -94,6 +94,7 @@ namespace ShitDesigner.Main {
 		private float m_BaseUnityTimeScale = 1f;
 		private bool m_OwnsUnityTimeScale;
 		private bool m_RebuildRuntimeForProgramWidth;
+		private bool m_IsBlackoutActive;
 
 		public ApplicationLiveHostState State { get; private set; } = ApplicationLiveHostState.Cold;
 		public LiveUiReadModel ReadModel { get; private set; }
@@ -191,7 +192,7 @@ namespace ShitDesigner.Main {
 					delta => {
 						LiveGraphRuntime.AdjustProgramWidth(delta);
 						m_RebuildRuntimeForProgramWidth = true;
-					}, FireLiveParameter, m_BlackoutKey, _externalDisplay.SetBlackoutActive);
+					}, FireLiveParameter, m_BlackoutKey, active => { m_IsBlackoutActive = active; });
 				_midiInputManager.InitializeForHostPolling();
 				_midiInputManager.ConfigureLaunchControlXl3RelativeEncoder(m_SceneTimeEncoderChannel, m_SceneTimeEncoderControlNumber);
 				_shutdown.Add(_midiInputManager.Shutdown);
@@ -246,7 +247,7 @@ namespace ShitDesigner.Main {
 				_runtime.Evaluate(deltaSeconds);
 				ApplyUnityTimeScale(_runtime.GraphTimeScale);
 				_runtime.SceneUpdate();
-				var frames = _runtime.Render(m_FiredInstantEffectTriggers);
+				var frames = _runtime.Render(m_FiredInstantEffectTriggers, m_IsBlackoutActive);
 				_runtime.RenderPreviews(overlayComposition.LanePatchIds, _runtime.MainCuePatchIds, deltaSeconds,
 					m_ThumbnailTimeOffsetSeconds);
 				_externalDisplay.Present(frames);
@@ -263,6 +264,7 @@ namespace ShitDesigner.Main {
 			if (State == ApplicationLiveHostState.Cold || State == ApplicationLiveHostState.Offline) return;
 			ShutdownStartedComponents();
 			m_IsEditMode = false;
+			m_IsBlackoutActive = false;
 			ShitDesigner.Runtime.InstantEffectInputMode.SetEditing(false);
 			State = ApplicationLiveHostState.Offline;
 		}
