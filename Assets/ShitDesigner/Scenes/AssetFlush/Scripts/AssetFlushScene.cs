@@ -81,14 +81,15 @@ namespace ShitDesigner.AssetFlush {
 			get {
 				EnsureAssetCollections();
 				var parameters = new List<ILiveSceneParameter>();
+				var parameterIds = new HashSet<string>(StringComparer.Ordinal);
 				for (var index = 0; index < m_Images.Length; index++) {
 					var entry = m_Images[index];
-					if (entry != null && entry.Image != null && !string.IsNullOrWhiteSpace(entry.Id))
+					if (entry != null && entry.Image != null && !string.IsNullOrWhiteSpace(entry.Id) && parameterIds.Add(entry.Id))
 						parameters.Add(new LiveAssetParameter(this, entry.Id));
 				}
 				for (var index = 0; index < m_Videos.Length; index++) {
 					var entry = m_Videos[index];
-					if (entry != null && entry.Video != null && !string.IsNullOrWhiteSpace(entry.Id))
+					if (entry != null && entry.Video != null && !string.IsNullOrWhiteSpace(entry.Id) && parameterIds.Add(entry.Id))
 						parameters.Add(new LiveAssetParameter(this, entry.Id));
 				}
 				return parameters;
@@ -178,17 +179,33 @@ namespace ShitDesigner.AssetFlush {
 
 		private bool TryShowAsset(string id) {
 			EnsureAssetCollections();
+			var matchingAssetCount = 0;
+			for (var index = 0; index < m_Images.Length; index++) {
+				var entry = m_Images[index];
+				if (entry?.Image != null && string.Equals(entry.Id, id, StringComparison.Ordinal)) matchingAssetCount++;
+			}
+			for (var index = 0; index < m_Videos.Length; index++) {
+				var entry = m_Videos[index];
+				if (entry?.Video != null && string.Equals(entry.Id, id, StringComparison.Ordinal)) matchingAssetCount++;
+			}
+			if (matchingAssetCount == 0) return false;
+
+			var selection = UnityEngine.Random.Range(0, matchingAssetCount);
 			for (var index = 0; index < m_Images.Length; index++) {
 				var entry = m_Images[index];
 				if (entry?.Image == null || !string.Equals(entry.Id, id, StringComparison.Ordinal)) continue;
-				ShowImage(id, entry.Image);
-				return true;
+				if (selection-- == 0) {
+					ShowImage(id, entry.Image);
+					return true;
+				}
 			}
 			for (var index = 0; index < m_Videos.Length; index++) {
 				var entry = m_Videos[index];
 				if (entry?.Video == null || !string.Equals(entry.Id, id, StringComparison.Ordinal)) continue;
-				ShowVideo(id, entry.Video);
-				return true;
+				if (selection-- == 0) {
+					ShowVideo(id, entry.Video);
+					return true;
+				}
 			}
 			return false;
 		}
@@ -341,7 +358,7 @@ namespace ShitDesigner.AssetFlush {
 			m_Player.prepareCompleted -= OnVideoPrepared;
 			var host = m_Player.gameObject;
 			m_Player = null;
-			if (Application.isPlaying) Destroy(host);
+			if (UnityEngine.Application.isPlaying) Destroy(host);
 			else DestroyImmediate(host);
 		}
 
