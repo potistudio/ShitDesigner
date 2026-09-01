@@ -31,6 +31,7 @@ namespace ShitDesigner.Stage {
 
 		private bool m_GraphClockDriven;
 		private bool m_Initialized;
+		private bool m_Suspended;
 		private float m_MovementSpeed;
 		private Vector3 m_MovementDirection;
 		private System.Random m_Random;
@@ -41,12 +42,13 @@ namespace ShitDesigner.Stage {
 		private void OnEnable() {
 			m_GraphClockDriven = false;
 			m_Initialized = false;
+			m_Suspended = false;
 			Initialize();
 			ApplyCamera();
 		}
 
 		private void Update() {
-			if (Application.isPlaying && !m_GraphClockDriven)
+			if (Application.isPlaying && !m_GraphClockDriven && !m_Suspended)
 				Advance(Time.deltaTime);
 		}
 
@@ -70,10 +72,16 @@ namespace ShitDesigner.Stage {
 		}
 
 		public void AdvanceGraphClock(double deltaSeconds) {
-			if (!m_GraphClockDriven || double.IsNaN(deltaSeconds) || double.IsInfinity(deltaSeconds) || deltaSeconds < 0d)
+			if (!m_GraphClockDriven || m_Suspended || double.IsNaN(deltaSeconds) || double.IsInfinity(deltaSeconds) || deltaSeconds < 0d)
 				return;
 
 			Advance((float)Math.Min(deltaSeconds, float.MaxValue));
+		}
+
+		public void SetSuspended(bool suspended) {
+			m_Suspended = suspended;
+			if (!suspended)
+				ApplyCamera();
 		}
 
 		public bool TrySetValue(float value, out string rejectionReason) {

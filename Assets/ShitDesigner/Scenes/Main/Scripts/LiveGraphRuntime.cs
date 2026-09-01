@@ -1837,7 +1837,7 @@ namespace ShitDesigner.Main {
 				return true;
 			}
 			foreach (var value in hotCue.ConfiguredValues) {
-				if (!Definition.ProgramGraph.TryResolveHotCueTarget(value, out var graphNode)) {
+				if (!Definition.TryResolveHotCueTarget(value, out var graphNode, out _)) {
 					rejectionReason = "A Hot Cue references an unknown or ambiguous Program Graph parameter.";
 					return false;
 				}
