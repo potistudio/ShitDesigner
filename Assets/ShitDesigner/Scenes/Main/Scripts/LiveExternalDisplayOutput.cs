@@ -25,6 +25,7 @@ namespace ShitDesigner.Main {
 		private Material m_TestPatternMaterial;
 		private readonly Dictionary<int, DisplayOutput> _outputs = new Dictionary<int, DisplayOutput>();
 		private readonly bool[] m_OutputActive = new bool[OutputCount];
+		private LiveProgramFrames m_LatestFrames;
 		private ulong _presentedFrameNumber;
 		private bool _initialized;
 		private bool m_OutputsSwapped;
@@ -84,13 +85,14 @@ namespace ShitDesigner.Main {
 		public bool SwapOutputs() {
 			if (!_initialized) return Fail("External Display output is not initialized.");
 			if (!CanSwapOutputs) return Fail("Two external Displays are required to swap outputs.");
-			foreach (var output in _outputs.Values) {
-				output.Clear();
-				output.Present();
-			}
 			m_OutputsSwapped = !m_OutputsSwapped;
 			_presentedFrameNumber = 0;
 			ApplyOutputVisibility();
+			if (IsTestPatternVisible) {
+				RenderTestPatterns();
+				foreach (var output in _outputs.Values) output.Present();
+			}
+			else PresentLatestFrames();
 			LastError = string.Empty;
 			return true;
 		}
@@ -139,6 +141,7 @@ namespace ShitDesigner.Main {
 
 		public void Present(LiveProgramFrames frames) {
 			if (!_initialized) return;
+			m_LatestFrames = frames;
 			if (IsTestPatternVisible) {
 				if (OutputsDoNotMatchConnectedDisplays()) {
 					RebuildOutputs();
@@ -166,11 +169,23 @@ namespace ShitDesigner.Main {
 			_presentedFrameNumber = frames.Primary.FrameNumber;
 		}
 
+		private void PresentLatestFrames() {
+			if (m_LatestFrames.Count > 0 && m_LatestFrames.Primary.FrameNumber > 0) {
+				Present(m_LatestFrames);
+				return;
+			}
+			foreach (var output in _outputs.Values) {
+				output.Clear();
+				output.Present();
+			}
+		}
+
 		public void Shutdown() {
 			Array.Clear(m_OutputActive, 0, m_OutputActive.Length);
 			IsTestPatternVisible = false;
 			m_OutputsSwapped = false;
 			_initialized = false;
+			m_LatestFrames = default(LiveProgramFrames);
 			_presentedFrameNumber = 0;
 			DestroyOutputs();
 			_displayTransform?.Dispose();
