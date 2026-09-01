@@ -401,6 +401,30 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void OAndPAdjustProgramWidthInsteadOfTriggeringInstantEffects() {
+			var patch = CreatePatch("patch-a");
+			Keyboard keyboard = null;
+			try {
+				keyboard = InputSystem.AddDevice<Keyboard>();
+				keyboard.MakeCurrent();
+				var adjustments = new List<int>();
+				var cues = new List<int>();
+				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, _ => { }, (_, _) => { }, () => { }, _ => { },
+					cueInstantEffect: cues.Add, adjustProgramWidth: adjustments.Add);
+
+				PollKey(input, keyboard, Key.P);
+				PollKey(input, keyboard, Key.O);
+
+				Assert.That(adjustments, Is.EqualTo(new[] { 10, -10 }));
+				Assert.That(cues, Is.Empty);
+			}
+			finally {
+				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
+				Object.DestroyImmediate(patch);
+			}
+		}
+
+		[Test]
 		public void ShiftQwertyRowFocusesInstantEffectParametersWithoutTriggeringOrAssigning() {
 			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.Q));
 			Keyboard keyboard = null;

@@ -29,6 +29,7 @@ namespace ShitDesigner.Main {
 		private readonly Action m_BeginPianoMainCueSwitch;
 		private readonly Action m_EndPianoMainCueSwitch;
 		private readonly Action m_CompleteMainCueSwitch;
+		private readonly Action<int> m_AdjustProgramWidth;
 		private bool m_IsPianoMainCueSwitchHeld;
 		private bool m_HasCompletedMainCueSwitchForCurrentAPress;
 		private int m_HeldPianoOverlayTakeMask;
@@ -39,7 +40,7 @@ namespace ShitDesigner.Main {
 			Action toggleEditMode = null, Action<int> assignInstantEffect = null, Func<bool> isEditMode = null, Action<int> cueInstantEffect = null,
 			Action<int> focusInstantEffectParameters = null, Action toggleSelectedEffectCategory = null, Action beginPianoMainCueSwitch = null,
 			Action endPianoMainCueSwitch = null, Action completeMainCueSwitch = null, Action<int> endPianoOverlayTake = null,
-			Action<int> turnOnOverlaySequencerStep = null) {
+			Action<int> turnOnOverlaySequencerStep = null, Action<int> adjustProgramWidth = null) {
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));
 
@@ -64,6 +65,7 @@ namespace ShitDesigner.Main {
 			m_BeginPianoMainCueSwitch = beginPianoMainCueSwitch ?? (() => { });
 			m_EndPianoMainCueSwitch = endPianoMainCueSwitch ?? (() => { });
 			m_CompleteMainCueSwitch = completeMainCueSwitch ?? (() => { });
+			m_AdjustProgramWidth = adjustProgramWidth ?? (_ => { });
 		}
 
 		public void Poll(string loadedPatchId) {
@@ -91,6 +93,14 @@ namespace ShitDesigner.Main {
 				if (keyboard.spaceKey.wasPressedThisFrame) m_ToggleSelectedEffectCategory();
 				var effectIndex = PressedInstantEffectIndex(keyboard);
 				if (effectIndex >= 0) m_AssignInstantEffect(effectIndex);
+				return;
+			}
+			if (keyboard.pKey.wasPressedThisFrame) {
+				m_AdjustProgramWidth(LiveGraphRuntime.ProgramWidthStep);
+				return;
+			}
+			if (keyboard.oKey.wasPressedThisFrame) {
+				m_AdjustProgramWidth(-LiveGraphRuntime.ProgramWidthStep);
 				return;
 			}
 			if (keyboard.leftBracketKey.wasPressedThisFrame) {
