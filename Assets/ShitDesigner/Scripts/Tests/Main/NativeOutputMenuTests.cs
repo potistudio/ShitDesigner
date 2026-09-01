@@ -76,7 +76,7 @@ namespace ShitDesigner.Main.Tests {
 		public void LiveGraphUsesTheHardCodedOutputResolutions() {
 			var sizes = LiveGraphBootstrap.ResolveOutputRenderSizes();
 
-			Assert.That(sizes.Program.Width, Is.EqualTo(1600));
+			Assert.That(sizes.Program.Width, Is.EqualTo(800));
 			Assert.That(sizes.Program.Height, Is.EqualTo(854));
 			Assert.That(sizes.Overlay.Width, Is.EqualTo(3840));
 			Assert.That(sizes.Overlay.Height, Is.EqualTo(1536));
@@ -84,7 +84,7 @@ namespace ShitDesigner.Main.Tests {
 
 		[Test]
 		public void ExternalDisplaysUseTheHardCodedOutputResolutions() {
-			Assert.That(LiveExternalDisplayOutput.ResolveOutputResolution(2), Is.EqualTo(new Vector2Int(1600, 854)));
+			Assert.That(LiveExternalDisplayOutput.ResolveOutputResolution(2), Is.EqualTo(new Vector2Int(800, 854)));
 			Assert.That(LiveExternalDisplayOutput.ResolveOutputResolution(3), Is.EqualTo(new Vector2Int(3840, 1536)));
 		}
 
