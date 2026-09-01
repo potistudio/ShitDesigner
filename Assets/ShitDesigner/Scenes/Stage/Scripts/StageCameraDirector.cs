@@ -57,6 +57,7 @@ namespace ShitDesigner.Stage {
 		public const int CueCount = 2;
 		public const string Cue1ParameterId = "camera_cue_1";
 		public const string Cue2ParameterId = "camera_cue_2";
+		private const double MinimumVideoSeekToleranceSeconds = 0.05d;
 
 		[Header("References")]
 		[SerializeField] private Camera m_Camera;
@@ -85,6 +86,14 @@ namespace ShitDesigner.Stage {
 		private float m_StartFieldOfView;
 		private bool m_VideoSeekPending;
 		private double m_PendingVideoPlayheadSeconds;
+		private double m_ActiveVideoSeekSeconds;
+		private VideoPlayer m_ObservedVideoPlayer;
+		private bool m_VideoPauseSettling;
+		private int m_VideoSeekEarliestFrame;
+		private bool m_VideoSeekInFlight;
+		private bool m_ResumeVideoAfterSeek;
+		private bool m_VideoFrameReadyOverrideActive;
+		private bool m_PreviousSendFrameReadyEvents;
 
 		public IReadOnlyList<ILiveSceneParameter> LiveParameters {
 			get {
@@ -107,6 +116,8 @@ namespace ShitDesigner.Stage {
 		}
 
 		private void OnDisable() {
+			RestoreVideoPlayback();
+			ObserveVideoPlayer(null);
 			m_RandomCamera?.SetSuspended(false);
 		}
 
@@ -256,6 +267,7 @@ namespace ShitDesigner.Stage {
 			if (m_DefaultLookTarget == null) m_DefaultLookTarget = transform.Find("Camera Target");
 			if (m_RandomCamera == null) m_RandomCamera = GetComponent<StageRandomCamera>();
 			if (m_VideoPlayer == null) m_VideoPlayer = GetComponentInChildren<VideoPlayer>(true);
+			ObserveVideoPlayer(m_VideoPlayer);
 		}
 
 		private void QueueVideoSeek(StageCameraCueDefinition cue) {
@@ -272,11 +284,72 @@ namespace ShitDesigner.Stage {
 		}
 
 		private void ApplyPendingVideoSeek() {
-			if (!m_VideoSeekPending || m_VideoPlayer == null || !m_VideoPlayer.isPrepared)
+			if (!m_VideoSeekPending || m_VideoSeekInFlight || m_VideoPlayer == null || !m_VideoPlayer.isPrepared)
 				return;
 
-			m_VideoPlayer.time = m_PendingVideoPlayheadSeconds;
+			if (!m_VideoPauseSettling) {
+				m_ResumeVideoAfterSeek = m_ResumeVideoAfterSeek || m_VideoPlayer.isPlaying;
+				m_VideoPlayer.Pause();
+				EnableVideoFrameReadyEvents();
+				m_VideoPauseSettling = true;
+				m_VideoSeekEarliestFrame = Time.frameCount + 1;
+				return;
+			}
+			if (Time.frameCount < m_VideoSeekEarliestFrame)
+				return;
+
+			m_VideoPauseSettling = false;
+			m_VideoSeekInFlight = true;
+			m_ActiveVideoSeekSeconds = m_PendingVideoPlayheadSeconds;
+			m_VideoPlayer.time = m_ActiveVideoSeekSeconds;
 			m_VideoSeekPending = false;
+		}
+
+		private void ObserveVideoPlayer(VideoPlayer videoPlayer) {
+			if (m_ObservedVideoPlayer == videoPlayer)
+				return;
+			if (m_ObservedVideoPlayer != null)
+				m_ObservedVideoPlayer.frameReady -= OnVideoFrameReady;
+
+			m_ObservedVideoPlayer = videoPlayer;
+			if (m_ObservedVideoPlayer != null)
+				m_ObservedVideoPlayer.frameReady += OnVideoFrameReady;
+		}
+
+		private void OnVideoFrameReady(VideoPlayer source, long _) {
+			if (!m_VideoSeekInFlight || source != m_VideoPlayer)
+				return;
+			var frameTolerance = source.frameRate > 0f ? 0.5d / source.frameRate + 0.001d : 0d;
+			var tolerance = Math.Max(MinimumVideoSeekToleranceSeconds, frameTolerance);
+			if (Math.Abs(source.time - m_ActiveVideoSeekSeconds) > tolerance)
+				return;
+
+			m_VideoSeekInFlight = false;
+			if (m_VideoSeekPending) {
+				ApplyPendingVideoSeek();
+				return;
+			}
+			RestoreVideoPlayback();
+		}
+
+		private void EnableVideoFrameReadyEvents() {
+			if (m_VideoFrameReadyOverrideActive || m_VideoPlayer == null)
+				return;
+
+			m_PreviousSendFrameReadyEvents = m_VideoPlayer.sendFrameReadyEvents;
+			m_VideoPlayer.sendFrameReadyEvents = true;
+			m_VideoFrameReadyOverrideActive = true;
+		}
+
+		private void RestoreVideoPlayback() {
+			if (m_ResumeVideoAfterSeek && m_VideoPlayer != null && m_VideoPlayer.isPrepared)
+				m_VideoPlayer.Play();
+			if (m_VideoFrameReadyOverrideActive && m_VideoPlayer != null)
+				m_VideoPlayer.sendFrameReadyEvents = m_PreviousSendFrameReadyEvents;
+			m_ResumeVideoAfterSeek = false;
+			m_VideoPauseSettling = false;
+			m_VideoSeekInFlight = false;
+			m_VideoFrameReadyOverrideActive = false;
 		}
 
 		private void EnsureLiveParameters() {
