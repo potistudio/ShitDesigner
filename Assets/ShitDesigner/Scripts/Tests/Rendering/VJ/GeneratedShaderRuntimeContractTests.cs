@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using ShitDesigner.Core;
 using ShitDesigner.Nodes;
@@ -149,6 +150,34 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 				Assert.That(material.GetFloat(ShaderFrameUniformNames.BeatDuration), Is.EqualTo(.5f).Within(.0001f));
 			}
 			finally { UnityEngine.Object.DestroyImmediate(material); }
+		}
+
+		[Test]
+		public void InputlessAudioVariant_IsCreatedAsAGenerator() {
+			var asset = AssetDatabase.LoadAssetAtPath<ShaderNodeManifestAsset>(ManifestPath);
+			var entry = asset.BuildRuntimeManifest().Find("shitdesigner.shader.audio.wireframe_cube_fractal");
+			Assert.That(entry, Is.Not.Null);
+			Assert.That(entry.Family, Is.EqualTo(ShaderNodeFamily.Audio));
+			Assert.That(entry.Inputs, Is.Empty);
+
+			var binding = new ShaderMaterialBinding(entry.ShaderKey, asset.Find(entry.TypeId.Value).Shader,
+				descriptor: entry.ToShaderBinding());
+			var registry = new ShaderMaterialRegistry();
+			Assert.That(registry.Register(binding).IsSuccess, Is.True);
+			var factory = new ShaderVisualNodeBinding(entry.TypeId, entry.ShaderKey, registry);
+			var record = new RuntimeNodeCreateInfo(new NodeInstanceId("wireframe-cube-fractal-test"), entry.TypeId,
+				1, entry.DisplayName, true, 0f, 0f);
+			var created = factory.Create(record, 1);
+			Assert.That(created.IsSuccess, Is.True, created.IsFailure ? created.Error.Message : string.Empty);
+
+			var node = created.Value as ShaderRuntimeNode;
+			Assert.That(node, Is.Not.Null);
+			try {
+				var generator = (bool)typeof(ShaderRuntimeNode)
+					.GetField("_generator", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(node);
+				Assert.That(generator, Is.True);
+			}
+			finally { node.Dispose(); }
 		}
 	}
 }

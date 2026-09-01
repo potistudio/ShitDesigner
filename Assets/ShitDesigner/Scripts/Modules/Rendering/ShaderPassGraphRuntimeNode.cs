@@ -64,7 +64,8 @@ namespace ShitDesigner.Rendering {
 			_pool = pool ?? throw new ArgumentNullException(nameof(pool));
 			if (string.IsNullOrWhiteSpace(sessionId)) throw new ArgumentException("A shader graph session ID is required.", nameof(sessionId));
 			GenerationId = generationId;
-			_generator = generator || binding.Family == ShaderNodeFamily.Generator || binding.Family == ShaderNodeFamily.Raymarch;
+			_generator = generator || binding.Inputs.Count == 0
+				|| binding.Family == ShaderNodeFamily.Generator || binding.Family == ShaderNodeFamily.Raymarch;
 			_blend = blend || binding.Family == ShaderNodeFamily.Composite;
 			_material = new Material(binding.Shader) { name = "ShitDesigner.PassGraphMaterial." + record.Id.Value };
 			_directParameters = record.Parameters.ToDictionary(parameter => parameter.Id.Value, parameter => parameter.Value, StringComparer.Ordinal);
