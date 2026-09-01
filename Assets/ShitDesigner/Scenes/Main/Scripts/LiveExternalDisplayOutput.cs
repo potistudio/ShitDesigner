@@ -29,11 +29,13 @@ namespace ShitDesigner.Main {
 		private ulong _presentedFrameNumber;
 		private bool _initialized;
 		private bool m_OutputsSwapped;
+		private bool m_IsBlackoutActive;
 
 		public int ConnectedDisplayCount => Display.displays?.Length ?? 0;
 		public IReadOnlyList<int> ConnectedExternalDisplayNumbers => Enumerable.Range(2, Math.Min(OutputCount, Math.Max(0, ConnectedDisplayCount - 1))).ToArray();
 		public bool IsOutputActive => m_OutputActive.Any(active => active);
 		public bool IsTestPatternVisible { get; private set; }
+		public bool IsBlackoutActive => m_IsBlackoutActive;
 		public ExternalDisplayScalingMode ScalingMode { get; private set; } = ExternalDisplayScalingMode.Fill;
 		public ExternalDisplayEmulationAspect EmulationAspect { get; private set; } = ExternalDisplayEmulationAspect.Display;
 		public bool IsAvailable => !UnityEngine.Application.isEditor && ConnectedDisplayCount > 1;
@@ -88,7 +90,13 @@ namespace ShitDesigner.Main {
 			m_OutputsSwapped = !m_OutputsSwapped;
 			_presentedFrameNumber = 0;
 			ApplyOutputVisibility();
-			if (IsTestPatternVisible) {
+			if (m_IsBlackoutActive) {
+				foreach (var output in _outputs.Values) {
+					output.Clear();
+					output.Present();
+				}
+			}
+			else if (IsTestPatternVisible) {
 				RenderTestPatterns();
 				foreach (var output in _outputs.Values) output.Present();
 			}
@@ -131,7 +139,7 @@ namespace ShitDesigner.Main {
 
 			IsTestPatternVisible = visible;
 			_presentedFrameNumber = 0;
-			if (visible) RenderTestPatterns();
+			if (visible && !m_IsBlackoutActive) RenderTestPatterns();
 			else foreach (var output in _outputs.Values) output.Clear();
 			ApplyOutputVisibility();
 			foreach (var output in _outputs.Values) output.Present();
@@ -139,9 +147,32 @@ namespace ShitDesigner.Main {
 			return true;
 		}
 
+		public void SetBlackoutActive(bool active) {
+			if (m_IsBlackoutActive == active) return;
+			m_IsBlackoutActive = active;
+			_presentedFrameNumber = 0;
+			if (!_initialized) return;
+
+			if (active) {
+				foreach (var output in _outputs.Values) {
+					output.Clear();
+					output.Present();
+				}
+				return;
+			}
+
+			if (IsTestPatternVisible) {
+				RenderTestPatterns();
+				foreach (var output in _outputs.Values) output.Present();
+				return;
+			}
+			PresentLatestFrames();
+		}
+
 		public void Present(LiveProgramFrames frames) {
 			if (!_initialized) return;
 			m_LatestFrames = frames;
+			if (m_IsBlackoutActive) return;
 			if (IsTestPatternVisible) {
 				if (OutputsDoNotMatchConnectedDisplays()) {
 					RebuildOutputs();
@@ -183,6 +214,7 @@ namespace ShitDesigner.Main {
 		public void Shutdown() {
 			Array.Clear(m_OutputActive, 0, m_OutputActive.Length);
 			IsTestPatternVisible = false;
+			m_IsBlackoutActive = false;
 			m_OutputsSwapped = false;
 			_initialized = false;
 			m_LatestFrames = default(LiveProgramFrames);

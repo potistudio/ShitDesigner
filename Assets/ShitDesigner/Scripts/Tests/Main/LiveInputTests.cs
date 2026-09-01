@@ -14,6 +14,35 @@ namespace ShitDesigner.Main.Tests {
 	[TestFixture]
 	public sealed class LiveInputTests {
 		[Test]
+		public void BlackoutKeyIsGlobalAndTracksItsHeldState() {
+			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.Backquote));
+			Keyboard keyboard = null;
+			try {
+				keyboard = InputSystem.AddDevice<Keyboard>();
+				keyboard.MakeCurrent();
+				var queue = new LiveParameterQueue();
+				var blackoutStates = new List<bool>();
+				var input = new LiveKeyboardInput(queue, new[] { patch }, _ => { }, (_, _) => { }, () => { }, _ => { },
+					blackoutKey: Key.Backquote, setBlackoutActive: blackoutStates.Add);
+
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Backquote));
+				InputSystem.Update();
+				input.Poll(string.Empty);
+				input.Poll("patch-a");
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+				InputSystem.Update();
+				input.Poll("patch-a");
+
+				Assert.That(blackoutStates, Is.EqualTo(new[] { true, false }));
+				Assert.That(queue.Count, Is.Zero, "The global blackout key must not also drive patch bindings.");
+			}
+			finally {
+				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
+				Object.DestroyImmediate(patch);
+			}
+		}
+
+		[Test]
 		public void KeyboardMappingQueuesPressedAndReleasedParameterRequestsForLoadedPatch() {
 			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.G));
 			Keyboard keyboard = null;

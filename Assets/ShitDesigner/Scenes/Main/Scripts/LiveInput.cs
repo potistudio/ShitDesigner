@@ -31,8 +31,11 @@ namespace ShitDesigner.Main {
 		private readonly Action m_CompleteMainCueSwitch;
 		private readonly Action<int> m_AdjustProgramWidth;
 		private readonly Action<int, bool> m_FireLiveParameter;
+		private readonly Key m_BlackoutKey;
+		private readonly Action<bool> m_SetBlackoutActive;
 		private bool m_IsPianoMainCueSwitchHeld;
 		private bool m_HasCompletedMainCueSwitchForCurrentAPress;
+		private bool m_IsBlackoutHeld;
 		private int m_HeldPianoOverlayTakeMask;
 		private int m_HeldLiveParameterMask;
 		private readonly List<(Key Key, string PatchId, string ParameterId)> m_HeldPatchKeyboardInputs
@@ -42,7 +45,8 @@ namespace ShitDesigner.Main {
 			Action toggleEditMode = null, Action<int> assignInstantEffect = null, Func<bool> isEditMode = null, Action<int> cueInstantEffect = null,
 			Action<int> focusInstantEffectParameters = null, Action toggleSelectedEffectCategory = null, Action beginPianoMainCueSwitch = null,
 			Action endPianoMainCueSwitch = null, Action completeMainCueSwitch = null, Action<int> endPianoOverlayTake = null,
-			Action<int> turnOnOverlaySequencerStep = null, Action<int> adjustProgramWidth = null, Action<int, bool> fireLiveParameter = null) {
+			Action<int> turnOnOverlaySequencerStep = null, Action<int> adjustProgramWidth = null, Action<int, bool> fireLiveParameter = null,
+			Key blackoutKey = Key.Backquote, Action<bool> setBlackoutActive = null) {
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));
 
@@ -69,11 +73,17 @@ namespace ShitDesigner.Main {
 			m_CompleteMainCueSwitch = completeMainCueSwitch ?? (() => { });
 			m_AdjustProgramWidth = adjustProgramWidth ?? (_ => { });
 			m_FireLiveParameter = fireLiveParameter ?? ((_, _) => { });
+			m_BlackoutKey = blackoutKey;
+			m_SetBlackoutActive = setBlackoutActive ?? (_ => { });
 		}
 
 		public void Poll(string loadedPatchId) {
 			var keyboard = Keyboard.current;
-			if (keyboard == null) return;
+			if (keyboard == null) {
+				SetBlackoutActive(false);
+				return;
+			}
+			SetBlackoutActive(m_BlackoutKey != Key.None && keyboard[m_BlackoutKey].isPressed);
 			QueueReleasedPatchKeyboardInputs(keyboard);
 			ReleaseLiveParameterKeys(keyboard);
 			if (string.IsNullOrWhiteSpace(loadedPatchId)) return;
@@ -148,6 +158,12 @@ namespace ShitDesigner.Main {
 			if (CuePressedInstantEffects(keyboard)) return;
 			if (FirePressedLiveParameters(keyboard)) return;
 			QueuePressedPatchKeyboardInputs(keyboard, loadedPatchId);
+		}
+
+		private void SetBlackoutActive(bool active) {
+			if (m_IsBlackoutHeld == active) return;
+			m_IsBlackoutHeld = active;
+			m_SetBlackoutActive(active);
 		}
 
 		private void RecallHotCue(Keyboard keyboard, int hotCueIndex) {
@@ -267,6 +283,7 @@ namespace ShitDesigner.Main {
 
 			foreach (var key in keyboard.allKeys) {
 				if (!key.wasPressedThisFrame) continue;
+				if (key.keyCode == m_BlackoutKey) continue;
 				foreach (var binding in patch.KeyboardInputs) {
 					if (binding == null || !binding.Matches(key.keyCode)) continue;
 					m_Queue.EnqueueSetParameter(loadedPatchId, binding.ParameterId, binding.Value(true));
