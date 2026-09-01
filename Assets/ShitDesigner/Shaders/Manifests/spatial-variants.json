@@ -8495,6 +8495,7 @@
         "image"
       ],
       "parameters": [
+        "color_a",
         "amount",
         "frequency",
         "detail",

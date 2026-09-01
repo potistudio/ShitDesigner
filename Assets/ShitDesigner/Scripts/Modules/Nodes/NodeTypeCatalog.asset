@@ -97340,6 +97340,7 @@ MonoBehaviour:
     - input
     - image
     parameterIds:
+    - color_a
     - amount
     - frequency
     - detail
@@ -97372,6 +97373,23 @@ MonoBehaviour:
       hasDefaultImage: 0
       defaultImage: 0
     parameters:
+    - id: color_a
+      displayName: Color A
+      type: 6
+      defaultValue: color:1,0,0,1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
     - id: amount
       displayName: Amount
       type: 0
@@ -97666,6 +97684,11 @@ MonoBehaviour:
       hasDefaultImage: 0
       defaultImage: 0
     shaderParameters:
+    - parameterId: color_a
+      property: _VJColorA
+      type: 6
+      enumKeys: []
+      enumValues: 
     - parameterId: amount
       property: _VJAmount
       type: 0
