@@ -27,7 +27,8 @@ enum OutputMenuCommand {
   SetEmulation1x1 = 14,
   SetEmulation9x16 = 15,
   SetEmulation21x9 = 16,
-  SetEmulation5x2 = 17
+  SetEmulation5x2 = 17,
+  SetEmulation4_5x1 = 18
 };
 
 static void *s_appKitLibrary;
@@ -49,7 +50,7 @@ static NativeObject s_scalingFillItem;
 static NativeObject s_scalingFitItem;
 static NativeObject s_emulationItem;
 static NativeObject s_emulationMenu;
-static std::array<NativeObject, 9> s_emulationItems{};
+static std::array<NativeObject, 10> s_emulationItems{};
 static std::deque<int> s_commands;
 
 using GetClass = NativeClass (*)(const char *);
@@ -89,7 +90,7 @@ void Release(NativeObject value) {
 
 void HandleOutputMenuItem(NativeObject, NativeSelector, NativeObject sender) {
   const auto tag = SendMessage<std::intptr_t>(sender, "tag");
-  if (tag >= StartProgramOutput && tag <= SetEmulation5x2)
+  if (tag >= StartProgramOutput && tag <= SetEmulation4_5x1)
     s_commands.push_back(static_cast<int>(tag));
 }
 
@@ -206,13 +207,14 @@ ShitDesignerOutputMenuCreate(void) {
   Release(emulationTitle);
   SendMessage<void>(s_emulationMenu,
                     "setAutoenablesItems:", static_cast<signed char>(false));
-  const std::array<const char *, 9> emulationTitles{
-      "Native Display", "16:9", "16:10", "4:3", "3:4", "1:1",
-      "9:16",           "21:9", "5:2"};
-  const std::array<OutputMenuCommand, 9> emulationCommands{
+  const std::array<const char *, 10> emulationTitles{
+      "Native Display", "16:9", "16:10", "4:3",  "3:4", "1:1",
+      "9:16",           "21:9", "5:2",   "4.5:1"};
+  const std::array<OutputMenuCommand, 10> emulationCommands{
       SetEmulationDisplay, SetEmulation16x9, SetEmulation16x10,
       SetEmulation4x3,     SetEmulation3x4,  SetEmulation1x1,
-      SetEmulation9x16,    SetEmulation21x9, SetEmulation5x2};
+      SetEmulation9x16,    SetEmulation21x9, SetEmulation5x2,
+      SetEmulation4_5x1};
   for (std::size_t index = 0; index < s_emulationItems.size(); ++index) {
     s_emulationItems[index] =
         CreateMenuItem(emulationTitles[index], action, emulationCommands[index]);
