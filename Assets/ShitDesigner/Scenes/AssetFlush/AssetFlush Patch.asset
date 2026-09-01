@@ -35,6 +35,16 @@ MonoBehaviour:
       m_Strength: 1
       m_Minimum: 0
       m_Maximum: 1
+  - _id: 2
+    _displayName: 2
+    _nodeId: scene
+    _parameterId: asset_2
+    m_BeatModulation:
+      m_Enabled: 0
+      m_Signal: 0
+      m_Strength: 1
+      m_Minimum: 0
+      m_Maximum: 1
   m_HotCue1:
     m_Values: []
   m_HotCue2:
