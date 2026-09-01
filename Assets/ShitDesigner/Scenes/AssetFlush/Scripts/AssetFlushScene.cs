@@ -44,6 +44,8 @@ namespace ShitDesigner.AssetFlush {
 		[SerializeField] private Camera m_Camera;
 		[SerializeField] private Transform m_Surface;
 		[SerializeField, Min(0f)] private float m_FadeOutSeconds = .15f;
+		[SerializeField, Tooltip("Maps fade-out progress to output opacity.")]
+		public AnimationCurve m_FadeOutCurve = AnimationCurve.Linear(0f, 1f, 1f, 0f);
 		[SerializeField] private bool m_UseUnscaledTime = true;
 		[SerializeField] private Renderer m_TargetRenderer;
 		[SerializeField] private string m_TextureProperty = "_BaseMap";
@@ -77,6 +79,7 @@ namespace ShitDesigner.AssetFlush {
 		public Texture OutputTexture => m_OutputTexture;
 		public float Opacity => m_Opacity;
 		public float FadeOutSeconds { get => m_FadeOutSeconds; set => m_FadeOutSeconds = Mathf.Max(0f, value); }
+		public AnimationCurve FadeOutCurve { get => m_FadeOutCurve; set => m_FadeOutCurve = value; }
 		public IReadOnlyList<ILiveSceneParameter> LiveParameters {
 			get {
 				EnsureAssetCollections();
@@ -112,7 +115,9 @@ namespace ShitDesigner.AssetFlush {
 				? 1f
 				: Mathf.Clamp01((float)((Now - m_FadeStartedAt) / m_FadeOutSeconds));
 			if (progress >= 1f) { Clear(); return; }
-			SetOpacity(1f - progress);
+			var linearOpacity = 1f - progress;
+			var curvedOpacity = m_FadeOutCurve?.Evaluate(progress) ?? linearOpacity;
+			SetOpacity(float.IsNaN(curvedOpacity) || float.IsInfinity(curvedOpacity) ? linearOpacity : curvedOpacity);
 		}
 
 		private void LateUpdate() {

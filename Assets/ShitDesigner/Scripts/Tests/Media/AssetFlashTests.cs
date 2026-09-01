@@ -167,6 +167,7 @@ namespace ShitDesigner.Tests.Media {
 			try {
 				var scene = host.AddComponent<AssetFlushScene>();
 				scene.FadeOutSeconds = 5f;
+				scene.FadeOutCurve = AnimationCurve.Linear(0f, .25f, 1f, .25f);
 				scene.SetImageEntries(new AssetFlushImageEntry("held", image));
 				var liveRoot = host.AddComponent<LiveSceneRoot>();
 				liveRoot.Initialize("asset-flush-hold-test");
@@ -182,7 +183,7 @@ namespace ShitDesigner.Tests.Media {
 				Assert.That(scene.OutputTexture, Is.SameAs(image));
 				yield return null;
 				Assert.That(scene.OutputTexture, Is.SameAs(image));
-				Assert.That(scene.Opacity, Is.GreaterThan(0f).And.LessThan(1f));
+				Assert.That(scene.Opacity, Is.EqualTo(.25f).Within(.0001f));
 
 				scene.FadeOutSeconds = 0f;
 				yield return null;
