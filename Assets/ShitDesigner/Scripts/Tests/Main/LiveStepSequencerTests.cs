@@ -18,6 +18,21 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void TurningOnACellChangesOnlyTheRequestedBeatAndPreservesItsMode() {
+			var sequencer = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
+			sequencer.CycleCellMode(2, 3);
+			sequencer.CycleCellMode(2, 3);
+
+			Assert.That(sequencer.TurnOnCell(2, 3).Accepted, Is.True);
+			Assert.That(sequencer.TurnOnCell(2, 5).Accepted, Is.True);
+
+			var readModel = sequencer.CreateReadModel(0d);
+			Assert.That(readModel.GetCellMode(2, 3), Is.EqualTo(LiveSequencerCellMode.Add));
+			Assert.That(readModel.GetCellMode(2, 5), Is.EqualTo(LiveSequencerCellMode.Normal));
+			Assert.That(readModel.IsActive(2, 4), Is.False);
+		}
+
+		[Test]
 		public void CellModeCyclesThroughTheSupportedModes() {
 			var sequencer = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
 			var expectedModes = new[] {
