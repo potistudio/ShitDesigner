@@ -445,6 +445,34 @@ namespace ShitDesigner.Scene {
 			}
 		}
 
+		public bool TryResolveHotCueTarget(PatchGraphParameter value, out PatchGraphNode node, out ParameterType expectedType) {
+			if (value == null || string.IsNullOrWhiteSpace(value.Id)) {
+				node = null;
+				expectedType = default(ParameterType);
+				return false;
+			}
+			if (ProgramGraph.TryResolveHotCueTarget(value, out node)) {
+				expectedType = node.FindParameter(value.Id).Type;
+				return true;
+			}
+
+			var matches = ProgramGraph.Nodes.Where(candidate => candidate != null && candidate.IsSceneNode
+				&& (string.IsNullOrWhiteSpace(value.NodeId) || string.Equals(candidate.Id, value.NodeId, StringComparison.Ordinal))
+				&& Parameters.Any(parameter => parameter != null
+					&& string.Equals(parameter.NodeId, candidate.Id, StringComparison.Ordinal)
+					&& string.Equals(parameter.ParameterId, value.Id, StringComparison.Ordinal)))
+				.ToArray();
+			if (matches.Length != 1) {
+				node = null;
+				expectedType = default(ParameterType);
+				return false;
+			}
+
+			node = matches[0];
+			expectedType = ParameterType.Float;
+			return true;
+		}
+
 		public UnitResult<Diagnostic> Validate() {
 			if (string.IsNullOrWhiteSpace(Id)) return Failure("patch.definition.id", "A patch requires an ID.");
 			if (string.IsNullOrWhiteSpace(DisplayName)) return Failure("patch.definition.name", "A patch requires a display name.");
@@ -475,11 +503,10 @@ namespace ShitDesigner.Scene {
 					return Failure("patch.definition.hot_cue.value", "Every configured Hot Cue value requires a finite value.");
 				var targets = new HashSet<string>(StringComparer.Ordinal);
 				foreach (var value in values) {
-					if (!ProgramGraph.TryResolveHotCueTarget(value, out var graphNode))
+					if (!TryResolveHotCueTarget(value, out var graphNode, out var expectedType))
 						return Failure("patch.definition.hot_cue.parameter", "A Hot Cue references an unknown or ambiguous Program Graph parameter.");
 					if (!targets.Add(graphNode.Id + "\n" + value.Id))
 						return Failure("patch.definition.hot_cue.duplicate", "A Hot Cue cannot assign the same Program Graph parameter more than once.");
-					var expectedType = graphNode.FindParameter(value.Id).Type;
 					if (value.Type != expectedType)
 						return Failure("patch.definition.hot_cue.type", "A Hot Cue value type does not match its Program Graph parameter.");
 				}
