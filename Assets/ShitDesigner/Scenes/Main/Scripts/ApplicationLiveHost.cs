@@ -42,7 +42,7 @@ namespace ShitDesigner.Main {
 		[SerializeField, Min(.01f)] private float m_SceneTimeJogSpeedPerStep = 1f;
 		[SerializeField, Range(.01f, 8f)] private float m_SceneTimeJogMaximumSpeedOffset = 4f;
 		[SerializeField, Min(0f)] private float m_ThumbnailTimeOffsetSeconds = .05f;
-		[SerializeField, Tooltip("Blacks out every external output while held.")] private Key m_BlackoutKey = Key.Backquote;
+		[SerializeField, Tooltip("Blacks out live content while held. Test patterns are unaffected.")] private Key m_BlackoutKey = Key.Backquote;
 
 		[Header("Instant Effect MIDI")]
 		[SerializeField, Tooltip("Maps each Instant Effect slot to a MIDI message. Disabled slots remain available through their on-screen control.")]

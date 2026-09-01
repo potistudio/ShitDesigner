@@ -90,15 +90,15 @@ namespace ShitDesigner.Main {
 			m_OutputsSwapped = !m_OutputsSwapped;
 			_presentedFrameNumber = 0;
 			ApplyOutputVisibility();
-			if (m_IsBlackoutActive) {
+			if (IsTestPatternVisible) {
+				RenderTestPatterns();
+				foreach (var output in _outputs.Values) output.Present();
+			}
+			else if (m_IsBlackoutActive) {
 				foreach (var output in _outputs.Values) {
 					output.Clear();
 					output.Present();
 				}
-			}
-			else if (IsTestPatternVisible) {
-				RenderTestPatterns();
-				foreach (var output in _outputs.Values) output.Present();
 			}
 			else PresentLatestFrames();
 			LastError = string.Empty;
@@ -139,7 +139,7 @@ namespace ShitDesigner.Main {
 
 			IsTestPatternVisible = visible;
 			_presentedFrameNumber = 0;
-			if (visible && !m_IsBlackoutActive) RenderTestPatterns();
+			if (visible) RenderTestPatterns();
 			else foreach (var output in _outputs.Values) output.Clear();
 			ApplyOutputVisibility();
 			foreach (var output in _outputs.Values) output.Present();
@@ -151,7 +151,7 @@ namespace ShitDesigner.Main {
 			if (m_IsBlackoutActive == active) return;
 			m_IsBlackoutActive = active;
 			_presentedFrameNumber = 0;
-			if (!_initialized) return;
+			if (!_initialized || IsTestPatternVisible) return;
 
 			if (active) {
 				foreach (var output in _outputs.Values) {
@@ -172,7 +172,6 @@ namespace ShitDesigner.Main {
 		public void Present(LiveProgramFrames frames) {
 			if (!_initialized) return;
 			m_LatestFrames = frames;
-			if (m_IsBlackoutActive) return;
 			if (IsTestPatternVisible) {
 				if (OutputsDoNotMatchConnectedDisplays()) {
 					RebuildOutputs();
@@ -182,6 +181,7 @@ namespace ShitDesigner.Main {
 				foreach (var output in _outputs.Values) output.Present();
 				return;
 			}
+			if (m_IsBlackoutActive) return;
 			if (!IsOutputActive || frames.Count == 0 || frames.Primary.FrameNumber == 0) return;
 			var outputsRebuilt = false;
 			if (IsOutputActive && OutputsDoNotMatchConnectedDisplays()) {
