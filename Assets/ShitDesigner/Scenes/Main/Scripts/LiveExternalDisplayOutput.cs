@@ -319,11 +319,10 @@ namespace ShitDesigner.Main {
 		private void RenderTestPatterns() {
 			m_TestPatternMaterial.SetFloat("_PatternTime", Time.unscaledTime * m_TestPatternMotionSpeed);
 			foreach (var output in _outputs) {
-				var display = Display.displays[output.Key - 1];
 				m_TestPatternMaterial.SetFloat("_DisplayNumber", output.Key);
 				m_TestPatternMaterial.SetVector("_DisplayResolution", new Vector4(
-					Mathf.Max(1, display.systemWidth),
-					Mathf.Max(1, display.systemHeight),
+					output.Value.Texture.width,
+					output.Value.Texture.height,
 					0f,
 					0f));
 				Graphics.Blit(Texture2D.blackTexture, output.Value.Texture, m_TestPatternMaterial);
