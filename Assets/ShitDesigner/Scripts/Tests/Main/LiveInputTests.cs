@@ -460,7 +460,7 @@ namespace ShitDesigner.Main.Tests {
 		[Test]
 		public void LaunchControlFirstFaderQueuesMainCueOpacityWithoutDrivingPatchParameters() {
 			var owner = new GameObject("MIDI");
-			var patch = CreatePatch("patch-a", new PatchMidiInputBinding("motion", MidiControlKind.ControlChange, 16, 5));
+			var patch = CreatePatch("patch-a", new PatchMidiInputBinding("motion", MidiControlKind.ControlChange, 1, 5));
 			try {
 				var manager = owner.AddComponent<MidiInputManager>();
 				var source = new QueueMidiInputSource();
@@ -468,7 +468,7 @@ namespace ShitDesigner.Main.Tests {
 				var queue = new LiveParameterQueue();
 				using (var input = new LiveMidiInput(manager, queue, new[] { patch })) {
 					input.SetSelectedPatch("patch-a");
-					source.Enqueue(new MidiInputEvent(new MidiControl("Launch Control XL 3", MidiControlKind.ControlChange, 16, 5), 32));
+					source.Enqueue(new MidiInputEvent(new MidiControl("Launch Control XL 3", MidiControlKind.ControlChange, 1, 5), 32));
 					manager.Poll();
 				}
 

@@ -28,7 +28,7 @@ namespace ShitDesigner.Main {
 		[SerializeField] private LiveExternalDisplayOutput _externalDisplay;
 		[SerializeField] private LiveUiController _uiController;
 		[SerializeField] private bool _bootOnAwake = true;
-		[SerializeField, Range(1, 16)] private int m_MainCueFaderChannel = 16;
+		[SerializeField, Range(1, 16)] private int m_MainCueFaderChannel = 1;
 		[SerializeField, Range(0, 127)] private int m_MainCueFaderControlNumber = 5;
 		[SerializeField, Range(1, 16)] private int m_SceneTimeEncoderChannel = 16;
 		[SerializeField, Range(0, 127)] private int m_SceneTimeEncoderControlNumber = 77;
