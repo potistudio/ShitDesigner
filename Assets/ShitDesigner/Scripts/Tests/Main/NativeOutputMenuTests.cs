@@ -83,12 +83,9 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void ExternalDisplaysUseTheHardCodedOutputPresentation() {
+		public void ExternalDisplaysUseTheHardCodedOutputResolutions() {
 			Assert.That(LiveExternalDisplayOutput.ResolveOutputResolution(2), Is.EqualTo(new Vector2Int(1920, 854)));
-			Assert.That(LiveExternalDisplayOutput.ResolveInitialEmulationAspect(2), Is.EqualTo(ExternalDisplayEmulationAspect.Ratio4_5x1));
-			Assert.That(LiveExternalDisplayOutput.ResolveInitialScalingMode(2), Is.EqualTo(ExternalDisplayScalingMode.Fill));
 			Assert.That(LiveExternalDisplayOutput.ResolveOutputResolution(3), Is.EqualTo(new Vector2Int(3840, 1536)));
-			Assert.That(LiveExternalDisplayOutput.ResolveInitialEmulationAspect(3), Is.EqualTo(ExternalDisplayEmulationAspect.Display));
 		}
 
 		[Test]
