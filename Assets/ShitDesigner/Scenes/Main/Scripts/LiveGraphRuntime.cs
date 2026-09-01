@@ -369,13 +369,23 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		public RenderTexture Render(Texture main, Texture alternateMain, float alternateOpacity,
+		public RenderTexture Render(Texture main, Texture alternateMain, float alternateOpacity, bool compositeMain,
 			IReadOnlyList<LiveOverlayInput> overlays, ulong frameNumber, double graphTime) {
 			if (m_Disposed) throw new ObjectDisposedException(nameof(LiveOverlayCompositor));
 			if (main == null) throw new ArgumentNullException(nameof(main));
 			Texture accumulated = main;
 			var scratchIndex = 0;
-			if (alternateMain != null && alternateOpacity > 0f) {
+			if (alternateMain != null && compositeMain) {
+				var inputs = new Dictionary<PortId, Texture> {
+					{ new PortId("a"), alternateMain },
+					{ new PortId("b"), main }
+				};
+				var blended = m_BlendNodes[LiveSequencerCellMode.Normal].Render(inputs, m_Scratch[0], frameNumber, graphTime);
+				if (blended.IsFailure) throw new InvalidOperationException(blended.Error.Message);
+				accumulated = m_Scratch[0];
+				scratchIndex = 1;
+			}
+			else if (alternateMain != null && alternateOpacity > 0f) {
 				if (alternateOpacity >= 1f) accumulated = alternateMain;
 				else {
 					if (!m_CrossfadeNode.TrySetDirectParameter("progress", ParameterValue.FromFloat(alternateOpacity), out var rejectionReason))
@@ -1376,6 +1386,7 @@ namespace ShitDesigner.Main {
 		private readonly LivePatch[] m_MainCuePatches = new LivePatch[MainCueCount];
 		private readonly string[] m_MainCuePatchIds = new string[MainCueCount];
 		private readonly LiveMainCueFader m_MainCueFader = new LiveMainCueFader();
+		private bool m_IsMainCueCompositeActive;
 		private int m_ActiveMainCueIndex;
 		private ulong _frameNumber;
 		private ulong m_PreviewFrameNumber;
@@ -1392,6 +1403,7 @@ namespace ShitDesigner.Main {
 		public IReadOnlyList<string> MainCuePatchIds => m_MainCuePatchIds;
 		public int ActiveMainCueIndex => m_ActiveMainCueIndex;
 		public float MainCueAlternateOpacity => m_MainCueFader.AlternateOpacity;
+		public bool IsMainCueCompositeActive => m_IsMainCueCompositeActive;
 		public IReadOnlyList<PatchDefinition> Patches => _graph.PatchDefinitions;
 		public LiveProgramFrame CurrentFrame { get; private set; }
 		public LiveProgramFrames CurrentFrames { get; private set; }
@@ -1468,7 +1480,15 @@ namespace ShitDesigner.Main {
 			}
 			if (request.Kind == LiveParameterRequestKind.ToggleMainCue) {
 				if (m_MainCuePatches.Any(patch => patch == null)) return Reject(request, "Both Main Cue slots must be assigned before switching.");
+				m_IsMainCueCompositeActive = false;
 				m_MainCueFader.ToggleReferenceCue();
+				RefreshMainCueActivation();
+				return Accept(request);
+			}
+			if (request.Kind == LiveParameterRequestKind.SetMainCueComposite) {
+				if (request.ParameterValue.AsBool() && m_MainCuePatches.Any(patch => patch == null))
+					return Reject(request, "Both Main Cue slots must be assigned before compositing.");
+				m_IsMainCueCompositeActive = request.ParameterValue.AsBool();
 				RefreshMainCueActivation();
 				return Accept(request);
 			}
@@ -1548,10 +1568,10 @@ namespace ShitDesigner.Main {
 			var alternatePatch = m_MainCuePatches[m_MainCueFader.AlternateCueIndex];
 			var mainTexture = referencePatch?.Outputs.Count > 0 ? referencePatch.Outputs[0].ProgramTexture : null;
 			var alternateTexture = alternatePatch?.Outputs.Count > 0 ? alternatePatch.Outputs[0].ProgramTexture : null;
-			var composite = _graph.Compositor.Render(mainTexture, alternateTexture, m_MainCueFader.AlternateOpacity,
+			var composite = _graph.Compositor.Render(mainTexture, alternateTexture, m_MainCueFader.AlternateOpacity, m_IsMainCueCompositeActive,
 				overlayInputs, nextFrame, m_GraphTime);
 			var programOutput = _graph.InstantEffects.Render(composite, instantEffectTriggers, nextFrame, m_GraphTime);
-			var overlayOutput = _graph.OverlayOutputCompositor.Render(Texture2D.blackTexture, null, 0f,
+			var overlayOutput = _graph.OverlayOutputCompositor.Render(Texture2D.blackTexture, null, 0f, false,
 				output2Inputs, nextFrame, m_GraphTime);
 			if (blackout) {
 				ClearTexture(programOutput);
@@ -1780,15 +1800,16 @@ namespace ShitDesigner.Main {
 		private void ActivateMainCue(int cueIndex) {
 			var nextPatch = m_MainCuePatches[cueIndex];
 			if (nextPatch == null) throw new InvalidOperationException("The requested Cue Slot is empty.");
+			m_IsMainCueCompositeActive = false;
 			m_MainCueFader.SetReferenceCue(cueIndex);
 			RefreshMainCueActivation();
 		}
 
 		private IEnumerable<LivePatch> ActiveMainCuePatches() {
 			var referencePatch = m_MainCuePatches[m_MainCueFader.ReferenceCueIndex];
-			if (referencePatch != null && m_MainCueFader.AlternateOpacity < 1f) yield return referencePatch;
+			if (referencePatch != null && (m_IsMainCueCompositeActive || m_MainCueFader.AlternateOpacity < 1f)) yield return referencePatch;
 			var alternatePatch = m_MainCuePatches[m_MainCueFader.AlternateCueIndex];
-			if (alternatePatch != null && m_MainCueFader.AlternateOpacity > 0f) yield return alternatePatch;
+			if (alternatePatch != null && (m_IsMainCueCompositeActive || m_MainCueFader.AlternateOpacity > 0f)) yield return alternatePatch;
 		}
 
 		private void RefreshMainCueActivation() {
@@ -1796,9 +1817,9 @@ namespace ShitDesigner.Main {
 			for (var cueIndex = 0; cueIndex < m_MainCuePatches.Length; cueIndex++) {
 				var patch = m_MainCuePatches[cueIndex];
 				if (patch == null) continue;
-				var active = cueIndex == m_MainCueFader.ReferenceCueIndex
+				var active = m_IsMainCueCompositeActive || (cueIndex == m_MainCueFader.ReferenceCueIndex
 					? m_MainCueFader.AlternateOpacity < 1f
-					: m_MainCueFader.AlternateOpacity > 0f;
+					: m_MainCueFader.AlternateOpacity > 0f);
 				patch.SetSceneActive(active);
 			}
 		}

@@ -76,6 +76,7 @@ namespace ShitDesigner.Main {
 		private bool m_IsEffectCategorySelected;
 		private string m_SelectedEffectCategory = string.Empty;
 		private string m_PianoReturnMainPatchId = string.Empty;
+		private bool m_ReturnToPermanentMainComposite;
 		private readonly int[] m_OverlayTakeOverrides = new int[LiveStepSequencer.OverlayLaneCount];
 		private readonly int[] m_PianoReturnOverlayTakeOverrides = new int[LiveStepSequencer.OverlayLaneCount];
 		private float m_BaseUnityTimeScale = 1f;
@@ -145,7 +146,8 @@ namespace ShitDesigner.Main {
 					delta => {
 						LiveGraphRuntime.AdjustProgramWidth(delta);
 						m_RebuildRuntimeForProgramWidth = true;
-					}, FireLiveParameter, m_BlackoutKey, active => { m_IsBlackoutActive = active; });
+					}, FireLiveParameter, m_BlackoutKey, active => { m_IsBlackoutActive = active; }, BeginMomentaryMainComposite,
+					EndMomentaryMainComposite, CompleteMainComposite);
 				_midiInputManager.InitializeForHostPolling();
 				_midiInputManager.ConfigureLaunchControlXl3RelativeEncoder(m_SceneTimeEncoderChannel, m_SceneTimeEncoderControlNumber);
 				_shutdown.Add(_midiInputManager.Shutdown);
@@ -348,19 +350,38 @@ namespace ShitDesigner.Main {
 			if (_runtime == null || !string.IsNullOrEmpty(m_PianoReturnMainPatchId)) return;
 			var targetPatchId = AlternateMainCuePatchId(_runtime.LoadedPatchId);
 			if (string.IsNullOrEmpty(targetPatchId)) return;
+			m_ReturnToPermanentMainComposite = _runtime.IsMainCueCompositeActive;
 			m_PianoReturnMainPatchId = _runtime.LoadedPatchId;
+			_parameterQueue.EnqueueSetMainCueComposite(false);
 			_parameterQueue.EnqueueLoadPatch(targetPatchId);
 		}
 
 		private void EndPianoMainCueSwitch() {
 			var returnPatchId = m_PianoReturnMainPatchId;
 			m_PianoReturnMainPatchId = string.Empty;
-			if (!string.IsNullOrEmpty(returnPatchId)) _parameterQueue.EnqueueLoadPatch(returnPatchId);
+			if (!string.IsNullOrEmpty(returnPatchId)) {
+				_parameterQueue.EnqueueLoadPatch(returnPatchId);
+				_parameterQueue.EnqueueSetMainCueComposite(m_ReturnToPermanentMainComposite);
+			}
 		}
 
 		private void CompleteMainCueSwitch() {
 			m_PianoReturnMainPatchId = string.Empty;
 			_parameterQueue.EnqueueToggleMainCue();
+		}
+
+		private void BeginMomentaryMainComposite() {
+			m_ReturnToPermanentMainComposite = _runtime != null && _runtime.IsMainCueCompositeActive;
+			_parameterQueue.EnqueueSetMainCueComposite(true);
+		}
+
+		private void EndMomentaryMainComposite() {
+			_parameterQueue.EnqueueSetMainCueComposite(m_ReturnToPermanentMainComposite);
+		}
+
+		private void CompleteMainComposite() {
+			m_ReturnToPermanentMainComposite = true;
+			_parameterQueue.EnqueueSetMainCueComposite(true);
 		}
 
 		private void BeginPianoOverlayTake(int laneIndex) {

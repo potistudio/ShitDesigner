@@ -201,6 +201,12 @@
 - `PatchDefinition` のKeyboard Inputsは、キー押下時だけ1.0をロード中パッチの公開パラメーターへ送る。離上では要求を生成せず、キーボードの全体操作はこの設定とは別に固定される。
 - Motion、Scaleなどの連続値はMIDI入力またはUIの操作面から要求する。
 
+### 2026-09-02: Main TakeとMain Composite Takeを分離する
+
+- `A`は反対側のMainを押している間だけ表示し、離すと元のMainへ戻すMomentary Takeとする。`S`は反対側のMainへ完全に切り替えるPermanent Takeとする。
+- `Shift+A`は反対側のMainを現在のMainへ通常のアルファ合成で重ね、離すと元の合成状態へ戻すMomentary Composite Takeとする。
+- `Shift+S`は同じMain合成をキーから手を離した後も維持するPermanent Composite Takeとする。通常のPermanent TakeまたはMainパッチのLaunchは合成状態を解除する。
+
 ### 2026-08-31: Main Cueの完全切替とフェーダー変化を分離する
 
 - `Shift+C` は、現在のフェーダー合成で優勢なCueとは反対側を100%表示し、その時点の物理フェーダー位置を新しい基準にする。
@@ -222,7 +228,6 @@
 - Hot Cue値のIDが空欄なら未設定として扱い、パッチ検証とHot Cue呼び出しの両方で無視する。
 - `[`はHot Cue 1、`]`はHot Cue 2を現在のMainパッチへ適用する。未設定のHot Cueは適用しない。
 - `Shift+[`と`Shift+]`は同じ番号のHot Cueを反対側のMain Cueスロットに読み込まれたパッチへ適用する。反対側が空なら何もしない。
-- `Shift+A`と`[`または`]`を組み合わせると、キーの検出順にかかわらず切替先へHot Cueを適用し、Main Cue切替は1回だけ実行する。同時検出時はHot Cueを先に適用する。
 - VideoPlayerの`Playing`、`Playhead`、`Speed`、`Loop`は公開パラメーターにしなくてもHot Cueから直接変更でき、保存済みPlayheadへのSeekを同じライブTickで行う。
 - Hot Cueの呼び出しはMain Cueのパッチ割り当て、優勢Cue、基準Cueおよびフェーダー位置を変更しない。MainパッチのLaunchやMain Cue切替もHot Cueを発火しない。
 - Hot Cueはビートクオンタイズせず、入力要求を処理する同じライブTickで適用する。トリガー型の公開SceneパラメーターはHot Cue値を適用した直後に最小値へ自動解放し、AssetFlushなどのワンショット発火を保持状態にしない。AssetFlushの解放後不透明度は、InspectorのFade Out SecondsとFade Out Curveで設定する。
