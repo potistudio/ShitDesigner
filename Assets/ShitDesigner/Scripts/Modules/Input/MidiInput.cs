@@ -462,7 +462,7 @@ namespace ShitDesigner.Input {
 		}
 
 		private static void LogCleanupError(int result, string operation) {
-			if (result != NoError) Debug.LogWarning(operation + " failed with CoreMIDI OSStatus " + result + ".");
+			if (result != NoError) UnityEngine.Debug.LogWarning(operation + " failed with CoreMIDI OSStatus " + result + ".");
 		}
 
 		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
