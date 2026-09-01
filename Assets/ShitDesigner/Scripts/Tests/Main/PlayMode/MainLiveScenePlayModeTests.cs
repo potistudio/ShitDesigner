@@ -50,8 +50,9 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(host.ReadModel, Is.Not.Null);
 			Assert.That(host.ReadModel.Patches.Count, Is.EqualTo(4));
 			Assert.That(host.ReadModel.ProgramTexture, Is.Not.Null);
-			Assert.That(host.ReadModel.ProgramTexture.width, Is.EqualTo(1920));
-			Assert.That(host.ReadModel.ProgramTexture.height, Is.EqualTo(1080));
+			var outputSizes = LiveGraphBootstrap.ResolveOutputRenderSizes(Display.displays);
+			Assert.That(host.ReadModel.ProgramTexture.width, Is.EqualTo(outputSizes.Program.Width));
+			Assert.That(host.ReadModel.ProgramTexture.height, Is.EqualTo(outputSizes.Program.Height));
 			Assert.That(host.ReadModel.ProgramTexture.format, Is.EqualTo(RenderTextureFormat.ARGBHalf));
 			Assert.That(host.ReadModel.ProgramFrameNumber, Is.GreaterThan(0));
 			Assert.That(host.ReadModel.Sequencers, Has.Count.EqualTo(2));
@@ -63,6 +64,8 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(runtime.CurrentFrames.Count, Is.EqualTo(2));
 			Assert.That(runtime.CurrentFrames[0].Texture, Is.SameAs(host.ReadModel.ProgramTexture));
 			Assert.That(runtime.CurrentFrames[1].Texture, Is.Not.SameAs(runtime.CurrentFrames[0].Texture));
+			Assert.That(runtime.CurrentFrames[1].Texture.width, Is.EqualTo(outputSizes.Overlay.Width));
+			Assert.That(runtime.CurrentFrames[1].Texture.height, Is.EqualTo(outputSizes.Overlay.Height));
 			Assert.That(HasVisiblePixels(host.ReadModel.ProgramTexture), Is.True);
 
 			var loadedPatchId = host.ReadModel.LoadedPatchId;
