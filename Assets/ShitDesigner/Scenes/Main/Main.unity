@@ -158,7 +158,7 @@ MonoBehaviour:
   _externalDisplay: {fileID: 444072068}
   _uiController: {fileID: 2032879209}
   _bootOnAwake: 1
-  m_MainCueFaderChannel: 16
+  m_MainCueFaderChannel: 1
   m_MainCueFaderControlNumber: 5
   m_SceneTimeEncoderChannel: 16
   m_SceneTimeEncoderControlNumber: 77
