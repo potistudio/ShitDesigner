@@ -305,8 +305,11 @@ namespace ShitDesigner.Main {
 		private bool OutputsDoNotMatchConnectedDisplays() {
 			var connectedOutputCount = Math.Min(OutputCount, Math.Max(0, ConnectedDisplayCount - 1));
 			if (_outputs.Count != connectedOutputCount) return true;
-			for (var displayNumber = 2; displayNumber <= connectedOutputCount + 1; displayNumber++)
-				if (!_outputs.ContainsKey(displayNumber)) return true;
+			for (var displayNumber = 2; displayNumber <= connectedOutputCount + 1; displayNumber++) {
+				if (!_outputs.TryGetValue(displayNumber, out var output)) return true;
+				var resolution = ResolveOutputResolution(displayNumber);
+				if (output.Texture.width != resolution.x || output.Texture.height != resolution.y) return true;
+			}
 			return false;
 		}
 

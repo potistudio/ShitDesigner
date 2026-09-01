@@ -77,6 +77,7 @@ namespace ShitDesigner.Main {
 		private readonly int[] m_PianoReturnOverlayTakeOverrides = new int[LiveStepSequencer.OverlayLaneCount];
 		private float m_BaseUnityTimeScale = 1f;
 		private bool m_OwnsUnityTimeScale;
+		private bool m_RebuildRuntimeForProgramWidth;
 
 		public ApplicationLiveHostState State { get; private set; } = ApplicationLiveHostState.Cold;
 		public LiveUiReadModel ReadModel { get; private set; }
@@ -136,7 +137,11 @@ namespace ShitDesigner.Main {
 				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, BeginPianoOverlayTake, MoveCatalogSelection, () => { LaunchSelectedCatalogPatch(); }, TapBpm,
 					ToggleEditMode, cueIndex => { AssignSelectedEffectToCue(cueIndex); }, () => m_IsEditMode, QueueInstantEffectTrigger,
 					cueIndex => { FocusInstantEffectParameters(cueIndex); }, ToggleSelectedEffectCategory, BeginPianoMainCueSwitch,
-					EndPianoMainCueSwitch, CompleteMainCueSwitch, EndPianoOverlayTake, TurnOnOverlaySequencerStep);
+					EndPianoMainCueSwitch, CompleteMainCueSwitch, EndPianoOverlayTake, TurnOnOverlaySequencerStep,
+					delta => {
+						LiveGraphRuntime.AdjustProgramWidth(delta);
+						m_RebuildRuntimeForProgramWidth = true;
+					});
 				_midiInputManager.InitializeForHostPolling();
 				_midiInputManager.ConfigureLaunchControlXl3RelativeEncoder(m_SceneTimeEncoderChannel, m_SceneTimeEncoderControlNumber);
 				_shutdown.Add(_midiInputManager.Shutdown);
@@ -169,6 +174,10 @@ namespace ShitDesigner.Main {
 			if (_tickFrameNumber == 0) _tickFrameNumber = 1;
 
 			_keyboard.Poll(_runtime.LoadedPatchId);
+			if (m_RebuildRuntimeForProgramWidth) {
+				RebuildRuntimeForProgramWidth();
+				return;
+			}
 			_midi.SetSelectedPatch(_runtime.LoadedPatchId);
 			_midiInputManager.Poll();
 			try {
@@ -202,6 +211,18 @@ namespace ShitDesigner.Main {
 			m_IsEditMode = false;
 			ShitDesigner.Runtime.InstantEffectInputMode.SetEditing(false);
 			State = ApplicationLiveHostState.Offline;
+		}
+
+		private void RebuildRuntimeForProgramWidth() {
+			m_RebuildRuntimeForProgramWidth = false;
+			var replacement = _graphBootstrap.CreateRuntime();
+			replacement.ConfigureMainCueFaderCurve(m_MainCueFaderCurve);
+			replacement.ConfigureSceneTimeJog(m_SceneTimeJogMaximumSpeedOffset);
+			var previous = _runtime;
+			_runtime = replacement;
+			previous.Dispose();
+			UpdateOverlayComposition(_runtime.BpmFrame.AdjustedTotalBeats);
+			PublishReadModel(string.Empty);
 		}
 
 		public void ToggleEditMode() {
