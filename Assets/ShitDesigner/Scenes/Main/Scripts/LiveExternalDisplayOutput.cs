@@ -271,7 +271,8 @@ namespace ShitDesigner.Main {
 #if UNITY_STANDALONE_OSX && !UNITY_EDITOR
 			try {
 				var output = new DisplayOutput(new MacExternalDisplayPresenter(displayNumber - 1, displayTexture), displayTexture);
-				ApplyInitialPresentation(output, displayNumber);
+				output.SetScalingMode(ScalingMode);
+				output.SetEmulationAspect(EmulationAspect);
 				return output;
 			}
 			catch {
@@ -289,21 +290,11 @@ namespace ShitDesigner.Main {
 			var presenter = canvasObject.AddComponent<LiveProgramDisplayCanvas>();
 			presenter.Initialize(canvas, displayTexture);
 			var output = new DisplayOutput(canvas, presenter, canvasObject.AddComponent<WindowsDisplayWindowController>(), displayTexture);
-			ApplyInitialPresentation(output, displayNumber);
+			output.SetScalingMode(ScalingMode);
+			output.SetEmulationAspect(EmulationAspect);
 			return output;
 #endif
 		}
-
-		private static void ApplyInitialPresentation(DisplayOutput output, int displayNumber) {
-			output.SetScalingMode(ResolveInitialScalingMode(displayNumber));
-			output.SetEmulationAspect(ResolveInitialEmulationAspect(displayNumber));
-		}
-
-		internal static ExternalDisplayScalingMode ResolveInitialScalingMode(int displayNumber)
-			=> ExternalDisplayScalingMode.Fill;
-
-		internal static ExternalDisplayEmulationAspect ResolveInitialEmulationAspect(int displayNumber)
-			=> displayNumber == 2 ? ExternalDisplayEmulationAspect.Ratio4_5x1 : ExternalDisplayEmulationAspect.Display;
 
 		internal static Vector2Int ResolveOutputResolution(int displayNumber) {
 			return displayNumber == 2
