@@ -247,23 +247,23 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void MainCueFaderUsesItsCurrentPositionAsTheToggleReference() {
+		public void MainCueFaderUsesNormalizedPositionAsAlternateOpacity() {
 			var fader = new LiveMainCueFader();
 
 			fader.SetPosition(1f);
 			Assert.That(fader.ReferenceCueIndex, Is.Zero);
-			Assert.That(fader.AlternateOpacity, Is.Zero);
-
-			fader.SetPosition(0f);
-			Assert.That(fader.DominantCueIndex, Is.EqualTo(1));
 			Assert.That(fader.AlternateOpacity, Is.EqualTo(1f));
 
+			fader.SetPosition(0f);
+			Assert.That(fader.DominantCueIndex, Is.Zero);
+			Assert.That(fader.AlternateOpacity, Is.Zero);
+
 			fader.ToggleReferenceCue();
-			Assert.That(fader.ReferenceCueIndex, Is.Zero);
+			Assert.That(fader.ReferenceCueIndex, Is.EqualTo(1));
 			Assert.That(fader.AlternateOpacity, Is.Zero);
 
 			fader.SetPosition(1f);
-			Assert.That(fader.DominantCueIndex, Is.EqualTo(1));
+			Assert.That(fader.DominantCueIndex, Is.Zero);
 			Assert.That(fader.AlternateOpacity, Is.EqualTo(1f));
 		}
 
