@@ -14,6 +14,7 @@ namespace ShitDesigner.Editor {
 		}
 
 		public override void OnInspectorGUI() {
+			LiveSceneParameterProviderInspector.Draw((AssetFlushScene)target);
 			serializedObject.Update();
 			DrawPropertiesExcluding(serializedObject, "m_Size");
 			if (!m_FullScreen.boolValue) EditorGUILayout.PropertyField(m_Size);

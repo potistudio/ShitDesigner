@@ -17,7 +17,8 @@
     "ShitDesigner.Bootstrap",
     "ShitDesigner.Main",
     "ShitDesigner.AssetFlush",
-    "ShitDesigner.Shower"
+    "ShitDesigner.Shower",
+    "ChitoseCandy"
   ],
   "includePlatforms": [
     "Editor"
