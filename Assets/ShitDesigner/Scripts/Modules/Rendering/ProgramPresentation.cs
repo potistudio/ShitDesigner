@@ -43,6 +43,16 @@ namespace ShitDesigner.Rendering {
 		}
 	}
 
+	public static class ProgramDisplayFillLayout {
+		public static Vector2 Scale(float sourceAspect, float targetAspect) {
+			if (!float.IsFinite(sourceAspect) || sourceAspect <= 0f) sourceAspect = 1f;
+			if (!float.IsFinite(targetAspect) || targetAspect <= 0f) targetAspect = 1f;
+			return sourceAspect >= targetAspect
+				? new Vector2(sourceAspect, 1f)
+				: new Vector2(targetAspect, targetAspect / sourceAspect);
+		}
+	}
+
 	public interface IProgramDisplayPort {
 		int DisplayCount { get; }
 		Result<ProgramDisplaySelection, Diagnostic> Activate(int requestedDisplay);
@@ -432,10 +442,12 @@ namespace ShitDesigner.Rendering {
 			private GameObject _surface;
 			private Material _material;
 			private Mesh _mesh;
+			private float m_SourceAspect = 16f / 9f;
 
 			public RenderTexture Source {
 				set {
 					if (_material != null) _material.SetTexture(MainTextureId, value != null && value.IsCreated() ? value : Texture2D.blackTexture);
+					if (value != null && value.height > 0) m_SourceAspect = (float)value.width / value.height;
 				}
 			}
 
@@ -460,7 +472,8 @@ namespace ShitDesigner.Rendering {
 
 			private void LateUpdate() {
 				if (_camera == null || _surface == null) return;
-				_surface.transform.localScale = new Vector3(_camera.aspect, 1f, 1f);
+				var scale = ProgramDisplayFillLayout.Scale(m_SourceAspect, _camera.aspect);
+				_surface.transform.localScale = new Vector3(scale.x, scale.y, 1f);
 			}
 
 			private void OnDestroy() {

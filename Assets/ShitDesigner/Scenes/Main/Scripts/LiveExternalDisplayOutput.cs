@@ -579,7 +579,7 @@ namespace ShitDesigner.Main {
 
 		public void Initialize(Canvas canvas, RenderTexture source) {
 			if (canvas == null) throw new ArgumentNullException(nameof(canvas));
-			var imageObject = new GameObject("Live External Program Display Image", typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage));
+			var imageObject = new GameObject("Live External Program Display Image", typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage), typeof(AspectRatioFitter));
 			imageObject.transform.SetParent(canvas.transform, false);
 			var rectTransform = (RectTransform)imageObject.transform;
 			rectTransform.anchorMin = Vector2.zero;
@@ -590,6 +590,9 @@ namespace ShitDesigner.Main {
 			m_Image.texture = source != null && source.IsCreated() ? source : Texture2D.blackTexture;
 			m_Image.color = Color.white;
 			m_Image.raycastTarget = false;
+			var aspectRatioFitter = imageObject.GetComponent<AspectRatioFitter>();
+			aspectRatioFitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+			aspectRatioFitter.aspectRatio = source != null && source.height > 0 ? (float)source.width / source.height : 16f / 9f;
 		}
 	}
 }
