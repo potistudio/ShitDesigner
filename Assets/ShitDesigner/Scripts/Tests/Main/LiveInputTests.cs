@@ -337,6 +337,29 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void ZxcvbnmFireTheFirstSevenLiveParametersAndSuppressPatchBindings() {
+			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.Z));
+			Keyboard keyboard = null;
+			try {
+				keyboard = InputSystem.AddDevice<Keyboard>();
+				keyboard.MakeCurrent();
+				var queue = new LiveParameterQueue();
+				var firing = new List<(int Index, bool IsFiring)>();
+				var input = new LiveKeyboardInput(queue, new[] { patch }, _ => { }, (_, _) => { }, () => { }, _ => { },
+					fireLiveParameter: (index, isFiring) => firing.Add((index, isFiring)));
+
+				foreach (var key in new[] { Key.Z, Key.X, Key.C, Key.V, Key.B, Key.N, Key.M }) PollKey(input, keyboard, key);
+
+				Assert.That(firing, Is.EqualTo(Enumerable.Range(0, 7).SelectMany(index => new[] { (index, true), (index, false) })));
+				Assert.That(queue.Count, Is.Zero);
+			}
+			finally {
+				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
+				Object.DestroyImmediate(patch);
+			}
+		}
+
+		[Test]
 		public void LeftAndRightArrowsAdjustProgramWidthInsteadOfMovingTheCatalog() {
 			var patch = CreatePatch("patch-a");
 			Keyboard keyboard = null;

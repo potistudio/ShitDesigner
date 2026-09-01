@@ -87,16 +87,18 @@ namespace ShitDesigner.Main {
 		private readonly Action m_EndPianoMainCueSwitch;
 		private readonly Action m_CompleteMainCueSwitch;
 		private readonly Action<int> m_AdjustProgramWidth;
+		private readonly Action<int, bool> m_FireLiveParameter;
 		private bool m_IsPianoMainCueSwitchHeld;
 		private bool m_HasCompletedMainCueSwitchForCurrentAPress;
 		private int m_HeldPianoOverlayTakeMask;
+		private int m_HeldLiveParameterMask;
 		private readonly List<(Key Key, string PatchId, string ParameterId)> m_HeldPatchKeyboardInputs
 			= new List<(Key Key, string PatchId, string ParameterId)>();
 
 		public LiveKeyboardInput(LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches, Action<int> beginPianoOverlayTake, Action<int, int> moveCatalogSelection, Action launchSelectedPatch, Action<double> tapBpm,
 			Action toggleEditMode = null, Func<bool> isEditMode = null, Action toggleSelectedEffectCategory = null, Action beginPianoMainCueSwitch = null,
 			Action endPianoMainCueSwitch = null, Action completeMainCueSwitch = null, Action<int> endPianoOverlayTake = null,
-			Action<int> turnOnOverlaySequencerStep = null, Action<int> adjustProgramWidth = null) {
+			Action<int> turnOnOverlaySequencerStep = null, Action<int> adjustProgramWidth = null, Action<int, bool> fireLiveParameter = null) {
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));
 
@@ -119,12 +121,14 @@ namespace ShitDesigner.Main {
 			m_EndPianoMainCueSwitch = endPianoMainCueSwitch ?? (() => { });
 			m_CompleteMainCueSwitch = completeMainCueSwitch ?? (() => { });
 			m_AdjustProgramWidth = adjustProgramWidth ?? (_ => { });
+			m_FireLiveParameter = fireLiveParameter ?? ((_, _) => { });
 		}
 
 		public void Poll(string loadedPatchId) {
 			var keyboard = Keyboard.current;
 			if (keyboard == null) return;
 			QueueReleasedPatchKeyboardInputs(keyboard);
+			ReleaseLiveParameterKeys(keyboard);
 			if (string.IsNullOrWhiteSpace(loadedPatchId)) return;
 			if (!keyboard.aKey.isPressed) m_HasCompletedMainCueSwitchForCurrentAPress = false;
 			EndReleasedPianoOverlayTakes(keyboard);
@@ -185,6 +189,7 @@ namespace ShitDesigner.Main {
 			if (keyboard.downArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, 1);
 			if (keyboard.enterKey.wasPressedThisFrame) m_LaunchSelectedPatch();
 			if (keyboard.spaceKey.wasPressedThisFrame) m_TapBpm(Time.unscaledTimeAsDouble);
+			if (FirePressedLiveParameters(keyboard)) return;
 			QueuePressedPatchKeyboardInputs(keyboard, loadedPatchId);
 		}
 
@@ -235,6 +240,39 @@ namespace ShitDesigner.Main {
 				case 6: return keyboard.digit7Key;
 				case 7: return keyboard.digit8Key;
 				default: throw new ArgumentOutOfRangeException(nameof(laneIndex));
+			}
+		}
+
+		private bool FirePressedLiveParameters(Keyboard keyboard) {
+			var fired = false;
+			for (var parameterIndex = 0; parameterIndex < 7; parameterIndex++) {
+				if (!LiveParameterKey(keyboard, parameterIndex).wasPressedThisFrame) continue;
+				m_HeldLiveParameterMask |= 1 << parameterIndex;
+				m_FireLiveParameter(parameterIndex, true);
+				fired = true;
+			}
+			return fired;
+		}
+
+		private void ReleaseLiveParameterKeys(Keyboard keyboard) {
+			for (var parameterIndex = 0; parameterIndex < 7; parameterIndex++) {
+				var mask = 1 << parameterIndex;
+				if ((m_HeldLiveParameterMask & mask) == 0 || LiveParameterKey(keyboard, parameterIndex).isPressed) continue;
+				m_HeldLiveParameterMask &= ~mask;
+				m_FireLiveParameter(parameterIndex, false);
+			}
+		}
+
+		private static KeyControl LiveParameterKey(Keyboard keyboard, int parameterIndex) {
+			switch (parameterIndex) {
+				case 0: return keyboard.zKey;
+				case 1: return keyboard.xKey;
+				case 2: return keyboard.cKey;
+				case 3: return keyboard.vKey;
+				case 4: return keyboard.bKey;
+				case 5: return keyboard.nKey;
+				case 6: return keyboard.mKey;
+				default: throw new ArgumentOutOfRangeException(nameof(parameterIndex));
 			}
 		}
 

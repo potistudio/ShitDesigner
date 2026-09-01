@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ShitDesigner.Core;
 using ShitDesigner.Input;
 using ShitDesigner.Scene;
 using UnityEngine;
@@ -188,7 +189,7 @@ namespace ShitDesigner.Main {
 					delta => {
 						LiveGraphRuntime.AdjustProgramWidth(delta);
 						m_RebuildRuntimeForProgramWidth = true;
-					});
+					}, FireLiveParameter);
 				_midiInputManager.InitializeForHostPolling();
 				_midiInputManager.ConfigureLaunchControlXl3RelativeEncoder(m_SceneTimeEncoderChannel, m_SceneTimeEncoderControlNumber);
 				_shutdown.Add(_midiInputManager.Shutdown);
@@ -324,6 +325,14 @@ namespace ShitDesigner.Main {
 			if (cueIndex < 0 || cueIndex >= m_InstantEffectTypeIds.Length || string.IsNullOrEmpty(m_InstantEffectTypeIds[cueIndex])) return false;
 			m_LiveParameterCueIndex = cueIndex;
 			return true;
+		}
+
+		private void FireLiveParameter(int parameterIndex, bool firing) {
+			var parameters = CreateLiveParameterDefinitions();
+			if (parameterIndex < 0 || parameterIndex >= parameters.Length) return;
+			var parameter = parameters[parameterIndex];
+			if (parameter.Type != ParameterType.Float || !parameter.HasRange) return;
+			_parameterQueue.EnqueueSetParameter(_runtime.LoadedPatchId, parameter.Id, firing ? parameter.Maximum : parameter.Minimum);
 		}
 
 		public void MoveCatalogSelection(int horizontalDirection, int verticalDirection) {
