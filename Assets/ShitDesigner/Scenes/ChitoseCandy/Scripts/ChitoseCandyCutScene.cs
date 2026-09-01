@@ -12,8 +12,19 @@ namespace ShitDesigner.Scene {
 	[DisallowMultipleComponent]
 	public sealed class ChitoseCandyCutScene : MonoBehaviour, IBpmClockReceiver, ILiveSceneParameterProvider {
 		private const int CandyDivisionCount = 10;
+		public const string CandyLengthParameterId = "candy_length";
+		public const string CandyRadiusParameterId = "candy_radius";
+		public const string CandyDirectionXParameterId = "candy_direction_x";
+		public const string CandyDirectionYParameterId = "candy_direction_y";
+		public const string CandyDirectionZParameterId = "candy_direction_z";
 		public const string SplitGapParameterId = "split_gap";
 		public const string HorizontalImpulseParameterId = "horizontal_impulse";
+		public const float MinimumCandyLength = 1f;
+		public const float MaximumCandyLength = 30f;
+		public const float MinimumCandyRadius = 0.05f;
+		public const float MaximumCandyRadius = 2f;
+		public const float MinimumCandyDirectionComponent = -1f;
+		public const float MaximumCandyDirectionComponent = 1f;
 		public const float MinimumSplitGap = 0f;
 		public const float MaximumSplitGap = 3f;
 		public const float MinimumHorizontalImpulse = 0f;
@@ -41,16 +52,18 @@ namespace ShitDesigner.Scene {
 
 		private sealed class CandyFragment {
 			public readonly Transform Segment;
+			public readonly Transform BodyVisual;
 			public readonly Transform RearCutFace;
 			public readonly Transform FrontCutFace;
 			public readonly Rigidbody Body;
-			public readonly float BasePosition;
 			public readonly Vector3 ImpulseFactor;
+			public float BasePosition;
 			public Vector3 PushStartPosition;
 
-			public CandyFragment(Transform segment, Transform rearCutFace, Transform frontCutFace,
+			public CandyFragment(Transform segment, Transform bodyVisual, Transform rearCutFace, Transform frontCutFace,
 				Rigidbody body, float basePosition, Vector3 impulseFactor) {
 				Segment = segment;
+				BodyVisual = bodyVisual;
 				RearCutFace = rearCutFace;
 				FrontCutFace = frontCutFace;
 				Body = body;
@@ -59,70 +72,65 @@ namespace ShitDesigner.Scene {
 			}
 		}
 
-		private sealed class SplitGapLiveParameter : ILiveSceneParameter {
-			private readonly ChitoseCandyCutScene m_Scene;
+		private sealed class FloatLiveParameter : ILiveSceneParameter {
+			private readonly string m_Id;
+			private readonly string m_DisplayName;
+			private readonly float m_Minimum;
+			private readonly float m_Maximum;
+			private readonly Func<float> m_GetValue;
+			private readonly Action<float> m_SetValue;
 
 			public LiveParameterDefinition Definition => new LiveParameterDefinition(
-				SplitGapParameterId, "Split Gap", MinimumSplitGap, MaximumSplitGap, m_Scene.SplitGap);
+				m_Id, m_DisplayName, m_Minimum, m_Maximum, m_GetValue());
 
-			public SplitGapLiveParameter(ChitoseCandyCutScene scene) {
-				m_Scene = scene;
+			public FloatLiveParameter(string id, string displayName, float minimum, float maximum,
+				Func<float> getValue, Action<float> setValue) {
+				m_Id = id;
+				m_DisplayName = displayName;
+				m_Minimum = minimum;
+				m_Maximum = maximum;
+				m_GetValue = getValue;
+				m_SetValue = setValue;
 			}
 
 			public bool TrySetValue(float value, out string rejectionReason) {
 				if (float.IsNaN(value) || float.IsInfinity(value)) {
-					rejectionReason = "The split gap must be finite.";
+					rejectionReason = "The live parameter must be finite.";
 					return false;
 				}
 
-				m_Scene.SetSplitGap(value);
-				rejectionReason = string.Empty;
-				return true;
-			}
-		}
-
-		private sealed class HorizontalImpulseLiveParameter : ILiveSceneParameter {
-			private readonly ChitoseCandyCutScene m_Scene;
-
-			public LiveParameterDefinition Definition => new LiveParameterDefinition(
-				HorizontalImpulseParameterId, "Horizontal Impulse", MinimumHorizontalImpulse,
-				MaximumHorizontalImpulse, m_Scene.HorizontalImpulse);
-
-			public HorizontalImpulseLiveParameter(ChitoseCandyCutScene scene) {
-				m_Scene = scene;
-			}
-
-			public bool TrySetValue(float value, out string rejectionReason) {
-				if (float.IsNaN(value) || float.IsInfinity(value)) {
-					rejectionReason = "The horizontal impulse must be finite.";
-					return false;
-				}
-
-				m_Scene.SetHorizontalImpulse(value);
+				m_SetValue(Mathf.Clamp(value, m_Minimum, m_Maximum));
 				rejectionReason = string.Empty;
 				return true;
 			}
 		}
 
 		private sealed class Candy {
+			public readonly Transform Root;
 			public readonly Transform EntryRoot;
 			public readonly CandyFragment[] Fragments;
+			public readonly Vector3 FrontPosition;
+			public readonly float DirectionOffsetDegrees;
 			public int NextCutLayer;
 			public int PendingPushLayer = -1;
 			public bool IsEntering;
 			public Vector3 EntryStartPosition;
 			public long EntryStartBeat;
 
-			public Candy(Transform entryRoot, CandyFragment[] fragments) {
+			public Candy(Transform root, Transform entryRoot, CandyFragment[] fragments,
+				Vector3 frontPosition, float directionOffsetDegrees) {
+				Root = root;
 				EntryRoot = entryRoot;
 				Fragments = fragments;
+				FrontPosition = frontPosition;
+				DirectionOffsetDegrees = directionOffsetDegrees;
 			}
 		}
 
 		[Header("Candy field")]
 		[Min(3)][SerializeField] private int m_CandyCount = 12;
-		[Min(1f)][SerializeField] private float m_CandyLength = 14f;
-		[Min(0.05f)][SerializeField] private float m_CandyRadius = 0.68f;
+		[Min(MinimumCandyLength)][SerializeField] private float m_CandyLength = 14f;
+		[Min(MinimumCandyRadius)][SerializeField] private float m_CandyRadius = 0.68f;
 		[SerializeField] private Vector2 m_FieldSize = new Vector2(9.5f, 5.5f);
 		[Tooltip("Direction from the rear of each stick to its cut end. The negative Z component points toward the camera.")]
 		[SerializeField] private Vector3 m_CandyAxis = DefaultCandyAxis;
@@ -162,11 +170,26 @@ namespace ShitDesigner.Scene {
 		private int m_GenerationParametersHash;
 		private IReadOnlyList<ILiveSceneParameter> m_LiveParameters;
 
+		public float CandyLength => m_CandyLength;
+		public float CandyRadius => m_CandyRadius;
+		public Vector3 CandyDirection => m_CandyAxis;
 		public float SplitGap => m_SplitGap;
 		public float HorizontalImpulse => m_HorizontalImpulse;
 		public IReadOnlyList<ILiveSceneParameter> LiveParameters => m_LiveParameters ??= new ILiveSceneParameter[] {
-			new SplitGapLiveParameter(this),
-			new HorizontalImpulseLiveParameter(this)
+			new FloatLiveParameter(CandyLengthParameterId, "Candy Length", MinimumCandyLength, MaximumCandyLength,
+				() => CandyLength, SetCandyLength),
+			new FloatLiveParameter(CandyRadiusParameterId, "Candy Radius", MinimumCandyRadius, MaximumCandyRadius,
+				() => CandyRadius, SetCandyRadius),
+			new FloatLiveParameter(CandyDirectionXParameterId, "Direction X", MinimumCandyDirectionComponent, MaximumCandyDirectionComponent,
+				() => CandyDirection.x, value => SetCandyDirection(new Vector3(value, m_CandyAxis.y, m_CandyAxis.z))),
+			new FloatLiveParameter(CandyDirectionYParameterId, "Direction Y", MinimumCandyDirectionComponent, MaximumCandyDirectionComponent,
+				() => CandyDirection.y, value => SetCandyDirection(new Vector3(m_CandyAxis.x, value, m_CandyAxis.z))),
+			new FloatLiveParameter(CandyDirectionZParameterId, "Direction Z", MinimumCandyDirectionComponent, MaximumCandyDirectionComponent,
+				() => CandyDirection.z, value => SetCandyDirection(new Vector3(m_CandyAxis.x, m_CandyAxis.y, value))),
+			new FloatLiveParameter(SplitGapParameterId, "Split Gap", MinimumSplitGap, MaximumSplitGap,
+				() => SplitGap, SetSplitGap),
+			new FloatLiveParameter(HorizontalImpulseParameterId, "Horizontal Impulse", MinimumHorizontalImpulse, MaximumHorizontalImpulse,
+				() => HorizontalImpulse, SetHorizontalImpulse)
 		};
 
 		private void OnEnable() {
@@ -216,8 +239,8 @@ namespace ShitDesigner.Scene {
 
 		private void OnValidate() {
 			m_CandyCount = Mathf.Clamp(m_CandyCount, 3, 32);
-			m_CandyLength = Mathf.Max(1f, m_CandyLength);
-			m_CandyRadius = Mathf.Max(0.05f, m_CandyRadius);
+			m_CandyLength = Mathf.Max(MinimumCandyLength, m_CandyLength);
+			m_CandyRadius = Mathf.Max(MinimumCandyRadius, m_CandyRadius);
 			m_FieldSize.x = Mathf.Max(0.1f, m_FieldSize.x);
 			m_FieldSize.y = Mathf.Max(0.1f, m_FieldSize.y);
 			if (m_CandyAxis.sqrMagnitude < 0.0001f)
@@ -228,6 +251,8 @@ namespace ShitDesigner.Scene {
 				m_HorizontalImpulse, MinimumHorizontalImpulse, MaximumHorizontalImpulse);
 			if (m_GeneratedRoot == null || m_GenerationParametersHash != CalculateGenerationParametersHash())
 				m_RebuildRequested = true;
+			else
+				ApplyCandyShape();
 		}
 
 		[ContextMenu("Rebuild Chitose Candy")]
@@ -248,15 +273,31 @@ namespace ShitDesigner.Scene {
 
 			m_FragmentLength = m_CandyLength / CandyDivisionCount;
 			m_RuntimeRandom = new System.Random(m_RandomSeed);
-			m_FragmentBodyMesh = BuildCylinderMesh(m_FragmentLength, m_CandyRadius, 18);
+			m_FragmentBodyMesh = BuildCylinderMesh(1f, 1f, 18);
 			m_DiscMesh = BuildCylinderMesh(1f, 1f, 24);
 			m_PatternMeshes = BuildPatternMeshes();
 			CreateMaterials();
 			CreateCandies();
 		}
 
+		public void SetCandyLength(float candyLength) {
+			m_CandyLength = Mathf.Max(MinimumCandyLength, candyLength);
+			ApplyCandyShape();
+		}
+
+		public void SetCandyRadius(float candyRadius) {
+			m_CandyRadius = Mathf.Max(MinimumCandyRadius, candyRadius);
+			ApplyCandyShape();
+		}
+
+		public void SetCandyDirection(Vector3 candyDirection) {
+			m_CandyAxis = candyDirection.sqrMagnitude < 0.0001f ? DefaultCandyAxis : candyDirection;
+			ApplyCandyShape();
+		}
+
 		public void SetSplitGap(float splitGap) {
 			m_SplitGap = Mathf.Clamp(splitGap, MinimumSplitGap, MaximumSplitGap);
+			ApplyCandyShape();
 		}
 
 		public void SetHorizontalImpulse(float horizontalImpulse) {
@@ -299,9 +340,7 @@ namespace ShitDesigner.Scene {
 				x += NextFloat(-0.16f, 0.16f);
 				y += NextFloat(-0.16f, 0.16f);
 				var frontPosition = new Vector3(x, y, NextFloat(-0.18f, 0.18f));
-				var axis = Quaternion.AngleAxis(NextFloat(-2.5f, 2.5f), Vector3.forward)
-					* m_CandyAxisRuntime;
-				var candy = CreateCandy(index, frontPosition, axis.normalized);
+				var candy = CreateCandy(index, frontPosition, NextFloat(-2.5f, 2.5f));
 				m_Candies.Add(candy);
 			}
 		}
@@ -311,9 +350,7 @@ namespace ShitDesigner.Scene {
 				NextFloat(-m_FieldSize.x * 0.5f, m_FieldSize.x * 0.5f),
 				NextFloat(-m_FieldSize.y * 0.5f, m_FieldSize.y * 0.5f),
 				NextFloat(-0.18f, 0.18f));
-			var axis = (Quaternion.AngleAxis(NextFloat(-2.5f, 2.5f), Vector3.forward)
-				* m_CandyAxisRuntime).normalized;
-			var candy = CreateCandy(m_Candies.Count, frontPosition, axis);
+			var candy = CreateCandy(m_Candies.Count, frontPosition, NextFloat(-2.5f, 2.5f));
 			candy.EntryStartPosition = Vector3.down * (m_CandyLength * 0.5f);
 			candy.EntryStartBeat = startBeat;
 			candy.IsEntering = true;
@@ -321,7 +358,8 @@ namespace ShitDesigner.Scene {
 			m_Candies.Add(candy);
 		}
 
-		private Candy CreateCandy(int index, Vector3 frontPosition, Vector3 axis) {
+		private Candy CreateCandy(int index, Vector3 frontPosition, float directionOffsetDegrees) {
+			var axis = ResolveCandyDirection(directionOffsetDegrees);
 			var candyRoot = CreateGeneratedTransform($"Candy {index + 1:00}", m_GeneratedRoot);
 			candyRoot.localPosition = frontPosition - axis * (m_CandyLength * 0.5f);
 			candyRoot.localRotation = Quaternion.FromToRotation(Vector3.up, axis);
@@ -334,8 +372,9 @@ namespace ShitDesigner.Scene {
 				var fragment = CreateGeneratedTransform($"Cut Fragment {fragmentIndex + 1:00}", entryRoot);
 				var basePosition = m_CandyLength * 0.5f - m_FragmentLength * (fragmentIndex + 0.5f);
 				fragment.localPosition = Vector3.up * basePosition;
-				CreateMeshObject("Fragment Candy Body", fragment, m_FragmentBodyMesh,
-					m_BodyMaterials[index % m_BodyMaterials.Length], Vector3.one);
+				var bodyVisual = CreateMeshObject("Fragment Candy Body", fragment, m_FragmentBodyMesh,
+					m_BodyMaterials[index % m_BodyMaterials.Length],
+					new Vector3(m_CandyRadius, m_FragmentLength, m_CandyRadius));
 				var body = AddPhysicsBody(fragment, m_FragmentLength);
 
 				var rearCutFace = CreateMeshObject("Fragment Rear Cut Face", fragment, m_DiscMesh,
@@ -350,11 +389,11 @@ namespace ShitDesigner.Scene {
 				if (fragmentIndex == 0)
 					CreateOriginalCandyEnd(fragment, index);
 
-				fragments[fragmentIndex] = new CandyFragment(fragment, rearCutFace, frontCutFace,
+				fragments[fragmentIndex] = new CandyFragment(fragment, bodyVisual, rearCutFace, frontCutFace,
 					body, basePosition, CreateImpactImpulseFactor());
 			}
 
-			return new Candy(entryRoot, fragments);
+			return new Candy(candyRoot, entryRoot, fragments, frontPosition, directionOffsetDegrees);
 		}
 
 		private void CreateOriginalCandyEnd(Transform frontFragment, int index) {
@@ -386,6 +425,95 @@ namespace ShitDesigner.Scene {
 			collider.height = Mathf.Max(length, collider.radius * 2f);
 			return rigidbody;
 		}
+
+		private void ApplyCandyShape() {
+			m_CandyAxisRuntime = m_CandyAxis.sqrMagnitude < 0.0001f
+				? DefaultCandyAxis.normalized
+				: m_CandyAxis.normalized;
+			m_FragmentLength = m_CandyLength / CandyDivisionCount;
+			if (m_GeneratedRoot == null)
+				return;
+
+			var bodyScale = new Vector3(m_CandyRadius, m_FragmentLength, m_CandyRadius);
+			var cutFaceScale = new Vector3(m_CandyRadius * 0.76f, 0.028f, m_CandyRadius * 0.76f);
+			var pushDistance = m_FragmentLength + m_SplitGap;
+			var pushProgress = m_PushStartBeat == long.MinValue
+				? 0f
+				: EvaluateEasing(m_PushEasing, Mathf.Clamp01((float)(m_AdjustedTotalBeats - m_PushStartBeat)));
+
+			for (var candyIndex = 0; candyIndex < m_Candies.Count; candyIndex++) {
+				var candy = m_Candies[candyIndex];
+				var direction = ResolveCandyDirection(candy.DirectionOffsetDegrees);
+				candy.Root.localPosition = candy.FrontPosition - direction * (m_CandyLength * 0.5f);
+				candy.Root.localRotation = Quaternion.FromToRotation(Vector3.up, direction);
+				candy.EntryStartPosition = Vector3.down * (m_CandyLength * 0.5f);
+				if (candy.IsEntering) {
+					var progress = Mathf.Clamp01((float)(m_AdjustedTotalBeats - candy.EntryStartBeat));
+					candy.EntryRoot.localPosition = Vector3.Lerp(
+						candy.EntryStartPosition, Vector3.zero, EvaluateEasing(m_EntryEasing, progress));
+				}
+
+				for (var fragmentIndex = 0; fragmentIndex < candy.Fragments.Length; fragmentIndex++) {
+					var fragment = candy.Fragments[fragmentIndex];
+					fragment.BasePosition = m_CandyLength * 0.5f - m_FragmentLength * (fragmentIndex + 0.5f);
+					fragment.BodyVisual.localScale = bodyScale;
+					fragment.RearCutFace.localPosition = Vector3.up * (-m_FragmentLength * 0.5f - 0.018f);
+					fragment.RearCutFace.localScale = cutFaceScale;
+					fragment.FrontCutFace.localPosition = Vector3.up * (m_FragmentLength * 0.5f + 0.018f);
+					fragment.FrontCutFace.localScale = cutFaceScale;
+
+					var collider = fragment.Body.GetComponent<CapsuleCollider>();
+					if (collider != null) {
+						collider.radius = m_CandyRadius * 0.94f;
+						collider.height = Mathf.Max(m_FragmentLength, collider.radius * 2f);
+					}
+
+					if (fragmentIndex == 0)
+						ApplyOriginalCandyEndShape(fragment.Segment);
+					if (fragmentIndex < candy.NextCutLayer)
+						continue;
+
+					var pushedLayerCount = candy.PendingPushLayer >= 0
+						? candy.PendingPushLayer
+						: candy.NextCutLayer;
+					var startPosition = Vector3.up * (
+						fragment.BasePosition + pushDistance * Mathf.Min(fragmentIndex, pushedLayerCount));
+					if (candy.PendingPushLayer >= 0 && !m_PushPending && m_PushStartBeat != long.MinValue &&
+						fragmentIndex > candy.PendingPushLayer) {
+						fragment.PushStartPosition = startPosition;
+						var targetPosition = Vector3.up * (
+							fragment.BasePosition + pushDistance * (candy.PendingPushLayer + 1));
+						fragment.Segment.localPosition = Vector3.Lerp(startPosition, targetPosition, pushProgress);
+					}
+					else {
+						fragment.Segment.localPosition = startPosition;
+					}
+				}
+			}
+
+			if (UnityApplication.isPlaying)
+				Physics.SyncTransforms();
+		}
+
+		private void ApplyOriginalCandyEndShape(Transform frontFragment) {
+			var originalEnd = frontFragment.Find("Original Candy End");
+			if (originalEnd == null)
+				return;
+
+			originalEnd.localPosition = Vector3.up * (m_FragmentLength * 0.5f + m_CandyRadius * 0.02f);
+			var rim = originalEnd.Find("Pale Rim");
+			if (rim != null)
+				rim.localScale = new Vector3(m_CandyRadius * 0.94f, 0.055f, m_CandyRadius * 0.94f);
+			var face = originalEnd.Find("Original Cut Face");
+			if (face != null)
+				face.localScale = new Vector3(m_CandyRadius * 0.76f, 0.028f, m_CandyRadius * 0.76f);
+			var pattern = originalEnd.Find("Candy Pattern");
+			if (pattern != null)
+				pattern.localScale = Vector3.one * (m_CandyRadius * 0.34f);
+		}
+
+		private Vector3 ResolveCandyDirection(float directionOffsetDegrees) =>
+			(Quaternion.AngleAxis(directionOffsetDegrees, Vector3.forward) * m_CandyAxisRuntime).normalized;
 
 		private Vector3 CreateImpactImpulseFactor() {
 			var magnitude = NextFloat(0.55f, 1f);
@@ -561,10 +689,7 @@ namespace ShitDesigner.Scene {
 			unchecked {
 				var hash = 17;
 				hash = hash * 31 + m_CandyCount;
-				hash = hash * 31 + m_CandyLength.GetHashCode();
-				hash = hash * 31 + m_CandyRadius.GetHashCode();
 				hash = hash * 31 + m_FieldSize.GetHashCode();
-				hash = hash * 31 + m_CandyAxis.GetHashCode();
 				hash = hash * 31 + m_RandomSeed;
 				hash = hash * 31 + (m_CandyColors?.Length ?? 0);
 				if (m_CandyColors != null)

@@ -45,6 +45,56 @@ MonoBehaviour:
       m_Strength: 1
       m_Minimum: 0
       m_Maximum: 10
+  - _id: candy_length
+    _displayName: Candy Length
+    _nodeId: scene
+    _parameterId: candy_length
+    m_BeatModulation:
+      m_Enabled: 0
+      m_Signal: 0
+      m_Strength: 1
+      m_Minimum: 1
+      m_Maximum: 30
+  - _id: candy_radius
+    _displayName: Candy Radius
+    _nodeId: scene
+    _parameterId: candy_radius
+    m_BeatModulation:
+      m_Enabled: 0
+      m_Signal: 0
+      m_Strength: 1
+      m_Minimum: 0.05
+      m_Maximum: 2
+  - _id: candy_direction_x
+    _displayName: Direction X
+    _nodeId: scene
+    _parameterId: candy_direction_x
+    m_BeatModulation:
+      m_Enabled: 0
+      m_Signal: 0
+      m_Strength: 1
+      m_Minimum: -1
+      m_Maximum: 1
+  - _id: candy_direction_y
+    _displayName: Direction Y
+    _nodeId: scene
+    _parameterId: candy_direction_y
+    m_BeatModulation:
+      m_Enabled: 0
+      m_Signal: 0
+      m_Strength: 1
+      m_Minimum: -1
+      m_Maximum: 1
+  - _id: candy_direction_z
+    _displayName: Direction Z
+    _nodeId: scene
+    _parameterId: candy_direction_z
+    m_BeatModulation:
+      m_Enabled: 0
+      m_Signal: 0
+      m_Strength: 1
+      m_Minimum: -1
+      m_Maximum: 1
   m_HotCue1:
     m_Values: []
   m_HotCue2:
