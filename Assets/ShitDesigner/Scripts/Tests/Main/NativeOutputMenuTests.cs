@@ -72,6 +72,20 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(LiveExternalDisplayOutput.ResolveOutput(3, swapped: true), Is.EqualTo(LiveOutputKind.Program));
 		}
 
+		[TestCase(3840, 2160)]
+		[TestCase(1080, 1920)]
+		public void ExternalDisplayOutputUsesThePhysicalDisplayResolution(int width, int height) {
+			Assert.That(LiveExternalDisplayOutput.ResolveDisplayResolution(width, height),
+				Is.EqualTo(new Vector2Int(width, height)));
+		}
+
+		[TestCase(0, 2160)]
+		[TestCase(3840, 0)]
+		public void ExternalDisplayOutputFallsBackWhenUnityHasNotReportedAResolution(int width, int height) {
+			Assert.That(LiveExternalDisplayOutput.ResolveDisplayResolution(width, height),
+				Is.EqualTo(new Vector2Int(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight)));
+		}
+
 		[Test]
 		public void ControllerReflectsAvailabilityAndDispatchesNativeCommands() {
 			var target = new RecordingOutputTarget(programAvailable: true, overlayAvailable: true);
