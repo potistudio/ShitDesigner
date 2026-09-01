@@ -14,8 +14,9 @@ namespace ShitDesigner.Main {
 		public float Minimum { get; }
 		public float Maximum { get; }
 		public float Value { get; }
+		public bool IsTrigger { get; }
 
-		public LiveParameterDefinition(string id, string displayName, float minimum, float maximum, float value) {
+		public LiveParameterDefinition(string id, string displayName, float minimum, float maximum, float value, bool isTrigger = false) {
 			Id = id;
 			DisplayName = displayName;
 			Type = ParameterType.Float;
@@ -24,9 +25,10 @@ namespace ShitDesigner.Main {
 			Minimum = minimum;
 			Maximum = maximum;
 			Value = value;
+			IsTrigger = isTrigger;
 		}
 
-		public LiveParameterDefinition(string id, string displayName, ParameterValue value) {
+		public LiveParameterDefinition(string id, string displayName, ParameterValue value, bool isTrigger = false) {
 			Id = id;
 			DisplayName = displayName;
 			Type = value.Type;
@@ -35,7 +37,13 @@ namespace ShitDesigner.Main {
 			Minimum = 0f;
 			Maximum = 0f;
 			Value = value.Type == ParameterType.Float ? value.AsFloat() : 0f;
+			IsTrigger = isTrigger;
 		}
+
+		internal LiveParameterDefinition WithTrigger(bool isTrigger)
+			=> HasRange
+				? new LiveParameterDefinition(Id, DisplayName, Minimum, Maximum, Value, isTrigger)
+				: new LiveParameterDefinition(Id, DisplayName, TypedValue, isTrigger);
 	}
 
 	/// <summary>
@@ -67,7 +75,9 @@ namespace ShitDesigner.Main {
 
 		public LiveParameterDefinition[] GetParameterDefinitions() {
 			CollectParameters();
-			return _parameters.Values.Select(parameter => parameter.Definition).ToArray();
+			return _parameters.Values
+				.Select(parameter => parameter.Definition.WithTrigger(parameter is ILiveSceneTriggerParameter))
+				.ToArray();
 		}
 
 		public bool TrySetParameter(string parameterId, float value, out string rejectionReason) {

@@ -490,6 +490,7 @@ namespace ShitDesigner.Main {
 
 		private VisualElement CreateParameterControl(LiveParameterDefinition parameter) {
 			var name = "parameter-" + parameter.Id;
+			if (parameter.IsTrigger) return CreatePianoParameterControl(parameter, name);
 			if (parameter.Type == ParameterType.Float && parameter.HasRange) {
 				var slider = new Slider(parameter.Minimum, parameter.Maximum) {
 					direction = SliderDirection.Vertical,
@@ -526,6 +527,42 @@ namespace ShitDesigner.Main {
 			}
 		}
 
+		private VisualElement CreatePianoParameterControl(LiveParameterDefinition parameter, string name) {
+			var button = new Button { name = name, text = "PIANO" };
+			button.AddToClassList("parameter-piano");
+			var activePointerId = -1;
+			button.RegisterCallback<PointerDownEvent>(evt => {
+				if (evt.button != 0 || activePointerId >= 0) return;
+				activePointerId = evt.pointerId;
+				button.CapturePointer(activePointerId);
+				button.AddToClassList("is-active");
+				QueueParameter(parameter.Id, ParameterValue.FromFloat(parameter.Maximum));
+				evt.StopPropagation();
+			});
+			button.RegisterCallback<PointerUpEvent>(evt => {
+				if (evt.pointerId != activePointerId) return;
+				activePointerId = -1;
+				button.RemoveFromClassList("is-active");
+				if (button.HasPointerCapture(evt.pointerId)) button.ReleasePointer(evt.pointerId);
+				QueueParameter(parameter.Id, ParameterValue.FromFloat(parameter.Minimum));
+				evt.StopPropagation();
+			});
+			button.RegisterCallback<PointerCancelEvent>(evt => {
+				if (evt.pointerId != activePointerId) return;
+				activePointerId = -1;
+				button.RemoveFromClassList("is-active");
+				if (button.HasPointerCapture(evt.pointerId)) button.ReleasePointer(evt.pointerId);
+				QueueParameter(parameter.Id, ParameterValue.FromFloat(parameter.Minimum));
+			});
+			button.RegisterCallback<PointerCaptureOutEvent>(evt => {
+				if (evt.pointerId != activePointerId) return;
+				activePointerId = -1;
+				button.RemoveFromClassList("is-active");
+				QueueParameter(parameter.Id, ParameterValue.FromFloat(parameter.Minimum));
+			});
+			return button;
+		}
+
 		private VisualElement CreateComponentControl(LiveParameterDefinition parameter) {
 			var values = Components(parameter.TypedValue);
 			var control = new VisualElement { name = "parameter-" + parameter.Id };
@@ -543,6 +580,10 @@ namespace ShitDesigner.Main {
 
 		private void RefreshParameterControl(LiveParameterDefinition parameter) {
 			var name = "parameter-" + parameter.Id;
+			if (parameter.IsTrigger) {
+				_parameterControls.Q<Button>(name)?.EnableInClassList("is-active", parameter.Value > parameter.Minimum + Mathf.Epsilon);
+				return;
+			}
 			if (parameter.Type == ParameterType.Float && parameter.HasRange) {
 				_parameterControls.Q<Slider>(name)?.SetValueWithoutNotify(parameter.TypedValue.AsFloat());
 				return;

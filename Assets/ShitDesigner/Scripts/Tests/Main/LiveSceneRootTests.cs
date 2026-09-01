@@ -1,6 +1,8 @@
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace ShitDesigner.Main.Tests {
 	[TestFixture]
@@ -57,12 +59,40 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(scene.GetParameterDefinitions().Single().Id, Is.EqualTo("scene-specific"));
 		}
 
+		[Test]
+		public void TriggerParameterUsesPianoControl() {
+			_root = new GameObject("Live Trigger Scene");
+			_root.AddComponent<TriggerRecordingParameter>();
+			var scene = _root.AddComponent<LiveSceneRoot>();
+			scene.Initialize("trigger-scene");
+
+			var definition = scene.GetParameterDefinitions().Single();
+			Assert.That(definition.IsTrigger, Is.True);
+
+			var controller = _root.AddComponent<LiveUiController>();
+			var createControl = typeof(LiveUiController).GetMethod("CreateParameterControl", BindingFlags.Instance | BindingFlags.NonPublic);
+			var control = createControl?.Invoke(controller, new object[] { definition });
+
+			Assert.That(control, Is.InstanceOf<Button>());
+			Assert.That(((Button)control).text, Is.EqualTo("PIANO"));
+			Assert.That(((Button)control).ClassListContains("parameter-piano"), Is.True);
+		}
+
 		private sealed class RecordingParameter : MonoBehaviour, ILiveSceneParameter {
 			public float Value { get; private set; }
 			public LiveParameterDefinition Definition => new LiveParameterDefinition("scene-specific", "Scene Specific", -5f, 5f, Value);
 
 			public bool TrySetValue(float value, out string rejectionReason) {
 				Value = value;
+				rejectionReason = string.Empty;
+				return true;
+			}
+		}
+
+		private sealed class TriggerRecordingParameter : MonoBehaviour, ILiveSceneParameter, ILiveSceneTriggerParameter {
+			public LiveParameterDefinition Definition => new LiveParameterDefinition("trigger", "Trigger", 0f, 1f, 0f);
+
+			public bool TrySetValue(float value, out string rejectionReason) {
 				rejectionReason = string.Empty;
 				return true;
 			}

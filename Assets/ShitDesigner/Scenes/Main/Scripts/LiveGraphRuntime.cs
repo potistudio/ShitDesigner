@@ -1890,7 +1890,7 @@ namespace ShitDesigner.Main {
 		}
 
 		public LiveParameterDefinition ToDefinition() {
-			return new LiveParameterDefinition(_definition.Id, _definition.DisplayName, Source.Minimum, Source.Maximum, _baseValue);
+			return new LiveParameterDefinition(_definition.Id, _definition.DisplayName, Source.Minimum, Source.Maximum, _baseValue, _isTriggerParameter);
 		}
 
 		public bool TrySetParameter(ParameterValue value, out string rejectionReason) {
