@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using NUnit.Framework;
 using ShitDesigner.AssetFlush;
 using ShitDesigner.Main;
@@ -117,6 +118,44 @@ namespace ShitDesigner.Tests.Media {
 			finally {
 				Object.DestroyImmediate(first);
 				Object.DestroyImmediate(second);
+				Object.DestroyImmediate(host);
+			}
+		}
+
+		[Test]
+		public void Scene_LiveParameterRandomlySelectsAmongAssetsWithMatchingId() {
+			var host = new GameObject("AssetFlushMatchingIdTest");
+			var first = new Texture2D(2, 2);
+			var second = new Texture2D(2, 2);
+			var other = new Texture2D(2, 2);
+			var randomState = Random.state;
+			try {
+				Random.InitState(12345);
+				var scene = host.AddComponent<AssetFlushScene>();
+				scene.FadeOutSeconds = 0f;
+				scene.SetImageEntries(
+					new AssetFlushImageEntry("shared", first),
+					new AssetFlushImageEntry("shared", second),
+					new AssetFlushImageEntry("other", other));
+				var liveRoot = host.AddComponent<LiveSceneRoot>();
+				liveRoot.Initialize("asset-flush-matching-id-test");
+				var selected = new HashSet<Texture>();
+
+				Assert.That(liveRoot.PublicParameterIds, Is.EquivalentTo(new[] { "shared", "other" }));
+				for (var index = 0; index < 32; index++) {
+					Assert.That(liveRoot.TrySetParameter("shared", 1f, out var pressRejection), Is.True, pressRejection);
+					selected.Add(scene.OutputTexture);
+					Assert.That(scene.OutputTexture, Is.Not.SameAs(other));
+					Assert.That(liveRoot.TrySetParameter("shared", 0f, out var releaseRejection), Is.True, releaseRejection);
+				}
+
+				Assert.That(selected, Is.EquivalentTo(new Texture[] { first, second }));
+			}
+			finally {
+				Random.state = randomState;
+				Object.DestroyImmediate(first);
+				Object.DestroyImmediate(second);
+				Object.DestroyImmediate(other);
 				Object.DestroyImmediate(host);
 			}
 		}
