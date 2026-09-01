@@ -87,20 +87,20 @@ namespace ShitDesigner.Main {
 					return;
 				}
 			}
+			if (keyboard.rightArrowKey.wasPressedThisFrame) {
+				m_AdjustProgramWidth(LiveGraphRuntime.ProgramWidthStep);
+				return;
+			}
+			if (keyboard.leftArrowKey.wasPressedThisFrame) {
+				m_AdjustProgramWidth(-LiveGraphRuntime.ProgramWidthStep);
+				return;
+			}
 			if (m_IsEditMode()) {
 				if (keyboard.upArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, -1);
 				if (keyboard.downArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, 1);
 				if (keyboard.spaceKey.wasPressedThisFrame) m_ToggleSelectedEffectCategory();
 				var effectIndex = PressedInstantEffectIndex(keyboard);
 				if (effectIndex >= 0) m_AssignInstantEffect(effectIndex);
-				return;
-			}
-			if (keyboard.pKey.wasPressedThisFrame) {
-				m_AdjustProgramWidth(LiveGraphRuntime.ProgramWidthStep);
-				return;
-			}
-			if (keyboard.oKey.wasPressedThisFrame) {
-				m_AdjustProgramWidth(-LiveGraphRuntime.ProgramWidthStep);
 				return;
 			}
 			if (keyboard.leftBracketKey.wasPressedThisFrame) {
@@ -137,8 +137,6 @@ namespace ShitDesigner.Main {
 					if (!key.isPressed) EndPianoOverlayTake(laneIndex);
 				}
 			}
-			if (keyboard.leftArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(-1, 0);
-			if (keyboard.rightArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(1, 0);
 			if (keyboard.upArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, -1);
 			if (keyboard.downArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, 1);
 			if (keyboard.enterKey.wasPressedThisFrame) m_LaunchSelectedPatch();
