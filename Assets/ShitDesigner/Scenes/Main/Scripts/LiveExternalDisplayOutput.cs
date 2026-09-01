@@ -248,8 +248,7 @@ namespace ShitDesigner.Main {
 		}
 
 		private DisplayOutput CreateOutput(int displayNumber) {
-			var display = Display.displays[displayNumber - 1];
-			var resolution = ResolveDisplayResolution(display.systemWidth, display.systemHeight);
+			var resolution = ResolveOutputResolution(displayNumber);
 			// DisplayTransform writes final sRGB-encoded bytes itself. The native
 			// macOS presenter must therefore sample an unorm texture; marking this
 			// texture as sRGB would make Metal decode it before presentation and
@@ -272,8 +271,7 @@ namespace ShitDesigner.Main {
 #if UNITY_STANDALONE_OSX && !UNITY_EDITOR
 			try {
 				var output = new DisplayOutput(new MacExternalDisplayPresenter(displayNumber - 1, displayTexture), displayTexture);
-				output.SetScalingMode(ScalingMode);
-				output.SetEmulationAspect(EmulationAspect);
+				ApplyInitialPresentation(output, displayNumber);
 				return output;
 			}
 			catch {
@@ -291,16 +289,26 @@ namespace ShitDesigner.Main {
 			var presenter = canvasObject.AddComponent<LiveProgramDisplayCanvas>();
 			presenter.Initialize(canvas, displayTexture);
 			var output = new DisplayOutput(canvas, presenter, canvasObject.AddComponent<WindowsDisplayWindowController>(), displayTexture);
-			output.SetScalingMode(ScalingMode);
-			output.SetEmulationAspect(EmulationAspect);
+			ApplyInitialPresentation(output, displayNumber);
 			return output;
 #endif
 		}
 
-		internal static Vector2Int ResolveDisplayResolution(int systemWidth, int systemHeight) {
-			return systemWidth > 0 && systemHeight > 0
-				? new Vector2Int(systemWidth, systemHeight)
-				: new Vector2Int(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight);
+		private static void ApplyInitialPresentation(DisplayOutput output, int displayNumber) {
+			output.SetScalingMode(ResolveInitialScalingMode(displayNumber));
+			output.SetEmulationAspect(ResolveInitialEmulationAspect(displayNumber));
+		}
+
+		internal static ExternalDisplayScalingMode ResolveInitialScalingMode(int displayNumber)
+			=> ExternalDisplayScalingMode.Fill;
+
+		internal static ExternalDisplayEmulationAspect ResolveInitialEmulationAspect(int displayNumber)
+			=> displayNumber == 2 ? ExternalDisplayEmulationAspect.Ratio4_5x1 : ExternalDisplayEmulationAspect.Display;
+
+		internal static Vector2Int ResolveOutputResolution(int displayNumber) {
+			return displayNumber == 2
+				? new Vector2Int(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight)
+				: new Vector2Int(LiveGraphRuntime.OverlayWidth, LiveGraphRuntime.OverlayHeight);
 		}
 
 		private bool OutputsDoNotMatchConnectedDisplays() {
