@@ -41,6 +41,25 @@ namespace ShitDesigner.Tests.Scene {
 		}
 
 		[Test]
+		public void RewindingBpmClockDoesNotRebuildGeneratedCandy() {
+			var root = new GameObject("Chitose Candy Test");
+			try {
+				var cutScene = root.AddComponent<ChitoseCandyCutScene>();
+				cutScene.SetBpmClock(new BeatClockFrame(120f, 0d));
+				cutScene.SetBpmClock(new BeatClockFrame(120f, 3d));
+				var generatedRoot = root.transform.Find("Generated Chitose Candy");
+				Assert.That(generatedRoot, Is.Not.Null);
+
+				cutScene.SetBpmClock(new BeatClockFrame(120f, 1d));
+
+				Assert.That(root.transform.GetChild(root.transform.childCount - 1), Is.SameAs(generatedRoot));
+			}
+			finally {
+				Object.DestroyImmediate(root);
+			}
+		}
+
+		[Test]
 		public void AddedCandyKeepsItsFrontInsideTheSpawnField() {
 			var root = new GameObject("Chitose Candy Test");
 			try {
