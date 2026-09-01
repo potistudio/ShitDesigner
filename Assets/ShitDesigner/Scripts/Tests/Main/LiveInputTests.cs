@@ -293,6 +293,20 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void MainCueFaderAppliesItsConfiguredResponseCurve() {
+			var curve = new AnimationCurve(
+				new Keyframe(0f, 0f),
+				new Keyframe(.5f, .25f),
+				new Keyframe(1f, 1f));
+			var fader = new LiveMainCueFader(responseCurve: curve);
+
+			fader.SetPosition(0f);
+			fader.SetPosition(.5f);
+
+			Assert.That(fader.AlternateOpacity, Is.EqualTo(.25f).Within(.0001f));
+		}
+
+		[Test]
 		public void KeyboardDigitsUsePianoAndShiftTurnsOnTheCurrentBeatForMatchingOverlayLanes() {
 			var patch = CreatePatch("patch-a");
 			Keyboard keyboard = null;
