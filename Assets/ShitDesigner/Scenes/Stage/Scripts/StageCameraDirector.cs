@@ -92,6 +92,8 @@ namespace ShitDesigner.Stage {
 		private int m_VideoSeekEarliestFrame;
 		private bool m_VideoSeekInFlight;
 		private bool m_ResumeVideoAfterSeek;
+		private bool m_VideoResumePending;
+		private int m_VideoResumeEarliestFrame;
 		private bool m_VideoFrameReadyOverrideActive;
 		private bool m_PreviousSendFrameReadyEvents;
 
@@ -123,6 +125,7 @@ namespace ShitDesigner.Stage {
 
 		private void Update() {
 			ApplyPendingVideoSeek();
+			ApplyPendingVideoResume();
 			if (!Application.isPlaying || m_GraphClockDriven || !m_IsSceneActive || !m_IsCuePlaying)
 				return;
 
@@ -280,6 +283,7 @@ namespace ShitDesigner.Stage {
 				playhead = Math.Min(playhead, duration);
 			m_PendingVideoPlayheadSeconds = playhead;
 			m_VideoSeekPending = true;
+			m_VideoResumePending = false;
 			ApplyPendingVideoSeek();
 		}
 
@@ -325,11 +329,11 @@ namespace ShitDesigner.Stage {
 				return;
 
 			m_VideoSeekInFlight = false;
-			if (m_VideoSeekPending) {
-				ApplyPendingVideoSeek();
+			if (m_VideoSeekPending)
 				return;
-			}
-			RestoreVideoPlayback();
+
+			m_VideoResumePending = true;
+			m_VideoResumeEarliestFrame = Time.frameCount + 1;
 		}
 
 		private void EnableVideoFrameReadyEvents() {
@@ -341,6 +345,13 @@ namespace ShitDesigner.Stage {
 			m_VideoFrameReadyOverrideActive = true;
 		}
 
+		private void ApplyPendingVideoResume() {
+			if (!m_VideoResumePending || Time.frameCount < m_VideoResumeEarliestFrame)
+				return;
+
+			RestoreVideoPlayback();
+		}
+
 		private void RestoreVideoPlayback() {
 			if (m_ResumeVideoAfterSeek && m_VideoPlayer != null && m_VideoPlayer.isPrepared)
 				m_VideoPlayer.Play();
@@ -349,6 +360,7 @@ namespace ShitDesigner.Stage {
 			m_ResumeVideoAfterSeek = false;
 			m_VideoPauseSettling = false;
 			m_VideoSeekInFlight = false;
+			m_VideoResumePending = false;
 			m_VideoFrameReadyOverrideActive = false;
 		}
 

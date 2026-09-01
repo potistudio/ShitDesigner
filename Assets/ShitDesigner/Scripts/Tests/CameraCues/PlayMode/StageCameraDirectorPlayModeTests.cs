@@ -55,6 +55,7 @@ namespace ShitDesigner.CameraCues.Tests {
 					"Normal playback must decode a frame before the seek-race regression is exercised.");
 
 				var targetFrameReady = false;
+				var resumedInsideFrameReady = false;
 				var completedTime = double.NaN;
 				var observedFrames = new List<string>();
 				videoPlayer.frameReady += (source, frameIndex) => {
@@ -62,6 +63,7 @@ namespace ShitDesigner.CameraCues.Tests {
 					if (System.Math.Abs(source.time - .5d) > .05d)
 						return;
 					targetFrameReady = true;
+					resumedInsideFrameReady = source.isPlaying;
 					completedTime = source.time;
 				};
 
@@ -76,6 +78,8 @@ namespace ShitDesigner.CameraCues.Tests {
 				Assert.That(targetFrameReady, Is.True,
 					"The target video frame was not displayed within 5 seconds. Observed: " + string.Join("; ", observedFrames));
 				Assert.That(completedTime, Is.EqualTo(.5d).Within(.05d));
+				Assert.That(resumedInsideFrameReady, Is.False,
+					"Playback must not resume reentrantly from inside VideoPlayer.frameReady.");
 
 				var resumeDeadline = Time.realtimeSinceStartup + 2f;
 				while (!videoPlayer.isPlaying && Time.realtimeSinceStartup < resumeDeadline)
