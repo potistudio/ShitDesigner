@@ -50,7 +50,7 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(host.ReadModel, Is.Not.Null);
 			Assert.That(host.ReadModel.Patches.Count, Is.EqualTo(4));
 			Assert.That(host.ReadModel.ProgramTexture, Is.Not.Null);
-			var outputSizes = LiveGraphBootstrap.ResolveOutputRenderSizes(Display.displays);
+			var outputSizes = LiveGraphBootstrap.ResolveOutputRenderSizes();
 			Assert.That(host.ReadModel.ProgramTexture.width, Is.EqualTo(outputSizes.Program.Width));
 			Assert.That(host.ReadModel.ProgramTexture.height, Is.EqualTo(outputSizes.Program.Height));
 			Assert.That(host.ReadModel.ProgramTexture.format, Is.EqualTo(RenderTextureFormat.ARGBHalf));

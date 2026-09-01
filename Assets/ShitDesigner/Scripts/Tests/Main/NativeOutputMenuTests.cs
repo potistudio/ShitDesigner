@@ -72,45 +72,23 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(LiveExternalDisplayOutput.ResolveOutput(3, swapped: true), Is.EqualTo(LiveOutputKind.Program));
 		}
 
-		[TestCase(3840, 2160)]
-		[TestCase(1080, 1920)]
-		public void ExternalDisplayOutputUsesThePhysicalDisplayResolution(int width, int height) {
-			Assert.That(LiveExternalDisplayOutput.ResolveDisplayResolution(width, height),
-				Is.EqualTo(new Vector2Int(width, height)));
-		}
+		[Test]
+		public void LiveGraphUsesTheHardCodedOutputResolutions() {
+			var sizes = LiveGraphBootstrap.ResolveOutputRenderSizes();
 
-		[TestCase(0, 2160)]
-		[TestCase(3840, 0)]
-		public void ExternalDisplayOutputFallsBackWhenUnityHasNotReportedAResolution(int width, int height) {
-			Assert.That(LiveExternalDisplayOutput.ResolveDisplayResolution(width, height),
-				Is.EqualTo(new Vector2Int(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight)));
+			Assert.That(sizes.Program.Width, Is.EqualTo(1920));
+			Assert.That(sizes.Program.Height, Is.EqualTo(1080));
+			Assert.That(sizes.Overlay.Width, Is.EqualTo(3840));
+			Assert.That(sizes.Overlay.Height, Is.EqualTo(1536));
 		}
 
 		[Test]
-		public void LiveGraphUsesEachOutputsPhysicalDisplayResolution() {
-			var sizes = LiveGraphBootstrap.ResolveOutputRenderSizes(new[] {
-				new Vector2Int(2560, 1440),
-				new Vector2Int(3840, 2160),
-				new Vector2Int(1080, 1920)
-			});
-
-			Assert.That(sizes.Program.Width, Is.EqualTo(3840));
-			Assert.That(sizes.Program.Height, Is.EqualTo(2160));
-			Assert.That(sizes.Overlay.Width, Is.EqualTo(1080));
-			Assert.That(sizes.Overlay.Height, Is.EqualTo(1920));
-		}
-
-		[Test]
-		public void MissingOutputDisplayUsesTheLegacyResolution() {
-			var sizes = LiveGraphBootstrap.ResolveOutputRenderSizes(new[] {
-				new Vector2Int(2560, 1440),
-				new Vector2Int(3840, 2160)
-			});
-
-			Assert.That(sizes.Program.Width, Is.EqualTo(3840));
-			Assert.That(sizes.Program.Height, Is.EqualTo(2160));
-			Assert.That(sizes.Overlay.Width, Is.EqualTo(LiveGraphRuntime.ProgramWidth));
-			Assert.That(sizes.Overlay.Height, Is.EqualTo(LiveGraphRuntime.ProgramHeight));
+		public void ExternalDisplaysUseTheHardCodedOutputPresentation() {
+			Assert.That(LiveExternalDisplayOutput.ResolveOutputResolution(2), Is.EqualTo(new Vector2Int(1920, 1080)));
+			Assert.That(LiveExternalDisplayOutput.ResolveInitialEmulationAspect(2), Is.EqualTo(ExternalDisplayEmulationAspect.Ratio4_5x1));
+			Assert.That(LiveExternalDisplayOutput.ResolveInitialScalingMode(2), Is.EqualTo(ExternalDisplayScalingMode.Fill));
+			Assert.That(LiveExternalDisplayOutput.ResolveOutputResolution(3), Is.EqualTo(new Vector2Int(3840, 1536)));
+			Assert.That(LiveExternalDisplayOutput.ResolveInitialEmulationAspect(3), Is.EqualTo(ExternalDisplayEmulationAspect.Display));
 		}
 
 		[Test]

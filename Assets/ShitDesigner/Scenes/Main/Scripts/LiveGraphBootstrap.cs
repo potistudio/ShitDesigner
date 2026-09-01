@@ -56,7 +56,7 @@ namespace ShitDesigner.Main {
 		}
 
 		public LiveGraphRuntime CreateRuntime() {
-			var outputSizes = ResolveOutputRenderSizes(Display.displays);
+			var outputSizes = ResolveOutputRenderSizes();
 			var graph = BuildGraph(outputSizes.Program, outputSizes.Overlay);
 			try { return new LiveGraphRuntime(graph, m_GlobalTimeEasing, outputSizes.Program, outputSizes.Overlay); }
 			catch {
@@ -65,25 +65,10 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		internal static LiveOutputRenderSizes ResolveOutputRenderSizes(Display[] displays) {
-			return ResolveOutputRenderSizes((displays ?? Array.Empty<Display>())
-				.Select(display => new Vector2Int(display.systemWidth, display.systemHeight))
-				.ToArray());
-		}
-
-		internal static LiveOutputRenderSizes ResolveOutputRenderSizes(IReadOnlyList<Vector2Int> displayResolutions) {
-			var fallback = new LiveRenderSize(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight);
+		internal static LiveOutputRenderSizes ResolveOutputRenderSizes() {
 			return new LiveOutputRenderSizes(
-				ResolveDisplayRenderSize(displayResolutions, 1, fallback),
-				ResolveDisplayRenderSize(displayResolutions, 2, fallback));
-		}
-
-		private static LiveRenderSize ResolveDisplayRenderSize(IReadOnlyList<Vector2Int> displayResolutions, int displayIndex, LiveRenderSize fallback) {
-			if (displayResolutions == null || displayIndex < 0 || displayIndex >= displayResolutions.Count) return fallback;
-			var resolution = LiveExternalDisplayOutput.ResolveDisplayResolution(
-				displayResolutions[displayIndex].x,
-				displayResolutions[displayIndex].y);
-			return new LiveRenderSize(resolution.x, resolution.y);
+				new LiveRenderSize(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight),
+				new LiveRenderSize(LiveGraphRuntime.OverlayWidth, LiveGraphRuntime.OverlayHeight));
 		}
 
 		private LiveGraph BuildGraph(LiveRenderSize programRenderSize, LiveRenderSize overlayRenderSize) {
