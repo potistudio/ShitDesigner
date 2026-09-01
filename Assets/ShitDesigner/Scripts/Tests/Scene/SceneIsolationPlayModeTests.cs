@@ -15,6 +15,31 @@ namespace ShitDesigner.Tests.Scene {
 		private static NodeInstanceId Node(int index) => new NodeInstanceId($"{index + 10:00000000}-0000-4000-8000-000000000000");
 
 		[UnityTest]
+		public IEnumerator SceneCreateRequestConfiguresAnExplicitSkybox() {
+			var prefab = new GameObject("Skybox Prefab");
+			var cameraObject = new GameObject("Camera");
+			cameraObject.transform.SetParent(prefab.transform, false);
+			cameraObject.AddComponent<Camera>();
+			cameraObject.AddComponent<UniversalAdditionalCameraData>().renderType = CameraRenderType.Base;
+			var material = new Material(Shader.Find("Skybox/Procedural"));
+			var manager = new SceneIsolationManager();
+			var created = manager.Create(new SceneCreateRequest(Node(33), SceneNodeKind.ThreeD,
+				"SceneIsolation.Skybox", prefab: prefab, transparentBackground: true, skyboxMaterial: material));
+			try {
+				Assert.That(created.IsSuccess, Is.True, created.IsFailure ? created.Error.Message : string.Empty);
+				Assert.That(created.Value.Camera.clearFlags, Is.EqualTo(CameraClearFlags.Skybox));
+				Assert.That(created.Value.Camera.GetComponent<Skybox>().material, Is.SameAs(material));
+			}
+			finally {
+				if (created.IsSuccess) created.Value.Dispose();
+				Object.DestroyImmediate(material);
+				Object.DestroyImmediate(prefab);
+			}
+			for (var index = 0; index < 120 && manager.ActiveNodeCount > 0; index++) yield return null;
+			manager.Dispose();
+		}
+
+		[UnityTest]
 		public IEnumerator SingleCameraRenderRequestUpdatesTheIsolatedVolumeStack() {
 			var prefab = new GameObject("Post Processing Prefab");
 			var cameraObject = new GameObject("Camera");
