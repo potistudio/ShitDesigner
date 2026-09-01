@@ -344,6 +344,7 @@ namespace ShitDesigner.Main {
 		private readonly ShaderPassGraphRuntimeNode m_InvertNode;
 		private readonly ShaderPassGraphRuntimeNode m_CrossfadeNode;
 		private readonly RenderTexture m_InvertedOverlay;
+		private float m_MainCompositeOpacity = .5f;
 		private bool m_Disposed;
 
 		public RenderTexture Output { get; }
@@ -375,20 +376,11 @@ namespace ShitDesigner.Main {
 			if (main == null) throw new ArgumentNullException(nameof(main));
 			Texture accumulated = main;
 			var scratchIndex = 0;
-			if (alternateMain != null && compositeMain) {
-				var inputs = new Dictionary<PortId, Texture> {
-					{ new PortId("a"), alternateMain },
-					{ new PortId("b"), main }
-				};
-				var blended = m_BlendNodes[LiveSequencerCellMode.Normal].Render(inputs, m_Scratch[0], frameNumber, graphTime);
-				if (blended.IsFailure) throw new InvalidOperationException(blended.Error.Message);
-				accumulated = m_Scratch[0];
-				scratchIndex = 1;
-			}
-			else if (alternateMain != null && alternateOpacity > 0f) {
-				if (alternateOpacity >= 1f) accumulated = alternateMain;
+			var mainMix = compositeMain ? m_MainCompositeOpacity : alternateOpacity;
+			if (alternateMain != null && mainMix > 0f) {
+				if (mainMix >= 1f) accumulated = alternateMain;
 				else {
-					if (!m_CrossfadeNode.TrySetDirectParameter("progress", ParameterValue.FromFloat(alternateOpacity), out var rejectionReason))
+					if (!m_CrossfadeNode.TrySetDirectParameter("progress", ParameterValue.FromFloat(mainMix), out var rejectionReason))
 						throw new InvalidOperationException("The Main Cue crossfade could not be configured: " + rejectionReason);
 					var inputs = new Dictionary<PortId, Texture> {
 						{ new PortId("a"), main },
@@ -427,6 +419,10 @@ namespace ShitDesigner.Main {
 			}
 			Graphics.Blit(accumulated, Output);
 			return Output;
+		}
+
+		public void SetMainCompositeOpacity(float opacity) {
+			m_MainCompositeOpacity = Mathf.Clamp01(opacity);
 		}
 
 		public void Dispose() {
@@ -1452,6 +1448,10 @@ namespace ShitDesigner.Main {
 
 		public void ConfigureMainCueFaderCurve(AnimationCurve responseCurve) {
 			m_MainCueFader.SetResponseCurve(responseCurve);
+		}
+
+		public void ConfigureMainCompositeOpacity(float opacity) {
+			_graph.Compositor.SetMainCompositeOpacity(opacity);
 		}
 
 		public LiveParameterApplicationResult Apply(LiveParameterRequest request) {
