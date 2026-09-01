@@ -166,78 +166,7 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void ShiftAAndBracketRecallTheOppositeHotCueBeforeSwitching() {
-			Keyboard keyboard = null;
-			try {
-				keyboard = InputSystem.AddDevice<Keyboard>();
-				keyboard.MakeCurrent();
-				var queue = new LiveParameterQueue();
-				var input = new LiveKeyboardInput(queue, new PatchDefinition[0], _ => { }, (_, _) => { }, () => { }, _ => { },
-					completeMainCueSwitch: () => queue.EnqueueToggleMainCue());
-
-				PollKey(input, keyboard, Key.LeftShift, Key.A, Key.LeftBracket);
-
-				var requests = new List<LiveParameterRequest>();
-				queue.Drain(requests);
-				Assert.That(requests.Select(request => request.Kind), Is.EqualTo(new[] {
-					LiveParameterRequestKind.RecallOppositeHotCue,
-					LiveParameterRequestKind.ToggleMainCue
-				}));
-				Assert.That(requests[0].ParameterValue.AsInt(), Is.Zero);
-			}
-			finally {
-				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
-			}
-		}
-
-		[Test]
-		public void ShiftAAndBracketStayOnTargetAcrossAdjacentFrameOrder() {
-			Keyboard keyboard = null;
-			try {
-				keyboard = InputSystem.AddDevice<Keyboard>();
-				keyboard.MakeCurrent();
-				var queue = new LiveParameterQueue();
-				var input = new LiveKeyboardInput(queue, new PatchDefinition[0], _ => { }, (_, _) => { }, () => { }, _ => { },
-					completeMainCueSwitch: () => queue.EnqueueToggleMainCue());
-
-				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift, Key.A));
-				InputSystem.Update();
-				input.Poll("patch-a");
-				var requests = new List<LiveParameterRequest>();
-				queue.Drain(requests);
-				Assert.That(requests.Select(request => request.Kind), Is.EqualTo(new[] { LiveParameterRequestKind.ToggleMainCue }));
-
-				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift, Key.A, Key.LeftBracket));
-				InputSystem.Update();
-				input.Poll("patch-a");
-				requests.Clear();
-				queue.Drain(requests);
-				Assert.That(requests.Select(request => request.Kind), Is.EqualTo(new[] { LiveParameterRequestKind.RecallHotCue }));
-				Assert.That(requests[0].ParameterValue.AsInt(), Is.Zero);
-
-				InputSystem.QueueStateEvent(keyboard, new KeyboardState());
-				InputSystem.Update();
-				input.Poll("patch-a");
-				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift, Key.LeftBracket));
-				InputSystem.Update();
-				input.Poll("patch-a");
-				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift, Key.A));
-				InputSystem.Update();
-				input.Poll("patch-a");
-				requests.Clear();
-				queue.Drain(requests);
-				Assert.That(requests.Select(request => request.Kind), Is.EqualTo(new[] {
-					LiveParameterRequestKind.RecallOppositeHotCue,
-					LiveParameterRequestKind.ToggleMainCue
-				}));
-			}
-			finally {
-				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
-			}
-		}
-
-		[Test]
-		public void KeyboardAUsesPianoSwitchAndShiftASwitchesCompletely() {
+		public void KeyboardMapsMomentaryAndPermanentMainTakesWithCompositeShiftVariants() {
 			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.A));
 			Keyboard keyboard = null;
 			try {
@@ -246,9 +175,12 @@ namespace ShitDesigner.Main.Tests {
 				var queue = new LiveParameterQueue();
 				var switches = new List<string>();
 				var input = new LiveKeyboardInput(queue, new[] { patch }, _ => { }, (_, _) => { }, () => { }, _ => { },
-					beginPianoMainCueSwitch: () => switches.Add("begin"),
-					endPianoMainCueSwitch: () => switches.Add("end"),
-					completeMainCueSwitch: () => switches.Add("complete"));
+					beginPianoMainCueSwitch: () => switches.Add("momentary-main-begin"),
+					endPianoMainCueSwitch: () => switches.Add("momentary-main-end"),
+					completeMainCueSwitch: () => switches.Add("permanent-main"),
+					beginMomentaryMainComposite: () => switches.Add("momentary-composite-begin"),
+					endMomentaryMainComposite: () => switches.Add("momentary-composite-end"),
+					completeMainComposite: () => switches.Add("permanent-composite"));
 
 				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.A));
 				InputSystem.Update();
@@ -256,16 +188,15 @@ namespace ShitDesigner.Main.Tests {
 				InputSystem.QueueStateEvent(keyboard, new KeyboardState());
 				InputSystem.Update();
 				input.Poll("patch-a");
-				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.A));
-				InputSystem.QueueStateEvent(keyboard, new KeyboardState());
-				InputSystem.Update();
-				input.Poll("patch-a");
-				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift, Key.A));
-				InputSystem.QueueStateEvent(keyboard, new KeyboardState());
-				InputSystem.Update();
-				input.Poll("patch-a");
+				PollKey(input, keyboard, Key.LeftShift, Key.A);
+				PollKey(input, keyboard, Key.S);
+				PollKey(input, keyboard, Key.LeftShift, Key.S);
 
-				Assert.That(switches, Is.EqualTo(new[] { "begin", "end", "begin", "end", "complete" }));
+				Assert.That(switches, Is.EqualTo(new[] {
+					"momentary-main-begin", "momentary-main-end",
+					"momentary-composite-begin", "momentary-composite-end",
+					"permanent-main", "permanent-composite"
+				}));
 				Assert.That(queue.Count, Is.Zero);
 			}
 			finally {

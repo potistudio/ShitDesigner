@@ -86,12 +86,15 @@ namespace ShitDesigner.Main {
 		private readonly Action m_BeginPianoMainCueSwitch;
 		private readonly Action m_EndPianoMainCueSwitch;
 		private readonly Action m_CompleteMainCueSwitch;
+		private readonly Action m_BeginMomentaryMainComposite;
+		private readonly Action m_EndMomentaryMainComposite;
+		private readonly Action m_CompleteMainComposite;
 		private readonly Action<int> m_AdjustProgramWidth;
 		private readonly Action<int, bool> m_FireLiveParameter;
 		private readonly Key m_BlackoutKey;
 		private readonly Action<bool> m_SetBlackoutActive;
 		private bool m_IsPianoMainCueSwitchHeld;
-		private bool m_HasCompletedMainCueSwitchForCurrentAPress;
+		private bool m_IsMomentaryMainCompositeHeld;
 		private bool m_IsBlackoutHeld;
 		private int m_HeldPianoOverlayTakeMask;
 		private int m_HeldLiveParameterMask;
@@ -102,7 +105,8 @@ namespace ShitDesigner.Main {
 			Action toggleEditMode = null, Func<bool> isEditMode = null, Action toggleSelectedEffectCategory = null, Action beginPianoMainCueSwitch = null,
 			Action endPianoMainCueSwitch = null, Action completeMainCueSwitch = null, Action<int> endPianoOverlayTake = null,
 			Action<int> turnOnOverlaySequencerStep = null, Action<int> adjustProgramWidth = null, Action<int, bool> fireLiveParameter = null,
-			Key blackoutKey = Key.Backquote, Action<bool> setBlackoutActive = null) {
+			Key blackoutKey = Key.Backquote, Action<bool> setBlackoutActive = null, Action beginMomentaryMainComposite = null,
+			Action endMomentaryMainComposite = null, Action completeMainComposite = null) {
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));
 
@@ -124,6 +128,9 @@ namespace ShitDesigner.Main {
 			m_BeginPianoMainCueSwitch = beginPianoMainCueSwitch ?? (() => { });
 			m_EndPianoMainCueSwitch = endPianoMainCueSwitch ?? (() => { });
 			m_CompleteMainCueSwitch = completeMainCueSwitch ?? (() => { });
+			m_BeginMomentaryMainComposite = beginMomentaryMainComposite ?? (() => { });
+			m_EndMomentaryMainComposite = endMomentaryMainComposite ?? (() => { });
+			m_CompleteMainComposite = completeMainComposite ?? (() => { });
 			m_AdjustProgramWidth = adjustProgramWidth ?? (_ => { });
 			m_FireLiveParameter = fireLiveParameter ?? ((_, _) => { });
 			m_BlackoutKey = blackoutKey;
@@ -140,9 +147,8 @@ namespace ShitDesigner.Main {
 			QueueReleasedPatchKeyboardInputs(keyboard);
 			ReleaseLiveParameterKeys(keyboard);
 			if (string.IsNullOrWhiteSpace(loadedPatchId)) return;
-			if (!keyboard.aKey.isPressed) m_HasCompletedMainCueSwitchForCurrentAPress = false;
 			EndReleasedPianoOverlayTakes(keyboard);
-			if (EndPianoMainCueSwitchIfReleased(keyboard)) return;
+			if (EndMomentaryMainTakeIfReleased(keyboard)) return;
 			if (keyboard.tabKey.wasPressedThisFrame && keyboard.shiftKey.isPressed) {
 				m_ToggleEditMode();
 				return;
@@ -171,14 +177,20 @@ namespace ShitDesigner.Main {
 			}
 			if (keyboard.aKey.wasPressedThisFrame) {
 				if (keyboard.shiftKey.isPressed || keyboard.leftShiftKey.wasPressedThisFrame || keyboard.rightShiftKey.wasPressedThisFrame) {
-					m_IsPianoMainCueSwitchHeld = false;
-					CompleteMainCueSwitchOnceForCurrentAPress();
+					m_IsMomentaryMainCompositeHeld = true;
+					m_BeginMomentaryMainComposite();
 				}
 				else {
 					m_IsPianoMainCueSwitchHeld = true;
 					m_BeginPianoMainCueSwitch();
-					EndPianoMainCueSwitchIfReleased(keyboard);
 				}
+				EndMomentaryMainTakeIfReleased(keyboard);
+				return;
+			}
+			if (keyboard.sKey.wasPressedThisFrame) {
+				if (keyboard.shiftKey.isPressed || keyboard.leftShiftKey.wasPressedThisFrame || keyboard.rightShiftKey.wasPressedThisFrame)
+					m_CompleteMainComposite();
+				else m_CompleteMainCueSwitch();
 				return;
 			}
 
@@ -212,25 +224,19 @@ namespace ShitDesigner.Main {
 		private void RecallHotCue(Keyboard keyboard, int hotCueIndex) {
 			var shiftPressed = keyboard.shiftKey.isPressed || keyboard.leftShiftKey.wasPressedThisFrame
 				|| keyboard.rightShiftKey.wasPressedThisFrame;
-			var shouldCompleteMainCueSwitch = shiftPressed && keyboard.aKey.isPressed
-				&& !m_HasCompletedMainCueSwitchForCurrentAPress;
-			var oppositeScene = shiftPressed && (!keyboard.aKey.isPressed || shouldCompleteMainCueSwitch);
-			m_Queue.EnqueueRecallHotCue(hotCueIndex, oppositeScene);
-			if (!shouldCompleteMainCueSwitch) return;
-			m_IsPianoMainCueSwitchHeld = false;
-			CompleteMainCueSwitchOnceForCurrentAPress();
+			m_Queue.EnqueueRecallHotCue(hotCueIndex, shiftPressed);
 		}
 
-		private void CompleteMainCueSwitchOnceForCurrentAPress() {
-			if (m_HasCompletedMainCueSwitchForCurrentAPress) return;
-			m_HasCompletedMainCueSwitchForCurrentAPress = true;
-			m_CompleteMainCueSwitch();
-		}
-
-		private bool EndPianoMainCueSwitchIfReleased(Keyboard keyboard) {
-			if (!m_IsPianoMainCueSwitchHeld || keyboard.aKey.isPressed) return false;
-			m_IsPianoMainCueSwitchHeld = false;
-			m_EndPianoMainCueSwitch();
+		private bool EndMomentaryMainTakeIfReleased(Keyboard keyboard) {
+			if (keyboard.aKey.isPressed) return false;
+			if (m_IsPianoMainCueSwitchHeld) {
+				m_IsPianoMainCueSwitchHeld = false;
+				m_EndPianoMainCueSwitch();
+				return true;
+			}
+			if (!m_IsMomentaryMainCompositeHeld) return false;
+			m_IsMomentaryMainCompositeHeld = false;
+			m_EndMomentaryMainComposite();
 			return true;
 		}
 
