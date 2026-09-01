@@ -14,15 +14,13 @@ namespace ShitDesigner.CameraCues.Tests {
 	[TestFixture]
 	public sealed class CameraCueTests {
 		[Test]
-		public void StageAndInmKingAssetsWireBothHotCuesToTheCameraDirector() {
+		public void StageAssetsWireBothHotCuesToTheCameraDirector() {
 			var patch = AssetDatabase.LoadAssetAtPath<PatchDefinition>(
 				"Assets/ShitDesigner/Scenes/Stage/Stage Patch Definition.asset");
-			var inmKingPatch = AssetDatabase.LoadAssetAtPath<PatchDefinition>(
-				"Assets/ShitDesigner/Scenes/INM KING/INM KING Patch.asset");
 			var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/ShitDesigner/Scenes/Stage/Stage.prefab");
 
-			AssertHotCueWiring(patch);
-			AssertHotCueWiring(inmKingPatch);
+			Assert.That(patch, Is.Not.Null);
+			Assert.That(patch.Validate().IsSuccess, Is.True);
 			var cue1 = patch.GetHotCue(0).ConfiguredValues.Single();
 			var cue2 = patch.GetHotCue(1).ConfiguredValues.Single();
 			Assert.That(cue1.NodeId, Is.EqualTo("scene"));
@@ -49,15 +47,6 @@ namespace ShitDesigner.CameraCues.Tests {
 			Assert.That(videoPlayer.sendFrameReadyEvents, Is.True);
 			Assert.That(videoPlayer.targetTexture, Is.Not.Null.And.Not.SameAs(outputTexture));
 			Assert.That(outputTexture, Is.Not.Null);
-		}
-
-		private static void AssertHotCueWiring(PatchDefinition patch) {
-			Assert.That(patch, Is.Not.Null);
-			Assert.That(patch.Validate().IsSuccess, Is.True);
-			Assert.That(patch.GetHotCue(0).ConfiguredValues.Single().Id, Is.EqualTo(StageCameraDirector.Cue1ParameterId));
-			Assert.That(patch.GetHotCue(1).ConfiguredValues.Single().Id, Is.EqualTo(StageCameraDirector.Cue2ParameterId));
-			Assert.That(patch.Parameters.Any(parameter => parameter.ParameterId == StageCameraDirector.Cue1ParameterId), Is.True);
-			Assert.That(patch.Parameters.Any(parameter => parameter.ParameterId == StageCameraDirector.Cue2ParameterId), Is.True);
 		}
 
 		[Test]

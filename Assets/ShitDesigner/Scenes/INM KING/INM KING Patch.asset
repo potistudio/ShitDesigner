@@ -35,51 +35,5 @@ MonoBehaviour:
       m_Strength: 0
       m_Minimum: 0
       m_Maximum: 242.21866
-  - _id: camera_cue_1
-    _displayName: Camera Cue 1
-    _nodeId: scene
-    _parameterId: camera_cue_1
-    m_BeatModulation:
-      m_Enabled: 0
-      m_Signal: 0
-      m_Strength: 0
-      m_Minimum: 0
-      m_Maximum: 1
-  - _id: camera_cue_2
-    _displayName: Camera Cue 2
-    _nodeId: scene
-    _parameterId: camera_cue_2
-    m_BeatModulation:
-      m_Enabled: 0
-      m_Signal: 0
-      m_Strength: 0
-      m_Minimum: 0
-      m_Maximum: 1
-  m_HotCue1:
-    m_Values:
-    - m_NodeId: scene
-      _id: camera_cue_1
-      _type: 0
-      _floatValue: 1
-      _intValue: 0
-      _boolValue: 0
-      _vector2Value: {x: 0, y: 0}
-      _vector3Value: {x: 0, y: 0, z: 0}
-      _vector4Value: {x: 0, y: 0, z: 0, w: 0}
-      _colorValue: {r: 0, g: 0, b: 0, a: 0}
-      _textValue:
-  m_HotCue2:
-    m_Values:
-    - m_NodeId: scene
-      _id: camera_cue_2
-      _type: 0
-      _floatValue: 1
-      _intValue: 0
-      _boolValue: 0
-      _vector2Value: {x: 0, y: 0}
-      _vector3Value: {x: 0, y: 0, z: 0}
-      _vector4Value: {x: 0, y: 0, z: 0, w: 0}
-      _colorValue: {r: 0, g: 0, b: 0, a: 0}
-      _textValue:
   m_KeyboardInputs: []
   m_MidiInputs: []
