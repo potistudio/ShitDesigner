@@ -268,15 +268,17 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void KeyboardDigitsTurnOnMatchingOverlayLaneOncePerPress() {
+		public void KeyboardDigitsUsePianoAndShiftTurnsOnTheCurrentBeatForMatchingOverlayLanes() {
 			var patch = CreatePatch("patch-a");
 			Keyboard keyboard = null;
 			try {
 				keyboard = InputSystem.AddDevice<Keyboard>();
 				keyboard.MakeCurrent();
-				var activatedLanes = new List<int>();
+				var takes = new List<string>();
 				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch },
-					activatedLanes.Add, (_, _) => { }, () => { }, _ => { });
+					laneIndex => takes.Add("begin:" + laneIndex), (_, _) => { }, () => { }, _ => { },
+					endPianoOverlayTake: laneIndex => takes.Add("end:" + laneIndex),
+					turnOnOverlaySequencerStep: laneIndex => takes.Add("turn-on:" + laneIndex));
 
 				foreach (var key in new[] { Key.Digit1, Key.Digit2, Key.Digit3, Key.Digit4, Key.Digit5, Key.Digit6, Key.Digit7, Key.Digit8 })
 					PollKey(input, keyboard, key);
@@ -284,7 +286,11 @@ namespace ShitDesigner.Main.Tests {
 				InputSystem.Update();
 				input.Poll("patch-a");
 
-				Assert.That(activatedLanes, Is.EqualTo(new[] { 0, 1, 2, 3, 4, 5, 6, 7, 3 }));
+				Assert.That(takes, Is.EqualTo(new[] {
+					"begin:0", "end:0", "begin:1", "end:1", "begin:2", "end:2", "begin:3", "end:3",
+					"begin:4", "end:4", "begin:5", "end:5", "begin:6", "end:6", "begin:7", "end:7",
+					"turn-on:3"
+				}));
 			}
 			finally {
 				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
