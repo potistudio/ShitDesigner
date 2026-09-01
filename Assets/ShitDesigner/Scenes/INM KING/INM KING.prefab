@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7471955827744879701}
   - component: {fileID: 5966367710323647476}
+  - component: {fileID: 5966367710323647477}
   m_Layer: 0
   m_Name: INM KING
   m_TagString: Untagged
@@ -45,6 +46,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 398c17eaef8e41318d623bd76888d12a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.LiveSceneRoot
+--- !u!114 &5966367710323647477
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7278292172862599781}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f94c2bc8eb348d88441f7533a9c6bd1, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.LiveVideoPlayheadParameter
+  m_Id: transport.playhead_seconds
+  m_DisplayName: Video Playhead
+  m_VideoPlayer: {fileID: 34252812602808007}
 --- !u!1001 &8448406262057393679
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -110,5 +126,10 @@ PrefabInstance:
 --- !u!4 &2547488433416664161 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6225306745496578670, guid: 723bfbdaab71a9f418b1c0525aaf45ea, type: 3}
+  m_PrefabInstance: {fileID: 8448406262057393679}
+  m_PrefabAsset: {fileID: 0}
+--- !u!328 &34252812602808007 stripped
+VideoPlayer:
+  m_CorrespondingSourceObject: {fileID: 8450851300628908232, guid: 723bfbdaab71a9f418b1c0525aaf45ea, type: 3}
   m_PrefabInstance: {fileID: 8448406262057393679}
   m_PrefabAsset: {fileID: 0}

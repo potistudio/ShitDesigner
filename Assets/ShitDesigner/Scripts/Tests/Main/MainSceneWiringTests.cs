@@ -107,6 +107,24 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void InmKingPublishesTheLedScreenVideoPlayhead() {
+			var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/ShitDesigner/Scenes/INM KING/INM KING.prefab");
+			var patch = AssetDatabase.LoadAssetAtPath<PatchDefinition>("Assets/ShitDesigner/Scenes/INM KING/INM KING Patch.asset");
+			var parameter = prefab.GetComponent<LiveVideoPlayheadParameter>();
+			var player = prefab.transform.Find("Stage/LED Screen/Video Player").GetComponent<UnityEngine.Video.VideoPlayer>();
+			var serializedParameter = new SerializedObject(parameter);
+
+			Assert.That(prefab.GetComponent<LiveSceneRoot>(), Is.Not.Null);
+			Assert.That(parameter, Is.Not.Null);
+			Assert.That(serializedParameter.FindProperty("m_VideoPlayer").objectReferenceValue, Is.SameAs(player));
+			Assert.That(parameter.Definition.Id, Is.EqualTo(LiveVideoPlayheadParameter.ParameterId));
+			Assert.That(parameter.Definition.Maximum, Is.EqualTo((float)player.clip.length).Within(.001f));
+			var published = patch.Parameters.Single(candidate => candidate.Id == LiveVideoPlayheadParameter.ParameterId);
+			Assert.That(published.NodeId, Is.EqualTo("scene"));
+			Assert.That(published.ParameterId, Is.EqualTo(LiveVideoPlayheadParameter.ParameterId));
+		}
+
+		[Test]
 		public void EffectCatalog_ContainsImageProcessingNodesButNotGenerators() {
 			var effects = LiveGraphBootstrap.BuildEffectNodeCatalog(ShitDesigner.Nodes.ShaderNodeManifest.CreateBuiltIn());
 
