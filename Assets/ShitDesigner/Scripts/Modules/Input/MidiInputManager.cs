@@ -323,6 +323,7 @@ namespace ShitDesigner.Input {
 			OpenConfiguredDevice();
 		}
 
+		private void OnDisable() => Shutdown();
 		private void OnDestroy() => Shutdown();
 	}
 }
