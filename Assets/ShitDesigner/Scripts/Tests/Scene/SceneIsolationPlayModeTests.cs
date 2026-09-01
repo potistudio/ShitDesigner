@@ -19,7 +19,9 @@ namespace ShitDesigner.Tests.Scene {
 			var prefab = new GameObject("Post Processing Prefab");
 			var cameraObject = new GameObject("Camera");
 			cameraObject.transform.SetParent(prefab.transform, false);
-			cameraObject.AddComponent<Camera>();
+			var sourceCamera = cameraObject.AddComponent<Camera>();
+			sourceCamera.aspect = 16f / 9f;
+			cameraObject.AddComponent<RenderAspectCapture>();
 			var cameraData = cameraObject.AddComponent<UniversalAdditionalCameraData>();
 			cameraData.renderType = CameraRenderType.Base;
 			cameraData.renderPostProcessing = true;
@@ -31,7 +33,7 @@ namespace ShitDesigner.Tests.Scene {
 			var volume = volumeObject.AddComponent<Volume>();
 			volume.isGlobal = true;
 			volume.sharedProfile = profile;
-			var target = new RenderTexture(16, 16, 24, RenderTextureFormat.ARGBHalf);
+			var target = new RenderTexture(18, 12, 24, RenderTextureFormat.ARGBHalf);
 			target.Create();
 			var manager = new SceneIsolationManager(renderSource: new UnityCameraRenderSource());
 			var created = manager.Create(new SceneCreateRequest(Node(31), SceneNodeKind.ThreeD, "SceneIsolation.PostProcessing", prefab: prefab));
@@ -39,6 +41,9 @@ namespace ShitDesigner.Tests.Scene {
 				Assert.That(created.IsSuccess, Is.True, created.IsFailure ? created.Error.Message : string.Empty);
 				var rendered = created.Value.Render(target, target.width, target.height, 1);
 				Assert.That(rendered.IsSuccess, Is.True, rendered.IsFailure ? rendered.Error.Message : string.Empty);
+				Assert.That(created.Value.Root.GetComponentInChildren<RenderAspectCapture>().AspectDuringRender,
+					Is.EqualTo(1.5f).Within(0.0001f));
+				Assert.That(created.Value.Camera.aspect, Is.EqualTo(16f / 9f).Within(0.0001f));
 				Assert.That(VolumeManager.instance.stack.GetComponent<Bloom>().intensity.value, Is.EqualTo(3f));
 			}
 			finally {
@@ -431,5 +436,10 @@ namespace ShitDesigner.Tests.Scene {
 
 		public void ActivateScene() => ActivationCount++;
 		public void DeactivateScene() => DeactivationCount++;
+	}
+
+	internal sealed class RenderAspectCapture : MonoBehaviour {
+		public float AspectDuringRender { get; private set; }
+		private void OnPreCull() => AspectDuringRender = GetComponent<Camera>().aspect;
 	}
 }

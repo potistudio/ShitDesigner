@@ -29,8 +29,13 @@ namespace ShitDesigner.Scene {
 
 			var previousTarget = request.Camera.targetTexture;
 			var previousActive = RenderTexture.active;
+			var previousAspect = request.Camera.aspect;
 			var useBuiltInCameraRender = GraphicsSettings.currentRenderPipeline == null;
 			try {
+				// A render request supplies its destination separately from the
+				// Camera. Set the projection aspect explicitly so non-16:9 outputs
+				// change the camera framing instead of stretching a 16:9 projection.
+				request.Camera.aspect = request.Width / (float)request.Height;
 				if (useBuiltInCameraRender) {
 					// Built-in pipeline has no SRP render-request support.
 					request.Camera.targetTexture = target;
@@ -50,6 +55,7 @@ namespace ShitDesigner.Scene {
 				return Result.Failure<SceneRenderResult, Diagnostic>(new Diagnostic(new DiagnosticCode("scene.render.exception"), Severity.Error, exception.Message, nodeId: request.NodeId, generationId: request.GenerationId, module: "scene", exception: DiagnosticExceptionInfo.FromException(exception)));
 			}
 			finally {
+				request.Camera.aspect = previousAspect;
 				// URP's SingleCameraRequest owns its destination and temporarily
 				// borrows the camera target internally.  Do not pre-populate
 				// targetTexture or RenderTexture.active for the SRP path:
