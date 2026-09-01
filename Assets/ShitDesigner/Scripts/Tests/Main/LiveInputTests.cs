@@ -198,7 +198,7 @@ namespace ShitDesigner.Main.Tests {
 				keyboard.MakeCurrent();
 				var queue = new LiveParameterQueue();
 				var input = new LiveKeyboardInput(queue, new PatchDefinition[0], _ => { }, (_, _) => { }, () => { }, _ => { },
-					completeMainComposite: () => queue.EnqueueSetMainCueComposite(true));
+					completeMainComposite: () => queue.EnqueueToggleMainCueComposite());
 
 				PollKey(input, keyboard, Key.LeftShift, Key.S, Key.RightBracket);
 
@@ -206,10 +206,9 @@ namespace ShitDesigner.Main.Tests {
 				queue.Drain(requests);
 				Assert.That(requests.Select(request => request.Kind), Is.EqualTo(new[] {
 					LiveParameterRequestKind.RecallOppositeHotCue,
-					LiveParameterRequestKind.SetMainCueComposite
+					LiveParameterRequestKind.ToggleMainCueComposite
 				}));
 				Assert.That(requests[0].ParameterValue.AsInt(), Is.EqualTo(1));
-				Assert.That(requests[1].ParameterValue.AsBool(), Is.True);
 			}
 			finally {
 				if (keyboard != null) InputSystem.RemoveDevice(keyboard);

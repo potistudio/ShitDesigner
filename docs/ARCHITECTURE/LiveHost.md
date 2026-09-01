@@ -206,7 +206,7 @@
 
 - `A`は反対側のMainを押している間だけ表示し、離すと元のMainへ戻すMomentary Takeとする。`S`は反対側のMainへ完全に切り替えるPermanent Takeとする。
 - `Shift+A`は不透明な2つのMainを透過合成して重ね、離すと元の合成状態へ戻すMomentary Composite Takeとする。Main出力自身のアルファ値には依存せず、反対側Mainの不透明度はInspectorのMain Composite Opacity（既定50%）で設定する。
-- `Shift+S`は同じMain合成をキーから手を離した後も維持するPermanent Composite Takeとする。通常のPermanent TakeまたはMainパッチのLaunchは合成状態を解除する。
+- `Shift+S`はPermanent Composite Takeをトグルする。1回目でMain合成をキーから手を離した後も維持し、もう一度押すと合成を解除する。通常のPermanent TakeまたはMainパッチのLaunchでも合成状態を解除する。
 - `S`または`Shift+S`と`[`／`]`を同時に押した場合は、反対側のMainへHot Cueを先に適用し、その後にPermanent TakeまたはPermanent Composite Takeを1回だけ実行する。
 
 ### 2026-08-31: Main Cueの完全切替とフェーダー変化を分離する
