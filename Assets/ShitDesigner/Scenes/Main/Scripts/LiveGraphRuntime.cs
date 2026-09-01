@@ -1492,6 +1492,13 @@ namespace ShitDesigner.Main {
 				RefreshMainCueActivation();
 				return Accept(request);
 			}
+			if (request.Kind == LiveParameterRequestKind.ToggleMainCueComposite) {
+				if (!m_IsMainCueCompositeActive && m_MainCuePatches.Any(patch => patch == null))
+					return Reject(request, "Both Main Cue slots must be assigned before compositing.");
+				m_IsMainCueCompositeActive = !m_IsMainCueCompositeActive;
+				RefreshMainCueActivation();
+				return Accept(request);
+			}
 			if (request.Kind == LiveParameterRequestKind.SetParameter
 				&& LiveInstantEffectRenderer.TryParseParameterAddress(request.ParameterId, out var cueIndex, out var effectParameterId))
 				return _graph.InstantEffects.TrySetParameter(cueIndex, effectParameterId, request.ParameterValue, out var effectRejection)

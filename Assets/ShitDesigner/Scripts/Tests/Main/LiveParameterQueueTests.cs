@@ -158,16 +158,19 @@ namespace ShitDesigner.Main.Tests {
 			var fader = queue.EnqueueSetMainCueFader(.75f);
 			var toggle = queue.EnqueueToggleMainCue();
 			var composite = queue.EnqueueSetMainCueComposite(true);
+			var toggleComposite = queue.EnqueueToggleMainCueComposite();
 
 			var requests = new List<LiveParameterRequest>();
 			queue.Drain(requests);
 			Assert.That(fader.Accepted, Is.True);
 			Assert.That(toggle.Accepted, Is.True);
 			Assert.That(composite.Accepted, Is.True);
+			Assert.That(toggleComposite.Accepted, Is.True);
 			Assert.That(requests.Select(request => request.Kind), Is.EqualTo(new[] {
 				LiveParameterRequestKind.SetMainCueFader,
 				LiveParameterRequestKind.ToggleMainCue,
-				LiveParameterRequestKind.SetMainCueComposite
+				LiveParameterRequestKind.SetMainCueComposite,
+				LiveParameterRequestKind.ToggleMainCueComposite
 			}));
 			Assert.That(requests, Has.All.Matches<LiveParameterRequest>(request => request.PatchId == string.Empty));
 			Assert.That(requests[0].Value, Is.EqualTo(.75f));

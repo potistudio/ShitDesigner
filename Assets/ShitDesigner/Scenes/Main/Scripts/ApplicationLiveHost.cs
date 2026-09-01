@@ -384,8 +384,7 @@ namespace ShitDesigner.Main {
 		}
 
 		private void CompleteMainComposite() {
-			m_ReturnToPermanentMainComposite = true;
-			_parameterQueue.EnqueueSetMainCueComposite(true);
+			_parameterQueue.EnqueueToggleMainCueComposite();
 		}
 
 		private void BeginPianoOverlayTake(int laneIndex) {

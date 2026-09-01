@@ -16,6 +16,7 @@ namespace ShitDesigner.Main {
 		SetMainCueFader,
 		ToggleMainCue,
 		SetMainCueComposite,
+		ToggleMainCueComposite,
 		RecallHotCue,
 		RecallOppositeHotCue
 	}
@@ -112,6 +113,9 @@ namespace ShitDesigner.Main {
 		public LiveParameterEnqueueResult EnqueueSetMainCueComposite(bool active)
 			=> Enqueue(LiveParameterRequestKind.SetMainCueComposite, string.Empty, string.Empty, ParameterValue.FromBool(active));
 
+		public LiveParameterEnqueueResult EnqueueToggleMainCueComposite()
+			=> Enqueue(LiveParameterRequestKind.ToggleMainCueComposite, string.Empty, string.Empty, ParameterValue.FromFloat(0f));
+
 		public int Drain(ICollection<LiveParameterRequest> destination) {
 			if (destination == null) throw new ArgumentNullException(nameof(destination));
 
@@ -137,7 +141,8 @@ namespace ShitDesigner.Main {
 				|| kind == LiveParameterRequestKind.RecallOppositeHotCue
 				|| kind == LiveParameterRequestKind.SetMainCueFader
 				|| kind == LiveParameterRequestKind.ToggleMainCue
-				|| kind == LiveParameterRequestKind.SetMainCueComposite;
+				|| kind == LiveParameterRequestKind.SetMainCueComposite
+				|| kind == LiveParameterRequestKind.ToggleMainCueComposite;
 
 		private ulong NextSequenceNumber() {
 			var sequenceNumber = _nextSequenceNumber++;
