@@ -189,6 +189,7 @@ MonoBehaviour:
   m_SceneTimeJogSpeedPerStep: 1
   m_SceneTimeJogMaximumSpeedOffset: 4
   m_ThumbnailTimeOffsetSeconds: 1.14
+  m_BlackoutKey: 4
 --- !u!114 &444072068
 MonoBehaviour:
   m_ObjectHideFlags: 0
