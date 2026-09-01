@@ -18,6 +18,7 @@ struct OutputState {
   CAMetalLayer *layer = nil;
   std::atomic<void *> source{nullptr};
   std::atomic<bool> visible{false};
+  std::atomic<int> scalingMode{1};
 };
 
 IUnityInterfaces *s_interfaces = nullptr;
@@ -49,9 +50,11 @@ vertex VertexOutput vertex_main(uint vertexId [[vertex_id]]) {
 }
 
 fragment half4 fragment_main(VertexOutput input [[stage_in]], texture2d<half> source [[texture(0)]],
-                             constant float2 &uvScale [[buffer(0)]]) {
+                             constant float4 &displayParams [[buffer(0)]]) {
   constexpr sampler textureSampler(mag_filter::linear, min_filter::linear, address::clamp_to_edge);
-  float2 uv = (input.uv - 0.5) * uvScale + 0.5;
+  float2 uv = (input.uv - 0.5) * displayParams.xy + 0.5;
+  if (displayParams.z > 0.5 && (any(uv < 0.0) || any(uv > 1.0)))
+    return half4(0.0, 0.0, 0.0, 1.0);
   return source.sample(textureSampler, uv);
 }
 )METAL";
@@ -156,6 +159,7 @@ bool CreateOutputOnMainThread(int displayIndex) {
 void PresentOutput(int displayIndex) {
   CAMetalLayer *layer = nil;
   void *sourcePointer = nullptr;
+  int scalingMode = 1;
   {
     std::lock_guard<std::mutex> lock(s_outputsMutex);
     if (displayIndex <= 0 || displayIndex >= MaxDisplays)
@@ -165,6 +169,7 @@ void PresentOutput(int displayIndex) {
       return;
     layer = state->layer;
     sourcePointer = state->source.load();
+    scalingMode = state->scalingMode.load();
   }
 
   @autoreleasepool {
@@ -189,14 +194,23 @@ void PresentOutput(int displayIndex) {
                                  static_cast<float>(sourceTexture.height);
       const float targetAspect = static_cast<float>(drawable.texture.width) /
                                  static_cast<float>(drawable.texture.height);
-      float uvScale[2] = {1.0f, 1.0f};
-      if (sourceAspect > targetAspect)
-        uvScale[0] = targetAspect / sourceAspect;
-      else if (sourceAspect < targetAspect)
-        uvScale[1] = sourceAspect / targetAspect;
+      float displayParams[4] = {1.0f, 1.0f, 0.0f, 0.0f};
+      if (scalingMode == 1) {
+        if (sourceAspect > targetAspect)
+          displayParams[0] = targetAspect / sourceAspect;
+        else if (sourceAspect < targetAspect)
+          displayParams[1] = sourceAspect / targetAspect;
+      } else if (scalingMode == 2) {
+        if (sourceAspect > targetAspect)
+          displayParams[1] = sourceAspect / targetAspect;
+        else if (sourceAspect < targetAspect)
+          displayParams[0] = targetAspect / sourceAspect;
+        displayParams[2] = 1.0f;
+      }
       [encoder setRenderPipelineState:s_pipeline];
       [encoder setFragmentTexture:sourceTexture atIndex:0];
-      [encoder setFragmentBytes:uvScale length:sizeof(uvScale) atIndex:0];
+      [encoder setFragmentBytes:displayParams length:sizeof(displayParams)
+                         atIndex:0];
       [encoder drawPrimitives:MTLPrimitiveTypeTriangle
                   vertexStart:0
                   vertexCount:3];
@@ -243,6 +257,16 @@ ShitDesignerMacDisplaySetSource(int displayIndex, void *sourceTexture) {
   if (displayIndex > 0 && displayIndex < MaxDisplays &&
       s_outputs[displayIndex] != nullptr)
     s_outputs[displayIndex]->source.store(sourceTexture);
+}
+
+extern "C" UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API
+ShitDesignerMacDisplaySetScalingMode(int displayIndex, int scalingMode) {
+  if (scalingMode < 0 || scalingMode > 2)
+    return;
+  std::lock_guard<std::mutex> lock(s_outputsMutex);
+  if (displayIndex > 0 && displayIndex < MaxDisplays &&
+      s_outputs[displayIndex] != nullptr)
+    s_outputs[displayIndex]->scalingMode.store(scalingMode);
 }
 
 extern "C" UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API

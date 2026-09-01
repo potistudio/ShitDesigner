@@ -32,6 +32,7 @@ namespace ShitDesigner.Main {
 		public IReadOnlyList<int> ConnectedExternalDisplayNumbers => Enumerable.Range(2, Math.Min(OutputCount, Math.Max(0, ConnectedDisplayCount - 1))).ToArray();
 		public bool IsOutputActive => m_OutputActive.Any(active => active);
 		public bool IsTestPatternVisible { get; private set; }
+		public ExternalDisplayScalingMode ScalingMode { get; private set; } = ExternalDisplayScalingMode.Fill;
 		public bool IsAvailable => !UnityEngine.Application.isEditor && ConnectedDisplayCount > 1;
 		public bool CanSwapOutputs => !UnityEngine.Application.isEditor && ConnectedDisplayCount > OutputCount;
 		public ulong PresentedFrameNumber => _presentedFrameNumber;
@@ -88,6 +89,18 @@ namespace ShitDesigner.Main {
 			m_OutputsSwapped = !m_OutputsSwapped;
 			_presentedFrameNumber = 0;
 			ApplyOutputVisibility();
+			LastError = string.Empty;
+			return true;
+		}
+
+		public bool SetScalingMode(ExternalDisplayScalingMode mode) {
+			if (!Enum.IsDefined(typeof(ExternalDisplayScalingMode), mode)) return Fail("The external Display scaling mode is invalid.");
+			if (ScalingMode == mode) return true;
+			ScalingMode = mode;
+			foreach (var output in _outputs.Values) {
+				output.SetScalingMode(mode);
+				output.Present();
+			}
 			LastError = string.Empty;
 			return true;
 		}
@@ -217,7 +230,9 @@ namespace ShitDesigner.Main {
 			ClearTexture(displayTexture);
 #if UNITY_STANDALONE_OSX && !UNITY_EDITOR
 			try {
-				return new DisplayOutput(new MacExternalDisplayPresenter(displayNumber - 1, displayTexture), displayTexture);
+				var output = new DisplayOutput(new MacExternalDisplayPresenter(displayNumber - 1, displayTexture), displayTexture);
+				output.SetScalingMode(ScalingMode);
+				return output;
 			}
 			catch {
 				displayTexture.Release();
@@ -233,7 +248,9 @@ namespace ShitDesigner.Main {
 			canvas.enabled = false;
 			var presenter = canvasObject.AddComponent<LiveProgramDisplayCanvas>();
 			presenter.Initialize(canvas, displayTexture);
-			return new DisplayOutput(canvas, canvasObject.AddComponent<WindowsDisplayWindowController>(), displayTexture);
+			var output = new DisplayOutput(canvas, presenter, canvasObject.AddComponent<WindowsDisplayWindowController>(), displayTexture);
+			output.SetScalingMode(ScalingMode);
+			return output;
 #endif
 		}
 
@@ -285,6 +302,7 @@ namespace ShitDesigner.Main {
 
 		private readonly struct DisplayOutput {
 			public Canvas Canvas { get; }
+			public LiveProgramDisplayCanvas CanvasPresenter { get; }
 			public WindowsDisplayWindowController WindowController { get; }
 			public RenderTexture Texture { get; }
 #if UNITY_STANDALONE_OSX && !UNITY_EDITOR
@@ -292,14 +310,16 @@ namespace ShitDesigner.Main {
 
 			public DisplayOutput(MacExternalDisplayPresenter presenter, RenderTexture texture) {
 				Canvas = null;
+				CanvasPresenter = null;
 				WindowController = null;
 				Texture = texture;
 				m_MacPresenter = presenter;
 			}
 #endif
 
-			public DisplayOutput(Canvas canvas, WindowsDisplayWindowController windowController, RenderTexture texture) {
+			public DisplayOutput(Canvas canvas, LiveProgramDisplayCanvas canvasPresenter, WindowsDisplayWindowController windowController, RenderTexture texture) {
 				Canvas = canvas;
+				CanvasPresenter = canvasPresenter;
 				WindowController = windowController;
 				Texture = texture;
 #if UNITY_STANDALONE_OSX && !UNITY_EDITOR
@@ -318,6 +338,16 @@ namespace ShitDesigner.Main {
 			}
 
 			public void SetWindowsVisible(bool visible) => WindowController?.SetOutputVisible(visible);
+
+			public void SetScalingMode(ExternalDisplayScalingMode mode) {
+#if UNITY_STANDALONE_OSX && !UNITY_EDITOR
+				if (m_MacPresenter != null) {
+					m_MacPresenter.SetScalingMode(mode);
+					return;
+				}
+#endif
+				CanvasPresenter?.SetScalingMode(mode);
+			}
 
 			public void Clear() => ClearTexture(Texture);
 
@@ -361,6 +391,10 @@ namespace ShitDesigner.Main {
 			if (!m_Disposed) ShitDesignerMacDisplaySetVisible(m_DisplayIndex, visible);
 		}
 
+		public void SetScalingMode(ExternalDisplayScalingMode mode) {
+			if (!m_Disposed) ShitDesignerMacDisplaySetScalingMode(m_DisplayIndex, (int)mode);
+		}
+
 		public void Present() {
 			if (!m_Disposed) GL.IssuePluginEvent(m_RenderEvent, m_DisplayIndex);
 		}
@@ -375,6 +409,7 @@ namespace ShitDesigner.Main {
 		private static extern bool ShitDesignerMacDisplayCreate(int displayIndex);
 		[DllImport(LibraryName)] private static extern void ShitDesignerMacDisplaySetSource(int displayIndex, IntPtr sourceTexture);
 		[DllImport(LibraryName)] private static extern void ShitDesignerMacDisplaySetVisible(int displayIndex, [MarshalAs(UnmanagedType.I1)] bool visible);
+		[DllImport(LibraryName)] private static extern void ShitDesignerMacDisplaySetScalingMode(int displayIndex, int scalingMode);
 		[DllImport(LibraryName)] private static extern void ShitDesignerMacDisplayDestroy(int displayIndex);
 		[DllImport(LibraryName)] private static extern IntPtr ShitDesignerMacDisplayGetRenderEvent();
 	}
@@ -605,25 +640,60 @@ namespace ShitDesigner.Main {
 	[AddComponentMenu("")]
 	public sealed class LiveProgramDisplayCanvas : MonoBehaviour {
 		private RawImage m_Image;
+		private RectTransform m_ImageTransform;
+		private AspectRatioFitter m_AspectRatioFitter;
 
 		public Texture Source => m_Image == null ? null : m_Image.texture;
 
 		public void Initialize(Canvas canvas, RenderTexture source) {
 			if (canvas == null) throw new ArgumentNullException(nameof(canvas));
+			var backgroundObject = new GameObject("Live External Program Display Background", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+			backgroundObject.transform.SetParent(canvas.transform, false);
+			FillParent((RectTransform)backgroundObject.transform);
+			var background = backgroundObject.GetComponent<Image>();
+			background.color = Color.black;
+			background.raycastTarget = false;
 			var imageObject = new GameObject("Live External Program Display Image", typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage), typeof(AspectRatioFitter));
 			imageObject.transform.SetParent(canvas.transform, false);
-			var rectTransform = (RectTransform)imageObject.transform;
-			rectTransform.anchorMin = Vector2.zero;
-			rectTransform.anchorMax = Vector2.one;
-			rectTransform.offsetMin = Vector2.zero;
-			rectTransform.offsetMax = Vector2.zero;
+			m_ImageTransform = (RectTransform)imageObject.transform;
+			ResetToParentRect();
 			m_Image = imageObject.GetComponent<RawImage>();
 			m_Image.texture = source != null && source.IsCreated() ? source : Texture2D.blackTexture;
 			m_Image.color = Color.white;
 			m_Image.raycastTarget = false;
-			var aspectRatioFitter = imageObject.GetComponent<AspectRatioFitter>();
-			aspectRatioFitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
-			aspectRatioFitter.aspectRatio = source != null && source.height > 0 ? (float)source.width / source.height : 16f / 9f;
+			m_AspectRatioFitter = imageObject.GetComponent<AspectRatioFitter>();
+			m_AspectRatioFitter.aspectRatio = source != null && source.height > 0 ? (float)source.width / source.height : 16f / 9f;
+			SetScalingMode(ExternalDisplayScalingMode.Fill);
+		}
+
+		public void SetScalingMode(ExternalDisplayScalingMode mode) {
+			if (m_AspectRatioFitter == null || m_ImageTransform == null) return;
+			ResetToParentRect();
+			switch (mode) {
+				case ExternalDisplayScalingMode.Stretch:
+					m_AspectRatioFitter.aspectMode = AspectRatioFitter.AspectMode.None;
+					ResetToParentRect();
+					break;
+				case ExternalDisplayScalingMode.Fill:
+					m_AspectRatioFitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+					break;
+				case ExternalDisplayScalingMode.Fit:
+					m_AspectRatioFitter.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+					break;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(mode));
+			}
+		}
+
+		private void ResetToParentRect() {
+			FillParent(m_ImageTransform);
+		}
+
+		private static void FillParent(RectTransform rectTransform) {
+			rectTransform.anchorMin = Vector2.zero;
+			rectTransform.anchorMax = Vector2.one;
+			rectTransform.offsetMin = Vector2.zero;
+			rectTransform.offsetMax = Vector2.zero;
 		}
 	}
 }
