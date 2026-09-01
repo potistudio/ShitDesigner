@@ -169,6 +169,25 @@ namespace ShitDesigner.CameraCues.Tests {
 			}
 		}
 
+		[Test]
+		public void BpmClockScalesLedVideoPlaybackFromItsReferenceTempo() {
+			var root = new GameObject("Stage LED Video BPM Test");
+			try {
+				var videoObject = new GameObject("Video Player");
+				videoObject.transform.SetParent(root.transform, false);
+				var videoPlayer = videoObject.AddComponent<VideoPlayer>();
+				var director = root.AddComponent<StageCameraDirector>();
+				SetField(director, "m_VideoReferenceBpm", 145f);
+
+				director.SetBpmClock(new BeatClockFrame(72.5f, 0d));
+
+				Assert.That(videoPlayer.playbackSpeed, Is.EqualTo(.5f).Within(.0001f));
+			}
+			finally {
+				Object.DestroyImmediate(root);
+			}
+		}
+
 		private static void ConfigureCue(StageCameraDirector director, int cueIndex, Vector3 position, float durationBeats,
 			float fieldOfView, StageCameraCueCompletion completion, bool controlVideoPlayhead = false, float videoPlayheadSeconds = 0f) {
 			var cues = (StageCameraCueDefinition[])GetField(typeof(StageCameraDirector), "m_Cues").GetValue(director);

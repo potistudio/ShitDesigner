@@ -2932,6 +2932,7 @@ MonoBehaviour:
   m_RandomCamera: {fileID: 8626790382264376490}
   m_VideoPlayer: {fileID: 8450851300628908232}
   m_VideoOutputTexture: {fileID: 8400000, guid: 2481197a8540ab548bd7934f2fa790f0, type: 2}
+  m_VideoReferenceBpm: 145
   m_Cues:
   - m_DisplayName: Front Push In
     m_Motion: 0
