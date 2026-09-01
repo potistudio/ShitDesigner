@@ -467,10 +467,12 @@ namespace ShitDesigner.Main.Tests {
 				manager.Configure(new NullMidiApplication(), new NullLiveControlApplication(), source);
 				var queue = new LiveParameterQueue();
 				using (var input = new LiveMidiInput(manager, queue, new[] { patch })) {
+					Assert.That(manager.IsRoutingConnected, Is.True);
 					input.SetSelectedPatch("patch-a");
 					source.Enqueue(new MidiInputEvent(new MidiControl("Launch Control XL 3", MidiControlKind.ControlChange, 1, 5), 32));
 					manager.Poll();
 				}
+				Assert.That(manager.IsRoutingConnected, Is.False);
 
 				var requests = new List<LiveParameterRequest>();
 				queue.Drain(requests);

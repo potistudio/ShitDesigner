@@ -124,6 +124,7 @@ namespace ShitDesigner.Input {
 		public string LastError { get; private set; } = string.Empty;
 		public bool IsOpen => _source != null && (!(_source is IMidiInputAvailability availability) || availability.IsAvailable);
 		public bool IsConfigured => _midiApplication != null && _liveControlApplication != null;
+		public bool IsRoutingConnected => IsConfigured || InputReceived != null;
 		public IReadOnlyList<MidiLiveControlBinding> Bindings => _bindings;
 		public IReadOnlyList<MidiLiveControlBindingState> BindingStates => _bindingStates;
 		public IReadOnlyList<MidiInputActivity> RecentActivity => _recentActivity;
@@ -285,7 +286,7 @@ namespace ShitDesigner.Input {
 					_midiApplication.HandleMidi(inputEvent);
 					ForwardedEventCount++;
 				}
-				_recentActivity.Insert(0, new MidiInputActivity(inputEvent, matches, IsConfigured, forwarded));
+				_recentActivity.Insert(0, new MidiInputActivity(inputEvent, matches, IsRoutingConnected, forwarded));
 				if (_recentActivity.Count > RecentActivityCapacity) _recentActivity.RemoveAt(_recentActivity.Count - 1);
 				count++;
 			}
