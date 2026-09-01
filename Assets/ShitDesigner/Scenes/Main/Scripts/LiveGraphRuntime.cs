@@ -248,6 +248,10 @@ namespace ShitDesigner.Main {
 
 	internal sealed class LiveMainCueFader {
 		private int m_ReferenceCueIndex;
+		private float m_ReferencePosition;
+		private bool m_HasReferencePosition;
+		private float m_CurrentPosition;
+		private bool m_HasCurrentPosition;
 
 		public int ReferenceCueIndex => m_ReferenceCueIndex;
 		public int AlternateCueIndex => 1 - m_ReferenceCueIndex;
@@ -261,7 +265,21 @@ namespace ShitDesigner.Main {
 		public void SetPosition(float normalizedPosition) {
 			if (float.IsNaN(normalizedPosition) || float.IsInfinity(normalizedPosition))
 				throw new ArgumentOutOfRangeException(nameof(normalizedPosition));
-			AlternateOpacity = Mathf.Clamp01(normalizedPosition);
+			var position = Mathf.Clamp01(normalizedPosition);
+			m_CurrentPosition = position;
+			m_HasCurrentPosition = true;
+			if (!m_HasReferencePosition) {
+				m_ReferencePosition = position;
+				m_HasReferencePosition = true;
+				AlternateOpacity = 0f;
+				return;
+			}
+
+			var offset = position - m_ReferencePosition;
+			var availableDistance = offset > 0f ? 1f - m_ReferencePosition : m_ReferencePosition;
+			AlternateOpacity = availableDistance <= Mathf.Epsilon
+				? 0f
+				: Mathf.Clamp01(Mathf.Abs(offset) / availableDistance);
 		}
 
 		public void ToggleReferenceCue() {
@@ -272,6 +290,8 @@ namespace ShitDesigner.Main {
 			if (cueIndex < 0 || cueIndex >= LiveGraphRuntime.MainCueCount) throw new ArgumentOutOfRangeException(nameof(cueIndex));
 			m_ReferenceCueIndex = cueIndex;
 			AlternateOpacity = 0f;
+			m_ReferencePosition = m_CurrentPosition;
+			m_HasReferencePosition = m_HasCurrentPosition;
 		}
 	}
 

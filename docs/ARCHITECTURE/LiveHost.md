@@ -205,7 +205,7 @@
 
 - `Shift+C` は、現在のフェーダー合成で優勢なCueとは反対側を100%表示し、その時点の物理フェーダー位置を新しい基準にする。
 - Main CueフェーダーはCue A/Bへ絶対位置を割り当てない。基準位置では基準Cueを100%表示し、基準から片側の端まで動かした割合に応じて反対Cueの不透明度を0から1へ変化させる。
-- 最初のMIDIフェーダー値は基準位置の取得だけに使用し、Program映像を切り替えない。既定入力はLaunch Control XL 3のMode 16における左端フェーダー（MIDI Channel 16 / CC 5）とし、ChannelとCCは`ApplicationLiveHost`のInspectorで変更できる。
+- 最初のMIDIフェーダー値は基準位置の取得だけに使用し、Program映像を切り替えない。基準位置が1なら1→0、0なら0→1を反対Cueの不透明度0→1へ正規化し、中間位置では動かした側の端までの距離を使用する。Cue切替後は次の入力値を新しい基準位置として再ラッチする。既定入力はLaunch Control XL 3のMode 16における左端フェーダー（MIDI Channel 16 / CC 5）とし、ChannelとCCは`ApplicationLiveHost`のInspectorで変更できる。
 
 ### 2026-08-30: FXカタログは画像処理ノードを表示する
 

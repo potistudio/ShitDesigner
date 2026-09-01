@@ -246,25 +246,50 @@ namespace ShitDesigner.Main.Tests {
 			}
 		}
 
-		[Test]
-		public void MainCueFaderUsesNormalizedPositionAsAlternateOpacity() {
-			var fader = new LiveMainCueFader();
+		[TestCase(0)]
+		[TestCase(1)]
+		public void MainCueFaderUsesItsLatchedPositionAsTheCrossfadeOrigin(int referenceCueIndex) {
+			var fader = new LiveMainCueFader(referenceCueIndex);
 
 			fader.SetPosition(1f);
-			Assert.That(fader.ReferenceCueIndex, Is.Zero);
-			Assert.That(fader.AlternateOpacity, Is.EqualTo(1f));
+			Assert.That(fader.ReferenceCueIndex, Is.EqualTo(referenceCueIndex));
+			Assert.That(fader.AlternateOpacity, Is.Zero, "The first value only latches the physical fader position.");
+
+			fader.SetPosition(.75f);
+			Assert.That(fader.AlternateOpacity, Is.EqualTo(.25f));
 
 			fader.SetPosition(0f);
-			Assert.That(fader.DominantCueIndex, Is.Zero);
-			Assert.That(fader.AlternateOpacity, Is.Zero);
+			Assert.That(fader.DominantCueIndex, Is.EqualTo(1 - referenceCueIndex));
+			Assert.That(fader.AlternateOpacity, Is.EqualTo(1f));
+		}
 
-			fader.ToggleReferenceCue();
+		[Test]
+		public void MainCueFaderRelatchesAfterChangingTheReferenceCue() {
+			var fader = new LiveMainCueFader();
+			fader.SetPosition(1f);
+			fader.SetPosition(0f);
+
+			fader.SetReferenceCue(1);
 			Assert.That(fader.ReferenceCueIndex, Is.EqualTo(1));
 			Assert.That(fader.AlternateOpacity, Is.Zero);
 
+			fader.SetPosition(.25f);
+			Assert.That(fader.AlternateOpacity, Is.EqualTo(.25f), "Changing the reference Cue must relatch the last known position.");
 			fader.SetPosition(1f);
 			Assert.That(fader.DominantCueIndex, Is.Zero);
 			Assert.That(fader.AlternateOpacity, Is.EqualTo(1f));
+		}
+
+		[Test]
+		public void MainCueFaderNormalizesEitherSideOfAnIntermediateLatch() {
+			var fader = new LiveMainCueFader();
+
+			fader.SetPosition(.4f);
+			fader.SetPosition(.7f);
+			Assert.That(fader.AlternateOpacity, Is.EqualTo(.5f).Within(.0001f));
+
+			fader.SetPosition(.2f);
+			Assert.That(fader.AlternateOpacity, Is.EqualTo(.5f).Within(.0001f));
 		}
 
 		[Test]
