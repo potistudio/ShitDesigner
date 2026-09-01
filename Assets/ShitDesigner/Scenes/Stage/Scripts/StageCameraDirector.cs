@@ -286,13 +286,13 @@ namespace ShitDesigner.Stage {
 		}
 
 		private void ConfigureVideoOutput() {
-			if (m_UsesManagedVideoOutput || m_VideoPlayer == null || m_VideoPlayer.renderMode != VideoRenderMode.RenderTexture
-				|| m_VideoPlayer.targetTexture == null)
+			if (m_UsesManagedVideoOutput || m_VideoPlayer == null || m_VideoPlayer.targetTexture == null)
 				return;
 
 			m_OriginalVideoRenderMode = m_VideoPlayer.renderMode;
 			m_VideoOutputTexture = m_VideoPlayer.targetTexture;
-			m_VideoPlayer.renderMode = VideoRenderMode.APIOnly;
+			if (m_VideoPlayer.renderMode != VideoRenderMode.APIOnly)
+				m_VideoPlayer.renderMode = VideoRenderMode.APIOnly;
 			m_UsesManagedVideoOutput = true;
 		}
 

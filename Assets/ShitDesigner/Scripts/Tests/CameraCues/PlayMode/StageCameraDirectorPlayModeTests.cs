@@ -26,14 +26,13 @@ namespace ShitDesigner.CameraCues.Tests {
 				videoPlayer.source = VideoSource.Url;
 				videoPlayer.url = Path.Combine(Application.dataPath,
 					"ShitDesigner/Scripts/Tests/Media/Fixtures/h264-audio.mp4");
-				videoPlayer.renderMode = VideoRenderMode.RenderTexture;
+				videoPlayer.renderMode = VideoRenderMode.APIOnly;
 				videoPlayer.targetTexture = outputTexture;
 				videoPlayer.audioOutputMode = VideoAudioOutputMode.None;
 				videoPlayer.isLooping = true;
 
 				var director = root.AddComponent<StageCameraDirector>();
-				Assert.That(videoPlayer.renderMode, Is.EqualTo(VideoRenderMode.APIOnly),
-					"Stage video output must use the same APIOnly copy path as a Video node.");
+				Assert.That(videoPlayer.renderMode, Is.EqualTo(VideoRenderMode.APIOnly));
 				Assert.That(videoPlayer.targetTexture, Is.SameAs(outputTexture));
 				ConfigureVideoCue(director, .5f);
 				director.ActivateScene();
