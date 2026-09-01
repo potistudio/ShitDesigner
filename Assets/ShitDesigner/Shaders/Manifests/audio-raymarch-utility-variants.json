@@ -13,7 +13,7 @@
     {
       "name": "Audio",
       "shader": "Hidden/ShitDesigner/VJ/AudioFamily",
-      "variantCount": 30,
+      "variantCount": 31,
       "stateful": false,
       "formalPriority": "unclassified",
       "phase1SupportCount": 0,
@@ -944,6 +944,37 @@
       "family": "Audio",
       "shader": "Hidden/ShitDesigner/VJ/AudioFamily",
       "variant": 29,
+      "pass": 0,
+      "formalPriority": "unclassified",
+      "phase1Support": false,
+      "inputs": [
+        "WaveformTex",
+        "SpectrumTex",
+        "MelTex",
+        "OnsetTex"
+      ],
+      "parameters": [
+        "Amount",
+        "Gain",
+        "Rms",
+        "Peak",
+        "Beat",
+        "BpmPhase",
+        "GraphTime",
+        "Frame",
+        "Seed"
+      ],
+      "stateful": false,
+      "historySlots": 0,
+      "warmupFrames": 0,
+      "testStrategy": "synthetic_audio_fixture"
+    },
+    {
+      "id": "audio.wireframe_cube_fractal",
+      "displayName": "Wireframe Cube Fractal",
+      "family": "Audio",
+      "shader": "Hidden/ShitDesigner/VJ/AudioFamily",
+      "variant": 30,
       "pass": 0,
       "formalPriority": "unclassified",
       "phase1Support": false,

@@ -19,13 +19,13 @@ namespace ShitDesigner.Documentation.Tests {
 		[Test]
 		[Category("VJDocumentation")]
 		[Category("Manifest")]
-		public void AllThreeLedgersAndReferenceDocumentContain448StableVariants() {
+		public void AllThreeLedgersAndReferenceDocumentContain449StableVariants() {
 			var audio = AbsoluteAssetPath(AudioPath);
 			if (!File.Exists(audio))
 				Assert.Ignore("audio-raymarch-utility ledger is still being produced.");
 
 			var records = LoadRecords();
-			Assert.That(records.Count, Is.EqualTo(448));
+			Assert.That(records.Count, Is.EqualTo(449));
 			var ids = new HashSet<string>(StringComparer.Ordinal);
 			foreach (var record in records) {
 				Assert.That(record.Id, Is.Not.Empty);

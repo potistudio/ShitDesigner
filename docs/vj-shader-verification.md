@@ -28,7 +28,7 @@ The C29 soak used the deterministic seed `0xC290438`, random manifest graphs and
 |---|---:|
 | Spatial ledger | 246 variants (VJGenerator 48, VJColor 34, VJGeometry 42, VJGlitch 32, VJConvolution 28, VJEdge 38, VJKey 24) |
 | Compositing/Temporal ledger | 104 variants (Blend 36, Transition 36, Temporal 32) |
-| Audio/Raymarch/Utility ledger | 88 variants (Audio 30, Raymarch 30, Utility 28) |
+| Audio/Raymarch/Utility ledger | 89 variants (Audio 31, Raymarch 30, Utility 28) |
 | Total shader variants | 438 |
 | `ShaderNodeManifest.asset` | 441 `typeId` entries |
 | `NodeTypeCatalog.asset` | 460 `typeId` entries |

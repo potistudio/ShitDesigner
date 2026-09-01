@@ -80,7 +80,7 @@ Shader "Hidden/ShitDesigner/VJ/AudioFamily"
 		float4 VJAudioGraphFragment(VJAudioVaryings input) : SV_Target
 		{
 			float4 resolution = max(VJFinite4(_SD_Resolution), float4(1.0, 1.0, 1.0, 1.0));
-			int variant = clamp((int)floor(_Variant + 0.5), 0, 29);
+			int variant = clamp((int)floor(_Variant + 0.5), 0, 30);
 			int stage = clamp((int)round(_SD_PassIndex), 0, 1);
 			float4 result = VJAudioEvaluate(variant, _WaveformTex, _SpectrumTex, _MelTex, _OnsetTex,
 			input.uv, resolution, VJFiniteScalar(_SD_Time), VJFiniteScalar(_SD_Frame), _Rms, _Peak, _Beat, _BpmPhase,

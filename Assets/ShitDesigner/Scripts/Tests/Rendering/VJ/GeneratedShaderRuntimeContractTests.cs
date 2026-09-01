@@ -16,18 +16,18 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 		private const string CatalogPath = "Assets/ShitDesigner/Scripts/Modules/Nodes/NodeTypeCatalog.asset";
 
 		[Test]
-		public void GeneratedManifestAsset_ContainsAll448LedgerEntriesAndDirectShaders() {
+		public void GeneratedManifestAsset_ContainsAll449LedgerEntriesAndDirectShaders() {
 			var asset = AssetDatabase.LoadAssetAtPath<ShaderNodeManifestAsset>(ManifestPath);
 			Assert.That(asset, Is.Not.Null);
 			var valid = asset.ValidateShaderReferences();
 			Assert.That(valid.IsSuccess, Is.True, valid.IsFailure ? valid.Error.Message : string.Empty);
 
 			var generated = asset.Entries.Where(x => !string.IsNullOrWhiteSpace(x.SourceLedger)).ToList();
-			Assert.That(generated.Count, Is.EqualTo(448));
+			Assert.That(generated.Count, Is.EqualTo(449));
 			Assert.That(generated.Count(x => x.SourceLedger == "spatial-variants.json"), Is.EqualTo(256));
 			Assert.That(generated.Count(x => x.SourceLedger == "compositing-temporal-variants.json"), Is.EqualTo(104));
-			Assert.That(generated.Count(x => x.SourceLedger == "audio-raymarch-utility-variants.json"), Is.EqualTo(88));
-			Assert.That(generated.Select(x => x.TypeId).Distinct(StringComparer.Ordinal).Count(), Is.EqualTo(448));
+			Assert.That(generated.Count(x => x.SourceLedger == "audio-raymarch-utility-variants.json"), Is.EqualTo(89));
+			Assert.That(generated.Select(x => x.TypeId).Distinct(StringComparer.Ordinal).Count(), Is.EqualTo(449));
 			Assert.That(generated.All(x => x.Shader != null && x.Passes.Count > 0 && x.SourceVariant >= 0), Is.True);
 			Assert.That(generated.All(x => x.Passes.Any(pass => pass.Index == x.OutputPass && pass.VariantId == x.VariantId)), Is.True);
 			Assert.That(asset.Entries.Count(x => string.IsNullOrWhiteSpace(x.SourceLedger)), Is.EqualTo(4));
@@ -53,8 +53,8 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 			Assert.That(catalog.ValidateManifest().IsSuccess, Is.True);
 			var runtime = catalog.BuildRuntimeCatalog();
 			Assert.That(runtime.IsSuccess, Is.True, runtime.IsFailure ? runtime.Error.Message : string.Empty);
-			Assert.That(catalog.Entries.Count, Is.EqualTo(463));
-			Assert.That(catalog.Entries.Count(x => !string.IsNullOrWhiteSpace(x.ShaderKey)), Is.EqualTo(452));
+			Assert.That(catalog.Entries.Count, Is.EqualTo(464));
+			Assert.That(catalog.Entries.Count(x => !string.IsNullOrWhiteSpace(x.ShaderKey)), Is.EqualTo(453));
 			Assert.That(runtime.Value.Entries.Count, Is.EqualTo(catalog.Entries.Count));
 
 			foreach (var source in manifest.Entries) {
