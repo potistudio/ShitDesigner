@@ -82,6 +82,12 @@ Shader "Hidden/ShitDesigner/ExternalDisplayTestPattern" {
 					RulerDigit(coordinate - float2(1.8, 0.0), ones)));
 			}
 
+			float MultiplySymbol(float2 coordinate) {
+				float inside = step(abs(coordinate.x), 0.38) * step(abs(coordinate.y), 0.38);
+				float diagonal = min(abs(coordinate.y - coordinate.x), abs(coordinate.y + coordinate.x));
+				return inside * (1.0 - smoothstep(0.08, 0.14, diagonal));
+			}
+
 			float RulerMask(float2 uv, float lineWidth, float extraTickLength) {
 				const float inset = 0.035;
 				const float span = 0.93;
@@ -178,6 +184,14 @@ Shader "Hidden/ShitDesigner/ExternalDisplayTestPattern" {
 				float widthLabel = FourDigitNumber(float2((uv.x - 0.5) / 0.035, (uv.y - 0.91) / 0.018), _DisplayResolution.x);
 				float heightLabel = FourDigitNumber(float2((uv.y - 0.5) / 0.035, (0.91 - uv.x) / 0.018), _DisplayResolution.y);
 				color = lerp(color, float3(1.0, 1.0, 1.0), saturate(widthLabel + heightLabel));
+
+				float2 resolutionCoordinate = float2((uv.x - 0.5) / 0.023, (uv.y - 0.10) / 0.014);
+				float resolutionBackdrop = Box(uv, float2(0.5, 0.10), float2(0.145, 0.026));
+				color = lerp(color, float3(0.0, 0.0, 0.0), resolutionBackdrop);
+				float resolutionLabel = FourDigitNumber(resolutionCoordinate + float2(3.0, 0.0), _DisplayResolution.x) +
+					MultiplySymbol(resolutionCoordinate) +
+					FourDigitNumber(resolutionCoordinate - float2(3.0, 0.0), _DisplayResolution.y);
+				color = lerp(color, float3(1.0, 1.0, 1.0), saturate(resolutionLabel));
 				return fixed4(color, 1.0);
 			}
 			ENDCG
