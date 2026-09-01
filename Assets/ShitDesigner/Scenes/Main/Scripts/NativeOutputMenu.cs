@@ -19,6 +19,33 @@ namespace ShitDesigner.Main {
 		Fit
 	}
 
+	public enum ExternalDisplayEmulationAspect {
+		Display,
+		Ratio16x9,
+		Ratio16x10,
+		Ratio4x3,
+		Ratio3x4,
+		Ratio1x1,
+		Ratio9x16,
+		Ratio21x9
+	}
+
+	public static class ExternalDisplayEmulationAspectExtensions {
+		public static float AspectRatio(this ExternalDisplayEmulationAspect aspect) {
+			switch (aspect) {
+				case ExternalDisplayEmulationAspect.Display: return 0f;
+				case ExternalDisplayEmulationAspect.Ratio16x9: return 16f / 9f;
+				case ExternalDisplayEmulationAspect.Ratio16x10: return 16f / 10f;
+				case ExternalDisplayEmulationAspect.Ratio4x3: return 4f / 3f;
+				case ExternalDisplayEmulationAspect.Ratio3x4: return 3f / 4f;
+				case ExternalDisplayEmulationAspect.Ratio1x1: return 1f;
+				case ExternalDisplayEmulationAspect.Ratio9x16: return 9f / 16f;
+				case ExternalDisplayEmulationAspect.Ratio21x9: return 21f / 9f;
+				default: throw new ArgumentOutOfRangeException(nameof(aspect));
+			}
+		}
+	}
+
 	internal enum OutputMenuCommand {
 		StartProgram,
 		StopProgram,
@@ -28,7 +55,15 @@ namespace ShitDesigner.Main {
 		SwapOutputs,
 		SetScalingStretch,
 		SetScalingFill,
-		SetScalingFit
+		SetScalingFit,
+		SetEmulationDisplay,
+		SetEmulation16x9,
+		SetEmulation16x10,
+		SetEmulation4x3,
+		SetEmulation3x4,
+		SetEmulation1x1,
+		SetEmulation9x16,
+		SetEmulation21x9
 	}
 
 	internal readonly struct OutputMenuState : IEquatable<OutputMenuState> {
@@ -40,9 +75,11 @@ namespace ShitDesigner.Main {
 		public bool IsTestPatternVisible { get; }
 		public bool CanSwapOutputs { get; }
 		public ExternalDisplayScalingMode ScalingMode { get; }
+		public ExternalDisplayEmulationAspect EmulationAspect { get; }
 
 		public OutputMenuState(bool canStartProgram, bool canStopProgram, bool canStartOverlay, bool canStopOverlay,
-			bool canIdentifyDisplays, bool isTestPatternVisible, bool canSwapOutputs, ExternalDisplayScalingMode scalingMode) {
+			bool canIdentifyDisplays, bool isTestPatternVisible, bool canSwapOutputs, ExternalDisplayScalingMode scalingMode,
+			ExternalDisplayEmulationAspect emulationAspect) {
 			CanStartProgram = canStartProgram;
 			CanStopProgram = canStopProgram;
 			CanStartOverlay = canStartOverlay;
@@ -51,6 +88,7 @@ namespace ShitDesigner.Main {
 			IsTestPatternVisible = isTestPatternVisible;
 			CanSwapOutputs = canSwapOutputs;
 			ScalingMode = scalingMode;
+			EmulationAspect = emulationAspect;
 		}
 
 		public bool Equals(OutputMenuState other) =>
@@ -61,12 +99,13 @@ namespace ShitDesigner.Main {
 			CanIdentifyDisplays == other.CanIdentifyDisplays &&
 			IsTestPatternVisible == other.IsTestPatternVisible &&
 			CanSwapOutputs == other.CanSwapOutputs &&
-			ScalingMode == other.ScalingMode;
+			ScalingMode == other.ScalingMode &&
+			EmulationAspect == other.EmulationAspect;
 
 		public override bool Equals(object obj) => obj is OutputMenuState other && Equals(other);
 		public override int GetHashCode() => (CanStartProgram ? 1 : 0) | (CanStopProgram ? 2 : 0) |
 			(CanStartOverlay ? 4 : 0) | (CanStopOverlay ? 8 : 0) | (CanIdentifyDisplays ? 16 : 0) |
-			(IsTestPatternVisible ? 32 : 0) | (CanSwapOutputs ? 64 : 0) | ((int)ScalingMode << 7);
+			(IsTestPatternVisible ? 32 : 0) | (CanSwapOutputs ? 64 : 0) | ((int)ScalingMode << 7) | ((int)EmulationAspect << 9);
 	}
 
 	internal interface ILiveOutputMenuTarget {
@@ -79,6 +118,8 @@ namespace ShitDesigner.Main {
 		bool SwapOutputs();
 		ExternalDisplayScalingMode ScalingMode { get; }
 		bool SetScalingMode(ExternalDisplayScalingMode mode);
+		ExternalDisplayEmulationAspect EmulationAspect { get; }
+		bool SetEmulationAspect(ExternalDisplayEmulationAspect aspect);
 	}
 
 	internal interface INativeOutputMenuBackend : IDisposable {
@@ -113,7 +154,7 @@ namespace ShitDesigner.Main {
 			var overlayActive = m_Output.IsActive(LiveOutputKind.Overlay);
 			return new OutputMenuState(programAvailable && !programActive, programActive,
 				overlayAvailable && !overlayActive, overlayActive, programAvailable || overlayAvailable || m_Output.IsTestPatternVisible,
-				m_Output.IsTestPatternVisible, m_Output.CanSwapOutputs, m_Output.ScalingMode);
+				m_Output.IsTestPatternVisible, m_Output.CanSwapOutputs, m_Output.ScalingMode, m_Output.EmulationAspect);
 		}
 
 		private void Execute(OutputMenuCommand command) {
@@ -146,6 +187,14 @@ namespace ShitDesigner.Main {
 				case OutputMenuCommand.SetScalingFit:
 					m_Output.SetScalingMode(ExternalDisplayScalingMode.Fit);
 					break;
+				case OutputMenuCommand.SetEmulationDisplay: m_Output.SetEmulationAspect(ExternalDisplayEmulationAspect.Display); break;
+				case OutputMenuCommand.SetEmulation16x9: m_Output.SetEmulationAspect(ExternalDisplayEmulationAspect.Ratio16x9); break;
+				case OutputMenuCommand.SetEmulation16x10: m_Output.SetEmulationAspect(ExternalDisplayEmulationAspect.Ratio16x10); break;
+				case OutputMenuCommand.SetEmulation4x3: m_Output.SetEmulationAspect(ExternalDisplayEmulationAspect.Ratio4x3); break;
+				case OutputMenuCommand.SetEmulation3x4: m_Output.SetEmulationAspect(ExternalDisplayEmulationAspect.Ratio3x4); break;
+				case OutputMenuCommand.SetEmulation1x1: m_Output.SetEmulationAspect(ExternalDisplayEmulationAspect.Ratio1x1); break;
+				case OutputMenuCommand.SetEmulation9x16: m_Output.SetEmulationAspect(ExternalDisplayEmulationAspect.Ratio9x16); break;
+				case OutputMenuCommand.SetEmulation21x9: m_Output.SetEmulationAspect(ExternalDisplayEmulationAspect.Ratio21x9); break;
 			}
 		}
 
@@ -196,6 +245,14 @@ namespace ShitDesigner.Main {
 		private const int ScalingStretchCommandId = 0x6D07;
 		private const int ScalingFillCommandId = 0x6D08;
 		private const int ScalingFitCommandId = 0x6D09;
+		private const int EmulationDisplayCommandId = 0x6D0A;
+		private const int Emulation16x9CommandId = 0x6D0B;
+		private const int Emulation16x10CommandId = 0x6D0C;
+		private const int Emulation4x3CommandId = 0x6D0D;
+		private const int Emulation3x4CommandId = 0x6D0E;
+		private const int Emulation1x1CommandId = 0x6D0F;
+		private const int Emulation9x16CommandId = 0x6D10;
+		private const int Emulation21x9CommandId = 0x6D11;
 		private static readonly WindowProcedure MenuWindowProcedure = HandleWindowMessage;
 		private static readonly IntPtr MenuWindowProcedurePointer = Marshal.GetFunctionPointerForDelegate(MenuWindowProcedure);
 		private static readonly Dictionary<IntPtr, WindowsNativeOutputMenuBackend> Instances = new Dictionary<IntPtr, WindowsNativeOutputMenuBackend>();
@@ -205,6 +262,7 @@ namespace ShitDesigner.Main {
 		private IntPtr m_MenuBar;
 		private IntPtr m_OutputMenu;
 		private IntPtr m_ScalingMenu;
+		private IntPtr m_EmulationMenu;
 		private IntPtr m_PreviousWindowProcedure;
 		private int m_OutputMenuPosition;
 		private bool m_OwnsMenuBar;
@@ -230,6 +288,14 @@ namespace ShitDesigner.Main {
 			CheckMenuItem(m_ScalingMenu, ScalingStretchCommandId, ByCommand | (state.ScalingMode == ExternalDisplayScalingMode.Stretch ? CheckedItem : 0));
 			CheckMenuItem(m_ScalingMenu, ScalingFillCommandId, ByCommand | (state.ScalingMode == ExternalDisplayScalingMode.Fill ? CheckedItem : 0));
 			CheckMenuItem(m_ScalingMenu, ScalingFitCommandId, ByCommand | (state.ScalingMode == ExternalDisplayScalingMode.Fit ? CheckedItem : 0));
+			CheckMenuItem(m_EmulationMenu, EmulationDisplayCommandId, ByCommand | (state.EmulationAspect == ExternalDisplayEmulationAspect.Display ? CheckedItem : 0));
+			CheckMenuItem(m_EmulationMenu, Emulation16x9CommandId, ByCommand | (state.EmulationAspect == ExternalDisplayEmulationAspect.Ratio16x9 ? CheckedItem : 0));
+			CheckMenuItem(m_EmulationMenu, Emulation16x10CommandId, ByCommand | (state.EmulationAspect == ExternalDisplayEmulationAspect.Ratio16x10 ? CheckedItem : 0));
+			CheckMenuItem(m_EmulationMenu, Emulation4x3CommandId, ByCommand | (state.EmulationAspect == ExternalDisplayEmulationAspect.Ratio4x3 ? CheckedItem : 0));
+			CheckMenuItem(m_EmulationMenu, Emulation3x4CommandId, ByCommand | (state.EmulationAspect == ExternalDisplayEmulationAspect.Ratio3x4 ? CheckedItem : 0));
+			CheckMenuItem(m_EmulationMenu, Emulation1x1CommandId, ByCommand | (state.EmulationAspect == ExternalDisplayEmulationAspect.Ratio1x1 ? CheckedItem : 0));
+			CheckMenuItem(m_EmulationMenu, Emulation9x16CommandId, ByCommand | (state.EmulationAspect == ExternalDisplayEmulationAspect.Ratio9x16 ? CheckedItem : 0));
+			CheckMenuItem(m_EmulationMenu, Emulation21x9CommandId, ByCommand | (state.EmulationAspect == ExternalDisplayEmulationAspect.Ratio21x9 ? CheckedItem : 0));
 			m_AppliedState = state;
 			m_HasAppliedState = true;
 		}
@@ -254,6 +320,7 @@ namespace ShitDesigner.Main {
 			m_MenuBar = IntPtr.Zero;
 			m_OutputMenu = IntPtr.Zero;
 			m_ScalingMenu = IntPtr.Zero;
+			m_EmulationMenu = IntPtr.Zero;
 		}
 
 		private bool EnsureCreated() {
@@ -265,10 +332,12 @@ namespace ShitDesigner.Main {
 			if (m_OwnsMenuBar) menuBar = CreateMenu();
 			var outputMenu = CreatePopupMenu();
 			var scalingMenu = CreatePopupMenu();
-			if (menuBar == IntPtr.Zero || outputMenu == IntPtr.Zero || scalingMenu == IntPtr.Zero) {
+			var emulationMenu = CreatePopupMenu();
+			if (menuBar == IntPtr.Zero || outputMenu == IntPtr.Zero || scalingMenu == IntPtr.Zero || emulationMenu == IntPtr.Zero) {
 				if (m_OwnsMenuBar && menuBar != IntPtr.Zero) DestroyMenu(menuBar);
 				if (outputMenu != IntPtr.Zero) DestroyMenu(outputMenu);
 				if (scalingMenu != IntPtr.Zero) DestroyMenu(scalingMenu);
+				if (emulationMenu != IntPtr.Zero) DestroyMenu(emulationMenu);
 				return false;
 			}
 
@@ -282,6 +351,15 @@ namespace ShitDesigner.Main {
 			AppendMenu(scalingMenu, StringItem, new UIntPtr(ScalingFillCommandId), "Fill");
 			AppendMenu(scalingMenu, StringItem, new UIntPtr(ScalingFitCommandId), "Fit");
 			AppendMenu(outputMenu, PopupItem, new UIntPtr(unchecked((ulong)scalingMenu.ToInt64())), "Scaling");
+			AppendMenu(emulationMenu, StringItem, new UIntPtr(EmulationDisplayCommandId), "Native Display");
+			AppendMenu(emulationMenu, StringItem, new UIntPtr(Emulation16x9CommandId), "16:9");
+			AppendMenu(emulationMenu, StringItem, new UIntPtr(Emulation16x10CommandId), "16:10");
+			AppendMenu(emulationMenu, StringItem, new UIntPtr(Emulation4x3CommandId), "4:3");
+			AppendMenu(emulationMenu, StringItem, new UIntPtr(Emulation3x4CommandId), "3:4");
+			AppendMenu(emulationMenu, StringItem, new UIntPtr(Emulation1x1CommandId), "1:1");
+			AppendMenu(emulationMenu, StringItem, new UIntPtr(Emulation9x16CommandId), "9:16");
+			AppendMenu(emulationMenu, StringItem, new UIntPtr(Emulation21x9CommandId), "21:9");
+			AppendMenu(outputMenu, PopupItem, new UIntPtr(unchecked((ulong)emulationMenu.ToInt64())), "Emulation");
 			AppendMenu(outputMenu, SeparatorItem, UIntPtr.Zero, null);
 			AppendMenu(outputMenu, StringItem, new UIntPtr(SwapOutputsCommandId), "Swap Output Displays");
 			AppendMenu(outputMenu, StringItem, new UIntPtr(IdentifyCommandId), "Display Test Pattern");
@@ -296,6 +374,7 @@ namespace ShitDesigner.Main {
 			m_MenuBar = menuBar;
 			m_OutputMenu = outputMenu;
 			m_ScalingMenu = scalingMenu;
+			m_EmulationMenu = emulationMenu;
 			m_PreviousWindowProcedure = SetWindowLongPtr(window, WindowProcedureIndex, MenuWindowProcedurePointer);
 			if (m_PreviousWindowProcedure == IntPtr.Zero) {
 				Dispose();
@@ -323,6 +402,14 @@ namespace ShitDesigner.Main {
 					case ScalingStretchCommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SetScalingStretch); return IntPtr.Zero;
 					case ScalingFillCommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SetScalingFill); return IntPtr.Zero;
 					case ScalingFitCommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SetScalingFit); return IntPtr.Zero;
+					case EmulationDisplayCommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SetEmulationDisplay); return IntPtr.Zero;
+					case Emulation16x9CommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SetEmulation16x9); return IntPtr.Zero;
+					case Emulation16x10CommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SetEmulation16x10); return IntPtr.Zero;
+					case Emulation4x3CommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SetEmulation4x3); return IntPtr.Zero;
+					case Emulation3x4CommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SetEmulation3x4); return IntPtr.Zero;
+					case Emulation1x1CommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SetEmulation1x1); return IntPtr.Zero;
+					case Emulation9x16CommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SetEmulation9x16); return IntPtr.Zero;
+					case Emulation21x9CommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SetEmulation21x9); return IntPtr.Zero;
 				}
 			}
 			return CallWindowProc(instance.m_PreviousWindowProcedure, window, message, wParam, lParam);
@@ -365,7 +452,7 @@ namespace ShitDesigner.Main {
 			if (m_HasAppliedState && m_AppliedState.Equals(state)) return;
 			ShitDesignerOutputMenuSetState(state.CanStartProgram, state.CanStopProgram,
 				state.CanStartOverlay, state.CanStopOverlay, state.CanIdentifyDisplays, state.IsTestPatternVisible,
-				state.CanSwapOutputs, (int)state.ScalingMode);
+				state.CanSwapOutputs, (int)state.ScalingMode, (int)state.EmulationAspect);
 			m_AppliedState = state;
 			m_HasAppliedState = true;
 		}
@@ -386,7 +473,8 @@ namespace ShitDesigner.Main {
 			[MarshalAs(UnmanagedType.I1)] bool canIdentifyDisplays,
 			[MarshalAs(UnmanagedType.I1)] bool isTestPatternVisible,
 			[MarshalAs(UnmanagedType.I1)] bool canSwapOutputs,
-			int scalingMode);
+			int scalingMode,
+			int emulationAspect);
 		[DllImport("__Internal")] [return: MarshalAs(UnmanagedType.I1)] private static extern bool ShitDesignerOutputMenuTryDequeue(out int command);
 	}
 #endif

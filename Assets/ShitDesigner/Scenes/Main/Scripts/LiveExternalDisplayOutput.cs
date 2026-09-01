@@ -33,6 +33,7 @@ namespace ShitDesigner.Main {
 		public bool IsOutputActive => m_OutputActive.Any(active => active);
 		public bool IsTestPatternVisible { get; private set; }
 		public ExternalDisplayScalingMode ScalingMode { get; private set; } = ExternalDisplayScalingMode.Fill;
+		public ExternalDisplayEmulationAspect EmulationAspect { get; private set; } = ExternalDisplayEmulationAspect.Display;
 		public bool IsAvailable => !UnityEngine.Application.isEditor && ConnectedDisplayCount > 1;
 		public bool CanSwapOutputs => !UnityEngine.Application.isEditor && ConnectedDisplayCount > OutputCount;
 		public ulong PresentedFrameNumber => _presentedFrameNumber;
@@ -99,6 +100,18 @@ namespace ShitDesigner.Main {
 			ScalingMode = mode;
 			foreach (var output in _outputs.Values) {
 				output.SetScalingMode(mode);
+				output.Present();
+			}
+			LastError = string.Empty;
+			return true;
+		}
+
+		public bool SetEmulationAspect(ExternalDisplayEmulationAspect aspect) {
+			if (!Enum.IsDefined(typeof(ExternalDisplayEmulationAspect), aspect)) return Fail("The external Display emulation aspect is invalid.");
+			if (EmulationAspect == aspect) return true;
+			EmulationAspect = aspect;
+			foreach (var output in _outputs.Values) {
+				output.SetEmulationAspect(aspect);
 				output.Present();
 			}
 			LastError = string.Empty;
@@ -232,6 +245,7 @@ namespace ShitDesigner.Main {
 			try {
 				var output = new DisplayOutput(new MacExternalDisplayPresenter(displayNumber - 1, displayTexture), displayTexture);
 				output.SetScalingMode(ScalingMode);
+				output.SetEmulationAspect(EmulationAspect);
 				return output;
 			}
 			catch {
@@ -250,6 +264,7 @@ namespace ShitDesigner.Main {
 			presenter.Initialize(canvas, displayTexture);
 			var output = new DisplayOutput(canvas, presenter, canvasObject.AddComponent<WindowsDisplayWindowController>(), displayTexture);
 			output.SetScalingMode(ScalingMode);
+			output.SetEmulationAspect(EmulationAspect);
 			return output;
 #endif
 		}
@@ -349,6 +364,16 @@ namespace ShitDesigner.Main {
 				CanvasPresenter?.SetScalingMode(mode);
 			}
 
+			public void SetEmulationAspect(ExternalDisplayEmulationAspect aspect) {
+#if UNITY_STANDALONE_OSX && !UNITY_EDITOR
+				if (m_MacPresenter != null) {
+					m_MacPresenter.SetEmulationAspect(aspect);
+					return;
+				}
+#endif
+				CanvasPresenter?.SetEmulationAspect(aspect);
+			}
+
 			public void Clear() => ClearTexture(Texture);
 
 			public void Present() {
@@ -395,6 +420,10 @@ namespace ShitDesigner.Main {
 			if (!m_Disposed) ShitDesignerMacDisplaySetScalingMode(m_DisplayIndex, (int)mode);
 		}
 
+		public void SetEmulationAspect(ExternalDisplayEmulationAspect aspect) {
+			if (!m_Disposed) ShitDesignerMacDisplaySetEmulationAspect(m_DisplayIndex, aspect.AspectRatio());
+		}
+
 		public void Present() {
 			if (!m_Disposed) GL.IssuePluginEvent(m_RenderEvent, m_DisplayIndex);
 		}
@@ -410,6 +439,7 @@ namespace ShitDesigner.Main {
 		[DllImport(LibraryName)] private static extern void ShitDesignerMacDisplaySetSource(int displayIndex, IntPtr sourceTexture);
 		[DllImport(LibraryName)] private static extern void ShitDesignerMacDisplaySetVisible(int displayIndex, [MarshalAs(UnmanagedType.I1)] bool visible);
 		[DllImport(LibraryName)] private static extern void ShitDesignerMacDisplaySetScalingMode(int displayIndex, int scalingMode);
+		[DllImport(LibraryName)] private static extern void ShitDesignerMacDisplaySetEmulationAspect(int displayIndex, float aspectRatio);
 		[DllImport(LibraryName)] private static extern void ShitDesignerMacDisplayDestroy(int displayIndex);
 		[DllImport(LibraryName)] private static extern IntPtr ShitDesignerMacDisplayGetRenderEvent();
 	}
@@ -640,6 +670,8 @@ namespace ShitDesigner.Main {
 	[AddComponentMenu("")]
 	public sealed class LiveProgramDisplayCanvas : MonoBehaviour {
 		private RawImage m_Image;
+		private RectTransform m_EmulationTransform;
+		private AspectRatioFitter m_EmulationAspectRatioFitter;
 		private RectTransform m_ImageTransform;
 		private AspectRatioFitter m_AspectRatioFitter;
 
@@ -653,8 +685,13 @@ namespace ShitDesigner.Main {
 			var background = backgroundObject.GetComponent<Image>();
 			background.color = Color.black;
 			background.raycastTarget = false;
+			var emulationObject = new GameObject("Live External Program Display Emulation", typeof(RectTransform), typeof(AspectRatioFitter));
+			emulationObject.transform.SetParent(canvas.transform, false);
+			m_EmulationTransform = (RectTransform)emulationObject.transform;
+			FillParent(m_EmulationTransform);
+			m_EmulationAspectRatioFitter = emulationObject.GetComponent<AspectRatioFitter>();
 			var imageObject = new GameObject("Live External Program Display Image", typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage), typeof(AspectRatioFitter));
-			imageObject.transform.SetParent(canvas.transform, false);
+			imageObject.transform.SetParent(emulationObject.transform, false);
 			m_ImageTransform = (RectTransform)imageObject.transform;
 			ResetToParentRect();
 			m_Image = imageObject.GetComponent<RawImage>();
@@ -664,6 +701,7 @@ namespace ShitDesigner.Main {
 			m_AspectRatioFitter = imageObject.GetComponent<AspectRatioFitter>();
 			m_AspectRatioFitter.aspectRatio = source != null && source.height > 0 ? (float)source.width / source.height : 16f / 9f;
 			SetScalingMode(ExternalDisplayScalingMode.Fill);
+			SetEmulationAspect(ExternalDisplayEmulationAspect.Display);
 		}
 
 		public void SetScalingMode(ExternalDisplayScalingMode mode) {
@@ -683,6 +721,19 @@ namespace ShitDesigner.Main {
 				default:
 					throw new ArgumentOutOfRangeException(nameof(mode));
 			}
+		}
+
+		public void SetEmulationAspect(ExternalDisplayEmulationAspect aspect) {
+			if (m_EmulationAspectRatioFitter == null || m_EmulationTransform == null) return;
+			var aspectRatio = aspect.AspectRatio();
+			if (aspect == ExternalDisplayEmulationAspect.Display) {
+				m_EmulationAspectRatioFitter.aspectMode = AspectRatioFitter.AspectMode.None;
+				FillParent(m_EmulationTransform);
+				return;
+			}
+			FillParent(m_EmulationTransform);
+			m_EmulationAspectRatioFitter.aspectRatio = aspectRatio;
+			m_EmulationAspectRatioFitter.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
 		}
 
 		private void ResetToParentRect() {
