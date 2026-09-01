@@ -13,13 +13,22 @@ namespace ShitDesigner.Main {
 		Overlay
 	}
 
+	public enum ExternalDisplayScalingMode {
+		Stretch,
+		Fill,
+		Fit
+	}
+
 	internal enum OutputMenuCommand {
 		StartProgram,
 		StopProgram,
 		StartOverlay,
 		StopOverlay,
 		ToggleTestPattern,
-		SwapOutputs
+		SwapOutputs,
+		SetScalingStretch,
+		SetScalingFill,
+		SetScalingFit
 	}
 
 	internal readonly struct OutputMenuState : IEquatable<OutputMenuState> {
@@ -30,9 +39,10 @@ namespace ShitDesigner.Main {
 		public bool CanIdentifyDisplays { get; }
 		public bool IsTestPatternVisible { get; }
 		public bool CanSwapOutputs { get; }
+		public ExternalDisplayScalingMode ScalingMode { get; }
 
 		public OutputMenuState(bool canStartProgram, bool canStopProgram, bool canStartOverlay, bool canStopOverlay,
-			bool canIdentifyDisplays, bool isTestPatternVisible, bool canSwapOutputs) {
+			bool canIdentifyDisplays, bool isTestPatternVisible, bool canSwapOutputs, ExternalDisplayScalingMode scalingMode) {
 			CanStartProgram = canStartProgram;
 			CanStopProgram = canStopProgram;
 			CanStartOverlay = canStartOverlay;
@@ -40,6 +50,7 @@ namespace ShitDesigner.Main {
 			CanIdentifyDisplays = canIdentifyDisplays;
 			IsTestPatternVisible = isTestPatternVisible;
 			CanSwapOutputs = canSwapOutputs;
+			ScalingMode = scalingMode;
 		}
 
 		public bool Equals(OutputMenuState other) =>
@@ -49,12 +60,13 @@ namespace ShitDesigner.Main {
 			CanStopOverlay == other.CanStopOverlay &&
 			CanIdentifyDisplays == other.CanIdentifyDisplays &&
 			IsTestPatternVisible == other.IsTestPatternVisible &&
-			CanSwapOutputs == other.CanSwapOutputs;
+			CanSwapOutputs == other.CanSwapOutputs &&
+			ScalingMode == other.ScalingMode;
 
 		public override bool Equals(object obj) => obj is OutputMenuState other && Equals(other);
 		public override int GetHashCode() => (CanStartProgram ? 1 : 0) | (CanStopProgram ? 2 : 0) |
 			(CanStartOverlay ? 4 : 0) | (CanStopOverlay ? 8 : 0) | (CanIdentifyDisplays ? 16 : 0) |
-			(IsTestPatternVisible ? 32 : 0) | (CanSwapOutputs ? 64 : 0);
+			(IsTestPatternVisible ? 32 : 0) | (CanSwapOutputs ? 64 : 0) | ((int)ScalingMode << 7);
 	}
 
 	internal interface ILiveOutputMenuTarget {
@@ -65,6 +77,8 @@ namespace ShitDesigner.Main {
 		bool SetTestPatternVisible(bool visible);
 		bool CanSwapOutputs { get; }
 		bool SwapOutputs();
+		ExternalDisplayScalingMode ScalingMode { get; }
+		bool SetScalingMode(ExternalDisplayScalingMode mode);
 	}
 
 	internal interface INativeOutputMenuBackend : IDisposable {
@@ -99,7 +113,7 @@ namespace ShitDesigner.Main {
 			var overlayActive = m_Output.IsActive(LiveOutputKind.Overlay);
 			return new OutputMenuState(programAvailable && !programActive, programActive,
 				overlayAvailable && !overlayActive, overlayActive, programAvailable || overlayAvailable || m_Output.IsTestPatternVisible,
-				m_Output.IsTestPatternVisible, m_Output.CanSwapOutputs);
+				m_Output.IsTestPatternVisible, m_Output.CanSwapOutputs, m_Output.ScalingMode);
 		}
 
 		private void Execute(OutputMenuCommand command) {
@@ -122,6 +136,15 @@ namespace ShitDesigner.Main {
 					break;
 				case OutputMenuCommand.SwapOutputs:
 					if (m_Output.CanSwapOutputs) m_Output.SwapOutputs();
+					break;
+				case OutputMenuCommand.SetScalingStretch:
+					m_Output.SetScalingMode(ExternalDisplayScalingMode.Stretch);
+					break;
+				case OutputMenuCommand.SetScalingFill:
+					m_Output.SetScalingMode(ExternalDisplayScalingMode.Fill);
+					break;
+				case OutputMenuCommand.SetScalingFit:
+					m_Output.SetScalingMode(ExternalDisplayScalingMode.Fit);
 					break;
 			}
 		}
@@ -170,6 +193,9 @@ namespace ShitDesigner.Main {
 		private const int StopOverlayCommandId = 0x6D04;
 		private const int IdentifyCommandId = 0x6D05;
 		private const int SwapOutputsCommandId = 0x6D06;
+		private const int ScalingStretchCommandId = 0x6D07;
+		private const int ScalingFillCommandId = 0x6D08;
+		private const int ScalingFitCommandId = 0x6D09;
 		private static readonly WindowProcedure MenuWindowProcedure = HandleWindowMessage;
 		private static readonly IntPtr MenuWindowProcedurePointer = Marshal.GetFunctionPointerForDelegate(MenuWindowProcedure);
 		private static readonly Dictionary<IntPtr, WindowsNativeOutputMenuBackend> Instances = new Dictionary<IntPtr, WindowsNativeOutputMenuBackend>();
@@ -178,6 +204,7 @@ namespace ShitDesigner.Main {
 		private IntPtr m_Window;
 		private IntPtr m_MenuBar;
 		private IntPtr m_OutputMenu;
+		private IntPtr m_ScalingMenu;
 		private IntPtr m_PreviousWindowProcedure;
 		private int m_OutputMenuPosition;
 		private bool m_OwnsMenuBar;
@@ -200,6 +227,9 @@ namespace ShitDesigner.Main {
 			SetEnabled(IdentifyCommandId, state.CanIdentifyDisplays);
 			CheckMenuItem(m_OutputMenu, (uint)IdentifyCommandId, ByCommand | (state.IsTestPatternVisible ? CheckedItem : 0));
 			SetEnabled(SwapOutputsCommandId, state.CanSwapOutputs);
+			CheckMenuItem(m_ScalingMenu, ScalingStretchCommandId, ByCommand | (state.ScalingMode == ExternalDisplayScalingMode.Stretch ? CheckedItem : 0));
+			CheckMenuItem(m_ScalingMenu, ScalingFillCommandId, ByCommand | (state.ScalingMode == ExternalDisplayScalingMode.Fill ? CheckedItem : 0));
+			CheckMenuItem(m_ScalingMenu, ScalingFitCommandId, ByCommand | (state.ScalingMode == ExternalDisplayScalingMode.Fit ? CheckedItem : 0));
 			m_AppliedState = state;
 			m_HasAppliedState = true;
 		}
@@ -223,6 +253,7 @@ namespace ShitDesigner.Main {
 			m_Window = IntPtr.Zero;
 			m_MenuBar = IntPtr.Zero;
 			m_OutputMenu = IntPtr.Zero;
+			m_ScalingMenu = IntPtr.Zero;
 		}
 
 		private bool EnsureCreated() {
@@ -233,9 +264,11 @@ namespace ShitDesigner.Main {
 			m_OwnsMenuBar = menuBar == IntPtr.Zero;
 			if (m_OwnsMenuBar) menuBar = CreateMenu();
 			var outputMenu = CreatePopupMenu();
-			if (menuBar == IntPtr.Zero || outputMenu == IntPtr.Zero) {
+			var scalingMenu = CreatePopupMenu();
+			if (menuBar == IntPtr.Zero || outputMenu == IntPtr.Zero || scalingMenu == IntPtr.Zero) {
 				if (m_OwnsMenuBar && menuBar != IntPtr.Zero) DestroyMenu(menuBar);
 				if (outputMenu != IntPtr.Zero) DestroyMenu(outputMenu);
+				if (scalingMenu != IntPtr.Zero) DestroyMenu(scalingMenu);
 				return false;
 			}
 
@@ -244,6 +277,11 @@ namespace ShitDesigner.Main {
 			AppendMenu(outputMenu, SeparatorItem, UIntPtr.Zero, null);
 			AppendMenu(outputMenu, StringItem, new UIntPtr(StartOverlayCommandId), "Start Output 2 (Overlay)");
 			AppendMenu(outputMenu, StringItem, new UIntPtr(StopOverlayCommandId), "Stop Output 2 (Overlay)");
+			AppendMenu(outputMenu, SeparatorItem, UIntPtr.Zero, null);
+			AppendMenu(scalingMenu, StringItem, new UIntPtr(ScalingStretchCommandId), "Stretch");
+			AppendMenu(scalingMenu, StringItem, new UIntPtr(ScalingFillCommandId), "Fill");
+			AppendMenu(scalingMenu, StringItem, new UIntPtr(ScalingFitCommandId), "Fit");
+			AppendMenu(outputMenu, PopupItem, new UIntPtr(unchecked((ulong)scalingMenu.ToInt64())), "Scaling");
 			AppendMenu(outputMenu, SeparatorItem, UIntPtr.Zero, null);
 			AppendMenu(outputMenu, StringItem, new UIntPtr(SwapOutputsCommandId), "Swap Output Displays");
 			AppendMenu(outputMenu, StringItem, new UIntPtr(IdentifyCommandId), "Display Test Pattern");
@@ -257,6 +295,7 @@ namespace ShitDesigner.Main {
 			m_Window = window;
 			m_MenuBar = menuBar;
 			m_OutputMenu = outputMenu;
+			m_ScalingMenu = scalingMenu;
 			m_PreviousWindowProcedure = SetWindowLongPtr(window, WindowProcedureIndex, MenuWindowProcedurePointer);
 			if (m_PreviousWindowProcedure == IntPtr.Zero) {
 				Dispose();
@@ -281,6 +320,9 @@ namespace ShitDesigner.Main {
 					case StopOverlayCommandId: instance.m_Commands.Enqueue(OutputMenuCommand.StopOverlay); return IntPtr.Zero;
 					case IdentifyCommandId: instance.m_Commands.Enqueue(OutputMenuCommand.ToggleTestPattern); return IntPtr.Zero;
 					case SwapOutputsCommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SwapOutputs); return IntPtr.Zero;
+					case ScalingStretchCommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SetScalingStretch); return IntPtr.Zero;
+					case ScalingFillCommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SetScalingFill); return IntPtr.Zero;
+					case ScalingFitCommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SetScalingFit); return IntPtr.Zero;
 				}
 			}
 			return CallWindowProc(instance.m_PreviousWindowProcedure, window, message, wParam, lParam);
@@ -322,7 +364,8 @@ namespace ShitDesigner.Main {
 			ShitDesignerOutputMenuCreate();
 			if (m_HasAppliedState && m_AppliedState.Equals(state)) return;
 			ShitDesignerOutputMenuSetState(state.CanStartProgram, state.CanStopProgram,
-				state.CanStartOverlay, state.CanStopOverlay, state.CanIdentifyDisplays, state.IsTestPatternVisible, state.CanSwapOutputs);
+				state.CanStartOverlay, state.CanStopOverlay, state.CanIdentifyDisplays, state.IsTestPatternVisible,
+				state.CanSwapOutputs, (int)state.ScalingMode);
 			m_AppliedState = state;
 			m_HasAppliedState = true;
 		}
@@ -342,7 +385,8 @@ namespace ShitDesigner.Main {
 			[MarshalAs(UnmanagedType.I1)] bool canStopOverlay,
 			[MarshalAs(UnmanagedType.I1)] bool canIdentifyDisplays,
 			[MarshalAs(UnmanagedType.I1)] bool isTestPatternVisible,
-			[MarshalAs(UnmanagedType.I1)] bool canSwapOutputs);
+			[MarshalAs(UnmanagedType.I1)] bool canSwapOutputs,
+			int scalingMode);
 		[DllImport("__Internal")] [return: MarshalAs(UnmanagedType.I1)] private static extern bool ShitDesignerOutputMenuTryDequeue(out int command);
 	}
 #endif

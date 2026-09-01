@@ -1,9 +1,43 @@
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.UI;
 
 namespace ShitDesigner.Main.Tests {
 	public sealed class NativeOutputMenuTests {
+		[Test]
+		public void DisplayCanvasSupportsStretchFillAndFit() {
+			var host = new GameObject("External Display Scaling Test");
+			var source = new RenderTexture(16, 9, 0, RenderTextureFormat.ARGB32);
+			try {
+				Assert.That(source.Create(), Is.True);
+				var canvas = host.AddComponent<Canvas>();
+				canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+				var presenter = host.AddComponent<LiveProgramDisplayCanvas>();
+				presenter.Initialize(canvas, source);
+
+				var background = presenter.transform.GetChild(0).GetComponent<Image>();
+				var image = presenter.transform.GetChild(1);
+				var aspectRatioFitter = image.GetComponent<AspectRatioFitter>();
+				Assert.That(background.color, Is.EqualTo(Color.black));
+				Assert.That(aspectRatioFitter.aspectRatio, Is.EqualTo(16f / 9f).Within(0.0001f));
+				Assert.That(aspectRatioFitter.aspectMode, Is.EqualTo(AspectRatioFitter.AspectMode.EnvelopeParent));
+
+				presenter.SetScalingMode(ExternalDisplayScalingMode.Stretch);
+				Assert.That(aspectRatioFitter.aspectMode, Is.EqualTo(AspectRatioFitter.AspectMode.None));
+				presenter.SetScalingMode(ExternalDisplayScalingMode.Fit);
+				Assert.That(aspectRatioFitter.aspectMode, Is.EqualTo(AspectRatioFitter.AspectMode.FitInParent));
+				presenter.SetScalingMode(ExternalDisplayScalingMode.Fill);
+				Assert.That(aspectRatioFitter.aspectMode, Is.EqualTo(AspectRatioFitter.AspectMode.EnvelopeParent));
+			}
+			finally {
+				source.Release();
+				Object.DestroyImmediate(source);
+				Object.DestroyImmediate(host);
+			}
+		}
+
 		[Test]
 		public void SwapReversesProgramAndOverlayDisplayRouting() {
 			Assert.That(LiveExternalDisplayOutput.ResolveDisplayNumber(LiveOutputKind.Program, swapped: false), Is.EqualTo(2));
@@ -27,6 +61,7 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(backend.LastState.CanIdentifyDisplays, Is.True);
 				Assert.That(backend.LastState.IsTestPatternVisible, Is.False);
 				Assert.That(backend.LastState.CanSwapOutputs, Is.True);
+				Assert.That(backend.LastState.ScalingMode, Is.EqualTo(ExternalDisplayScalingMode.Fill));
 
 				backend.Enqueue(OutputMenuCommand.StartProgram);
 				backend.Enqueue(OutputMenuCommand.StartOverlay);
@@ -54,6 +89,17 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(target.TestPatternChangeCount, Is.EqualTo(2));
 				Assert.That(target.IsTestPatternVisible, Is.False);
 				Assert.That(backend.LastState.IsTestPatternVisible, Is.False);
+
+				backend.Enqueue(OutputMenuCommand.SetScalingStretch);
+				controller.Tick();
+				Assert.That(target.ScalingMode, Is.EqualTo(ExternalDisplayScalingMode.Stretch));
+				Assert.That(backend.LastState.ScalingMode, Is.EqualTo(ExternalDisplayScalingMode.Stretch));
+
+				backend.Enqueue(OutputMenuCommand.SetScalingFit);
+				backend.Enqueue(OutputMenuCommand.SetScalingFill);
+				controller.Tick();
+				Assert.That(target.ScalingMode, Is.EqualTo(ExternalDisplayScalingMode.Fill));
+				Assert.That(target.ScalingChangeCount, Is.EqualTo(3));
 			}
 
 			Assert.That(backend.Disposed, Is.True);
@@ -70,12 +116,15 @@ namespace ShitDesigner.Main.Tests {
 				backend.Enqueue(OutputMenuCommand.StopOverlay);
 				backend.Enqueue(OutputMenuCommand.ToggleTestPattern);
 				backend.Enqueue(OutputMenuCommand.SwapOutputs);
+				backend.Enqueue(OutputMenuCommand.SetScalingFit);
 				controller.Tick();
 			}
 
 			Assert.That(target.SetActiveCount, Is.Zero);
 			Assert.That(target.TestPatternChangeCount, Is.Zero);
 			Assert.That(target.SwapCount, Is.Zero);
+			Assert.That(target.ScalingMode, Is.EqualTo(ExternalDisplayScalingMode.Fit));
+			Assert.That(target.ScalingChangeCount, Is.EqualTo(1));
 			Assert.That(backend.LastState.CanStartProgram, Is.False);
 			Assert.That(backend.LastState.CanStopProgram, Is.False);
 			Assert.That(backend.LastState.CanStartOverlay, Is.False);
@@ -90,8 +139,10 @@ namespace ShitDesigner.Main.Tests {
 			public int SetActiveCount { get; private set; }
 			public int TestPatternChangeCount { get; private set; }
 			public int SwapCount { get; private set; }
+			public int ScalingChangeCount { get; private set; }
 			public bool IsTestPatternVisible { get; private set; }
 			public bool CanSwapOutputs => m_Available.All(available => available);
+			public ExternalDisplayScalingMode ScalingMode { get; private set; } = ExternalDisplayScalingMode.Fill;
 
 			public RecordingOutputTarget(bool programAvailable, bool overlayAvailable) {
 				m_Available = new[] { programAvailable, overlayAvailable };
@@ -112,6 +163,11 @@ namespace ShitDesigner.Main.Tests {
 				return true;
 			}
 			public bool SwapOutputs() { SwapCount++; return true; }
+			public bool SetScalingMode(ExternalDisplayScalingMode mode) {
+				ScalingChangeCount++;
+				ScalingMode = mode;
+				return true;
+			}
 		}
 
 		private sealed class RecordingOutputMenuBackend : INativeOutputMenuBackend {

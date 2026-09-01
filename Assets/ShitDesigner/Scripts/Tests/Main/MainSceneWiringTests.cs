@@ -11,6 +11,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using UnityEngine.UIElements;
 
 namespace ShitDesigner.Main.Tests {
@@ -355,7 +356,10 @@ namespace ShitDesigner.Main.Tests {
 
 				Assert.That(host.GetComponent<Camera>(), Is.Null);
 				Assert.That(presenter.Source, Is.SameAs(source));
-				var image = (RectTransform)presenter.transform.GetChild(0);
+				var background = presenter.transform.GetChild(0).GetComponent<Image>();
+				Assert.That(background, Is.Not.Null);
+				Assert.That(background.color, Is.EqualTo(Color.black));
+				var image = (RectTransform)presenter.transform.GetChild(1);
 				Assert.That(image.anchorMin, Is.EqualTo(Vector2.zero));
 				Assert.That(image.anchorMax, Is.EqualTo(Vector2.one));
 				var aspectRatioFitter = image.GetComponent<AspectRatioFitter>();
