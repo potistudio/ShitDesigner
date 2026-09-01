@@ -233,15 +233,17 @@ namespace ShitDesigner.Main {
 		}
 
 		private DisplayOutput CreateOutput(int displayNumber) {
+			var display = Display.displays[displayNumber - 1];
+			var resolution = ResolveDisplayResolution(display.systemWidth, display.systemHeight);
 			// DisplayTransform writes final sRGB-encoded bytes itself. The native
 			// macOS presenter must therefore sample an unorm texture; marking this
 			// texture as sRGB would make Metal decode it before presentation and
 			// lift the midtones when the display layer encodes them again.
 #if UNITY_STANDALONE_OSX && !UNITY_EDITOR
-			var displayTexture = new RenderTexture(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight, 0,
+			var displayTexture = new RenderTexture(resolution.x, resolution.y, 0,
 				RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear) {
 #else
-			var displayTexture = new RenderTexture(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight, 0, RenderTextureFormat.ARGB32) {
+			var displayTexture = new RenderTexture(resolution.x, resolution.y, 0, RenderTextureFormat.ARGB32) {
 #endif
 				name = "ShitDesigner.Main.ExternalDisplay." + displayNumber,
 				useMipMap = false,
@@ -278,6 +280,12 @@ namespace ShitDesigner.Main {
 			output.SetEmulationAspect(EmulationAspect);
 			return output;
 #endif
+		}
+
+		internal static Vector2Int ResolveDisplayResolution(int systemWidth, int systemHeight) {
+			return systemWidth > 0 && systemHeight > 0
+				? new Vector2Int(systemWidth, systemHeight)
+				: new Vector2Int(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight);
 		}
 
 		private bool OutputsDoNotMatchConnectedDisplays() {
