@@ -32,6 +32,8 @@ namespace ShitDesigner.Main {
 		[Header("Main Cue MIDI")]
 		[SerializeField, Range(1, 16)] public int m_MainCueFaderChannel = 16;
 		[SerializeField, Range(0, 127)] public int m_MainCueFaderControlNumber = 5;
+		[SerializeField, Tooltip("Maps latched Main Cue fader travel to alternate Cue opacity.")]
+		public AnimationCurve m_MainCueFaderCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
 		[SerializeField, Range(1, 16)] private int m_SceneTimeEncoderChannel = 16;
 		[SerializeField, Range(0, 127)] private int m_SceneTimeEncoderControlNumber = 77;
 		[SerializeField, Min(.01f)] private float m_SceneTimeJogSpeedPerStep = 1f;
@@ -103,6 +105,7 @@ namespace ShitDesigner.Main {
 				m_OwnsUnityTimeScale = true;
 				_shutdown.Add(RestoreUnityTimeScale);
 				_runtime = _graphBootstrap.CreateRuntime();
+				_runtime.ConfigureMainCueFaderCurve(m_MainCueFaderCurve);
 				_runtime.ConfigureSceneTimeJog(m_SceneTimeJogMaximumSpeedOffset);
 				_shutdown.Add(() => { _runtime?.Dispose(); _runtime = null; });
 				_patchIds = _runtime.Patches.Select(patch => patch.Id).ToArray();

@@ -248,6 +248,7 @@ namespace ShitDesigner.Main {
 
 	internal sealed class LiveMainCueFader {
 		private int m_ReferenceCueIndex;
+		private AnimationCurve m_ResponseCurve;
 		private float m_ReferencePosition;
 		private bool m_HasReferencePosition;
 		private float m_CurrentPosition;
@@ -258,8 +259,13 @@ namespace ShitDesigner.Main {
 		public int DominantCueIndex => AlternateOpacity > .5f ? AlternateCueIndex : ReferenceCueIndex;
 		public float AlternateOpacity { get; private set; }
 
-		public LiveMainCueFader(int referenceCueIndex = 0) {
+		public LiveMainCueFader(int referenceCueIndex = 0, AnimationCurve responseCurve = null) {
+			SetResponseCurve(responseCurve);
 			SetReferenceCue(referenceCueIndex);
+		}
+
+		public void SetResponseCurve(AnimationCurve responseCurve) {
+			m_ResponseCurve = responseCurve ?? AnimationCurve.Linear(0f, 0f, 1f, 1f);
 		}
 
 		public void SetPosition(float normalizedPosition) {
@@ -277,9 +283,13 @@ namespace ShitDesigner.Main {
 
 			var offset = position - m_ReferencePosition;
 			var availableDistance = offset > 0f ? 1f - m_ReferencePosition : m_ReferencePosition;
-			AlternateOpacity = availableDistance <= Mathf.Epsilon
+			var normalizedOpacity = availableDistance <= Mathf.Epsilon
 				? 0f
 				: Mathf.Clamp01(Mathf.Abs(offset) / availableDistance);
+			var curvedOpacity = m_ResponseCurve.Evaluate(normalizedOpacity);
+			AlternateOpacity = float.IsNaN(curvedOpacity) || float.IsInfinity(curvedOpacity)
+				? normalizedOpacity
+				: Mathf.Clamp01(curvedOpacity);
 		}
 
 		public void ToggleReferenceCue() {
@@ -1393,6 +1403,10 @@ namespace ShitDesigner.Main {
 				throw new ArgumentOutOfRangeException(nameof(maximumSpeedOffset));
 			m_SceneTimeJogMaximumSpeedOffset = maximumSpeedOffset;
 			m_SceneTimeJogSpeedOffset = Math.Max(-1d, Math.Min(maximumSpeedOffset, m_SceneTimeJogSpeedOffset));
+		}
+
+		public void ConfigureMainCueFaderCurve(AnimationCurve responseCurve) {
+			m_MainCueFader.SetResponseCurve(responseCurve);
 		}
 
 		public LiveParameterApplicationResult Apply(LiveParameterRequest request) {
