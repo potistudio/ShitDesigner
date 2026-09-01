@@ -978,12 +978,7 @@
       "pass": 0,
       "formalPriority": "unclassified",
       "phase1Support": false,
-      "inputs": [
-        "WaveformTex",
-        "SpectrumTex",
-        "MelTex",
-        "OnsetTex"
-      ],
+      "inputs": [],
       "parameters": [
         "Amount",
         "Gain",
@@ -998,7 +993,7 @@
       "stateful": false,
       "historySlots": 0,
       "warmupFrames": 0,
-      "testStrategy": "synthetic_audio_fixture"
+      "testStrategy": "bpm_clock_fixture"
     },
     {
       "id": "raymarch.raymarched_sphere",

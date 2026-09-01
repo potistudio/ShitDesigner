@@ -82,8 +82,10 @@ Shader "Hidden/ShitDesigner/VJ/AudioFamily"
 			float4 resolution = max(VJFinite4(_SD_Resolution), float4(1.0, 1.0, 1.0, 1.0));
 			int variant = clamp((int)floor(_Variant + 0.5), 0, 30);
 			int stage = clamp((int)round(_SD_PassIndex), 0, 1);
+			float beatPulse = max(_Beat, VJFiniteScalar(_SD_BeatPulse));
+			float beatPhase = abs(_SD_BeatPhase) > 1.0e-6 ? _SD_BeatPhase : _BpmPhase;
 			float4 result = VJAudioEvaluate(variant, _WaveformTex, _SpectrumTex, _MelTex, _OnsetTex,
-			input.uv, resolution, VJFiniteScalar(_SD_Time), VJFiniteScalar(_SD_Frame), _Rms, _Peak, _Beat, _BpmPhase,
+			input.uv, resolution, VJFiniteScalar(_SD_Time), VJFiniteScalar(_SD_Frame), _Rms, _Peak, beatPulse, beatPhase,
 			_Amount, _Gain, VJFiniteScalar(_SD_Seed));
 			if (stage == 0) return VJFinite4(result);
 				float4 current = VJFinite4(tex2D(_MainTex, input.uv));

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ShaderNodeManifest
   m_EditorClassIdentifier: ShitDesigner.Nodes::ShitDesigner.Nodes.ShaderNodeManifestAsset
   schemaVersion: 1
-  sourceFingerprint: b9ae392c1a9c83b83423be993e1afbbc7b01c39fcc23df93bf5d9da11630126c
+  sourceFingerprint: 8f434b28ad637cd0b582a383d2f58f6a00c42706c5b41598bef2d12992093e8e
   entries:
   - typeId: shitdesigner.shader.generator
     schemaVersion: 1
@@ -118981,11 +118981,11 @@ MonoBehaviour:
     family: 10
     shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
     variantId: audio.wireframe_cube_fractal
-    requiredFeatures: 32
+    requiredFeatures: 0
     stateful: 0
     historySlots: 0
     userAddable: 1
-    description: synthetic_audio_fixture
+    description: bpm_clock_fixture
     priority: UNCLASSIFIED
     warmupFrames: 0
     sourceLedger: audio-raymarch-utility-variants.json
@@ -118994,43 +118994,7 @@ MonoBehaviour:
     aliases:
     - wireframe_cube_fractal
     - audio.wireframe_cube_fractal
-    inputs:
-    - id: waveform_tex
-      sourceId: WaveformTex
-      displayName: WaveformTex
-      property: _WaveformTex
-      role: 5
-      type: 0
-      required: 0
-      hasDefaultImage: 1
-      defaultImage: 1
-    - id: spectrum_tex
-      sourceId: SpectrumTex
-      displayName: SpectrumTex
-      property: _SpectrumTex
-      role: 5
-      type: 0
-      required: 0
-      hasDefaultImage: 1
-      defaultImage: 1
-    - id: mel_tex
-      sourceId: MelTex
-      displayName: MelTex
-      property: _MelTex
-      role: 5
-      type: 0
-      required: 0
-      hasDefaultImage: 1
-      defaultImage: 1
-    - id: onset_tex
-      sourceId: OnsetTex
-      displayName: OnsetTex
-      property: _OnsetTex
-      role: 5
-      type: 0
-      required: 0
-      hasDefaultImage: 1
-      defaultImage: 1
+    inputs: []
     parameters:
     - id: amount
       sourceId: Amount
@@ -119227,7 +119191,7 @@ MonoBehaviour:
       kind: 0
       variantId: audio.wireframe_cube_fractal
       outputRole: image
-      requiredFeatures: 32
+      requiredFeatures: 0
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
   - typeId: shitdesigner.shader.audio.onset_history_grid
     schemaVersion: 1

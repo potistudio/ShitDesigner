@@ -168,15 +168,19 @@ float2x2 VJAudioFractalRotation(float angle)
     return float2x2(cos(angle), cos(angle + 11.0), cos(angle + 33.0), cos(angle));
 }
 
-float4 VJAudioWireframeCubeFractal(sampler2D spectrumTexture, float2 uv, float4 resolution,
-    float time, float amount, float gain)
+float4 VJAudioWireframeCubeFractal(float2 uv, float4 resolution, float time,
+    float amount, float bpmStrength, float beatPulse, float beatPhase)
 {
-    float safeGain = max(VJFiniteScalar(gain), 0.0);
-    float audio0 = VJAudioSpectrum(spectrumTexture, 25.0 / 512.0) * safeGain;
-    float audio4 = VJAudioSpectrum(spectrumTexture, 229.0 / 512.0) * safeGain;
-    float audio9 = VJAudioSpectrum(spectrumTexture, 484.0 / 512.0) * safeGain;
-    float bass = 1.0 + VJAudioSpectrum(spectrumTexture, 76.0 / 512.0) * safeGain * 1.2;
-    float treble = 1.0 + VJAudioSpectrum(spectrumTexture, 433.0 / 512.0) * safeGain * 0.4;
+    float strength = max(VJFiniteScalar(bpmStrength), 0.0);
+    float phase = frac(VJFiniteScalar(beatPhase));
+    float pulse = saturate(VJFiniteScalar(beatPulse) * strength);
+    float phaseAccent = pow(saturate(0.5 + 0.5 * cos(phase * VJ_TAU)), 12.0) * saturate(strength * 0.35);
+    float beatAccent = max(pulse, phaseAccent);
+    float colorAccentA = beatAccent;
+    float colorAccentB = beatAccent * saturate(0.5 + 0.5 * sin(phase * VJ_TAU));
+    float colorAccentC = beatAccent * saturate(0.5 + 0.5 * cos(phase * VJ_TAU));
+    float bass = 1.0 + beatAccent * 1.2;
+    float treble = 1.0 + beatAccent * 0.4;
     float2 pixel = uv * resolution.xy;
     float2 coordinate = (pixel - 0.5 * resolution.xy) / max(resolution.y, 1.0);
     float3 bounds = float3(0.5, 0.4, 0.5);
@@ -201,9 +205,9 @@ float4 VJAudioWireframeCubeFractal(sampler2D spectrumTexture, float2 uv, float4 
         float hue = (float)cube / (float)VJ_AUDIO_CUBE_COUNT * VJ_TAU + time * 0.2;
         float4 color = 0.5 + 0.5 * sin(hue + float4(0.0, 2.0, 4.0, 0.0));
         color.rgb = smoothstep(0.1, 0.9, color.rgb);
-        if (color.r > 0.5) color.rgb *= 1.0 + audio0 * 1.5;
-        if (color.g > 0.6) color.rb += audio4 * 1.8;
-        if (color.b > 0.4) color.gb *= 1.0 + audio9 * 2.0;
+        if (color.r > 0.5) color.rgb *= 1.0 + colorAccentA * 1.5;
+        if (color.g > 0.6) color.rb += colorAccentB * 1.8;
+        if (color.b > 0.4) color.gb *= 1.0 + colorAccentC * 2.0;
         colors[cube] = color;
     }
 
@@ -214,7 +218,7 @@ float4 VJAudioWireframeCubeFractal(sampler2D spectrumTexture, float2 uv, float4 
         for (int second = first + 1; second < VJ_AUDIO_CUBE_COUNT; second++)
         {
             float distance3D = length(positions[first] - positions[second]);
-            float maximumDistance = 0.5 + audio0 * 0.15;
+            float maximumDistance = 0.5 + beatAccent * 0.15;
             if (distance3D < maximumDistance)
             {
                 float lineDistance = VJAudioSegmentDistance(coordinate, projectedPositions[first], projectedPositions[second]);
@@ -275,7 +279,7 @@ float4 VJAudioWireframeCubeFractal(sampler2D spectrumTexture, float2 uv, float4 
     }
     fractalColor = 1.0 - exp(-fractalColor * fractalColor);
     float mixAmount = lerp(0.35, 0.65, saturate(amount));
-    float3 combined = lerp(wireframe.rgb, fractalColor, mixAmount) * 5.0;
+    float3 combined = lerp(wireframe.rgb, fractalColor, mixAmount) * 5.0 * (1.0 + beatAccent * 0.75);
     return VJFinite4(float4(combined, 1.0));
 }
 
@@ -515,7 +519,7 @@ float4 VJAudioEvaluate(int variant, sampler2D waveformTexture, sampler2D spectru
 
     if (variant == 30) // Wireframe Cube Fractal
     {
-        return VJAudioWireframeCubeFractal(spectrumTexture, uv, resolution, safeTime, safeAmount, safeGain);
+        return VJAudioWireframeCubeFractal(uv, resolution, safeTime, safeAmount, safeGain, safeBeat, phase);
     }
 
     // The family shader clamps the variant, but keep direct include callers

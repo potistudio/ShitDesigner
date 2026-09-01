@@ -136703,10 +136703,6 @@ MonoBehaviour:
     systemOwned: 0
     userAddable: 1
     portIds:
-    - waveform_tex
-    - spectrum_tex
-    - mel_tex
-    - onset_tex
     - image
     parameterIds:
     - amount
@@ -136719,34 +136715,6 @@ MonoBehaviour:
     - frame
     - seed
     ports:
-    - id: waveform_tex
-      displayName: WaveformTex
-      direction: 0
-      type: 0
-      required: 0
-      hasDefaultImage: 1
-      defaultImage: 1
-    - id: spectrum_tex
-      displayName: SpectrumTex
-      direction: 0
-      type: 0
-      required: 0
-      hasDefaultImage: 1
-      defaultImage: 1
-    - id: mel_tex
-      displayName: MelTex
-      direction: 0
-      type: 0
-      required: 0
-      hasDefaultImage: 1
-      defaultImage: 1
-    - id: onset_tex
-      displayName: OnsetTex
-      direction: 0
-      type: 0
-      required: 0
-      hasDefaultImage: 1
-      defaultImage: 1
     - id: image
       displayName: Image
       direction: 1
@@ -136915,41 +136883,13 @@ MonoBehaviour:
     shaderFamily: 10
     shaderVariantId: audio.wireframe_cube_fractal
     shaderSourceVariant: 30
-    shaderRequiredFeatures: 32
+    shaderRequiredFeatures: 0
     shaderStateful: 0
     shaderHistorySlots: 0
     shaderAliases:
     - wireframe_cube_fractal
     - audio.wireframe_cube_fractal
-    shaderInputs:
-    - portId: waveform_tex
-      property: _WaveformTex
-      role: 5
-      type: 0
-      required: 0
-      hasDefaultImage: 1
-      defaultImage: 1
-    - portId: spectrum_tex
-      property: _SpectrumTex
-      role: 5
-      type: 0
-      required: 0
-      hasDefaultImage: 1
-      defaultImage: 1
-    - portId: mel_tex
-      property: _MelTex
-      role: 5
-      type: 0
-      required: 0
-      hasDefaultImage: 1
-      defaultImage: 1
-    - portId: onset_tex
-      property: _OnsetTex
-      role: 5
-      type: 0
-      required: 0
-      hasDefaultImage: 1
-      defaultImage: 1
+    shaderInputs: []
     shaderParameters:
     - parameterId: amount
       property: _Amount
@@ -137002,7 +136942,7 @@ MonoBehaviour:
       kind: 0
       variantId: audio.wireframe_cube_fractal
       outputRole: image
-      requiredFeatures: 32
+      requiredFeatures: 0
   - typeId: shitdesigner.shader.audio.onset_history_grid
     schemaVersion: 1
     displayName: Onset History Grid
