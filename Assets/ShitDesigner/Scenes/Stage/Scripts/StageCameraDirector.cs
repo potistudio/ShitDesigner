@@ -59,6 +59,7 @@ namespace ShitDesigner.Stage {
 		public const string Cue2ParameterId = "camera_cue_2";
 		private const double MinimumVideoSeekToleranceSeconds = 0.05d;
 		private const double MaximumVideoFrameAdvanceSeconds = 2d;
+		private static readonly int VideoTextureId = Shader.PropertyToID("_BaseMap");
 
 		[Header("References")]
 		[SerializeField] private Camera m_Camera;
@@ -102,6 +103,10 @@ namespace ShitDesigner.Stage {
 		private bool m_VideoFrameCopyPending;
 		private bool m_FilterVideoFrames;
 		private double m_LastAcceptedVideoTime;
+		private Renderer m_VideoRenderer;
+		private RenderTexture m_AuthoredVideoDecodeTexture;
+		private RenderTexture m_InstanceVideoDecodeTexture;
+		private RenderTexture m_InstanceVideoOutputTexture;
 
 		public IReadOnlyList<ILiveSceneParameter> LiveParameters {
 			get {
@@ -127,6 +132,7 @@ namespace ShitDesigner.Stage {
 			RestoreVideoPlayback();
 			RestoreVideoOutput();
 			ObserveVideoPlayer(null);
+			ReleaseInstanceVideoOutput();
 			m_RandomCamera?.SetSuspended(false);
 		}
 
@@ -140,11 +146,12 @@ namespace ShitDesigner.Stage {
 		}
 
 		private void LateUpdate() {
-			if (!m_UsesManagedVideoOutput || !m_VideoFrameCopyPending || m_VideoOutputTexture == null || m_VideoPlayer == null
+			var outputTexture = ActiveVideoOutputTexture;
+			if (!m_UsesManagedVideoOutput || !m_VideoFrameCopyPending || outputTexture == null || m_VideoPlayer == null
 				|| m_VideoPlayer.targetTexture == null)
 				return;
 
-			Graphics.Blit(m_VideoPlayer.targetTexture, m_VideoOutputTexture);
+			Graphics.Blit(m_VideoPlayer.targetTexture, outputTexture);
 			m_VideoFrameCopyPending = false;
 		}
 
@@ -287,7 +294,66 @@ namespace ShitDesigner.Stage {
 			if (m_RandomCamera == null) m_RandomCamera = GetComponent<StageRandomCamera>();
 			if (m_VideoPlayer == null) m_VideoPlayer = GetComponentInChildren<VideoPlayer>(true);
 			ObserveVideoPlayer(m_VideoPlayer);
+			ConfigureInstanceVideoOutput();
 			ConfigureVideoOutput();
+		}
+
+		private RenderTexture ActiveVideoOutputTexture
+			=> m_InstanceVideoOutputTexture != null ? m_InstanceVideoOutputTexture : m_VideoOutputTexture;
+
+		private void ConfigureInstanceVideoOutput() {
+			if (!Application.isPlaying || m_InstanceVideoDecodeTexture != null || m_VideoPlayer == null
+				|| m_VideoPlayer.targetTexture == null || m_VideoOutputTexture == null)
+				return;
+
+			m_VideoRenderer = transform.Find("LED Screen")?.GetComponent<Renderer>();
+			if (m_VideoRenderer == null)
+				return;
+
+			m_AuthoredVideoDecodeTexture = m_VideoPlayer.targetTexture;
+			m_InstanceVideoDecodeTexture = CreateInstanceTexture(m_AuthoredVideoDecodeTexture, "Video Decode");
+			m_InstanceVideoOutputTexture = CreateInstanceTexture(m_VideoOutputTexture, "Video Output");
+			m_VideoPlayer.targetTexture = m_InstanceVideoDecodeTexture;
+
+			var properties = new MaterialPropertyBlock();
+			m_VideoRenderer.GetPropertyBlock(properties);
+			properties.SetTexture(VideoTextureId, m_InstanceVideoOutputTexture);
+			m_VideoRenderer.SetPropertyBlock(properties);
+		}
+
+		private void ReleaseInstanceVideoOutput() {
+			if (m_VideoPlayer != null && m_AuthoredVideoDecodeTexture != null)
+				m_VideoPlayer.targetTexture = m_AuthoredVideoDecodeTexture;
+			if (m_VideoRenderer != null && m_VideoOutputTexture != null) {
+				var properties = new MaterialPropertyBlock();
+				m_VideoRenderer.GetPropertyBlock(properties);
+				properties.SetTexture(VideoTextureId, m_VideoOutputTexture);
+				m_VideoRenderer.SetPropertyBlock(properties);
+			}
+
+			ReleaseInstanceTexture(m_InstanceVideoDecodeTexture);
+			ReleaseInstanceTexture(m_InstanceVideoOutputTexture);
+			m_AuthoredVideoDecodeTexture = null;
+			m_InstanceVideoDecodeTexture = null;
+			m_InstanceVideoOutputTexture = null;
+			m_VideoRenderer = null;
+		}
+
+		private RenderTexture CreateInstanceTexture(RenderTexture template, string suffix) {
+			var texture = new RenderTexture(template.descriptor) {
+				name = name + " " + suffix,
+				filterMode = template.filterMode,
+				wrapMode = template.wrapMode
+			};
+			texture.Create();
+			return texture;
+		}
+
+		private static void ReleaseInstanceTexture(RenderTexture texture) {
+			if (texture == null)
+				return;
+			texture.Release();
+			Destroy(texture);
 		}
 
 		private void ConfigureVideoOutput() {
