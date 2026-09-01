@@ -13,6 +13,7 @@ namespace ShitDesigner.CameraCues.Tests {
 		[UnityTest]
 		public IEnumerator VideoCuePausesUntilSeekCompletesThenResumesPlayback() {
 			var root = new GameObject("Stage Camera Video Seek Test");
+			var outputTexture = new RenderTexture(64, 64, 0);
 			try {
 				var cameraObject = new GameObject("Main Camera");
 				cameraObject.transform.SetParent(root.transform, false);
@@ -25,11 +26,15 @@ namespace ShitDesigner.CameraCues.Tests {
 				videoPlayer.source = VideoSource.Url;
 				videoPlayer.url = Path.Combine(Application.dataPath,
 					"ShitDesigner/Scripts/Tests/Media/Fixtures/h264-audio.mp4");
-				videoPlayer.renderMode = VideoRenderMode.APIOnly;
+				videoPlayer.renderMode = VideoRenderMode.RenderTexture;
+				videoPlayer.targetTexture = outputTexture;
 				videoPlayer.audioOutputMode = VideoAudioOutputMode.None;
 				videoPlayer.isLooping = true;
 
 				var director = root.AddComponent<StageCameraDirector>();
+				Assert.That(videoPlayer.renderMode, Is.EqualTo(VideoRenderMode.APIOnly),
+					"Stage video output must use the same APIOnly copy path as a Video node.");
+				Assert.That(videoPlayer.targetTexture, Is.SameAs(outputTexture));
 				ConfigureVideoCue(director, .5f);
 				director.ActivateScene();
 
@@ -89,6 +94,8 @@ namespace ShitDesigner.CameraCues.Tests {
 			}
 			finally {
 				Object.Destroy(root);
+				outputTexture.Release();
+				Object.Destroy(outputTexture);
 			}
 		}
 
