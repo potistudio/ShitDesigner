@@ -2931,6 +2931,7 @@ MonoBehaviour:
   m_DefaultLookTarget: {fileID: 789263807182799040}
   m_RandomCamera: {fileID: 8626790382264376490}
   m_VideoPlayer: {fileID: 8450851300628908232}
+  m_VideoOutputTexture: {fileID: 8400000, guid: 2481197a8540ab548bd7934f2fa790f0, type: 2}
   m_Cues:
   - m_DisplayName: Front Push In
     m_Motion: 1
@@ -10844,11 +10845,11 @@ VideoPlayer:
   m_TargetCameraAlpha: 1
   m_TargetCamera3DLayout: 0
   m_TargetCamera: {fileID: 0}
-  m_TargetTexture: {fileID: 8400000, guid: 2481197a8540ab548bd7934f2fa790f0, type: 2}
+  m_TargetTexture: {fileID: 8400000, guid: 68884057c4d74055aaeba8c84ad71a72, type: 2}
   m_TimeReference: 0
   m_TargetMaterialRenderer: {fileID: 0}
   m_TargetMaterialProperty: <noninit>
-  m_RenderMode: 4
+  m_RenderMode: 2
   m_AspectRatio: 2
   m_DataSource: 0
   m_TimeUpdateMode: 2
@@ -10866,7 +10867,7 @@ VideoPlayer:
   m_SkipOnDrop: 1
   m_Looping: 1
   m_WaitForFirstFrame: 1
-  m_FrameReadyEventEnabled: 0
+  m_FrameReadyEventEnabled: 1
   m_VideoShaders: []
 --- !u!1 &7997184818047504980
 GameObject:

@@ -14,6 +14,7 @@ namespace ShitDesigner.CameraCues.Tests {
 		public IEnumerator VideoCuePausesUntilSeekCompletesThenResumesPlayback() {
 			var root = new GameObject("Stage Camera Video Seek Test");
 			var outputTexture = new RenderTexture(64, 64, 0);
+			var decodeTexture = new RenderTexture(64, 64, 0);
 			try {
 				var cameraObject = new GameObject("Main Camera");
 				cameraObject.transform.SetParent(root.transform, false);
@@ -26,14 +27,17 @@ namespace ShitDesigner.CameraCues.Tests {
 				videoPlayer.source = VideoSource.Url;
 				videoPlayer.url = Path.Combine(Application.dataPath,
 					"ShitDesigner/Scripts/Tests/Media/Fixtures/h264-audio.mp4");
-				videoPlayer.renderMode = VideoRenderMode.APIOnly;
-				videoPlayer.targetTexture = outputTexture;
+				videoPlayer.renderMode = VideoRenderMode.RenderTexture;
+				videoPlayer.targetTexture = decodeTexture;
 				videoPlayer.audioOutputMode = VideoAudioOutputMode.None;
 				videoPlayer.isLooping = true;
 
 				var director = root.AddComponent<StageCameraDirector>();
-				Assert.That(videoPlayer.renderMode, Is.EqualTo(VideoRenderMode.APIOnly));
-				Assert.That(videoPlayer.targetTexture, Is.SameAs(outputTexture));
+				SetField(director, "m_VideoOutputTexture", outputTexture);
+				director.enabled = false;
+				director.enabled = true;
+				Assert.That(videoPlayer.renderMode, Is.EqualTo(VideoRenderMode.RenderTexture));
+				Assert.That(videoPlayer.targetTexture, Is.SameAs(decodeTexture));
 				ConfigureVideoCue(director, .5f);
 				director.ActivateScene();
 
@@ -57,6 +61,8 @@ namespace ShitDesigner.CameraCues.Tests {
 				Assert.That(videoError, Is.Null);
 				Assert.That(videoPlayer.texture, Is.Not.Null,
 					"Normal playback must decode a frame before the seek-race regression is exercised.");
+				yield return null;
+				var preSeekColor = ReadCenterPixel(outputTexture);
 
 				var targetFrameReady = false;
 				var resumedInsideFrameReady = false;
@@ -90,11 +96,17 @@ namespace ShitDesigner.CameraCues.Tests {
 					yield return null;
 				Assert.That(videoPlayer.isPlaying, Is.True,
 					"A cue triggered during playback must resume playback after the seek completes.");
+				yield return null;
+				var postSeekColor = ReadCenterPixel(outputTexture);
+				Assert.That(Vector4.Distance(preSeekColor, postSeekColor), Is.GreaterThan(.01f),
+					"The LED output RenderTexture must visibly change after the seek.");
 			}
 			finally {
 				Object.Destroy(root);
 				outputTexture.Release();
 				Object.Destroy(outputTexture);
+				decodeTexture.Release();
+				Object.Destroy(decodeTexture);
 			}
 		}
 
@@ -103,6 +115,21 @@ namespace ShitDesigner.CameraCues.Tests {
 			SetField(cues[0], "m_Motion", StageCameraCueMotion.Cut);
 			SetField(cues[0], "m_ControlVideoPlayhead", true);
 			SetField(cues[0], "m_VideoPlayheadSeconds", playheadSeconds);
+		}
+
+		private static Color ReadCenterPixel(RenderTexture texture) {
+			var previous = RenderTexture.active;
+			var sample = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+			try {
+				RenderTexture.active = texture;
+				sample.ReadPixels(new Rect(texture.width / 2f, texture.height / 2f, 1f, 1f), 0, 0);
+				sample.Apply();
+				return sample.GetPixel(0, 0);
+			}
+			finally {
+				RenderTexture.active = previous;
+				Object.DestroyImmediate(sample);
+			}
 		}
 
 		private static void SetField(object target, string name, object value)

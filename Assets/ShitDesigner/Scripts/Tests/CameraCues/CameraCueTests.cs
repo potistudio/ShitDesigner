@@ -40,7 +40,13 @@ namespace ShitDesigner.CameraCues.Tests {
 			Assert.That(cues[0].VideoPlayheadSeconds, Is.Zero);
 			Assert.That(cues[1].ControlsVideoPlayhead, Is.True);
 			Assert.That(cues[1].VideoPlayheadSeconds, Is.EqualTo(120f));
-			Assert.That(GetField(typeof(StageCameraDirector), "m_VideoPlayer").GetValue(director), Is.Not.Null);
+			var videoPlayer = (VideoPlayer)GetField(typeof(StageCameraDirector), "m_VideoPlayer").GetValue(director);
+			var outputTexture = (RenderTexture)GetField(typeof(StageCameraDirector), "m_VideoOutputTexture").GetValue(director);
+			Assert.That(videoPlayer, Is.Not.Null);
+			Assert.That(videoPlayer.renderMode, Is.EqualTo(VideoRenderMode.RenderTexture));
+			Assert.That(videoPlayer.sendFrameReadyEvents, Is.True);
+			Assert.That(videoPlayer.targetTexture, Is.Not.Null.And.Not.SameAs(outputTexture));
+			Assert.That(outputTexture, Is.Not.Null);
 		}
 
 		[Test]
