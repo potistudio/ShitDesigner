@@ -1,20 +1,14 @@
 using System;
 using System.Collections.Generic;
 using ShitDesigner.Main;
+using ShitDesigner.Scene;
 using UnityEditor;
 
 namespace ShitDesigner.Editor {
-	[InitializeOnLoad]
 	internal static class LiveSceneParameterProviderInspector {
 		private const string EmptyParametersLabel = "<None>";
 
-		static LiveSceneParameterProviderInspector() {
-			UnityEditor.Editor.finishedDefaultHeaderGUI += DrawLiveParameters;
-		}
-
-		private static void DrawLiveParameters(UnityEditor.Editor editor) {
-			if (editor.target is not ILiveSceneParameterProvider provider) return;
-
+		public static void Draw(ILiveSceneParameterProvider provider) {
 			using (new EditorGUI.DisabledScope(true))
 				EditorGUILayout.TextField("Live Parameters", FormatParameters(provider.LiveParameters));
 		}
@@ -33,6 +27,14 @@ namespace ShitDesigner.Editor {
 			}
 
 			return labels.Count == 0 ? EmptyParametersLabel : string.Join(", ", labels);
+		}
+	}
+
+	[CustomEditor(typeof(ChitoseCandyCutScene))]
+	public sealed class ChitoseCandyCutSceneEditor : UnityEditor.Editor {
+		public override void OnInspectorGUI() {
+			LiveSceneParameterProviderInspector.Draw((ChitoseCandyCutScene)target);
+			DrawDefaultInspector();
 		}
 	}
 }
