@@ -46,8 +46,30 @@ MonoBehaviour:
       m_Minimum: 0
       m_Maximum: 1
   m_HotCue1:
-    m_Values: []
+    m_Values:
+    - m_NodeId: scene
+      _id: asset_1
+      _type: 0
+      _floatValue: 1
+      _intValue: 0
+      _boolValue: 0
+      _vector2Value: {x: 0, y: 0}
+      _vector3Value: {x: 0, y: 0, z: 0}
+      _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+      _colorValue: {r: 0, g: 0, b: 0, a: 0}
+      _textValue:
   m_HotCue2:
-    m_Values: []
+    m_Values:
+    - m_NodeId: scene
+      _id: asset_2
+      _type: 0
+      _floatValue: 1
+      _intValue: 0
+      _boolValue: 0
+      _vector2Value: {x: 0, y: 0}
+      _vector3Value: {x: 0, y: 0, z: 0}
+      _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+      _colorValue: {r: 0, g: 0, b: 0, a: 0}
+      _textValue:
   m_KeyboardInputs: []
   m_MidiInputs: []
