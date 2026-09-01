@@ -4,6 +4,7 @@ using NUnit.Framework;
 using ShitDesigner.Core;
 using ShitDesigner.Scene;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -12,6 +13,44 @@ using UnityEngine.UIElements;
 namespace ShitDesigner.Tests.Scene {
 	public sealed class SceneIsolationPlayModeTests {
 		private static NodeInstanceId Node(int index) => new NodeInstanceId($"{index + 10:00000000}-0000-4000-8000-000000000000");
+
+		[UnityTest]
+		public IEnumerator SingleCameraRenderRequestUpdatesTheIsolatedVolumeStack() {
+			var prefab = new GameObject("Post Processing Prefab");
+			var cameraObject = new GameObject("Camera");
+			cameraObject.transform.SetParent(prefab.transform, false);
+			cameraObject.AddComponent<Camera>();
+			var cameraData = cameraObject.AddComponent<UniversalAdditionalCameraData>();
+			cameraData.renderType = CameraRenderType.Base;
+			cameraData.renderPostProcessing = true;
+			var volumeObject = new GameObject("Post Processing Volume");
+			volumeObject.transform.SetParent(prefab.transform, false);
+			var profile = ScriptableObject.CreateInstance<VolumeProfile>();
+			var bloom = profile.Add<Bloom>(true);
+			bloom.intensity.Override(3f);
+			var volume = volumeObject.AddComponent<Volume>();
+			volume.isGlobal = true;
+			volume.sharedProfile = profile;
+			var target = new RenderTexture(16, 16, 24, RenderTextureFormat.ARGBHalf);
+			target.Create();
+			var manager = new SceneIsolationManager(renderSource: new UnityCameraRenderSource());
+			var created = manager.Create(new SceneCreateRequest(Node(31), SceneNodeKind.ThreeD, "SceneIsolation.PostProcessing", prefab: prefab));
+			try {
+				Assert.That(created.IsSuccess, Is.True, created.IsFailure ? created.Error.Message : string.Empty);
+				var rendered = created.Value.Render(target, target.width, target.height, 1);
+				Assert.That(rendered.IsSuccess, Is.True, rendered.IsFailure ? rendered.Error.Message : string.Empty);
+				Assert.That(VolumeManager.instance.stack.GetComponent<Bloom>().intensity.value, Is.EqualTo(3f));
+			}
+			finally {
+				if (created.IsSuccess) created.Value.Dispose();
+				target.Release();
+				Object.DestroyImmediate(target);
+				Object.DestroyImmediate(profile);
+				Object.DestroyImmediate(prefab);
+			}
+			for (var index = 0; index < 120 && manager.ActiveNodeCount > 0; index++) yield return null;
+			manager.Dispose();
+		}
 
 		[UnityTest]
 		public IEnumerator CylindricalFlythroughBuildsConfiguredFieldAndMovesCameraForward() {

@@ -6,6 +6,7 @@ using System.Linq;
 using ShitDesigner.Core;
 using ShitDesigner.Runtime;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
@@ -472,6 +473,14 @@ namespace ShitDesigner.Scene {
 				return Failure("scene.layer.range", "Only reserved Scene layers 8..31 may be assigned.");
 			var layerMask = 1 << layer;
 			foreach (var transform in root.GetComponentsInChildren<Transform>(true)) transform.gameObject.layer = layer;
+			// Volumes register against their GameObject layer in OnEnable. Prefab
+			// instances are enabled before they receive the leased isolation layer,
+			// so refresh active registrations before the first render request.
+			foreach (var volume in root.GetComponentsInChildren<Volume>(true)) {
+				if (!volume.isActiveAndEnabled) continue;
+				volume.enabled = false;
+				volume.enabled = true;
+			}
 			foreach (var camera in root.GetComponentsInChildren<Camera>(true)) {
 				camera.cullingMask = layerMask;
 				var additionalCameraData = camera.GetComponent<UniversalAdditionalCameraData>();

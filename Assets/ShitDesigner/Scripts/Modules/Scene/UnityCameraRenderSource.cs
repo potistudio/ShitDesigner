@@ -38,6 +38,7 @@ namespace ShitDesigner.Scene {
 					request.Camera.Render();
 				}
 				else {
+					UpdateVolumeFramework(request.Camera);
 					var renderRequest = new UniversalRenderPipeline.SingleCameraRequest { destination = target };
 					if (!RenderPipeline.SupportsRenderRequest(request.Camera, renderRequest))
 						return Failure("scene.render.request_unsupported", "The active render pipeline does not support SingleCameraRequest for this Scene camera.");
@@ -59,6 +60,15 @@ namespace ShitDesigner.Scene {
 					RenderTexture.active = previousActive;
 				}
 			}
+		}
+
+		private static void UpdateVolumeFramework(Camera camera) {
+			if (!camera.TryGetComponent<UniversalAdditionalCameraData>(out var additionalCameraData)) return;
+			var volumeManager = VolumeManager.instance;
+			if (!volumeManager.isInitialized) return;
+			volumeManager.ResetMainStack();
+			var trigger = additionalCameraData.volumeTrigger != null ? additionalCameraData.volumeTrigger : camera.transform;
+			volumeManager.Update(trigger, additionalCameraData.volumeLayerMask);
 		}
 
 		private static Result<SceneRenderResult, Diagnostic> Failure(string code, string message)
