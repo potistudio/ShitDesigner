@@ -21,6 +21,7 @@ namespace ShitDesigner.Main {
 		[SerializeField] private Shader _displayTransformShader;
 
 		private DisplayTransformPass _displayTransform;
+		private Material m_TestPatternMaterial;
 		private readonly Dictionary<int, DisplayOutput> _outputs = new Dictionary<int, DisplayOutput>();
 		private readonly bool[] m_OutputActive = new bool[OutputCount];
 		private ulong _presentedFrameNumber;
@@ -30,6 +31,7 @@ namespace ShitDesigner.Main {
 		public int ConnectedDisplayCount => Display.displays?.Length ?? 0;
 		public IReadOnlyList<int> ConnectedExternalDisplayNumbers => Enumerable.Range(2, Math.Min(OutputCount, Math.Max(0, ConnectedDisplayCount - 1))).ToArray();
 		public bool IsOutputActive => m_OutputActive.Any(active => active);
+		public bool IsTestPatternVisible { get; private set; }
 		public bool IsAvailable => !UnityEngine.Application.isEditor && ConnectedDisplayCount > 1;
 		public bool CanSwapOutputs => !UnityEngine.Application.isEditor && ConnectedDisplayCount > OutputCount;
 		public ulong PresentedFrameNumber => _presentedFrameNumber;
@@ -40,6 +42,9 @@ namespace ShitDesigner.Main {
 			Shutdown();
 			if (_displayTransformShader == null) throw new InvalidOperationException("A DisplayTransform shader is required.");
 			_displayTransform = new DisplayTransformPass(_displayTransformShader);
+			var testPatternShader = Resources.Load<Shader>("ExternalDisplayTestPattern");
+			if (testPatternShader == null) throw new InvalidOperationException("The external Display test pattern shader is required.");
+			m_TestPatternMaterial = new Material(testPatternShader) { name = "ShitDesigner.ExternalDisplayTestPattern" };
 			_initialized = true;
 		}
 
@@ -87,10 +92,26 @@ namespace ShitDesigner.Main {
 			return true;
 		}
 
-		public void IdentifyDisplay() => Debug.Log(DisplayIdentity, this);
+		public bool SetTestPatternVisible(bool visible) {
+			if (!_initialized) return Fail("External Display output is not initialized.");
+			if (visible && !IsAvailable) return Fail(UnityEngine.Application.isEditor
+				? "Display test patterns require a standalone Player."
+				: "No external Display is connected.");
+			if (IsTestPatternVisible == visible) return true;
+			if (visible && OutputsDoNotMatchConnectedDisplays()) RebuildOutputs();
+
+			IsTestPatternVisible = visible;
+			_presentedFrameNumber = 0;
+			if (visible) RenderTestPatterns();
+			else foreach (var output in _outputs.Values) output.Clear();
+			ApplyOutputVisibility();
+			foreach (var output in _outputs.Values) output.Present();
+			LastError = string.Empty;
+			return true;
+		}
 
 		public void Present(LiveProgramFrames frames) {
-			if (!_initialized || !IsOutputActive || frames.Count == 0 || frames.Primary.FrameNumber == 0) return;
+			if (!_initialized || IsTestPatternVisible || !IsOutputActive || frames.Count == 0 || frames.Primary.FrameNumber == 0) return;
 			var outputsRebuilt = false;
 			if (IsOutputActive && OutputsDoNotMatchConnectedDisplays()) {
 				RebuildOutputs();
@@ -110,12 +131,15 @@ namespace ShitDesigner.Main {
 
 		public void Shutdown() {
 			Array.Clear(m_OutputActive, 0, m_OutputActive.Length);
+			IsTestPatternVisible = false;
 			m_OutputsSwapped = false;
 			_initialized = false;
 			_presentedFrameNumber = 0;
 			DestroyOutputs();
 			_displayTransform?.Dispose();
 			_displayTransform = null;
+			DestroyUnityObject(m_TestPatternMaterial);
+			m_TestPatternMaterial = null;
 		}
 
 		private void OnDestroy() => Shutdown();
@@ -222,8 +246,15 @@ namespace ShitDesigner.Main {
 		}
 
 		private void ApplyOutputVisibility() {
-			foreach (var output in _outputs) output.Value.SetContentVisible(m_OutputActive[OutputIndexForDisplay(output.Key)]);
-			foreach (var output in _outputs.Values) output.SetWindowsVisible(IsOutputActive);
+			foreach (var output in _outputs) output.Value.SetContentVisible(IsTestPatternVisible || m_OutputActive[OutputIndexForDisplay(output.Key)]);
+			foreach (var output in _outputs.Values) output.SetWindowsVisible(IsTestPatternVisible || IsOutputActive);
+		}
+
+		private void RenderTestPatterns() {
+			foreach (var output in _outputs) {
+				m_TestPatternMaterial.SetFloat("_DisplayNumber", output.Key);
+				Graphics.Blit(Texture2D.blackTexture, output.Value.Texture, m_TestPatternMaterial);
+			}
 		}
 
 		private void DestroyOutputs() {

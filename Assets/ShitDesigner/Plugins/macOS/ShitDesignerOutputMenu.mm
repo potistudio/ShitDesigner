@@ -13,7 +13,7 @@ enum OutputMenuCommand {
   StopProgramOutput = 1,
   StartOverlayOutput = 2,
   StopOverlayOutput = 3,
-  IdentifyDisplays = 4,
+  ToggleTestPattern = 4,
   SwapOutputs = 5
 };
 
@@ -161,7 +161,7 @@ ShitDesignerOutputMenuCreate(void) {
   s_stopOverlayItem =
       CreateMenuItem("Stop Output 2 (Overlay)", action, StopOverlayOutput);
   s_identifyItem =
-      CreateMenuItem("Identify Displays", action, IdentifyDisplays);
+      CreateMenuItem("Display Test Pattern", action, ToggleTestPattern);
   s_swapItem = CreateMenuItem("Swap Output Displays", action, SwapOutputs);
   for (const auto item : {s_startProgramItem, s_stopProgramItem,
                           s_startOverlayItem, s_stopOverlayItem,
@@ -213,7 +213,9 @@ ShitDesignerOutputMenuDestroy(void) {
 extern "C" __attribute__((visibility("default"))) void
 ShitDesignerOutputMenuSetState(bool canStartProgram, bool canStopProgram,
                                bool canStartOverlay, bool canStopOverlay,
-                               bool canIdentifyDisplays, bool canSwapOutputs) {
+                               bool canIdentifyDisplays,
+                               bool isTestPatternVisible,
+                               bool canSwapOutputs) {
   if (!EnsureRuntime())
     return;
   SendMessage<void>(s_startProgramItem, "setEnabled:",
@@ -226,6 +228,8 @@ ShitDesignerOutputMenuSetState(bool canStartProgram, bool canStopProgram,
                     static_cast<signed char>(canStopOverlay));
   SendMessage<void>(s_identifyItem, "setEnabled:",
                     static_cast<signed char>(canIdentifyDisplays));
+  SendMessage<void>(s_identifyItem, "setState:",
+                    static_cast<std::intptr_t>(isTestPatternVisible));
   SendMessage<void>(s_swapItem, "setEnabled:",
                     static_cast<signed char>(canSwapOutputs));
 }

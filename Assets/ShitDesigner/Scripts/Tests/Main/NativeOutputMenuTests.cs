@@ -25,6 +25,7 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(backend.LastState.CanStartOverlay, Is.True);
 				Assert.That(backend.LastState.CanStopOverlay, Is.False);
 				Assert.That(backend.LastState.CanIdentifyDisplays, Is.True);
+				Assert.That(backend.LastState.IsTestPatternVisible, Is.False);
 				Assert.That(backend.LastState.CanSwapOutputs, Is.True);
 
 				backend.Enqueue(OutputMenuCommand.StartProgram);
@@ -37,14 +38,22 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(backend.LastState.CanStartOverlay, Is.False);
 				Assert.That(backend.LastState.CanStopOverlay, Is.True);
 
-				backend.Enqueue(OutputMenuCommand.IdentifyDisplays);
+				backend.Enqueue(OutputMenuCommand.ToggleTestPattern);
 				backend.Enqueue(OutputMenuCommand.SwapOutputs);
 				backend.Enqueue(OutputMenuCommand.StopProgram);
 				controller.Tick();
-				Assert.That(target.IdentifyCount, Is.EqualTo(1));
+				Assert.That(target.TestPatternChangeCount, Is.EqualTo(1));
+				Assert.That(target.IsTestPatternVisible, Is.True);
+				Assert.That(backend.LastState.IsTestPatternVisible, Is.True);
 				Assert.That(target.SwapCount, Is.EqualTo(1));
 				Assert.That(target.IsActive(LiveOutputKind.Program), Is.False);
 				Assert.That(target.IsActive(LiveOutputKind.Overlay), Is.True);
+
+				backend.Enqueue(OutputMenuCommand.ToggleTestPattern);
+				controller.Tick();
+				Assert.That(target.TestPatternChangeCount, Is.EqualTo(2));
+				Assert.That(target.IsTestPatternVisible, Is.False);
+				Assert.That(backend.LastState.IsTestPatternVisible, Is.False);
 			}
 
 			Assert.That(backend.Disposed, Is.True);
@@ -59,13 +68,13 @@ namespace ShitDesigner.Main.Tests {
 				backend.Enqueue(OutputMenuCommand.StopProgram);
 				backend.Enqueue(OutputMenuCommand.StartOverlay);
 				backend.Enqueue(OutputMenuCommand.StopOverlay);
-				backend.Enqueue(OutputMenuCommand.IdentifyDisplays);
+				backend.Enqueue(OutputMenuCommand.ToggleTestPattern);
 				backend.Enqueue(OutputMenuCommand.SwapOutputs);
 				controller.Tick();
 			}
 
 			Assert.That(target.SetActiveCount, Is.Zero);
-			Assert.That(target.IdentifyCount, Is.Zero);
+			Assert.That(target.TestPatternChangeCount, Is.Zero);
 			Assert.That(target.SwapCount, Is.Zero);
 			Assert.That(backend.LastState.CanStartProgram, Is.False);
 			Assert.That(backend.LastState.CanStopProgram, Is.False);
@@ -79,8 +88,9 @@ namespace ShitDesigner.Main.Tests {
 			private readonly bool[] m_Active = new bool[2];
 			private readonly bool[] m_Available;
 			public int SetActiveCount { get; private set; }
-			public int IdentifyCount { get; private set; }
+			public int TestPatternChangeCount { get; private set; }
 			public int SwapCount { get; private set; }
+			public bool IsTestPatternVisible { get; private set; }
 			public bool CanSwapOutputs => m_Available.All(available => available);
 
 			public RecordingOutputTarget(bool programAvailable, bool overlayAvailable) {
@@ -96,7 +106,11 @@ namespace ShitDesigner.Main.Tests {
 				return true;
 			}
 
-			public void IdentifyDisplay() => IdentifyCount++;
+			public bool SetTestPatternVisible(bool visible) {
+				TestPatternChangeCount++;
+				IsTestPatternVisible = visible;
+				return true;
+			}
 			public bool SwapOutputs() { SwapCount++; return true; }
 		}
 
