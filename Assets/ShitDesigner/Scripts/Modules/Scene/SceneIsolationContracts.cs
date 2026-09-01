@@ -132,9 +132,8 @@ namespace ShitDesigner.Scene {
 		public string Name { get; }
 		public GameObject Prefab { get; }
 		public bool TransparentBackground { get; }
-		public Material SkyboxMaterial { get; }
 		public SceneCreateRequest(NodeInstanceId nodeId, SceneNodeKind kind, string name = null, ulong generationId = 1,
-			GameObject prefab = null, bool transparentBackground = false, Material skyboxMaterial = null) {
+			GameObject prefab = null, bool transparentBackground = false) {
 			if (nodeId.IsEmpty || generationId == 0) throw new ArgumentException("Scene node identity is required.", nameof(nodeId));
 			NodeId = nodeId;
 			GenerationId = generationId;
@@ -142,7 +141,6 @@ namespace ShitDesigner.Scene {
 			Name = string.IsNullOrWhiteSpace(name) ? "ShitDesigner.Node." + nodeId.Value : name.Trim();
 			Prefab = prefab;
 			TransparentBackground = transparentBackground;
-			SkyboxMaterial = skyboxMaterial;
 		}
 	}
 
@@ -413,8 +411,7 @@ namespace ShitDesigner.Scene {
 					additionalCameraData.renderType = CameraRenderType.Base;
 					ConfigureRuntimeCamera(camera);
 				}
-				if (request.SkyboxMaterial != null) ConfigureSkyboxCamera(camera, request.SkyboxMaterial);
-				else if (request.TransparentBackground) ConfigureTransparentCamera(camera);
+				if (request.TransparentBackground) ConfigureTransparentCamera(camera);
 				runtime = new SceneNodeRuntime(this, request, layer.Value) { Scene = createdScene, Root = root, Camera = camera, State = SceneLifecycleState.Ready };
 				_nodes.Add(request.NodeId, runtime);
 				return Result.Success<SceneNodeRuntime, Diagnostic>(runtime);
@@ -464,13 +461,6 @@ namespace ShitDesigner.Scene {
 		private static void ConfigureTransparentCamera(Camera camera) {
 			camera.clearFlags = CameraClearFlags.SolidColor;
 			camera.backgroundColor = Color.clear;
-		}
-
-		private static void ConfigureSkyboxCamera(Camera camera, Material material) {
-			camera.clearFlags = CameraClearFlags.Skybox;
-			var skybox = camera.GetComponent<Skybox>();
-			if (skybox == null) skybox = camera.gameObject.AddComponent<Skybox>();
-			skybox.material = material;
 		}
 
 		internal UnitResult<Diagnostic> SimulatePhysics(SceneNodeRuntime node, float stepSeconds) => _physicsStepper.Simulate(node, stepSeconds);
