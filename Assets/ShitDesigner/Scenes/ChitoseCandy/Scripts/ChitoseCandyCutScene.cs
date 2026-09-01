@@ -1,15 +1,23 @@
 using System;
 using System.Collections.Generic;
 using ShitDesigner.Core;
+using ShitDesigner.Main;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityApplication = UnityEngine.Application;
 
 namespace ShitDesigner.Scene {
 	/// <summary>Generates a stylized field of candy sticks, alternates their cuts and body pushes on each beat, and animates new sticks into the field.</summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
-	public sealed class ChitoseCandyCutScene : MonoBehaviour, IBpmClockReceiver {
+	public sealed class ChitoseCandyCutScene : MonoBehaviour, IBpmClockReceiver, ILiveSceneParameterProvider {
 		private const int CandyDivisionCount = 10;
+		public const string SplitGapParameterId = "split_gap";
+		public const string HorizontalImpulseParameterId = "horizontal_impulse";
+		public const float MinimumSplitGap = 0f;
+		public const float MaximumSplitGap = 3f;
+		public const float MinimumHorizontalImpulse = 0f;
+		public const float MaximumHorizontalImpulse = 10f;
 		private static readonly Vector3 DefaultCandyAxis = new Vector3(0.57f, -0.37f, -0.73f);
 		private static readonly Color[] DefaultCandyColors = {
 			new Color(0.05f, 0.72f, 0.74f, 1f),
@@ -37,17 +45,62 @@ namespace ShitDesigner.Scene {
 			public readonly Transform FrontCutFace;
 			public readonly Rigidbody Body;
 			public readonly float BasePosition;
-			public readonly Vector3 Impulse;
+			public readonly Vector3 ImpulseFactor;
 			public Vector3 PushStartPosition;
 
 			public CandyFragment(Transform segment, Transform rearCutFace, Transform frontCutFace,
-				Rigidbody body, float basePosition, Vector3 impulse) {
+				Rigidbody body, float basePosition, Vector3 impulseFactor) {
 				Segment = segment;
 				RearCutFace = rearCutFace;
 				FrontCutFace = frontCutFace;
 				Body = body;
 				BasePosition = basePosition;
-				Impulse = impulse;
+				ImpulseFactor = impulseFactor;
+			}
+		}
+
+		private sealed class SplitGapLiveParameter : ILiveSceneParameter {
+			private readonly ChitoseCandyCutScene m_Scene;
+
+			public LiveParameterDefinition Definition => new LiveParameterDefinition(
+				SplitGapParameterId, "Split Gap", MinimumSplitGap, MaximumSplitGap, m_Scene.SplitGap);
+
+			public SplitGapLiveParameter(ChitoseCandyCutScene scene) {
+				m_Scene = scene;
+			}
+
+			public bool TrySetValue(float value, out string rejectionReason) {
+				if (float.IsNaN(value) || float.IsInfinity(value)) {
+					rejectionReason = "The split gap must be finite.";
+					return false;
+				}
+
+				m_Scene.SetSplitGap(value);
+				rejectionReason = string.Empty;
+				return true;
+			}
+		}
+
+		private sealed class HorizontalImpulseLiveParameter : ILiveSceneParameter {
+			private readonly ChitoseCandyCutScene m_Scene;
+
+			public LiveParameterDefinition Definition => new LiveParameterDefinition(
+				HorizontalImpulseParameterId, "Horizontal Impulse", MinimumHorizontalImpulse,
+				MaximumHorizontalImpulse, m_Scene.HorizontalImpulse);
+
+			public HorizontalImpulseLiveParameter(ChitoseCandyCutScene scene) {
+				m_Scene = scene;
+			}
+
+			public bool TrySetValue(float value, out string rejectionReason) {
+				if (float.IsNaN(value) || float.IsInfinity(value)) {
+					rejectionReason = "The horizontal impulse must be finite.";
+					return false;
+				}
+
+				m_Scene.SetHorizontalImpulse(value);
+				rejectionReason = string.Empty;
+				return true;
 			}
 		}
 
@@ -79,8 +132,8 @@ namespace ShitDesigner.Scene {
 
 		[Header("Cut")]
 		[Range(30f, 300f)][SerializeField] private float m_PreviewBpm = 138f;
-		[Min(0f)][SerializeField] private float m_SplitGap = 0.55f;
-		[Min(0f)][SerializeField] private float m_HorizontalImpulse = 0.9f;
+		[Range(MinimumSplitGap, MaximumSplitGap)][SerializeField] private float m_SplitGap = 0.55f;
+		[Range(MinimumHorizontalImpulse, MaximumHorizontalImpulse)][SerializeField] private float m_HorizontalImpulse = 0.9f;
 		[Tooltip("Easing applied while the body is pushed during one beat.")]
 		[SerializeField] private AnimationCurve m_PushEasing = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 		[Tooltip("Easing applied while a new candy approaches from behind during one beat.")]
@@ -106,15 +159,24 @@ namespace ShitDesigner.Scene {
 		private long m_LastProcessedBeat = long.MinValue;
 		private bool m_UsesExternalClock;
 		private bool m_WasPlaying;
+		private int m_GenerationParametersHash;
+		private IReadOnlyList<ILiveSceneParameter> m_LiveParameters;
+
+		public float SplitGap => m_SplitGap;
+		public float HorizontalImpulse => m_HorizontalImpulse;
+		public IReadOnlyList<ILiveSceneParameter> LiveParameters => m_LiveParameters ??= new ILiveSceneParameter[] {
+			new SplitGapLiveParameter(this),
+			new HorizontalImpulseLiveParameter(this)
+		};
 
 		private void OnEnable() {
 			ResetPlaybackState();
-			m_WasPlaying = Application.isPlaying;
+			m_WasPlaying = UnityApplication.isPlaying;
 			Rebuild();
 		}
 
 		private void Update() {
-			var isPlaying = Application.isPlaying;
+			var isPlaying = UnityApplication.isPlaying;
 			if (isPlaying && !m_WasPlaying) {
 				ResetPlaybackState();
 				Rebuild();
@@ -125,7 +187,7 @@ namespace ShitDesigner.Scene {
 				Rebuild();
 				return;
 			}
-			if (!Application.isPlaying)
+			if (!UnityApplication.isPlaying)
 				return;
 
 			if (!m_UsesExternalClock)
@@ -161,9 +223,11 @@ namespace ShitDesigner.Scene {
 			if (m_CandyAxis.sqrMagnitude < 0.0001f)
 				m_CandyAxis = DefaultCandyAxis;
 			m_PreviewBpm = Mathf.Clamp(m_PreviewBpm, 30f, 300f);
-			m_SplitGap = Mathf.Max(0f, m_SplitGap);
-			m_HorizontalImpulse = Mathf.Max(0f, m_HorizontalImpulse);
-			m_RebuildRequested = true;
+			m_SplitGap = Mathf.Clamp(m_SplitGap, MinimumSplitGap, MaximumSplitGap);
+			m_HorizontalImpulse = Mathf.Clamp(
+				m_HorizontalImpulse, MinimumHorizontalImpulse, MaximumHorizontalImpulse);
+			if (m_GeneratedRoot == null || m_GenerationParametersHash != CalculateGenerationParametersHash())
+				m_RebuildRequested = true;
 		}
 
 		[ContextMenu("Rebuild Chitose Candy")]
@@ -180,6 +244,7 @@ namespace ShitDesigner.Scene {
 			m_CandyAxisRuntime = m_CandyAxis.sqrMagnitude < 0.0001f
 				? DefaultCandyAxis.normalized
 				: m_CandyAxis.normalized;
+			m_GenerationParametersHash = CalculateGenerationParametersHash();
 
 			m_FragmentLength = m_CandyLength / CandyDivisionCount;
 			m_RuntimeRandom = new System.Random(m_RandomSeed);
@@ -188,6 +253,15 @@ namespace ShitDesigner.Scene {
 			m_PatternMeshes = BuildPatternMeshes();
 			CreateMaterials();
 			CreateCandies();
+		}
+
+		public void SetSplitGap(float splitGap) {
+			m_SplitGap = Mathf.Clamp(splitGap, MinimumSplitGap, MaximumSplitGap);
+		}
+
+		public void SetHorizontalImpulse(float horizontalImpulse) {
+			m_HorizontalImpulse = Mathf.Clamp(
+				horizontalImpulse, MinimumHorizontalImpulse, MaximumHorizontalImpulse);
 		}
 
 		private void ResetPlaybackState() {
@@ -277,7 +351,7 @@ namespace ShitDesigner.Scene {
 					CreateOriginalCandyEnd(fragment, index);
 
 				fragments[fragmentIndex] = new CandyFragment(fragment, rearCutFace, frontCutFace,
-					body, basePosition, CreateImpactImpulse());
+					body, basePosition, CreateImpactImpulseFactor());
 			}
 
 			return new Candy(entryRoot, fragments);
@@ -313,8 +387,8 @@ namespace ShitDesigner.Scene {
 			return rigidbody;
 		}
 
-		private Vector3 CreateImpactImpulse() {
-			var magnitude = NextFloat(m_HorizontalImpulse * 0.55f, m_HorizontalImpulse);
+		private Vector3 CreateImpactImpulseFactor() {
+			var magnitude = NextFloat(0.55f, 1f);
 			var direction = m_RuntimeRandom.Next(2) == 0 ? -1f : 1f;
 			return new Vector3(direction, 1f, 0f).normalized * magnitude;
 		}
@@ -414,7 +488,7 @@ namespace ShitDesigner.Scene {
 				if (layerIndex + 1 < candy.Fragments.Length)
 					candy.Fragments[layerIndex + 1].FrontCutFace.gameObject.SetActive(true);
 			}
-			if (!Application.isPlaying)
+			if (!UnityApplication.isPlaying)
 				return cutOccurred;
 
 			Physics.SyncTransforms();
@@ -424,7 +498,7 @@ namespace ShitDesigner.Scene {
 				if (layerIndex < 0)
 					continue;
 				var fragment = candy.Fragments[layerIndex];
-				ActivatePhysics(fragment.Body, fragment.Impulse);
+				ActivatePhysics(fragment.Body, fragment.ImpulseFactor * m_HorizontalImpulse);
 			}
 			return cutOccurred;
 		}
@@ -444,7 +518,7 @@ namespace ShitDesigner.Scene {
 						fragment.PushStartPosition, targetPosition, progress);
 				}
 			}
-			if (Application.isPlaying)
+			if (UnityApplication.isPlaying)
 				Physics.SyncTransforms();
 		}
 
@@ -481,6 +555,23 @@ namespace ShitDesigner.Scene {
 			}
 
 			return FallbackCandyColors;
+		}
+
+		private int CalculateGenerationParametersHash() {
+			unchecked {
+				var hash = 17;
+				hash = hash * 31 + m_CandyCount;
+				hash = hash * 31 + m_CandyLength.GetHashCode();
+				hash = hash * 31 + m_CandyRadius.GetHashCode();
+				hash = hash * 31 + m_FieldSize.GetHashCode();
+				hash = hash * 31 + m_CandyAxis.GetHashCode();
+				hash = hash * 31 + m_RandomSeed;
+				hash = hash * 31 + (m_CandyColors?.Length ?? 0);
+				if (m_CandyColors != null)
+					for (var index = 0; index < m_CandyColors.Length; index++)
+						hash = hash * 31 + m_CandyColors[index].GetHashCode();
+				return hash;
+			}
 		}
 
 		private Mesh[] BuildPatternMeshes() {
@@ -679,7 +770,7 @@ namespace ShitDesigner.Scene {
 		private static void DestroyOwnedObject(UnityEngine.Object value) {
 			if (value == null)
 				return;
-			if (Application.isPlaying)
+			if (UnityApplication.isPlaying)
 				Destroy(value);
 			else
 				DestroyImmediate(value);

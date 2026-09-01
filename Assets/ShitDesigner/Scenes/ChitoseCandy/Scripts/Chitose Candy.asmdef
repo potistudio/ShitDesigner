@@ -3,6 +3,7 @@
 	"rootNamespace": "ShitDesigner.Scene",
 	"references": [
 		"ShitDesigner.Scene",
-		"ShitDesigner.Core"
+		"ShitDesigner.Core",
+		"ShitDesigner.Main"
 	]
 }

@@ -4,6 +4,7 @@
   "references": [
     "ShitDesigner.Scene",
     "ChitoseCandy",
+    "ShitDesigner.Main",
     "ShitDesigner.Runtime",
     "ShitDesigner.Core",
     "ShitDesigner.Tests.Shared",
