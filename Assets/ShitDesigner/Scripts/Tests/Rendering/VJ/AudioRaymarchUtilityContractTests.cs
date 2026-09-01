@@ -24,13 +24,13 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 		}
 
 		[Test, Category("VJShaderManifest"), Category("Audio"), Category("Raymarch"), Category("Utility")]
-		public void AudioRaymarchUtilityManifestContainsExactly88StableVariants() {
+		public void AudioRaymarchUtilityManifestContainsExactly89StableVariants() {
 			var path = Path.Combine(Application.dataPath, "ShitDesigner/Shaders/Manifests/audio-raymarch-utility-variants.json");
 			Assert.That(File.Exists(path), Is.True, path);
 			var manifest = JsonUtility.FromJson<ManifestDto>(File.ReadAllText(path));
 			Assert.That(manifest, Is.Not.Null);
 			Assert.That(manifest.variants, Is.Not.Null);
-			Assert.That(manifest.variants.Length, Is.EqualTo(88));
+			Assert.That(manifest.variants.Length, Is.EqualTo(89));
 			var ids = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
 			var audioCount = 0;
 			var raymarchCount = 0;

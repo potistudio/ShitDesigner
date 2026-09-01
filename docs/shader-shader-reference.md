@@ -25,7 +25,7 @@ The old three-node project format remains compatible: shitdesigner.shader.genera
 
 | Family | Variants | P0 | P1 | P2/Support | Shader |
 |---|---:|---:|---:|---:|---|
-| Audio | 30 | 0 | 0 | 30 | Hidden/ShitDesigner/VJ/AudioFamily |
+| Audio | 31 | 0 | 0 | 31 | Hidden/ShitDesigner/VJ/AudioFamily |
 | Blend | 36 | 36 | 0 | 0 | Hidden/ShitDesigner/VJ/BlendFamily |
 | Raymarch | 30 | 0 | 0 | 30 | Hidden/ShitDesigner/VJ/RaymarchFamily |
 | Temporal | 32 | 12 | 14 | 6 | Hidden/ShitDesigner/VJ/TemporalFamily |
@@ -75,6 +75,7 @@ The old three-node project format remains compatible: shitdesigner.shader.genera
 | UNCLASSIFIED | Audio Fluid | audio.audio_fluid | Audio | 27 | Hidden/ShitDesigner/VJ/AudioFamily | 0 | WaveformTex, SpectrumTex, MelTex, OnsetTex | Amount, Gain, Rms, Peak, Beat, BpmPhase, GraphTime, Frame, Seed | 0 | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed, audio-fixture-input | synthetic_audio_fixture |
 | UNCLASSIFIED | Audio Fractal Modulator | audio.audio_fractal_modulator | Audio | 28 | Hidden/ShitDesigner/VJ/AudioFamily | 0 | WaveformTex, SpectrumTex, MelTex, OnsetTex | Amount, Gain, Rms, Peak, Beat, BpmPhase, GraphTime, Frame, Seed | 0 | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed, audio-fixture-input | synthetic_audio_fixture |
 | UNCLASSIFIED | Onset History Grid | audio.onset_history_grid | Audio | 29 | Hidden/ShitDesigner/VJ/AudioFamily | 0 | WaveformTex, SpectrumTex, MelTex, OnsetTex | Amount, Gain, Rms, Peak, Beat, BpmPhase, GraphTime, Frame, Seed | 0 | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed, audio-fixture-input | synthetic_audio_fixture |
+| UNCLASSIFIED | Wireframe Cube Fractal | audio.wireframe_cube_fractal | Audio | 30 | Hidden/ShitDesigner/VJ/AudioFamily | 0 | WaveformTex, SpectrumTex, MelTex, OnsetTex | Amount, Gain, Rms, Peak, Beat, BpmPhase, GraphTime, Frame, Seed | 0 | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed, audio-fixture-input | synthetic_audio_fixture |
 
 ### Blend
 
@@ -558,4 +559,3 @@ The old three-node project format remains compatible: shitdesigner.shader.genera
 | P1 | Rec601 709 2020 Matrix | utility.rec601_709_2020_matrix | Utility | 25 | Hidden/ShitDesigner/VJ/UtilityFamily | 0 | MainTex, CompareTex | Channel, Exposure, Threshold, RangeMode, Frame, Resolution | 0 | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed | analysis_output_finite |
 | P1 | Limited Full Range Convert | utility.limited_full_range_convert | Utility | 26 | Hidden/ShitDesigner/VJ/UtilityFamily | 0 | MainTex, CompareTex | Channel, Exposure, Threshold, RangeMode, Frame, Resolution | 0 | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed | analysis_output_finite |
 | P1 | Sdr Hdr Display Transform Preview | utility.sdr_hdr_display_transform_preview | Utility | 27 | Hidden/ShitDesigner/VJ/UtilityFamily | 0 | MainTex, CompareTex | Channel, Exposure, Threshold, RangeMode, Frame, Resolution | 0 | linear-hdr, premultiplied-alpha, finite-guard, deterministic-seed | analysis_output_finite |
-

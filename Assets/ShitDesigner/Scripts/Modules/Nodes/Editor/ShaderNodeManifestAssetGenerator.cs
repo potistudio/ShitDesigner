@@ -111,7 +111,7 @@ namespace ShitDesigner.Nodes.Editor {
 			var exact = catalog.ValidateAgainst(runtime);
 			if (exact.IsFailure) return Result.Failure<int, Diagnostic>(exact.Error);
 			var count = manifest.Entries.Count;
-			if (count != 452) return Result.Failure<int, Diagnostic>(Failure("nodes.shader_manifest_count", "Expected 448 VJ entries plus 4 built-in shader entries, found " + count + ".").Error);
+			if (count != 453) return Result.Failure<int, Diagnostic>(Failure("nodes.shader_manifest_count", "Expected 449 VJ entries plus 4 built-in shader entries, found " + count + ".").Error);
 			EditorUtility.SetDirty(manifestAsset);
 			EditorUtility.SetDirty(catalog);
 			AssetDatabase.SaveAssets();
@@ -135,8 +135,8 @@ namespace ShitDesigner.Nodes.Editor {
 					return Result.Failure<LoadedManifest, Diagnostic>(Failure("nodes.shader_ledger_spatial", "Spatial ledger must contain exactly 256 variants.").Error);
 				if (compositing == null || compositing.variants == null || compositing.variants.Length != 104)
 					return Result.Failure<LoadedManifest, Diagnostic>(Failure("nodes.shader_ledger_compositing", "Compositing/temporal ledger must contain exactly 104 variants.").Error);
-				if (audio == null || audio.variants == null || audio.variants.Length != 88)
-					return Result.Failure<LoadedManifest, Diagnostic>(Failure("nodes.shader_ledger_audio", "Audio/raymarch/utility ledger must contain exactly 88 variants.").Error);
+				if (audio == null || audio.variants == null || audio.variants.Length != 89)
+					return Result.Failure<LoadedManifest, Diagnostic>(Failure("nodes.shader_ledger_audio", "Audio/raymarch/utility ledger must contain exactly 89 variants.").Error);
 
 				entries.AddRange(ShaderNodeManifest.CreateBuiltIn().Entries);
 				foreach (var row in spatial.variants) {

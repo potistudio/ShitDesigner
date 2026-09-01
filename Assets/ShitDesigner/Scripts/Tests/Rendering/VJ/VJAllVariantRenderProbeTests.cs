@@ -10,13 +10,13 @@ using UnityEngine.TestTools;
 namespace ShitDesigner.Rendering.Tests.VJ {
 	/// <summary>
 	/// GPU acceptance probe for the complete VJ ledger set.  The existing
-	/// family tests are intentionally narrow; this probe keeps the 448-entry
+	/// family tests are intentionally narrow; this probe keeps the 449-entry
 	/// contract honest by exercising every variant branch on the imported
 	/// family shader and comparing two readbacks from the same deterministic
 	/// fixture.
 	/// </summary>
 	public sealed class VJAllVariantRenderProbeTests {
-		private const int ExpectedVariantCount = 448;
+		private const int ExpectedVariantCount = 449;
 		private static readonly (int width, int height)[] P0Resolutions =
 		{
 			(8, 8),
@@ -29,7 +29,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 		[Category("GPU")]
 		[Category("Finite")]
 		[Category("Deterministic")]
-		public IEnumerator All448Variants_RenderFiniteAndDeterministically() {
+		public IEnumerator All449Variants_RenderFiniteAndDeterministically() {
 			if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
 				Assert.Ignore("A GPU graphics device is required for the all-variant render probe.");
 
@@ -146,7 +146,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 			Assert.That(analysis.variants, Is.Not.Null);
 			Assert.That(spatial.variants.Length, Is.EqualTo(256));
 			Assert.That(compositing.variants.Length, Is.EqualTo(104));
-			Assert.That(analysis.variants.Length, Is.EqualTo(88));
+			Assert.That(analysis.variants.Length, Is.EqualTo(89));
 			return new LedgerBundle(spatial.variants, compositing.variants, analysis.variants);
 		}
 

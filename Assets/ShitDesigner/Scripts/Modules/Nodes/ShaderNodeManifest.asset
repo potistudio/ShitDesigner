@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ShaderNodeManifest
   m_EditorClassIdentifier: ShitDesigner.Nodes::ShitDesigner.Nodes.ShaderNodeManifestAsset
   schemaVersion: 1
-  sourceFingerprint: 672ff1c50b06b733880f7f91777193bb8b6598b0c87266206443db834f6b13a2
+  sourceFingerprint: b9ae392c1a9c83b83423be993e1afbbc7b01c39fcc23df93bf5d9da11630126c
   entries:
   - typeId: shitdesigner.shader.generator
     schemaVersion: 1
@@ -118971,6 +118971,261 @@ MonoBehaviour:
       index: 0
       kind: 0
       variantId: audio.audio_fractal_modulator
+      outputRole: image
+      requiredFeatures: 32
+    shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
+  - typeId: shitdesigner.shader.audio.wireframe_cube_fractal
+    schemaVersion: 1
+    displayName: Wireframe Cube Fractal
+    category: Shader/Audio
+    family: 10
+    shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
+    variantId: audio.wireframe_cube_fractal
+    requiredFeatures: 32
+    stateful: 0
+    historySlots: 0
+    userAddable: 1
+    description: synthetic_audio_fixture
+    priority: UNCLASSIFIED
+    warmupFrames: 0
+    sourceLedger: audio-raymarch-utility-variants.json
+    sourceVariant: 30
+    outputPass: 0
+    aliases:
+    - wireframe_cube_fractal
+    - audio.wireframe_cube_fractal
+    inputs:
+    - id: waveform_tex
+      sourceId: WaveformTex
+      displayName: WaveformTex
+      property: _WaveformTex
+      role: 5
+      type: 0
+      required: 0
+      hasDefaultImage: 1
+      defaultImage: 1
+    - id: spectrum_tex
+      sourceId: SpectrumTex
+      displayName: SpectrumTex
+      property: _SpectrumTex
+      role: 5
+      type: 0
+      required: 0
+      hasDefaultImage: 1
+      defaultImage: 1
+    - id: mel_tex
+      sourceId: MelTex
+      displayName: MelTex
+      property: _MelTex
+      role: 5
+      type: 0
+      required: 0
+      hasDefaultImage: 1
+      defaultImage: 1
+    - id: onset_tex
+      sourceId: OnsetTex
+      displayName: OnsetTex
+      property: _OnsetTex
+      role: 5
+      type: 0
+      required: 0
+      hasDefaultImage: 1
+      defaultImage: 1
+    parameters:
+    - id: amount
+      sourceId: Amount
+      displayName: Amount
+      property: _Amount
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues:
+      group: Shader
+      displayOrder: 0
+      description:
+      unit:
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: gain
+      sourceId: Gain
+      displayName: Gain
+      property: _Gain
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue:
+      hasMaximum: 0
+      maximumValue:
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues:
+      group: Shader
+      displayOrder: 0
+      description:
+      unit:
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: rms
+      sourceId: Rms
+      displayName: Rms
+      property: _Rms
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues:
+      group: Shader
+      displayOrder: 0
+      description:
+      unit:
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: peak
+      sourceId: Peak
+      displayName: Peak
+      property: _Peak
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues:
+      group: Shader
+      displayOrder: 0
+      description:
+      unit:
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: beat
+      sourceId: Beat
+      displayName: Beat
+      property: _Beat
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues:
+      group: Shader
+      displayOrder: 0
+      description:
+      unit:
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: bpm_phase
+      sourceId: BpmPhase
+      displayName: Bpm Phase
+      property: _BpmPhase
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues:
+      group: Shader
+      displayOrder: 0
+      description:
+      unit:
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: graph_time
+      sourceId: GraphTime
+      displayName: Graph Time
+      property: _GraphTime
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue:
+      hasMaximum: 0
+      maximumValue:
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues:
+      group: Shader
+      displayOrder: 0
+      description:
+      unit:
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: frame
+      sourceId: Frame
+      displayName: Frame
+      property: _Frame
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue:
+      hasMaximum: 0
+      maximumValue:
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues:
+      group: Shader
+      displayOrder: 0
+      description:
+      unit:
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: seed
+      sourceId: Seed
+      displayName: Seed
+      property: _Seed
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue:
+      hasMaximum: 0
+      maximumValue:
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues:
+      group: Shader
+      displayOrder: 0
+      description:
+      unit:
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    passes:
+    - id: main
+      index: 0
+      kind: 0
+      variantId: audio.wireframe_cube_fractal
       outputRole: image
       requiredFeatures: 32
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
