@@ -160,7 +160,7 @@ namespace ShitDesigner.Editor.VJ {
 			var id = First(source.nodeTypeId, source.id, source.variantId, family.ToLowerInvariant() + "." + source.variant);
 			var features = source.features ?? source.featureFlags ?? Array.Empty<string>();
 			if (features.Length == 0)
-				features = DefaultFeatures(family, source.stateful);
+				features = DefaultFeatures(family, source.stateful, (source.inputs?.Length ?? 0) > 0);
 			return new VariantRecord {
 				Id = id,
 				Name = name,
@@ -181,13 +181,13 @@ namespace ShitDesigner.Editor.VJ {
 			};
 		}
 
-		private static string[] DefaultFeatures(string family, bool stateful) {
+		private static string[] DefaultFeatures(string family, bool stateful, bool hasInputs) {
 			var features = new List<string> { "linear-hdr", "premultiplied-alpha", "finite-guard", "deterministic-seed" };
 			if (family.IndexOf("Generator", StringComparison.OrdinalIgnoreCase) >= 0)
 				features.Add("generator-3-resolution");
 			if (stateful)
 				features.Add("history-reset-resize-pause");
-			if (family.IndexOf("Audio", StringComparison.OrdinalIgnoreCase) >= 0)
+			if (family.IndexOf("Audio", StringComparison.OrdinalIgnoreCase) >= 0 && hasInputs)
 				features.Add("audio-fixture-input");
 			if (family.IndexOf("Raymarch", StringComparison.OrdinalIgnoreCase) >= 0)
 				features.Add("step-cap");

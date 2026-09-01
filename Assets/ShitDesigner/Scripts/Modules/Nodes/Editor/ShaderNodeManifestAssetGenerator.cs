@@ -209,10 +209,10 @@ namespace ShitDesigner.Nodes.Editor {
 		}
 
 		private static IReadOnlyList<ShaderNodeManifestPass> BuildPasses(string typeId, string variantId,
-			ShaderNodeFamily family, int sourceVariant, int firstPass, bool stateful) {
+			ShaderNodeFamily family, int sourceVariant, int firstPass, bool stateful, bool requiresAudioTexture = true) {
 			var graph = ResolveGraph(typeId, family, sourceVariant, stateful);
 			var count = graph.PassCount;
-			var features = Features(family, stateful);
+			var features = Features(family, stateful, requiresAudioTexture);
 			var result = new List<ShaderNodeManifestPass>(count);
 			for (var index = 0; index < count; index++) {
 				var passIndex = firstPass + index;
@@ -297,17 +297,18 @@ namespace ShitDesigner.Nodes.Editor {
 		private static ShaderNodeManifestEntry FromAnalysis(AnalysisVariant row) {
 			var family = ParseFamily(row.family);
 			var stateful = row.stateful || IsStatefulAnalysis(row);
+			var requiresAudioTexture = family == ShaderNodeFamily.Audio && (row.inputs?.Length ?? 0) > 0;
 			var historySlots = stateful ? (row.variant == 29 ? 1 : 2) : row.historySlots;
 			var inputs = BuildAnalysisInputs(row.inputs, family, stateful);
 			var parameters = row.parameters.Select(x => BuildParameter(x, spatial: false)).ToArray();
-			var passes = BuildPasses("shitdesigner.shader." + row.id, row.id, family, row.variant, row.pass, stateful);
+			var passes = BuildPasses("shitdesigner.shader." + row.id, row.id, family, row.variant, row.pass, stateful, requiresAudioTexture);
 			var outputPass = passes.Max(x => x.Index);
 			var category = "Shader/" + row.family;
 			var priority = string.Equals(row.formalPriority, "unclassified", StringComparison.OrdinalIgnoreCase)
 				? "UNCLASSIFIED" : (row.formalPriority ?? string.Empty).ToUpperInvariant();
 			if (string.IsNullOrWhiteSpace(priority)) priority = row.phase1Support ? "SUPPORT" : "P2";
 			return new ShaderNodeManifestEntry(new NodeTypeId("shitdesigner.shader." + row.id), row.displayName, category, family, row.shader,
-				row.id, inputs, parameters, passes, outputPass, Features(family, stateful), stateful, historySlots,
+				row.id, inputs, parameters, passes, outputPass, Features(family, stateful, requiresAudioTexture), stateful, historySlots,
 				new[] { Slug(row.displayName), row.id }, row.testStrategy, 1, true, priority, row.warmupFrames,
 				Path.GetFileName(AudioLedgerPath), row.variant);
 		}
@@ -430,10 +431,10 @@ namespace ShitDesigner.Nodes.Editor {
 			}
 		}
 
-		private static ShaderFeatureFlags Features(ShaderNodeFamily family, bool stateful) {
+		private static ShaderFeatureFlags Features(ShaderNodeFamily family, bool stateful, bool requiresAudioTexture = true) {
 			var value = ShaderFeatureFlags.None;
 			if (stateful) value |= ShaderFeatureFlags.History;
-			if (family == ShaderNodeFamily.Audio) value |= ShaderFeatureFlags.AudioTexture;
+			if (family == ShaderNodeFamily.Audio && requiresAudioTexture) value |= ShaderFeatureFlags.AudioTexture;
 			if (family == ShaderNodeFamily.Raymarch) value |= ShaderFeatureFlags.ShaderModel45 | ShaderFeatureFlags.Derivatives;
 			if (family == ShaderNodeFamily.Geometry || family == ShaderNodeFamily.Glitch || family == ShaderNodeFamily.Convolution || family == ShaderNodeFamily.Stylize || family == ShaderNodeFamily.Key)
 				value |= ShaderFeatureFlags.Derivatives;

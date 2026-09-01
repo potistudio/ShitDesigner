@@ -55,8 +55,8 @@ MonoBehaviour:
       m_Strength: 0
       m_Minimum: 0
       m_Maximum: 1
-  - _id: audio-gain
-    _displayName: Audio Gain
+  - _id: bpm-strength
+    _displayName: BPM Strength
     _nodeId: wireframe-cube-fractal
     _parameterId: gain
     m_BeatModulation:

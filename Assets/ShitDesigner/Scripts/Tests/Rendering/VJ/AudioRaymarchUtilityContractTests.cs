@@ -21,6 +21,8 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 			public string formalPriority;
 			public bool phase1Support;
 			public bool stateful;
+			public string[] inputs;
+			public string testStrategy;
 		}
 
 		[Test, Category("VJShaderManifest"), Category("Audio"), Category("Raymarch"), Category("Utility")]
@@ -35,6 +37,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 			var audioCount = 0;
 			var raymarchCount = 0;
 			var utilityCount = 0;
+			ManifestVariantDto wireframeCubeFractal = null;
 			foreach (var entry in manifest.variants) {
 				Assert.That(ids.Add(entry.id), Is.True, "Duplicate variant id: " + entry.id);
 				if (entry.family == "Audio") audioCount++;
@@ -44,6 +47,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 				Assert.That(entry.formalPriority, Is.EqualTo("unclassified"), entry.id);
 				Assert.That(entry.phase1Support, Is.EqualTo(entry.family == "Utility" && entry.variant < 12), entry.id);
 				Assert.That(entry.stateful, Is.False, entry.id);
+				if (entry.id == "audio.wireframe_cube_fractal") wireframeCubeFractal = entry;
 			}
 			Assert.That(audioCount, Is.EqualTo(AudioVariantCatalog.Count));
 			Assert.That(raymarchCount, Is.EqualTo(RaymarchVariantCatalog.Count));
@@ -51,6 +55,9 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 			for (var i = 0; i < AudioVariantCatalog.Count; i++) Assert.That(ids.Contains("audio." + AudioVariantCatalog.Names[i]), Is.True);
 			for (var i = 0; i < RaymarchVariantCatalog.Count; i++) Assert.That(ids.Contains("raymarch." + RaymarchVariantCatalog.Names[i]), Is.True);
 			for (var i = 0; i < UtilityVariantCatalog.Count; i++) Assert.That(ids.Contains("utility." + UtilityVariantCatalog.Names[i]), Is.True);
+			Assert.That(wireframeCubeFractal, Is.Not.Null);
+			Assert.That(wireframeCubeFractal.inputs, Is.Empty, "The BPM-reactive patch must not require audio textures.");
+			Assert.That(wireframeCubeFractal.testStrategy, Is.EqualTo("bpm_clock_fixture"));
 		}
 
 		[Test, Category("VJShaderContract"), Category("Audio")]
