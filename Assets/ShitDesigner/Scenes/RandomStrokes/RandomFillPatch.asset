@@ -10,16 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 36a7c9fd8af84f24a8db20cf4457e4ca, type: 3}
-  m_Name: Yarimasunesugi
-  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.ShitDesignerSceneDefinition
-  _id: yarimasunesugi
-  _displayName: Yarimasunesugi
+  m_Name: RandomFillPatch
+  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
+  _id: random_fill
+  _displayName: Random Fill
   _programGraph:
     _outputNodeId: scene
     _nodes:
     - _id: scene
       _typeId: shitdesigner.scene.3d
-      m_SceneDefinition: {fileID: 11400000, guid: 2fc81fba65d573745a19202bffc417f9, type: 2}
+      m_SceneDefinition: {fileID: 11400000, guid: 420d68ca8f06a444fb1c7874dfc298c0, type: 2}
       m_VideoPath: 
       m_VideoClip: {fileID: 0}
       _parameters: []
