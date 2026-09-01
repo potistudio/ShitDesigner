@@ -6,6 +6,7 @@ using ShitDesigner.Scene;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
+using UnityEngine.Video;
 
 namespace ShitDesigner.Stage {
 	public enum StageCameraCueMotion {
@@ -30,6 +31,8 @@ namespace ShitDesigner.Stage {
 		[SerializeField, Min(0f)] private float m_DurationBeats = 4f;
 		[SerializeField] private AnimationCurve m_Easing = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 		[SerializeField, Range(1f, 179f)] private float m_FieldOfView = 45f;
+		[SerializeField] private bool m_ControlVideoPlayhead;
+		[SerializeField, Min(0f)] private float m_VideoPlayheadSeconds;
 		[SerializeField] private StageCameraCueCompletion m_Completion = StageCameraCueCompletion.Hold;
 
 		public string DisplayName => string.IsNullOrWhiteSpace(m_DisplayName) ? "Camera Cue" : m_DisplayName;
@@ -41,6 +44,9 @@ namespace ShitDesigner.Stage {
 		public float DurationBeats => Mathf.Max(0f, m_DurationBeats);
 		public AnimationCurve Easing => m_Easing;
 		public float FieldOfView => Mathf.Clamp(m_FieldOfView, 1f, 179f);
+		public bool ControlsVideoPlayhead => m_ControlVideoPlayhead;
+		public float VideoPlayheadSeconds => float.IsNaN(m_VideoPlayheadSeconds) || float.IsInfinity(m_VideoPlayheadSeconds)
+			? 0f : Mathf.Max(0f, m_VideoPlayheadSeconds);
 		public StageCameraCueCompletion Completion => m_Completion;
 	}
 
@@ -56,6 +62,7 @@ namespace ShitDesigner.Stage {
 		[SerializeField] private Camera m_Camera;
 		[SerializeField] private Transform m_DefaultLookTarget;
 		[SerializeField] private StageRandomCamera m_RandomCamera;
+		[SerializeField] private VideoPlayer m_VideoPlayer;
 
 		[Header("Hot Cues")]
 		[SerializeField] private StageCameraCueDefinition[] m_Cues = {
@@ -76,6 +83,8 @@ namespace ShitDesigner.Stage {
 		private Vector3 m_StartLocalPosition;
 		private Quaternion m_StartLocalRotation;
 		private float m_StartFieldOfView;
+		private bool m_VideoSeekPending;
+		private double m_PendingVideoPlayheadSeconds;
 
 		public IReadOnlyList<ILiveSceneParameter> LiveParameters {
 			get {
@@ -102,6 +111,7 @@ namespace ShitDesigner.Stage {
 		}
 
 		private void Update() {
+			ApplyPendingVideoSeek();
 			if (!Application.isPlaying || m_GraphClockDriven || !m_IsSceneActive || !m_IsCuePlaying)
 				return;
 
@@ -126,6 +136,12 @@ namespace ShitDesigner.Stage {
 				return false;
 			}
 
+			var cue = m_Cues[cueIndex];
+			if (cue.ControlsVideoPlayhead && m_VideoPlayer == null) {
+				rejectionReason = "The Stage video player is not assigned.";
+				return false;
+			}
+
 			m_ActiveCueIndex = cueIndex;
 			m_IsCuePlaying = true;
 			m_CueStartBeat = m_HasBpmFrame ? m_LastAdjustedBeat : 0d;
@@ -134,8 +150,8 @@ namespace ShitDesigner.Stage {
 			m_StartLocalRotation = m_Camera.transform.localRotation;
 			m_StartFieldOfView = m_Camera.fieldOfView;
 			m_RandomCamera?.SetSuspended(true);
+			QueueVideoSeek(cue);
 
-			var cue = m_Cues[cueIndex];
 			if (cue.Motion == StageCameraCueMotion.Cut || cue.DurationBeats <= Mathf.Epsilon) {
 				ApplyCue(cue, 1f);
 				CompleteCue(cue);
@@ -239,6 +255,28 @@ namespace ShitDesigner.Stage {
 			if (m_Camera == null) m_Camera = GetComponentInChildren<Camera>(true);
 			if (m_DefaultLookTarget == null) m_DefaultLookTarget = transform.Find("Camera Target");
 			if (m_RandomCamera == null) m_RandomCamera = GetComponent<StageRandomCamera>();
+			if (m_VideoPlayer == null) m_VideoPlayer = GetComponentInChildren<VideoPlayer>(true);
+		}
+
+		private void QueueVideoSeek(StageCameraCueDefinition cue) {
+			if (!cue.ControlsVideoPlayhead || m_VideoPlayer == null)
+				return;
+
+			var playhead = (double)cue.VideoPlayheadSeconds;
+			var duration = m_VideoPlayer.clip == null ? m_VideoPlayer.length : m_VideoPlayer.clip.length;
+			if (!double.IsNaN(duration) && !double.IsInfinity(duration) && duration > 0d)
+				playhead = Math.Min(playhead, duration);
+			m_PendingVideoPlayheadSeconds = playhead;
+			m_VideoSeekPending = true;
+			ApplyPendingVideoSeek();
+		}
+
+		private void ApplyPendingVideoSeek() {
+			if (!m_VideoSeekPending || m_VideoPlayer == null || !m_VideoPlayer.isPrepared)
+				return;
+
+			m_VideoPlayer.time = m_PendingVideoPlayheadSeconds;
+			m_VideoSeekPending = false;
 		}
 
 		private void EnsureLiveParameters() {

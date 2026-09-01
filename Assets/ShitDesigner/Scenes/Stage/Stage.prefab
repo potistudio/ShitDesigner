@@ -2930,6 +2930,7 @@ MonoBehaviour:
   m_Camera: {fileID: 8891327183107775140}
   m_DefaultLookTarget: {fileID: 789263807182799040}
   m_RandomCamera: {fileID: 8626790382264376490}
+  m_VideoPlayer: {fileID: 8450851300628908232}
   m_Cues:
   - m_DisplayName: Front Push In
     m_Motion: 1
@@ -2963,6 +2964,8 @@ MonoBehaviour:
       m_PostInfinity: 2
       m_RotationOrder: 4
     m_FieldOfView: 32
+    m_ControlVideoPlayhead: 1
+    m_VideoPlayheadSeconds: 0
     m_Completion: 0
   - m_DisplayName: Side Sweep
     m_Motion: 1
@@ -2996,6 +2999,8 @@ MonoBehaviour:
       m_PostInfinity: 2
       m_RotationOrder: 4
     m_FieldOfView: 42
+    m_ControlVideoPlayhead: 1
+    m_VideoPlayheadSeconds: 120
     m_Completion: 1
 --- !u!1 &1767861253710987001
 GameObject:

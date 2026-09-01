@@ -8,6 +8,7 @@ using ShitDesigner.Stage;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.TestTools.Utils;
+using UnityEngine.Video;
 
 namespace ShitDesigner.CameraCues.Tests {
 	[TestFixture]
@@ -34,6 +35,12 @@ namespace ShitDesigner.CameraCues.Tests {
 			Assert.That(director.LiveParameters, Has.Count.EqualTo(StageCameraDirector.CueCount));
 			Assert.That(director.LiveParameters[0].Definition.Id, Is.EqualTo(StageCameraDirector.Cue1ParameterId));
 			Assert.That(director.LiveParameters[1].Definition.Id, Is.EqualTo(StageCameraDirector.Cue2ParameterId));
+			var cues = (StageCameraCueDefinition[])GetField(typeof(StageCameraDirector), "m_Cues").GetValue(director);
+			Assert.That(cues[0].ControlsVideoPlayhead, Is.True);
+			Assert.That(cues[0].VideoPlayheadSeconds, Is.Zero);
+			Assert.That(cues[1].ControlsVideoPlayhead, Is.True);
+			Assert.That(cues[1].VideoPlayheadSeconds, Is.EqualTo(120f));
+			Assert.That(GetField(typeof(StageCameraDirector), "m_VideoPlayer").GetValue(director), Is.Not.Null);
 		}
 
 		[Test]
@@ -133,8 +140,31 @@ namespace ShitDesigner.CameraCues.Tests {
 			}
 		}
 
+		[Test]
+		public void CameraCueQueuesItsVideoPlayheadUntilThePlayerIsPrepared() {
+			var root = new GameObject("Stage Camera Video Cue Test");
+			try {
+				var cameraObject = new GameObject("Main Camera");
+				cameraObject.transform.SetParent(root.transform, false);
+				cameraObject.AddComponent<Camera>();
+				var videoObject = new GameObject("Video Player");
+				videoObject.transform.SetParent(root.transform, false);
+				videoObject.AddComponent<VideoPlayer>();
+				var director = root.AddComponent<StageCameraDirector>();
+				ConfigureCue(director, 0, Vector3.zero, 4f, 45f, StageCameraCueCompletion.Hold, true, 37.5f);
+				director.ActivateScene();
+
+				Assert.That(director.TriggerCue(0, out var rejectionReason), Is.True, rejectionReason);
+				Assert.That(GetField(typeof(StageCameraDirector), "m_VideoSeekPending").GetValue(director), Is.True);
+				Assert.That(GetField(typeof(StageCameraDirector), "m_PendingVideoPlayheadSeconds").GetValue(director), Is.EqualTo(37.5d));
+			}
+			finally {
+				Object.DestroyImmediate(root);
+			}
+		}
+
 		private static void ConfigureCue(StageCameraDirector director, int cueIndex, Vector3 position, float durationBeats,
-			float fieldOfView, StageCameraCueCompletion completion) {
+			float fieldOfView, StageCameraCueCompletion completion, bool controlVideoPlayhead = false, float videoPlayheadSeconds = 0f) {
 			var cues = (StageCameraCueDefinition[])GetField(typeof(StageCameraDirector), "m_Cues").GetValue(director);
 			var cue = cues[cueIndex];
 			SetField(cue, "m_Motion", StageCameraCueMotion.Blend);
@@ -142,6 +172,8 @@ namespace ShitDesigner.CameraCues.Tests {
 			SetField(cue, "m_DurationBeats", durationBeats);
 			SetField(cue, "m_Easing", AnimationCurve.Linear(0f, 0f, 1f, 1f));
 			SetField(cue, "m_FieldOfView", fieldOfView);
+			SetField(cue, "m_ControlVideoPlayhead", controlVideoPlayhead);
+			SetField(cue, "m_VideoPlayheadSeconds", videoPlayheadSeconds);
 			SetField(cue, "m_Completion", completion);
 		}
 
