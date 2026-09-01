@@ -52,6 +52,8 @@ namespace ShitDesigner.CameraCues.Tests {
 			Assert.That(videoPlayer.sendFrameReadyEvents, Is.True);
 			Assert.That(videoPlayer.targetTexture, Is.Not.Null.And.Not.SameAs(outputTexture));
 			Assert.That(outputTexture, Is.Not.Null);
+			Assert.That(videoPlayer.GetComponent<VideoBpmMetadata>(), Is.Not.Null);
+			Assert.That(videoPlayer.GetComponent<VideoBpmMetadata>().Bpm, Is.EqualTo(145f));
 		}
 
 		[Test]
@@ -175,14 +177,15 @@ namespace ShitDesigner.CameraCues.Tests {
 		}
 
 		[Test]
-		public void BpmClockScalesLedVideoPlaybackFromItsReferenceTempo() {
+		public void BpmClockScalesLedVideoPlaybackFromItsAssignedTempo() {
 			var root = new GameObject("Stage LED Video BPM Test");
 			try {
 				var videoObject = new GameObject("Video Player");
 				videoObject.transform.SetParent(root.transform, false);
 				var videoPlayer = videoObject.AddComponent<VideoPlayer>();
+				var metadata = videoObject.AddComponent<VideoBpmMetadata>();
+				SetField(metadata, "m_Bpm", 145f);
 				var director = root.AddComponent<StageCameraDirector>();
-				SetField(director, "m_VideoReferenceBpm", 145f);
 
 				director.SetBpmClock(new BeatClockFrame(72.5f, 0d));
 
