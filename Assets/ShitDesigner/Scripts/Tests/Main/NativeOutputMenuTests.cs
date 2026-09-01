@@ -56,7 +56,7 @@ namespace ShitDesigner.Main.Tests {
 		[TestCase(ExternalDisplayEmulationAspect.Ratio1x1, 1f)]
 		[TestCase(ExternalDisplayEmulationAspect.Ratio9x16, 9f / 16f)]
 		[TestCase(ExternalDisplayEmulationAspect.Ratio21x9, 21f / 9f)]
-		[TestCase(ExternalDisplayEmulationAspect.Ratio5x2, 5f / 2f)]
+		[TestCase(ExternalDisplayEmulationAspect.Ratio5x1, 5f)]
 		[TestCase(ExternalDisplayEmulationAspect.Ratio4_5x1, 4.5f)]
 		public void EmulationAspectMapsToExpectedRatio(ExternalDisplayEmulationAspect aspect, float expected) {
 			Assert.That(aspect.AspectRatio(), Is.EqualTo(expected).Within(0.0001f));
@@ -130,10 +130,10 @@ namespace ShitDesigner.Main.Tests {
 				controller.Tick();
 				Assert.That(target.EmulationAspect, Is.EqualTo(ExternalDisplayEmulationAspect.Ratio3x4));
 				Assert.That(backend.LastState.EmulationAspect, Is.EqualTo(ExternalDisplayEmulationAspect.Ratio3x4));
-				backend.Enqueue(OutputMenuCommand.SetEmulation5x2);
+				backend.Enqueue(OutputMenuCommand.SetEmulation5x1);
 				controller.Tick();
-				Assert.That(target.EmulationAspect, Is.EqualTo(ExternalDisplayEmulationAspect.Ratio5x2));
-				Assert.That(backend.LastState.EmulationAspect, Is.EqualTo(ExternalDisplayEmulationAspect.Ratio5x2));
+				Assert.That(target.EmulationAspect, Is.EqualTo(ExternalDisplayEmulationAspect.Ratio5x1));
+				Assert.That(backend.LastState.EmulationAspect, Is.EqualTo(ExternalDisplayEmulationAspect.Ratio5x1));
 				backend.Enqueue(OutputMenuCommand.SetEmulation4_5x1);
 				controller.Tick();
 				Assert.That(target.EmulationAspect, Is.EqualTo(ExternalDisplayEmulationAspect.Ratio4_5x1));
