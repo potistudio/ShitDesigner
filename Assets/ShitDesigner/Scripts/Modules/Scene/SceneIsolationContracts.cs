@@ -3,6 +3,7 @@ using CSharpFunctionalExtensions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using ShitDesigner.Core;
 using ShitDesigner.Runtime;
 using UnityEngine;
@@ -207,6 +208,7 @@ namespace ShitDesigner.Scene {
 		private ISceneActivationReceiver[] m_ActivationReceivers = Array.Empty<ISceneActivationReceiver>();
 		private bool _destroyRequested;
 		private bool m_IsActive;
+		private bool m_UnloadRequested;
 		private double _physicsAccumulator;
 
 		public NodeInstanceId NodeId { get; }
@@ -220,6 +222,9 @@ namespace ShitDesigner.Scene {
 		public int Layer => LayerLease?.Layer ?? -1;
 		public bool IsLoaded => Scene.IsValid() && Scene.isLoaded && Root != null && Camera != null;
 		public bool IsActive => m_IsActive;
+		public Diagnostic PreparationDiagnostic { get; internal set; }
+		internal AsyncInstantiateOperation<GameObject> InstantiateOperation { get; set; }
+		internal bool UnloadRequested { get => m_UnloadRequested; set => m_UnloadRequested = value; }
 		public PhysicsScene PhysicsScene3D => Scene.GetPhysicsScene();
 		public PhysicsScene2D PhysicsScene2D => Scene.GetPhysicsScene2D();
 
@@ -350,6 +355,7 @@ namespace ShitDesigner.Scene {
 	public sealed class SceneIsolationManager : IDisposable {
 		public const int MaxSceneNodes = 24;
 		public const float FixedStepSeconds = 1f / 60f;
+		public const float DefaultInstantiateIntegrationTimeMilliseconds = 2f;
 		private readonly Dictionary<NodeInstanceId, SceneNodeRuntime> _nodes = new Dictionary<NodeInstanceId, SceneNodeRuntime>();
 		private readonly SceneLayerPool _layers;
 		private readonly ISceneRenderSource _renderSource;
@@ -360,28 +366,59 @@ namespace ShitDesigner.Scene {
 		public SceneLayerPool Layers => _layers;
 		public IReadOnlyCollection<SceneNodeRuntime> Nodes => new ReadOnlyCollection<SceneNodeRuntime>(_nodes.Values.ToList());
 
-		public SceneIsolationManager(SceneLayerPool layers = null, ISceneRenderSource renderSource = null, IScenePhysicsStepper physicsStepper = null) {
+		public SceneIsolationManager(SceneLayerPool layers = null, ISceneRenderSource renderSource = null, IScenePhysicsStepper physicsStepper = null,
+			float instantiateIntegrationTimeMilliseconds = DefaultInstantiateIntegrationTimeMilliseconds) {
+			if (instantiateIntegrationTimeMilliseconds <= 0f || float.IsNaN(instantiateIntegrationTimeMilliseconds) || float.IsInfinity(instantiateIntegrationTimeMilliseconds))
+				throw new ArgumentOutOfRangeException(nameof(instantiateIntegrationTimeMilliseconds));
 			_layers = layers ?? new SceneLayerPool();
 			_renderSource = renderSource;
 			_physicsStepper = physicsStepper ?? new DefaultScenePhysicsStepper();
+			AsyncInstantiateOperation.SetIntegrationTimeMS(instantiateIntegrationTimeMilliseconds);
+		}
+
+		/// <summary>Starts prefab cloning without blocking the graph synchronization
+		/// frame. The returned node remains Preparing until Unity has integrated the
+		/// hierarchy and the isolation invariants have been applied.</summary>
+		public Result<SceneNodeRuntime, Diagnostic> CreateAsync(SceneCreateRequest request) {
+			var validated = ValidateCreateRequest(request);
+			if (validated.IsFailure) return Result.Failure<SceneNodeRuntime, Diagnostic>(validated.Error);
+			if (request.Prefab == null) return Create(request);
+
+			var layer = _layers.Acquire(request.NodeId, request.GenerationId);
+			if (layer.IsFailure) return Result.Failure<SceneNodeRuntime, Diagnostic>(layer.Error);
+			UnityEngine.SceneManagement.Scene createdScene = default(UnityEngine.SceneManagement.Scene);
+			try {
+				createdScene = CreateIsolatedScene(request);
+				var runtime = new SceneNodeRuntime(this, request, layer.Value) { Scene = createdScene };
+				_nodes.Add(request.NodeId, runtime);
+				var parameters = new InstantiateParameters { scene = createdScene, originalImmutable = true };
+				var operation = UnityEngine.Object.InstantiateAsync(request.Prefab, 1, parameters, CancellationToken.None);
+				runtime.InstantiateOperation = operation;
+				operation.completed += _ => CompleteAsyncCreate(runtime, request);
+				return Result.Success<SceneNodeRuntime, Diagnostic>(runtime);
+			}
+			catch (Exception exception) {
+				if (_nodes.TryGetValue(request.NodeId, out var current) && current.Scene == createdScene) _nodes.Remove(request.NodeId);
+				if (createdScene.IsValid() && createdScene.isLoaded) {
+					var unload = SceneManager.UnloadSceneAsync(createdScene);
+					if (unload != null) unload.completed += _ => layer.Value.Dispose();
+					else layer.Value.Dispose();
+				}
+				else layer.Value.Dispose();
+				return CreateFailure(request, exception);
+			}
 		}
 
 		public Result<SceneNodeRuntime, Diagnostic> Create(SceneCreateRequest request) {
-			if (_disposed) return Failure<SceneNodeRuntime>("scene.lifecycle.disposed", "Scene isolation manager is disposed.");
-			if (request == null) return Failure<SceneNodeRuntime>("scene.create.request", "Scene create request is required.");
-			if (_nodes.Count >= MaxSceneNodes) return Failure<SceneNodeRuntime>("scene.node.limit", "At most 24 Scene nodes may exist.");
-			if (_nodes.ContainsKey(request.NodeId)) return Failure<SceneNodeRuntime>("scene.node.duplicate", "A Scene node with this ID already exists.");
+			var validated = ValidateCreateRequest(request);
+			if (validated.IsFailure) return Result.Failure<SceneNodeRuntime, Diagnostic>(validated.Error);
 			var layer = _layers.Acquire(request.NodeId, request.GenerationId);
 			if (layer.IsFailure) return Result.Failure<SceneNodeRuntime, Diagnostic>(layer.Error);
 
 			SceneNodeRuntime runtime = null;
 			UnityEngine.SceneManagement.Scene createdScene = default(UnityEngine.SceneManagement.Scene);
 			try {
-				var parameters = new CreateSceneParameters(request.Kind == SceneNodeKind.ThreeD ? LocalPhysicsMode.Physics3D : LocalPhysicsMode.Physics2D);
-				var sceneName = request.Name;
-				if (SceneManager.GetSceneByName(sceneName).IsValid())
-					sceneName += "." + request.NodeId.Value + "." + request.GenerationId;
-				createdScene = SceneManager.CreateScene(sceneName, parameters);
+				createdScene = CreateIsolatedScene(request);
 				GameObject root;
 				Camera camera;
 				if (request.Prefab != null) {
@@ -423,9 +460,60 @@ namespace ShitDesigner.Scene {
 					else layer.Value.Dispose();
 				}
 				else layer.Value.Dispose();
-				return Result.Failure<SceneNodeRuntime, Diagnostic>(new Diagnostic(new DiagnosticCode("scene.create.failed"), Severity.Error, exception.Message, nodeId: request.NodeId, exception: DiagnosticExceptionInfo.FromException(exception), module: "scene"));
+				return CreateFailure(request, exception);
 			}
 		}
+
+		private UnitResult<Diagnostic> ValidateCreateRequest(SceneCreateRequest request) {
+			if (_disposed) return Failure("scene.lifecycle.disposed", "Scene isolation manager is disposed.");
+			if (request == null) return Failure("scene.create.request", "Scene create request is required.");
+			if (_nodes.Count >= MaxSceneNodes) return Failure("scene.node.limit", "At most 24 Scene nodes may exist.");
+			if (_nodes.ContainsKey(request.NodeId)) return Failure("scene.node.duplicate", "A Scene node with this ID already exists.");
+			return UnitResult.Success<Diagnostic>();
+		}
+
+		private static UnityEngine.SceneManagement.Scene CreateIsolatedScene(SceneCreateRequest request) {
+			var parameters = new CreateSceneParameters(request.Kind == SceneNodeKind.ThreeD ? LocalPhysicsMode.Physics3D : LocalPhysicsMode.Physics2D);
+			var sceneName = request.Name;
+			if (SceneManager.GetSceneByName(sceneName).IsValid()) sceneName += "." + request.NodeId.Value + "." + request.GenerationId;
+			return SceneManager.CreateScene(sceneName, parameters);
+		}
+
+		private void CompleteAsyncCreate(SceneNodeRuntime runtime, SceneCreateRequest request) {
+			if (runtime == null || runtime.UnloadRequested) return;
+			if (runtime.State == SceneLifecycleState.Retiring || _disposed) {
+				BeginUnload(runtime);
+				return;
+			}
+			try {
+				var results = runtime.InstantiateOperation?.Result;
+				if (results == null || results.Length != 1 || results[0] == null)
+					throw new InvalidOperationException("Asynchronous Scene prefab instantiation produced no root object.");
+				var root = results[0];
+				root.name = "NodeRoot";
+				var assigned = AssignLayerRecursively(root, runtime.Layer);
+				if (assigned.IsFailure) throw new InvalidOperationException(assigned.Error.Message);
+				var valid = ValidatePrefab(root, request.Kind, runtime.Layer);
+				if (valid.IsFailure) throw new InvalidOperationException(valid.Error.Message);
+				var camera = root.GetComponentsInChildren<Camera>(true)[0];
+				ConfigureRuntimeCamera(camera);
+				if (request.TransparentBackground) ConfigureTransparentCamera(camera);
+				runtime.Root = root;
+				runtime.Camera = camera;
+				runtime.InstantiateOperation = null;
+				runtime.State = SceneLifecycleState.Ready;
+			}
+			catch (Exception exception) {
+				runtime.PreparationDiagnostic = CreateFailure(request, exception).Error;
+				if (_nodes.TryGetValue(runtime.NodeId, out var current) && ReferenceEquals(current, runtime)) _nodes.Remove(runtime.NodeId);
+				runtime.State = SceneLifecycleState.Retiring;
+				BeginUnload(runtime);
+			}
+		}
+
+		private static Result<SceneNodeRuntime, Diagnostic> CreateFailure(SceneCreateRequest request, Exception exception) =>
+			Result.Failure<SceneNodeRuntime, Diagnostic>(new Diagnostic(new DiagnosticCode("scene.create.failed"), Severity.Error, exception.Message,
+				nodeId: request.NodeId, generationId: request.GenerationId, exception: DiagnosticExceptionInfo.FromException(exception), module: "scene"));
 
 		internal Result<SceneRenderResult, Diagnostic> Render(SceneNodeRuntime node, object outputTarget, int width, int height, ulong frameNumber) {
 			if (_renderSource == null) return Failure<SceneRenderResult>("scene.render.source", "A Scene render source was not configured.");
@@ -532,6 +620,16 @@ namespace ShitDesigner.Scene {
 			if (node == null || !_nodes.Remove(node.NodeId)) return;
 			node.State = SceneLifecycleState.Retiring;
 			if (node.Camera != null) node.Camera.enabled = false;
+			if (node.InstantiateOperation != null && !node.InstantiateOperation.isDone) {
+				node.InstantiateOperation.Cancel();
+				return;
+			}
+			BeginUnload(node);
+		}
+
+		private void BeginUnload(SceneNodeRuntime node) {
+			if (node == null || node.UnloadRequested) return;
+			node.UnloadRequested = true;
 			var lease = node.LayerLease;
 			node.LayerLease = null;
 			var scene = node.Scene;
