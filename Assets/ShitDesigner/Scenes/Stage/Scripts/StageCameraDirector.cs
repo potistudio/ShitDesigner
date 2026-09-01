@@ -58,12 +58,14 @@ namespace ShitDesigner.Stage {
 		public const string Cue1ParameterId = "camera_cue_1";
 		public const string Cue2ParameterId = "camera_cue_2";
 		private const double MinimumVideoSeekToleranceSeconds = 0.05d;
+		private const double MaximumVideoFrameAdvanceSeconds = 2d;
 
 		[Header("References")]
 		[SerializeField] private Camera m_Camera;
 		[SerializeField] private Transform m_DefaultLookTarget;
 		[SerializeField] private StageRandomCamera m_RandomCamera;
 		[SerializeField] private VideoPlayer m_VideoPlayer;
+		[SerializeField] private RenderTexture m_VideoOutputTexture;
 
 		[Header("Hot Cues")]
 		[SerializeField] private StageCameraCueDefinition[] m_Cues = {
@@ -97,8 +99,9 @@ namespace ShitDesigner.Stage {
 		private bool m_VideoFrameReadyOverrideActive;
 		private bool m_PreviousSendFrameReadyEvents;
 		private bool m_UsesManagedVideoOutput;
-		private VideoRenderMode m_OriginalVideoRenderMode;
-		private RenderTexture m_VideoOutputTexture;
+		private bool m_VideoFrameCopyPending;
+		private bool m_FilterVideoFrames;
+		private double m_LastAcceptedVideoTime;
 
 		public IReadOnlyList<ILiveSceneParameter> LiveParameters {
 			get {
@@ -137,10 +140,12 @@ namespace ShitDesigner.Stage {
 		}
 
 		private void LateUpdate() {
-			if (!m_UsesManagedVideoOutput || m_VideoOutputTexture == null || m_VideoPlayer == null || m_VideoPlayer.texture == null)
+			if (!m_UsesManagedVideoOutput || !m_VideoFrameCopyPending || m_VideoOutputTexture == null || m_VideoPlayer == null
+				|| m_VideoPlayer.targetTexture == null)
 				return;
 
-			Graphics.Blit(m_VideoPlayer.texture, m_VideoOutputTexture);
+			Graphics.Blit(m_VideoPlayer.targetTexture, m_VideoOutputTexture);
+			m_VideoFrameCopyPending = false;
 		}
 
 		private void OnValidate() {
@@ -286,13 +291,13 @@ namespace ShitDesigner.Stage {
 		}
 
 		private void ConfigureVideoOutput() {
-			if (m_UsesManagedVideoOutput || m_VideoPlayer == null || m_VideoPlayer.targetTexture == null)
+			if (m_UsesManagedVideoOutput || m_VideoPlayer == null || m_VideoPlayer.renderMode != VideoRenderMode.RenderTexture
+				|| m_VideoPlayer.targetTexture == null || m_VideoOutputTexture == null
+				|| m_VideoPlayer.targetTexture == m_VideoOutputTexture)
 				return;
 
-			m_OriginalVideoRenderMode = m_VideoPlayer.renderMode;
-			m_VideoOutputTexture = m_VideoPlayer.targetTexture;
-			if (m_VideoPlayer.renderMode != VideoRenderMode.APIOnly)
-				m_VideoPlayer.renderMode = VideoRenderMode.APIOnly;
+			m_PreviousSendFrameReadyEvents = m_VideoPlayer.sendFrameReadyEvents;
+			m_VideoPlayer.sendFrameReadyEvents = true;
 			m_UsesManagedVideoOutput = true;
 		}
 
@@ -301,9 +306,9 @@ namespace ShitDesigner.Stage {
 				return;
 
 			if (m_VideoPlayer != null)
-				m_VideoPlayer.renderMode = m_OriginalVideoRenderMode;
+				m_VideoPlayer.sendFrameReadyEvents = m_PreviousSendFrameReadyEvents;
 			m_UsesManagedVideoOutput = false;
-			m_VideoOutputTexture = null;
+			m_VideoFrameCopyPending = false;
 		}
 
 		private void QueueVideoSeek(StageCameraCueDefinition cue) {
@@ -317,6 +322,9 @@ namespace ShitDesigner.Stage {
 			m_PendingVideoPlayheadSeconds = playhead;
 			m_VideoSeekPending = true;
 			m_VideoResumePending = false;
+			m_FilterVideoFrames = true;
+			m_LastAcceptedVideoTime = playhead;
+			m_VideoFrameCopyPending = false;
 			ApplyPendingVideoSeek();
 		}
 
@@ -354,11 +362,17 @@ namespace ShitDesigner.Stage {
 		}
 
 		private void OnVideoFrameReady(VideoPlayer source, long _) {
-			if (!m_VideoSeekInFlight || source != m_VideoPlayer)
+			if (source != m_VideoPlayer)
 				return;
 			var frameTolerance = source.frameRate > 0f ? 0.5d / source.frameRate + 0.001d : 0d;
 			var tolerance = Math.Max(MinimumVideoSeekToleranceSeconds, frameTolerance);
-			if (Math.Abs(source.time - m_ActiveVideoSeekSeconds) > tolerance)
+			if (!AcceptVideoFrame(source, tolerance)) {
+				m_VideoFrameCopyPending = false;
+				return;
+			}
+
+			m_VideoFrameCopyPending = true;
+			if (!m_VideoSeekInFlight)
 				return;
 
 			m_VideoSeekInFlight = false;
@@ -369,8 +383,31 @@ namespace ShitDesigner.Stage {
 			m_VideoResumeEarliestFrame = Time.frameCount + 1;
 		}
 
+		private bool AcceptVideoFrame(VideoPlayer source, double tolerance) {
+			var time = source.time;
+			if (m_VideoSeekPending || m_VideoPauseSettling || m_VideoSeekInFlight) {
+				var target = m_VideoSeekInFlight ? m_ActiveVideoSeekSeconds : m_PendingVideoPlayheadSeconds;
+				if (Math.Abs(time - target) > tolerance)
+					return false;
+				m_LastAcceptedVideoTime = time;
+				return true;
+			}
+			if (!m_FilterVideoFrames)
+				return true;
+
+			var duration = source.length;
+			var wrapped = source.isLooping && duration > 0d && m_LastAcceptedVideoTime >= duration - MaximumVideoFrameAdvanceSeconds
+				&& time <= MaximumVideoFrameAdvanceSeconds;
+			if (!wrapped && (time < m_LastAcceptedVideoTime - tolerance
+				|| time > m_LastAcceptedVideoTime + MaximumVideoFrameAdvanceSeconds))
+				return false;
+
+			m_LastAcceptedVideoTime = time;
+			return true;
+		}
+
 		private void EnableVideoFrameReadyEvents() {
-			if (m_VideoFrameReadyOverrideActive || m_VideoPlayer == null)
+			if (m_UsesManagedVideoOutput || m_VideoFrameReadyOverrideActive || m_VideoPlayer == null)
 				return;
 
 			m_PreviousSendFrameReadyEvents = m_VideoPlayer.sendFrameReadyEvents;
