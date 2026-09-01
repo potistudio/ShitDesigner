@@ -24,6 +24,16 @@ MonoBehaviour:
       m_VideoClip: {fileID: 0}
       _parameters: []
     _connections: []
-  _parameters: []
+  _parameters:
+  - _id: transport.playhead_seconds
+    _displayName: Video Playhead
+    _nodeId: scene
+    _parameterId: transport.playhead_seconds
+    m_BeatModulation:
+      m_Enabled: 0
+      m_Signal: 0
+      m_Strength: 0
+      m_Minimum: 0
+      m_Maximum: 242.21866
   m_KeyboardInputs: []
   m_MidiInputs: []
