@@ -43,6 +43,12 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 			Assert.That(recursive.Parameters.Single(x => x.Id == "color_a").DisplayName, Is.EqualTo("Color"));
 			Assert.That(recursive.Parameters.Any(x => x.Id == "color_b"), Is.False);
 			Assert.That(recursive.Parameters.Single(x => x.Id == "seed").Property, Is.EqualTo("_StructureSeed"));
+			var chromaKey = asset.Find("shitdesigner.shader.key.chroma-key");
+			Assert.That(chromaKey, Is.Not.Null);
+			var keyColor = chromaKey.Parameters.Single(x => x.Id == "color_a");
+			Assert.That(keyColor.DisplayName, Is.EqualTo("Color A"));
+			Assert.That(keyColor.Property, Is.EqualTo("_VJColorA"));
+			Assert.That(keyColor.Type, Is.EqualTo(ParameterType.Color));
 		}
 
 		[Test]

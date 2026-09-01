@@ -182,7 +182,8 @@ namespace ShitDesigner.Nodes.Editor {
 			var historySlots = stateful ? (row.historySlots > 0 ? row.historySlots : HistorySlotsForSpatial(row.nodeTypeId)) : 0;
 			var warmupFrames = stateful ? Math.Max(row.warmupFrames, 1) : 0;
 			var inputs = BuildSpatialInputs(row, stateful);
-			var parameters = row.parameters.Select(x => BuildParameter(x, spatial: true)).ToArray();
+			var chromaKey = string.Equals(row.nodeTypeId, "shitdesigner.shader.key.chroma-key", StringComparison.Ordinal);
+			var parameters = row.parameters.Select(x => BuildParameter(x, spatial: true, chromaKeyColor: chromaKey)).ToArray();
 			var passes = BuildPasses(row.nodeTypeId, row.variantId, family, row.variant, 0, stateful);
 			var outputPass = passes.Max(x => x.Index);
 			return new ShaderNodeManifestEntry(new NodeTypeId(row.nodeTypeId), row.name, row.category, family, row.shader,
@@ -378,7 +379,7 @@ namespace ShitDesigner.Nodes.Editor {
 			return list;
 		}
 
-		private static ShaderNodeManifestParameter BuildParameter(string raw, bool spatial) {
+		private static ShaderNodeManifestParameter BuildParameter(string raw, bool spatial, bool chromaKeyColor = false) {
 			var id = NormalizeParameter(raw);
 			var property = spatial ? "_VJ" + Pascal(raw) : "_" + raw;
 			var type = ParameterType.Float;
@@ -387,7 +388,8 @@ namespace ShitDesigner.Nodes.Editor {
 			ParameterValue value = ParameterValue.FromFloat(DefaultFloat(id));
 			ParameterValue? minimum = null;
 			ParameterValue? maximum = null;
-			if (id == "color_a") { type = ParameterType.Vector4; value = ParameterValue.FromVector4(new Vector4Value(1, 0, 0, 1)); }
+			if (id == "color_a" && chromaKeyColor) { type = ParameterType.Color; value = ParameterValue.FromColor(new ColorValue(1, 0, 0, 1)); }
+			else if (id == "color_a") { type = ParameterType.Vector4; value = ParameterValue.FromVector4(new Vector4Value(1, 0, 0, 1)); }
 			else if (id == "color_b") { type = ParameterType.Vector4; value = ParameterValue.FromVector4(new Vector4Value(0, 0, 1, 1)); }
 			else if (id == "color_c") { type = ParameterType.Vector4; value = ParameterValue.FromVector4(new Vector4Value(0, 1, 0, 1)); }
 			else if (id == "center" || id == "pivot" || id == "displacement" || id == "camera_position" || id == "camera_target" || id == "light_direction" || id == "resolution") {

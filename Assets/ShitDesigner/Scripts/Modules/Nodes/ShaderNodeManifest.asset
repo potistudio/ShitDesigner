@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ShaderNodeManifest
   m_EditorClassIdentifier: ShitDesigner.Nodes::ShitDesigner.Nodes.ShaderNodeManifestAsset
   schemaVersion: 1
-  sourceFingerprint: 8f434b28ad637cd0b582a383d2f58f6a00c42706c5b41598bef2d12992093e8e
+  sourceFingerprint: 6a3182f0dbcc34d76755f30a7287e75262c39096bee726720c030e59b2126e55
   entries:
   - typeId: shitdesigner.shader.generator
     schemaVersion: 1
@@ -86143,6 +86143,27 @@ MonoBehaviour:
       hasDefaultImage: 0
       defaultImage: 0
     parameters:
+    - id: color_a
+      sourceId: color_a
+      displayName: Color A
+      property: _VJColorA
+      type: 6
+      defaultValue: color:1,0,0,1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
     - id: amount
       sourceId: amount
       displayName: Amount
