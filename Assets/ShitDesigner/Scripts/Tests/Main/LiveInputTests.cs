@@ -15,7 +15,7 @@ namespace ShitDesigner.Main.Tests {
 	public sealed class LiveInputTests {
 		[Test]
 		public void KeyboardMappingQueuesPressedAndReleasedParameterRequestsForLoadedPatch() {
-			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.B));
+			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.G));
 			Keyboard keyboard = null;
 			try {
 				keyboard = InputSystem.AddDevice<Keyboard>();
@@ -23,7 +23,7 @@ namespace ShitDesigner.Main.Tests {
 				var queue = new LiveParameterQueue();
 				var input = new LiveKeyboardInput(queue, new[] { patch }, _ => { }, (_, _) => { }, () => { }, _ => { });
 
-				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.B));
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.G));
 				InputSystem.Update();
 				input.Poll("patch-a");
 				InputSystem.QueueStateEvent(keyboard, new KeyboardState());
@@ -391,6 +391,29 @@ namespace ShitDesigner.Main.Tests {
 				queue.Drain(requests);
 				Assert.That(cues, Is.EqualTo(new[] { 1 }));
 				Assert.That(requests, Is.Empty);
+			}
+			finally {
+				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
+				Object.DestroyImmediate(patch);
+			}
+		}
+
+		[Test]
+		public void ZxcvbnmFireTheFirstSevenLiveParametersAndSuppressPatchBindings() {
+			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.Z));
+			Keyboard keyboard = null;
+			try {
+				keyboard = InputSystem.AddDevice<Keyboard>();
+				keyboard.MakeCurrent();
+				var queue = new LiveParameterQueue();
+				var firing = new List<(int Index, bool IsFiring)>();
+				var input = new LiveKeyboardInput(queue, new[] { patch }, _ => { }, (_, _) => { }, () => { }, _ => { },
+					fireLiveParameter: (index, isFiring) => firing.Add((index, isFiring)));
+
+				foreach (var key in new[] { Key.Z, Key.X, Key.C, Key.V, Key.B, Key.N, Key.M }) PollKey(input, keyboard, key);
+
+				Assert.That(firing, Is.EqualTo(Enumerable.Range(0, 7).SelectMany(index => new[] { (index, true), (index, false) })));
+				Assert.That(queue.Count, Is.Zero);
 			}
 			finally {
 				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
