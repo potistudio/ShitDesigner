@@ -220,7 +220,7 @@ namespace ShitDesigner.Main {
 									ReadBoolParameter(authoredNode, PlayingParameterId, true),
 									ReadFloatParameter(authoredNode, PlayheadParameterId, 0f),
 									ReadFloatParameter(authoredNode, SpeedParameterId, 1f),
-									ReadBoolParameter(authoredNode, LoopParameterId, true),
+									ReadBoolParameter(authoredNode, LoopParameterId, true), authoredNode.VideoBpm,
 									m_VideoConversionMaterial, m_HapPremultiplyMaterial, m_HapYCoCgMaterial,
 									m_HapAlphaMaterial, m_HapDecodeShader));
 								continue;
@@ -231,7 +231,7 @@ namespace ShitDesigner.Main {
 								ReadBoolParameter(authoredNode, PlayingParameterId, true),
 								ReadFloatParameter(authoredNode, PlayheadParameterId, 0f),
 								ReadFloatParameter(authoredNode, SpeedParameterId, 1f),
-								ReadBoolParameter(authoredNode, LoopParameterId, true)));
+								ReadBoolParameter(authoredNode, LoopParameterId, true), authoredNode.VideoBpm));
 							continue;
 						}
 						if (!shaderDefinitions.TryGetValue(node.TypeId, out var shader))

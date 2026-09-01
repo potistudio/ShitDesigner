@@ -109,6 +109,7 @@ namespace ShitDesigner.Scene {
 		// the path so codecs that Unity cannot import can still be selected.
 		[SerializeField] private string m_VideoPath;
 		[SerializeField] private VideoClip m_VideoClip;
+		[SerializeField, Min(1f)] private float m_VideoBpm = 120f;
 		[SerializeField] private List<PatchGraphParameter> _parameters = new List<PatchGraphParameter>();
 
 		public string Id => (_id ?? string.Empty).Trim();
@@ -116,17 +117,19 @@ namespace ShitDesigner.Scene {
 		public Scene3DDefinition SceneDefinition => m_SceneDefinition;
 		public string VideoPath => (m_VideoPath ?? string.Empty).Trim();
 		public VideoClip VideoClip => m_VideoClip;
+		public float VideoBpm => float.IsNaN(m_VideoBpm) || float.IsInfinity(m_VideoBpm) || m_VideoBpm < 1f ? 120f : m_VideoBpm;
 		public IReadOnlyList<PatchGraphParameter> Parameters => _parameters ?? (IReadOnlyList<PatchGraphParameter>)Array.Empty<PatchGraphParameter>();
 		public bool IsSceneNode => string.Equals(TypeId, Scene3DTypeId, StringComparison.Ordinal);
 
 		public PatchGraphNode() { }
 
 		public PatchGraphNode(string id, string typeId, IEnumerable<PatchGraphParameter> parameters = null, VideoClip videoClip = null,
-			Scene3DDefinition sceneDefinition = null) {
+			Scene3DDefinition sceneDefinition = null, float videoBpm = 120f) {
 			_id = id;
 			_typeId = typeId;
 			m_SceneDefinition = sceneDefinition;
 			m_VideoClip = videoClip;
+			m_VideoBpm = videoBpm;
 			_parameters = new List<PatchGraphParameter>(parameters ?? Enumerable.Empty<PatchGraphParameter>());
 		}
 

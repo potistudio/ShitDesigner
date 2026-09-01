@@ -55,6 +55,24 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void VideoTransportCombinesManualSpeedWithTheVideoBpmMultiplier() {
+			var transport = new LiveVideoTransportState(true, 0d, 1.5f, false);
+
+			transport.SetBpmSpeedMultiplier(.5f, 0d, 60d);
+
+			Assert.That(transport.PlaybackSpeed, Is.EqualTo(.75f));
+			Assert.That(transport.LogicalPosition(4d, 60d), Is.EqualTo(3d));
+			Assert.That(transport.SettingsPending, Is.True);
+		}
+
+		[Test]
+		public void VideoNodeStoresItsAuthoredBpm() {
+			var node = new PatchGraphNode("video", VideoPlayerContract.NodeTypeId, videoBpm: 145f);
+
+			Assert.That(node.VideoBpm, Is.EqualTo(145f));
+		}
+
+		[Test]
 		public void VideoHotCueStateIsOwnedByAnIndependentPatchHotCue() {
 			var hotCue = new PatchHotCue(new[] {
 				new PatchGraphParameter("video_playing", ParameterValue.FromBool(true)),

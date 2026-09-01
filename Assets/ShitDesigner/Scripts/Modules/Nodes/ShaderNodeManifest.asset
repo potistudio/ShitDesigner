@@ -118995,225 +118995,6 @@ MonoBehaviour:
       outputRole: image
       requiredFeatures: 32
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
-  - typeId: shitdesigner.shader.audio.wireframe_cube_fractal
-    schemaVersion: 1
-    displayName: Wireframe Cube Fractal
-    category: Shader/Audio
-    family: 10
-    shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
-    variantId: audio.wireframe_cube_fractal
-    requiredFeatures: 0
-    stateful: 0
-    historySlots: 0
-    userAddable: 1
-    description: bpm_clock_fixture
-    priority: UNCLASSIFIED
-    warmupFrames: 0
-    sourceLedger: audio-raymarch-utility-variants.json
-    sourceVariant: 30
-    outputPass: 0
-    aliases:
-    - wireframe_cube_fractal
-    - audio.wireframe_cube_fractal
-    inputs: []
-    parameters:
-    - id: amount
-      sourceId: Amount
-      displayName: Amount
-      property: _Amount
-      type: 0
-      defaultValue: float:0
-      hasMinimum: 1
-      minimumValue: float:0
-      hasMaximum: 1
-      maximumValue: float:1
-      runtimeStateful: 0
-      enumOptions: []
-      enumMappingKeys: []
-      enumMappingValues:
-      group: Shader
-      displayOrder: 0
-      description:
-      unit:
-      step: 0
-      isReadOnly: 0
-      isHidden: 0
-    - id: gain
-      sourceId: Gain
-      displayName: Gain
-      property: _Gain
-      type: 0
-      defaultValue: float:1
-      hasMinimum: 0
-      minimumValue:
-      hasMaximum: 0
-      maximumValue:
-      runtimeStateful: 0
-      enumOptions: []
-      enumMappingKeys: []
-      enumMappingValues:
-      group: Shader
-      displayOrder: 0
-      description:
-      unit:
-      step: 0
-      isReadOnly: 0
-      isHidden: 0
-    - id: rms
-      sourceId: Rms
-      displayName: Rms
-      property: _Rms
-      type: 0
-      defaultValue: float:0
-      hasMinimum: 1
-      minimumValue: float:0
-      hasMaximum: 1
-      maximumValue: float:1
-      runtimeStateful: 0
-      enumOptions: []
-      enumMappingKeys: []
-      enumMappingValues:
-      group: Shader
-      displayOrder: 0
-      description:
-      unit:
-      step: 0
-      isReadOnly: 0
-      isHidden: 0
-    - id: peak
-      sourceId: Peak
-      displayName: Peak
-      property: _Peak
-      type: 0
-      defaultValue: float:0
-      hasMinimum: 1
-      minimumValue: float:0
-      hasMaximum: 1
-      maximumValue: float:1
-      runtimeStateful: 0
-      enumOptions: []
-      enumMappingKeys: []
-      enumMappingValues:
-      group: Shader
-      displayOrder: 0
-      description:
-      unit:
-      step: 0
-      isReadOnly: 0
-      isHidden: 0
-    - id: beat
-      sourceId: Beat
-      displayName: Beat
-      property: _Beat
-      type: 0
-      defaultValue: float:0
-      hasMinimum: 1
-      minimumValue: float:0
-      hasMaximum: 1
-      maximumValue: float:1
-      runtimeStateful: 0
-      enumOptions: []
-      enumMappingKeys: []
-      enumMappingValues:
-      group: Shader
-      displayOrder: 0
-      description:
-      unit:
-      step: 0
-      isReadOnly: 0
-      isHidden: 0
-    - id: bpm_phase
-      sourceId: BpmPhase
-      displayName: Bpm Phase
-      property: _BpmPhase
-      type: 0
-      defaultValue: float:0
-      hasMinimum: 1
-      minimumValue: float:0
-      hasMaximum: 1
-      maximumValue: float:1
-      runtimeStateful: 0
-      enumOptions: []
-      enumMappingKeys: []
-      enumMappingValues:
-      group: Shader
-      displayOrder: 0
-      description:
-      unit:
-      step: 0
-      isReadOnly: 0
-      isHidden: 0
-    - id: graph_time
-      sourceId: GraphTime
-      displayName: Graph Time
-      property: _GraphTime
-      type: 0
-      defaultValue: float:0
-      hasMinimum: 0
-      minimumValue:
-      hasMaximum: 0
-      maximumValue:
-      runtimeStateful: 0
-      enumOptions: []
-      enumMappingKeys: []
-      enumMappingValues:
-      group: Shader
-      displayOrder: 0
-      description:
-      unit:
-      step: 0
-      isReadOnly: 0
-      isHidden: 0
-    - id: frame
-      sourceId: Frame
-      displayName: Frame
-      property: _Frame
-      type: 0
-      defaultValue: float:0
-      hasMinimum: 0
-      minimumValue:
-      hasMaximum: 0
-      maximumValue:
-      runtimeStateful: 0
-      enumOptions: []
-      enumMappingKeys: []
-      enumMappingValues:
-      group: Shader
-      displayOrder: 0
-      description:
-      unit:
-      step: 0
-      isReadOnly: 0
-      isHidden: 0
-    - id: seed
-      sourceId: Seed
-      displayName: Seed
-      property: _Seed
-      type: 0
-      defaultValue: float:0
-      hasMinimum: 0
-      minimumValue:
-      hasMaximum: 0
-      maximumValue:
-      runtimeStateful: 0
-      enumOptions: []
-      enumMappingKeys: []
-      enumMappingValues:
-      group: Shader
-      displayOrder: 0
-      description:
-      unit:
-      step: 0
-      isReadOnly: 0
-      isHidden: 0
-    passes:
-    - id: main
-      index: 0
-      kind: 0
-      variantId: audio.wireframe_cube_fractal
-      outputRole: image
-      requiredFeatures: 0
-    shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
   - typeId: shitdesigner.shader.audio.onset_history_grid
     schemaVersion: 1
     displayName: Onset History Grid
@@ -119492,6 +119273,225 @@ MonoBehaviour:
       variantId: audio.onset_history_grid
       outputRole: image
       requiredFeatures: 96
+    shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
+  - typeId: shitdesigner.shader.audio.wireframe_cube_fractal
+    schemaVersion: 1
+    displayName: Wireframe Cube Fractal
+    category: Shader/Audio
+    family: 10
+    shaderKey: Hidden/ShitDesigner/VJ/AudioFamily
+    variantId: audio.wireframe_cube_fractal
+    requiredFeatures: 0
+    stateful: 0
+    historySlots: 0
+    userAddable: 1
+    description: bpm_clock_fixture
+    priority: UNCLASSIFIED
+    warmupFrames: 0
+    sourceLedger: audio-raymarch-utility-variants.json
+    sourceVariant: 30
+    outputPass: 0
+    aliases:
+    - wireframe_cube_fractal
+    - audio.wireframe_cube_fractal
+    inputs: []
+    parameters:
+    - id: amount
+      sourceId: Amount
+      displayName: Amount
+      property: _Amount
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: gain
+      sourceId: Gain
+      displayName: Gain
+      property: _Gain
+      type: 0
+      defaultValue: float:1
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: rms
+      sourceId: Rms
+      displayName: Rms
+      property: _Rms
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: peak
+      sourceId: Peak
+      displayName: Peak
+      property: _Peak
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: beat
+      sourceId: Beat
+      displayName: Beat
+      property: _Beat
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: bpm_phase
+      sourceId: BpmPhase
+      displayName: Bpm Phase
+      property: _BpmPhase
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 1
+      minimumValue: float:0
+      hasMaximum: 1
+      maximumValue: float:1
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: graph_time
+      sourceId: GraphTime
+      displayName: Graph Time
+      property: _GraphTime
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: frame
+      sourceId: Frame
+      displayName: Frame
+      property: _Frame
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    - id: seed
+      sourceId: Seed
+      displayName: Seed
+      property: _Seed
+      type: 0
+      defaultValue: float:0
+      hasMinimum: 0
+      minimumValue: 
+      hasMaximum: 0
+      maximumValue: 
+      runtimeStateful: 0
+      enumOptions: []
+      enumMappingKeys: []
+      enumMappingValues: 
+      group: Shader
+      displayOrder: 0
+      description: 
+      unit: 
+      step: 0
+      isReadOnly: 0
+      isHidden: 0
+    passes:
+    - id: main
+      index: 0
+      kind: 0
+      variantId: audio.wireframe_cube_fractal
+      outputRole: image
+      requiredFeatures: 0
     shader: {fileID: 4800000, guid: 3a2835f1a5d59454b9d19812d050de1e, type: 3}
   - typeId: shitdesigner.shader.raymarch.raymarched_sphere
     schemaVersion: 1

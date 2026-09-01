@@ -184,6 +184,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  m_MainCompositeOpacity: 0.5
   m_SceneTimeEncoderChannel: 16
   m_SceneTimeEncoderControlNumber: 77
   m_SceneTimeJogSpeedPerStep: 1
@@ -264,6 +265,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2d9ac1370a6614be380b87d895f01977, type: 2}
   - {fileID: 11400000, guid: 5bedcb1c18bc4b47aa077176dc6042b8, type: 2}
   - {fileID: 11400000, guid: 6f1b27c9a65e4d7e8f302ca44b9d6812, type: 2}
+  - {fileID: 11400000, guid: 02b77bd47245f44c99d3b1587ffe37c9, type: 2}
+  - {fileID: 11400000, guid: a09759a58bb0b4f3585e1d67cc76e35c, type: 2}
+  - {fileID: 11400000, guid: a6227cc86972e4817ac1b62208d7adab, type: 2}
   m_OverlayPatches:
   - {fileID: 11400000, guid: f5c5327b2f9e10544aa82240c82735cb, type: 2}
   - {fileID: 11400000, guid: c7e98bd2a7f64fe2b2539ceae6b0b9b4, type: 2}

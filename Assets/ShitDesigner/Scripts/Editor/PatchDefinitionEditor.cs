@@ -292,6 +292,7 @@ namespace ShitDesigner.Editor {
 				var sceneDefinition = property.FindPropertyRelative("m_SceneDefinition");
 				var videoPath = property.FindPropertyRelative("m_VideoPath");
 				var videoClip = property.FindPropertyRelative("m_VideoClip");
+				var videoBpm = property.FindPropertyRelative("m_VideoBpm");
 				var isSceneNode = IsSceneNode(typeId.stringValue);
 				if (isSceneNode && sceneDefinition != null) {
 					EditorGUI.PropertyField(Line(position, ref y), sceneDefinition, new GUIContent("Scene Definition"));
@@ -304,6 +305,8 @@ namespace ShitDesigner.Editor {
 					EditorGUI.PropertyField(Line(position, ref y), videoClip, new GUIContent("Video Clip"));
 					if (EditorGUI.EndChangeCheck() && videoPath != null)
 						videoPath.stringValue = string.Empty;
+					if (videoBpm != null)
+						EditorGUI.PropertyField(Line(position, ref y), videoBpm, new GUIContent("Video BPM"));
 				}
 				else if (typeChanged && videoPath != null) {
 					videoPath.stringValue = string.Empty;
@@ -330,8 +333,8 @@ namespace ShitDesigner.Editor {
 			var typeId = property.FindPropertyRelative("_typeId").stringValue;
 			var isVideoPlayer = IsVideoPlayer(typeId);
 			var isSceneNode = IsSceneNode(typeId);
-			var fixedLineCount = isVideoPlayer || isSceneNode ? 4f : 3f;
-			var fixedSpacingCount = isVideoPlayer || isSceneNode ? 4f : 3f;
+			var fixedLineCount = isVideoPlayer ? 5f : isSceneNode ? 4f : 3f;
+			var fixedSpacingCount = isVideoPlayer ? 5f : isSceneNode ? 4f : 3f;
 			var height = EditorGUIUtility.singleLineHeight * fixedLineCount + LineSpacing * fixedSpacingCount
 				+ EditorGUI.GetPropertyHeight(parameters, new GUIContent("Parameters"), true);
 			return GetAddableParameters(property.FindPropertyRelative("_typeId").stringValue, parameters).Count == 0

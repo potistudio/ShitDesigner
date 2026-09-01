@@ -915,9 +915,11 @@ namespace ShitDesigner.Main {
 		public bool Playing { get; private set; }
 		public double PlayheadSeconds { get; private set; }
 		public float Speed { get; private set; }
+		public float PlaybackSpeed => Mathf.Clamp(Speed * m_BpmSpeedMultiplier, 0f, 4f);
 		public bool Loop { get; private set; }
 		public bool SeekPending { get; private set; }
 		public bool SettingsPending { get; private set; }
+		private float m_BpmSpeedMultiplier = 1f;
 
 		public LiveVideoTransportState(bool playing, double playheadSeconds, float speed, bool loop) {
 			if (double.IsNaN(playheadSeconds) || double.IsInfinity(playheadSeconds) || playheadSeconds < 0d)
@@ -933,7 +935,7 @@ namespace ShitDesigner.Main {
 
 		public double LogicalPosition(double graphTime, double durationSeconds) {
 			var position = Playing
-				? PlayheadSeconds + Math.Max(0d, graphTime - m_AnchorGraphTime) * Speed
+				? PlayheadSeconds + Math.Max(0d, graphTime - m_AnchorGraphTime) * PlaybackSpeed
 				: PlayheadSeconds;
 			if (durationSeconds <= 0d) return position;
 			return Loop ? position % durationSeconds : Math.Min(position, durationSeconds);
@@ -984,6 +986,15 @@ namespace ShitDesigner.Main {
 		public void MarkSeekApplied() => SeekPending = false;
 		public void MarkSettingsApplied() => SettingsPending = false;
 
+		public void SetBpmSpeedMultiplier(float multiplier, double graphTime, double durationSeconds) {
+			if (float.IsNaN(multiplier) || float.IsInfinity(multiplier) || multiplier < 0f)
+				throw new ArgumentOutOfRangeException(nameof(multiplier));
+			if (Mathf.Approximately(m_BpmSpeedMultiplier, multiplier)) return;
+			Reanchor(graphTime, durationSeconds);
+			m_BpmSpeedMultiplier = multiplier;
+			SettingsPending = true;
+		}
+
 		private void Reanchor(double graphTime, double durationSeconds) {
 			PlayheadSeconds = LogicalPosition(graphTime, durationSeconds);
 			m_AnchorGraphTime = graphTime;
@@ -1002,6 +1013,7 @@ namespace ShitDesigner.Main {
 		private readonly VideoProbeResult m_Probe;
 		private readonly RenderTexture m_Target;
 		private readonly LiveVideoTransportState m_Transport;
+		private readonly float m_VideoBpm;
 		private double m_LastGraphTime;
 		private bool m_AwaitingSeekCompletion;
 		private bool m_Disposed;
@@ -1009,7 +1021,7 @@ namespace ShitDesigner.Main {
 		public string Id { get; }
 		public RenderTexture Target => m_Target;
 
-		public LiveProgramFileVideoGraphNode(string id, RenderTexture target, string videoPath, bool playing, double playhead, float speed, bool loop,
+		public LiveProgramFileVideoGraphNode(string id, RenderTexture target, string videoPath, bool playing, double playhead, float speed, bool loop, float videoBpm,
 			Material videoConversionMaterial, Material hapPremultiplyMaterial, Material hapYCoCgMaterial,
 			Material hapAlphaMaterial, ComputeShader hapDecodeShader) {
 			if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("A live Program video node ID is required.", nameof(id));
@@ -1017,10 +1029,12 @@ namespace ShitDesigner.Main {
 			if (string.IsNullOrWhiteSpace(videoPath)) throw new ArgumentException("A live Program video file is required.", nameof(videoPath));
 			if (double.IsNaN(playhead) || double.IsInfinity(playhead) || playhead < 0d) throw new ArgumentOutOfRangeException(nameof(playhead));
 			if (float.IsNaN(speed) || float.IsInfinity(speed) || speed < 0f || speed > 4f) throw new ArgumentOutOfRangeException(nameof(speed));
+			if (float.IsNaN(videoBpm) || float.IsInfinity(videoBpm) || videoBpm < 1f) throw new ArgumentOutOfRangeException(nameof(videoBpm));
 
 			Id = id.Trim();
 			m_Target = target;
 			m_Transport = new LiveVideoTransportState(playing, playhead, speed, loop);
+			m_VideoBpm = videoBpm;
 
 			var sourcePath = ResolveSourcePath(videoPath);
 			var probe = new FileVideoMetadataProbe().Probe(sourcePath);
@@ -1068,7 +1082,10 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		public void Evaluate(double deltaSeconds, BeatClockFrame bpmFrame) { }
+		public void Evaluate(double deltaSeconds, BeatClockFrame bpmFrame) {
+			m_Transport.SetBpmSpeedMultiplier(bpmFrame.IsAvailable ? bpmFrame.Bpm / m_VideoBpm : 1f,
+				m_LastGraphTime, m_Probe.DurationSeconds);
+		}
 
 		public void SceneUpdate(double deltaSeconds) { }
 
@@ -1137,7 +1154,7 @@ namespace ShitDesigner.Main {
 		private void ApplyPendingTransportSettings() {
 			if (!m_Transport.SettingsPending) return;
 			if (m_Backend.BackendKind == VideoBackendKind.HapVideoBackend && !IsReady()) return;
-			var speed = m_Backend.SetSpeed(m_Transport.Speed);
+			var speed = m_Backend.SetSpeed(m_Transport.PlaybackSpeed);
 			if (speed.IsFailure) throw new InvalidOperationException(speed.Error.Message);
 			var loop = m_Backend.SetLoop(m_Transport.Loop);
 			if (loop.IsFailure) throw new InvalidOperationException(loop.Error.Message);
@@ -1179,6 +1196,7 @@ namespace ShitDesigner.Main {
 		private readonly VideoPlayer _player;
 		private readonly RenderTexture _target;
 		private readonly LiveVideoTransportState m_Transport;
+		private readonly float m_VideoBpm;
 		private double m_LastGraphTime;
 		private bool _playheadApplied;
 		private bool _disposed;
@@ -1186,16 +1204,18 @@ namespace ShitDesigner.Main {
 		public string Id { get; }
 		public RenderTexture Target => _target;
 
-		public LiveProgramVideoGraphNode(string id, RenderTexture target, VideoClip clip, bool playing, double playhead, float speed, bool loop) {
+		public LiveProgramVideoGraphNode(string id, RenderTexture target, VideoClip clip, bool playing, double playhead, float speed, bool loop, float videoBpm) {
 			if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("A live Program video node ID is required.", nameof(id));
 			if (target == null) throw new ArgumentNullException(nameof(target));
 			if (clip == null) throw new ArgumentNullException(nameof(clip));
 			if (double.IsNaN(playhead) || double.IsInfinity(playhead) || playhead < 0d) throw new ArgumentOutOfRangeException(nameof(playhead));
 			if (float.IsNaN(speed) || float.IsInfinity(speed) || speed < 0f || speed > 4f) throw new ArgumentOutOfRangeException(nameof(speed));
+			if (float.IsNaN(videoBpm) || float.IsInfinity(videoBpm) || videoBpm < 1f) throw new ArgumentOutOfRangeException(nameof(videoBpm));
 
 			Id = id.Trim();
 			_target = target;
 			m_Transport = new LiveVideoTransportState(playing, playhead, speed, loop);
+			m_VideoBpm = videoBpm;
 			_host = new GameObject("ShitDesigner.Main.Video." + Id);
 			try {
 				_player = _host.AddComponent<VideoPlayer>();
@@ -1208,7 +1228,7 @@ namespace ShitDesigner.Main {
 				_player.source = UnityEngine.Video.VideoSource.VideoClip;
 				_player.clip = clip;
 				_player.isLooping = m_Transport.Loop;
-				_player.playbackSpeed = m_Transport.Speed;
+				_player.playbackSpeed = m_Transport.PlaybackSpeed;
 				_player.Prepare();
 			}
 			catch {
@@ -1217,7 +1237,10 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		public void Evaluate(double deltaSeconds, BeatClockFrame bpmFrame) { }
+		public void Evaluate(double deltaSeconds, BeatClockFrame bpmFrame) {
+			m_Transport.SetBpmSpeedMultiplier(bpmFrame.IsAvailable ? bpmFrame.Bpm / m_VideoBpm : 1f,
+				m_LastGraphTime, _player == null ? 0d : _player.length);
+		}
 
 		public void SceneUpdate(double deltaSeconds) { }
 
@@ -1227,7 +1250,7 @@ namespace ShitDesigner.Main {
 			if (_player.isPrepared) {
 				if (m_Transport.SettingsPending) {
 					_player.isLooping = m_Transport.Loop;
-					_player.playbackSpeed = m_Transport.Speed;
+					_player.playbackSpeed = m_Transport.PlaybackSpeed;
 					m_Transport.MarkSettingsApplied();
 				}
 				var logicalPosition = m_Transport.LogicalPosition(graphTime, _player.length);
