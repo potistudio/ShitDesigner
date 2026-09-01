@@ -45,5 +45,23 @@ MonoBehaviour:
       m_Strength: 1
       m_Minimum: 1
       m_Maximum: 64
+  m_HotCue1:
+    m_Values: []
+  m_HotCue2:
+    m_Values: []
   m_KeyboardInputs: []
-  m_MidiInputs: []
+  m_MidiInputs:
+  - m_MessageType: 1
+    m_Channel: 1
+    m_Number: 21
+    m_RawMinimum: 0
+    m_RawMaximum: 127
+    m_Invert: 0
+    m_ParameterId: speed
+  - m_MessageType: 1
+    m_Channel: 1
+    m_Number: 22
+    m_RawMinimum: 0
+    m_RawMaximum: 64
+    m_Invert: 0
+    m_ParameterId: instance_count

@@ -15,89 +15,19 @@ MonoBehaviour:
   _id: win32-bpm-spin
   _displayName: Win32 BPM Spin
   _programGraph:
-    _outputNodeId: composite
+    _outputNodeId: win32-bpm-spin
     _nodes:
     - _id: win32-bpm-spin
       _typeId: shitdesigner.scene.3d
       m_SceneDefinition: {fileID: 11400000, guid: aa4f5b8c1d2e4f6091a2b3c4d5e6f709, type: 2}
+      m_VideoPath: 
+      m_VideoClip: {fileID: 0}
       _parameters: []
-    - _id: background
-      _typeId: shitdesigner.shader.generator.concentric-rings
-      _parameters:
-      - _id: color_a
-        _type: 5
-        _floatValue: 0
-        _intValue: 0
-        _boolValue: 0
-        _vector2Value: {x: 0, y: 0}
-        _vector3Value: {x: 0, y: 0, z: 0}
-        _vector4Value: {x: 1, y: 0, z: 0, w: 1}
-        _colorValue: {r: 1, g: 1, b: 1, a: 1}
-        _textValue: 
-      - _id: color_b
-        _type: 5
-        _floatValue: 0
-        _intValue: 0
-        _boolValue: 0
-        _vector2Value: {x: 0, y: 0}
-        _vector3Value: {x: 0, y: 0, z: 0}
-        _vector4Value: {x: 0, y: 0, z: 1, w: 1}
-        _colorValue: {r: 1, g: 1, b: 1, a: 1}
-        _textValue: 
-      - _id: color_c
-        _type: 5
-        _floatValue: 0
-        _intValue: 0
-        _boolValue: 0
-        _vector2Value: {x: 0, y: 0}
-        _vector3Value: {x: 0, y: 0, z: 0}
-        _vector4Value: {x: 0, y: 1, z: 0, w: 1}
-        _colorValue: {r: 1, g: 1, b: 1, a: 1}
-        _textValue: 
-      - _id: amount
-        _type: 0
-        _floatValue: 0
-        _intValue: 0
-        _boolValue: 0
-        _vector2Value: {x: 0, y: 0}
-        _vector3Value: {x: 0, y: 0, z: 0}
-        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
-        _colorValue: {r: 1, g: 1, b: 1, a: 1}
-        _textValue: 
-    - _id: composite
-      _typeId: shitdesigner.shader.blend.premultiplied_over
-      _parameters:
-      - _id: amount
-        _type: 0
-        _floatValue: 1
-        _intValue: 0
-        _boolValue: 0
-        _vector2Value: {x: 0, y: 0}
-        _vector3Value: {x: 0, y: 0, z: 0}
-        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
-        _colorValue: {r: 1, g: 1, b: 1, a: 1}
-        _textValue: 
-      - _id: external_mask
-        _type: 0
-        _floatValue: 0
-        _intValue: 0
-        _boolValue: 0
-        _vector2Value: {x: 0, y: 0}
-        _vector3Value: {x: 0, y: 0, z: 0}
-        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
-        _colorValue: {r: 1, g: 1, b: 1, a: 1}
-        _textValue: 
-    _connections:
-    - _sourceNodeId: win32-bpm-spin
-      _sourcePortId: image
-      _targetNodeId: composite
-      _targetPortId: a
-    - _sourceNodeId: background
-      _sourcePortId: image
-      _targetNodeId: composite
-      _targetPortId: b
-  _parameters:
-  - _id: motion
-    _displayName: Motion
-    _nodeId: win32-bpm-spin
-    _parameterId: motion
+    _connections: []
+  _parameters: []
+  m_HotCue1:
+    m_Values: []
+  m_HotCue2:
+    m_Values: []
+  m_KeyboardInputs: []
+  m_MidiInputs: []
