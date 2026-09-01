@@ -96,6 +96,9 @@ namespace ShitDesigner.Stage {
 		private int m_VideoResumeEarliestFrame;
 		private bool m_VideoFrameReadyOverrideActive;
 		private bool m_PreviousSendFrameReadyEvents;
+		private bool m_UsesManagedVideoOutput;
+		private VideoRenderMode m_OriginalVideoRenderMode;
+		private RenderTexture m_VideoOutputTexture;
 
 		public IReadOnlyList<ILiveSceneParameter> LiveParameters {
 			get {
@@ -119,6 +122,7 @@ namespace ShitDesigner.Stage {
 
 		private void OnDisable() {
 			RestoreVideoPlayback();
+			RestoreVideoOutput();
 			ObserveVideoPlayer(null);
 			m_RandomCamera?.SetSuspended(false);
 		}
@@ -130,6 +134,13 @@ namespace ShitDesigner.Stage {
 				return;
 
 			AdvanceFallback(Time.deltaTime);
+		}
+
+		private void LateUpdate() {
+			if (!m_UsesManagedVideoOutput || m_VideoOutputTexture == null || m_VideoPlayer == null || m_VideoPlayer.texture == null)
+				return;
+
+			Graphics.Blit(m_VideoPlayer.texture, m_VideoOutputTexture);
 		}
 
 		private void OnValidate() {
@@ -271,6 +282,28 @@ namespace ShitDesigner.Stage {
 			if (m_RandomCamera == null) m_RandomCamera = GetComponent<StageRandomCamera>();
 			if (m_VideoPlayer == null) m_VideoPlayer = GetComponentInChildren<VideoPlayer>(true);
 			ObserveVideoPlayer(m_VideoPlayer);
+			ConfigureVideoOutput();
+		}
+
+		private void ConfigureVideoOutput() {
+			if (m_UsesManagedVideoOutput || m_VideoPlayer == null || m_VideoPlayer.renderMode != VideoRenderMode.RenderTexture
+				|| m_VideoPlayer.targetTexture == null)
+				return;
+
+			m_OriginalVideoRenderMode = m_VideoPlayer.renderMode;
+			m_VideoOutputTexture = m_VideoPlayer.targetTexture;
+			m_VideoPlayer.renderMode = VideoRenderMode.APIOnly;
+			m_UsesManagedVideoOutput = true;
+		}
+
+		private void RestoreVideoOutput() {
+			if (!m_UsesManagedVideoOutput)
+				return;
+
+			if (m_VideoPlayer != null)
+				m_VideoPlayer.renderMode = m_OriginalVideoRenderMode;
+			m_UsesManagedVideoOutput = false;
+			m_VideoOutputTexture = null;
 		}
 
 		private void QueueVideoSeek(StageCameraCueDefinition cue) {
