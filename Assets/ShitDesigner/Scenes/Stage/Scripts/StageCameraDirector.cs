@@ -67,6 +67,7 @@ namespace ShitDesigner.Stage {
 		[SerializeField] private StageRandomCamera m_RandomCamera;
 		[SerializeField] private VideoPlayer m_VideoPlayer;
 		[SerializeField] private RenderTexture m_VideoOutputTexture;
+		[SerializeField, Min(1f)] private float m_VideoReferenceBpm = 145f;
 
 		[Header("Hot Cues")]
 		[SerializeField] private StageCameraCueDefinition[] m_Cues = {
@@ -220,6 +221,7 @@ namespace ShitDesigner.Stage {
 
 			m_LastBpm = frame.Bpm;
 			m_LastAdjustedBeat = frame.AdjustedTotalBeats;
+			ApplyVideoPlaybackSpeed();
 			if (!m_IsSceneActive || !m_IsCuePlaying)
 				return;
 
@@ -296,6 +298,13 @@ namespace ShitDesigner.Stage {
 			ObserveVideoPlayer(m_VideoPlayer);
 			ConfigureInstanceVideoOutput();
 			ConfigureVideoOutput();
+		}
+
+		private void ApplyVideoPlaybackSpeed() {
+			if (m_VideoPlayer == null)
+				return;
+
+			m_VideoPlayer.playbackSpeed = m_LastBpm / Mathf.Max(1f, m_VideoReferenceBpm);
 		}
 
 		private RenderTexture ActiveVideoOutputTexture
