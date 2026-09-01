@@ -225,6 +225,7 @@
 - `Shift+A`と`[`または`]`を組み合わせると、キーの検出順にかかわらず切替先へHot Cueを適用し、Main Cue切替は1回だけ実行する。同時検出時はHot Cueを先に適用する。
 - VideoPlayerの`Playing`、`Playhead`、`Speed`、`Loop`は公開パラメーターにしなくてもHot Cueから直接変更でき、保存済みPlayheadへのSeekを同じライブTickで行う。
 - Hot Cueの呼び出しはMain Cueのパッチ割り当て、優勢Cue、基準Cueおよびフェーダー位置を変更しない。MainパッチのLaunchやMain Cue切替もHot Cueを発火しない。
+- Hot Cueはビートクオンタイズせず、入力要求を処理する同じライブTickで適用する。トリガー型の公開SceneパラメーターはHot Cue値を適用した直後に最小値へ自動解放し、AssetFlushなどのワンショット発火を保持状態にしない。
 
 ### 2026-08-31: Shift+TabでINSTANT FX素材の編集モードを切り替える
 

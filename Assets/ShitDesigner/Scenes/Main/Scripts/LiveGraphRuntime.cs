@@ -1844,7 +1844,11 @@ namespace ShitDesigner.Main {
 				var published = Definition.Parameters.FirstOrDefault(parameter => string.Equals(parameter.NodeId, graphNode.Id, StringComparison.Ordinal)
 					&& string.Equals(parameter.ParameterId, value.Id, StringComparison.Ordinal));
 				if (published != null) {
-					if (!_parameters[published.Id].TrySetParameter(value.Value, out rejectionReason)) return false;
+					var parameter = _parameters[published.Id];
+					var applied = parameter is LivePublishedParameter sceneParameter
+						? sceneParameter.TrySetHotCueParameter(value.Value, out rejectionReason)
+						: parameter.TrySetParameter(value.Value, out rejectionReason);
+					if (!applied) return false;
 					continue;
 				}
 				foreach (var output in Outputs)
@@ -1876,6 +1880,7 @@ namespace ShitDesigner.Main {
 		private bool _isDirty;
 		private bool _hasResolvedValue;
 		private float _lastResolvedValue;
+		private bool m_ReleaseTriggerAfterApply;
 		public LiveSceneRoot Root { get; }
 		public LiveParameterDefinition Source { get; }
 
@@ -1890,7 +1895,7 @@ namespace ShitDesigner.Main {
 		}
 
 		public LiveParameterDefinition ToDefinition() {
-			return new LiveParameterDefinition(_definition.Id, _definition.DisplayName, Source.Minimum, Source.Maximum, _baseValue, _isTriggerParameter);
+			return new LiveParameterDefinition(_definition.Id, _definition.DisplayName, Source.Minimum, Source.Maximum, _baseValue);
 		}
 
 		public bool TrySetParameter(ParameterValue value, out string rejectionReason) {
@@ -1900,7 +1905,14 @@ namespace ShitDesigner.Main {
 			}
 			_baseValue = value.AsFloat();
 			_isDirty = true;
+			m_ReleaseTriggerAfterApply = false;
 			rejectionReason = string.Empty;
+			return true;
+		}
+
+		public bool TrySetHotCueParameter(ParameterValue value, out string rejectionReason) {
+			if (!TrySetParameter(value, out rejectionReason)) return false;
+			m_ReleaseTriggerAfterApply = _isTriggerParameter && IsTriggerActive(value.AsFloat());
 			return true;
 		}
 
@@ -1926,6 +1938,12 @@ namespace ShitDesigner.Main {
 			_lastResolvedValue = resolvedValue;
 			_hasResolvedValue = true;
 			_isDirty = false;
+			if (m_ReleaseTriggerAfterApply) {
+				if (!Root.TrySetParameter(Source.Id, Source.Minimum, out rejectionReason)) return false;
+				_baseValue = Source.Minimum;
+				_lastResolvedValue = Source.Minimum;
+				m_ReleaseTriggerAfterApply = false;
+			}
 			return true;
 		}
 

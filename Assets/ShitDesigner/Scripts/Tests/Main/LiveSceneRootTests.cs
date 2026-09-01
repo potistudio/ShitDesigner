@@ -1,8 +1,10 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
+using ShitDesigner.Core;
+using ShitDesigner.Scene;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace ShitDesigner.Main.Tests {
 	[TestFixture]
@@ -60,22 +62,22 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void TriggerParameterUsesPianoControl() {
+		public void HotCueTriggerPulsesWithinTheApplyingFrame() {
 			_root = new GameObject("Live Trigger Scene");
-			_root.AddComponent<TriggerRecordingParameter>();
+			var parameter = _root.AddComponent<RecordingTriggerParameter>();
 			var scene = _root.AddComponent<LiveSceneRoot>();
 			scene.Initialize("trigger-scene");
+			var publishedDefinition = new PatchParameter();
+			SetField(publishedDefinition, "_id", "published-trigger");
+			SetField(publishedDefinition, "_displayName", "Published Trigger");
+			SetField(publishedDefinition, "_parameterId", "trigger");
+			var published = new LivePublishedParameter(publishedDefinition, scene, parameter.Definition);
 
-			var definition = scene.GetParameterDefinitions().Single();
-			Assert.That(definition.IsTrigger, Is.True);
+			Assert.That(published.TrySetHotCueParameter(ParameterValue.FromFloat(1f), out var setRejection), Is.True, setRejection);
+			Assert.That(published.TryApplyResolvedValue(new BeatClockFrame(120f, .25d), out var applyRejection), Is.True, applyRejection);
 
-			var controller = _root.AddComponent<LiveUiController>();
-			var createControl = typeof(LiveUiController).GetMethod("CreateParameterControl", BindingFlags.Instance | BindingFlags.NonPublic);
-			var control = createControl?.Invoke(controller, new object[] { definition });
-
-			Assert.That(control, Is.InstanceOf<Button>());
-			Assert.That(((Button)control).text, Is.EqualTo("PIANO"));
-			Assert.That(((Button)control).ClassListContains("parameter-piano"), Is.True);
+			Assert.That(parameter.Values, Is.EqualTo(new[] { 1f, 0f }));
+			Assert.That(published.ToDefinition().Value, Is.Zero);
 		}
 
 		private sealed class RecordingParameter : MonoBehaviour, ILiveSceneParameter {
@@ -89,13 +91,19 @@ namespace ShitDesigner.Main.Tests {
 			}
 		}
 
-		private sealed class TriggerRecordingParameter : MonoBehaviour, ILiveSceneParameter, ILiveSceneTriggerParameter {
+		private sealed class RecordingTriggerParameter : MonoBehaviour, ILiveSceneParameter, ILiveSceneTriggerParameter {
+			public List<float> Values { get; } = new List<float>();
 			public LiveParameterDefinition Definition => new LiveParameterDefinition("trigger", "Trigger", 0f, 1f, 0f);
 
 			public bool TrySetValue(float value, out string rejectionReason) {
+				Values.Add(value);
 				rejectionReason = string.Empty;
 				return true;
 			}
+		}
+
+		private static void SetField(object target, string fieldName, object value) {
+			target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic)?.SetValue(target, value);
 		}
 	}
 }
