@@ -309,7 +309,7 @@ namespace ShitDesigner.Main {
 		private string m_LoadedPatchId;
 
 		public LiveMidiInput(MidiInputManager manager, LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches,
-			int mainCueFaderChannel = 1, int mainCueFaderControlNumber = 5, int sceneTimeEncoderChannel = 16,
+			int mainCueFaderChannel = 16, int mainCueFaderControlNumber = 5, int sceneTimeEncoderChannel = 16,
 			int sceneTimeEncoderControlNumber = 77, float sceneTimeJogSpeedPerStep = 1f) {
 			m_Manager = manager ?? throw new ArgumentNullException(nameof(manager));
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
