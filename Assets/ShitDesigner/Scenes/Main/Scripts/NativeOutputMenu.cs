@@ -28,7 +28,7 @@ namespace ShitDesigner.Main {
 		Ratio1x1,
 		Ratio9x16,
 		Ratio21x9,
-		Ratio5x2,
+		Ratio5x1,
 		Ratio4_5x1
 	}
 
@@ -43,7 +43,7 @@ namespace ShitDesigner.Main {
 				case ExternalDisplayEmulationAspect.Ratio1x1: return 1f;
 				case ExternalDisplayEmulationAspect.Ratio9x16: return 9f / 16f;
 				case ExternalDisplayEmulationAspect.Ratio21x9: return 21f / 9f;
-				case ExternalDisplayEmulationAspect.Ratio5x2: return 5f / 2f;
+				case ExternalDisplayEmulationAspect.Ratio5x1: return 5f;
 				case ExternalDisplayEmulationAspect.Ratio4_5x1: return 4.5f;
 				default: throw new ArgumentOutOfRangeException(nameof(aspect));
 			}
@@ -68,7 +68,7 @@ namespace ShitDesigner.Main {
 		SetEmulation1x1,
 		SetEmulation9x16,
 		SetEmulation21x9,
-		SetEmulation5x2,
+		SetEmulation5x1,
 		SetEmulation4_5x1
 	}
 
@@ -201,7 +201,7 @@ namespace ShitDesigner.Main {
 				case OutputMenuCommand.SetEmulation1x1: m_Output.SetEmulationAspect(ExternalDisplayEmulationAspect.Ratio1x1); break;
 				case OutputMenuCommand.SetEmulation9x16: m_Output.SetEmulationAspect(ExternalDisplayEmulationAspect.Ratio9x16); break;
 				case OutputMenuCommand.SetEmulation21x9: m_Output.SetEmulationAspect(ExternalDisplayEmulationAspect.Ratio21x9); break;
-				case OutputMenuCommand.SetEmulation5x2: m_Output.SetEmulationAspect(ExternalDisplayEmulationAspect.Ratio5x2); break;
+				case OutputMenuCommand.SetEmulation5x1: m_Output.SetEmulationAspect(ExternalDisplayEmulationAspect.Ratio5x1); break;
 				case OutputMenuCommand.SetEmulation4_5x1: m_Output.SetEmulationAspect(ExternalDisplayEmulationAspect.Ratio4_5x1); break;
 			}
 		}
@@ -261,7 +261,7 @@ namespace ShitDesigner.Main {
 		private const int Emulation1x1CommandId = 0x6D0F;
 		private const int Emulation9x16CommandId = 0x6D10;
 		private const int Emulation21x9CommandId = 0x6D11;
-		private const int Emulation5x2CommandId = 0x6D12;
+		private const int Emulation5x1CommandId = 0x6D12;
 		private const int Emulation4_5x1CommandId = 0x6D13;
 		private static readonly WindowProcedure MenuWindowProcedure = HandleWindowMessage;
 		private static readonly IntPtr MenuWindowProcedurePointer = Marshal.GetFunctionPointerForDelegate(MenuWindowProcedure);
@@ -306,7 +306,7 @@ namespace ShitDesigner.Main {
 			CheckMenuItem(m_EmulationMenu, Emulation1x1CommandId, ByCommand | (state.EmulationAspect == ExternalDisplayEmulationAspect.Ratio1x1 ? CheckedItem : 0));
 			CheckMenuItem(m_EmulationMenu, Emulation9x16CommandId, ByCommand | (state.EmulationAspect == ExternalDisplayEmulationAspect.Ratio9x16 ? CheckedItem : 0));
 			CheckMenuItem(m_EmulationMenu, Emulation21x9CommandId, ByCommand | (state.EmulationAspect == ExternalDisplayEmulationAspect.Ratio21x9 ? CheckedItem : 0));
-			CheckMenuItem(m_EmulationMenu, Emulation5x2CommandId, ByCommand | (state.EmulationAspect == ExternalDisplayEmulationAspect.Ratio5x2 ? CheckedItem : 0));
+			CheckMenuItem(m_EmulationMenu, Emulation5x1CommandId, ByCommand | (state.EmulationAspect == ExternalDisplayEmulationAspect.Ratio5x1 ? CheckedItem : 0));
 			CheckMenuItem(m_EmulationMenu, Emulation4_5x1CommandId, ByCommand | (state.EmulationAspect == ExternalDisplayEmulationAspect.Ratio4_5x1 ? CheckedItem : 0));
 			m_AppliedState = state;
 			m_HasAppliedState = true;
@@ -371,7 +371,7 @@ namespace ShitDesigner.Main {
 			AppendMenu(emulationMenu, StringItem, new UIntPtr(Emulation1x1CommandId), "1:1");
 			AppendMenu(emulationMenu, StringItem, new UIntPtr(Emulation9x16CommandId), "9:16");
 			AppendMenu(emulationMenu, StringItem, new UIntPtr(Emulation21x9CommandId), "21:9");
-			AppendMenu(emulationMenu, StringItem, new UIntPtr(Emulation5x2CommandId), "5:2");
+			AppendMenu(emulationMenu, StringItem, new UIntPtr(Emulation5x1CommandId), "5:1");
 			AppendMenu(emulationMenu, StringItem, new UIntPtr(Emulation4_5x1CommandId), "4.5:1");
 			AppendMenu(outputMenu, PopupItem, new UIntPtr(unchecked((ulong)emulationMenu.ToInt64())), "Emulation");
 			AppendMenu(outputMenu, SeparatorItem, UIntPtr.Zero, null);
@@ -424,7 +424,7 @@ namespace ShitDesigner.Main {
 					case Emulation1x1CommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SetEmulation1x1); return IntPtr.Zero;
 					case Emulation9x16CommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SetEmulation9x16); return IntPtr.Zero;
 					case Emulation21x9CommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SetEmulation21x9); return IntPtr.Zero;
-					case Emulation5x2CommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SetEmulation5x2); return IntPtr.Zero;
+					case Emulation5x1CommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SetEmulation5x1); return IntPtr.Zero;
 					case Emulation4_5x1CommandId: instance.m_Commands.Enqueue(OutputMenuCommand.SetEmulation4_5x1); return IntPtr.Zero;
 				}
 			}

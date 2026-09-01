@@ -27,7 +27,7 @@ enum OutputMenuCommand {
   SetEmulation1x1 = 14,
   SetEmulation9x16 = 15,
   SetEmulation21x9 = 16,
-  SetEmulation5x2 = 17,
+  SetEmulation5x1 = 17,
   SetEmulation4_5x1 = 18
 };
 
@@ -209,11 +209,11 @@ ShitDesignerOutputMenuCreate(void) {
                     "setAutoenablesItems:", static_cast<signed char>(false));
   const std::array<const char *, 10> emulationTitles{
       "Native Display", "16:9", "16:10", "4:3",  "3:4", "1:1",
-      "9:16",           "21:9", "5:2",   "4.5:1"};
+      "9:16",           "21:9", "5:1",   "4.5:1"};
   const std::array<OutputMenuCommand, 10> emulationCommands{
       SetEmulationDisplay, SetEmulation16x9, SetEmulation16x10,
       SetEmulation4x3,     SetEmulation3x4,  SetEmulation1x1,
-      SetEmulation9x16,    SetEmulation21x9, SetEmulation5x2,
+      SetEmulation9x16,    SetEmulation21x9, SetEmulation5x1,
       SetEmulation4_5x1};
   for (std::size_t index = 0; index < s_emulationItems.size(); ++index) {
     s_emulationItems[index] =
