@@ -56,15 +56,37 @@ namespace ShitDesigner.Main {
 		}
 
 		public LiveGraphRuntime CreateRuntime() {
-			var graph = BuildGraph(new LiveRenderSize(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight));
-			try { return new LiveGraphRuntime(graph, m_GlobalTimeEasing); }
+			var outputSizes = ResolveOutputRenderSizes(Display.displays);
+			var graph = BuildGraph(outputSizes.Program, outputSizes.Overlay);
+			try { return new LiveGraphRuntime(graph, m_GlobalTimeEasing, outputSizes.Program, outputSizes.Overlay); }
 			catch {
 				graph.Dispose();
 				throw;
 			}
 		}
 
-		private LiveGraph BuildGraph(LiveRenderSize renderSize) {
+		internal static LiveOutputRenderSizes ResolveOutputRenderSizes(Display[] displays) {
+			return ResolveOutputRenderSizes((displays ?? Array.Empty<Display>())
+				.Select(display => new Vector2Int(display.systemWidth, display.systemHeight))
+				.ToArray());
+		}
+
+		internal static LiveOutputRenderSizes ResolveOutputRenderSizes(IReadOnlyList<Vector2Int> displayResolutions) {
+			var fallback = new LiveRenderSize(LiveGraphRuntime.ProgramWidth, LiveGraphRuntime.ProgramHeight);
+			return new LiveOutputRenderSizes(
+				ResolveDisplayRenderSize(displayResolutions, 1, fallback),
+				ResolveDisplayRenderSize(displayResolutions, 2, fallback));
+		}
+
+		private static LiveRenderSize ResolveDisplayRenderSize(IReadOnlyList<Vector2Int> displayResolutions, int displayIndex, LiveRenderSize fallback) {
+			if (displayResolutions == null || displayIndex < 0 || displayIndex >= displayResolutions.Count) return fallback;
+			var resolution = LiveExternalDisplayOutput.ResolveDisplayResolution(
+				displayResolutions[displayIndex].x,
+				displayResolutions[displayIndex].y);
+			return new LiveRenderSize(resolution.x, resolution.y);
+		}
+
+		private LiveGraph BuildGraph(LiveRenderSize programRenderSize, LiveRenderSize overlayRenderSize) {
 			var definitions = Patches;
 			ValidateDefinitions(definitions);
 			var programGraphs = definitions.ToDictionary(definition => definition.Id, BuildProgramGraph, StringComparer.Ordinal);
@@ -75,9 +97,9 @@ namespace ShitDesigner.Main {
 			LiveOverlayCompositor overlayOutputCompositor = null;
 			LiveInstantEffectRenderer instantEffects = null;
 			try {
-				compositor = new LiveOverlayCompositor(shaderDefinitions, renderPool, renderSize);
-				overlayOutputCompositor = new LiveOverlayCompositor(shaderDefinitions, renderPool, renderSize);
-				instantEffects = new LiveInstantEffectRenderer(shaderDefinitions, renderPool, renderSize);
+				compositor = new LiveOverlayCompositor(shaderDefinitions, renderPool, programRenderSize);
+				overlayOutputCompositor = new LiveOverlayCompositor(shaderDefinitions, renderPool, overlayRenderSize);
+				instantEffects = new LiveInstantEffectRenderer(shaderDefinitions, renderPool, programRenderSize);
 				return new LiveGraph(sceneManager, renderPool, definitions, (patch, outputSize) =>
 					BuildOutput(sceneManager, renderPool, patch, programGraphs[patch.Id], shaderDefinitions, outputSize), compositor, overlayOutputCompositor, instantEffects);
 			}

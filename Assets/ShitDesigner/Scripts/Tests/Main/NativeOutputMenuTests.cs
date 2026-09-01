@@ -87,6 +87,33 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void LiveGraphUsesEachOutputsPhysicalDisplayResolution() {
+			var sizes = LiveGraphBootstrap.ResolveOutputRenderSizes(new[] {
+				new Vector2Int(2560, 1440),
+				new Vector2Int(3840, 2160),
+				new Vector2Int(1080, 1920)
+			});
+
+			Assert.That(sizes.Program.Width, Is.EqualTo(3840));
+			Assert.That(sizes.Program.Height, Is.EqualTo(2160));
+			Assert.That(sizes.Overlay.Width, Is.EqualTo(1080));
+			Assert.That(sizes.Overlay.Height, Is.EqualTo(1920));
+		}
+
+		[Test]
+		public void MissingOutputDisplayUsesTheLegacyResolution() {
+			var sizes = LiveGraphBootstrap.ResolveOutputRenderSizes(new[] {
+				new Vector2Int(2560, 1440),
+				new Vector2Int(3840, 2160)
+			});
+
+			Assert.That(sizes.Program.Width, Is.EqualTo(3840));
+			Assert.That(sizes.Program.Height, Is.EqualTo(2160));
+			Assert.That(sizes.Overlay.Width, Is.EqualTo(LiveGraphRuntime.ProgramWidth));
+			Assert.That(sizes.Overlay.Height, Is.EqualTo(LiveGraphRuntime.ProgramHeight));
+		}
+
+		[Test]
 		public void ControllerReflectsAvailabilityAndDispatchesNativeCommands() {
 			var target = new RecordingOutputTarget(programAvailable: true, overlayAvailable: true);
 			var backend = new RecordingOutputMenuBackend();

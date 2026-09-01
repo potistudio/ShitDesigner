@@ -53,6 +53,16 @@ namespace ShitDesigner.Main {
 		}
 	}
 
+	internal readonly struct LiveOutputRenderSizes {
+		public LiveRenderSize Program { get; }
+		public LiveRenderSize Overlay { get; }
+
+		public LiveOutputRenderSizes(LiveRenderSize program, LiveRenderSize overlay) {
+			Program = program;
+			Overlay = overlay;
+		}
+	}
+
 	public readonly struct LiveParameterApplicationResult {
 		public ulong SequenceNumber { get; }
 		public bool Applied { get; }
@@ -1339,10 +1349,12 @@ namespace ShitDesigner.Main {
 		public const int PreviewFrameRate = 10;
 
 		private const double PreviewIntervalSeconds = 1d / PreviewFrameRate;
-		private static readonly LiveRenderSize ProgramRenderSize = new LiveRenderSize(ProgramWidth, ProgramHeight);
 		private static readonly LiveRenderSize PreviewRenderSize = new LiveRenderSize(PreviewWidth, PreviewHeight);
 
 		private readonly LiveGraph _graph;
+		private readonly LiveRenderSize m_ProgramRenderSize;
+		private readonly LiveRenderSize m_OverlayRenderSize;
+		private readonly int m_OverlayPatchOutputIndex;
 		private readonly Dictionary<string, PatchDefinition> _patchDefinitionsById;
 		private readonly LiveBpmClock m_BpmClock;
 		private readonly List<LivePatch> _createdPatches = new List<LivePatch>();
@@ -1383,11 +1395,16 @@ namespace ShitDesigner.Main {
 		public double GraphTimeScale => m_GraphTimeScale;
 		public bool IsTimeEasingEnabled => m_BpmClock.IsTimeEasingEnabled;
 
-		internal LiveGraphRuntime(LiveGraph graph, AnimationCurve globalTimeEasing) {
+		internal LiveGraphRuntime(LiveGraph graph, AnimationCurve globalTimeEasing,
+			LiveRenderSize programRenderSize, LiveRenderSize overlayRenderSize) {
 			_graph = graph ?? throw new ArgumentNullException(nameof(graph));
+			m_ProgramRenderSize = programRenderSize;
+			m_OverlayRenderSize = overlayRenderSize;
+			m_OverlayPatchOutputIndex = programRenderSize.Width == overlayRenderSize.Width
+				&& programRenderSize.Height == overlayRenderSize.Height ? 0 : 1;
 			m_BpmClock = new LiveBpmClock(LiveBpmClock.DefaultBpm, globalTimeEasing);
 			_patchDefinitionsById = graph.PatchDefinitions.ToDictionary(definition => definition.Id, StringComparer.Ordinal);
-			m_MainCuePatches[0] = CreatePatch(graph.PatchDefinitions[0], ProgramRenderSize);
+			m_MainCuePatches[0] = CreatePatch(graph.PatchDefinitions[0], m_ProgramRenderSize);
 			m_MainCuePatchIds[0] = graph.PatchDefinitions[0].Id;
 			m_ActiveMainCueIndex = 0;
 			LoadedMainPatch.SetSceneActive(true);
@@ -1515,9 +1532,9 @@ namespace ShitDesigner.Main {
 			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++) {
 				var overlay = m_OverlayPatches[laneIndex];
 				if (overlay == null || m_OverlayModes[laneIndex] == LiveSequencerCellMode.Off || overlay.Outputs.Count == 0) continue;
-				var input = new LiveOverlayInput(m_OverlayModes[laneIndex], overlay.Outputs[0].ProgramTexture);
-				overlayInputs.Add(input);
-				if (m_OverlayOutput2Copies[laneIndex]) output2Inputs.Add(input);
+				overlayInputs.Add(new LiveOverlayInput(m_OverlayModes[laneIndex], overlay.Outputs[0].ProgramTexture));
+				if (m_OverlayOutput2Copies[laneIndex])
+					output2Inputs.Add(new LiveOverlayInput(m_OverlayModes[laneIndex], overlay.Outputs[m_OverlayPatchOutputIndex].ProgramTexture));
 			}
 			var referencePatch = m_MainCuePatches[m_MainCueFader.ReferenceCueIndex];
 			var alternatePatch = m_MainCuePatches[m_MainCueFader.AlternateCueIndex];
@@ -1555,7 +1572,7 @@ namespace ShitDesigner.Main {
 					throw new InvalidOperationException("The overlay sequencer references an unknown patch: " + patchId + ".");
 				if (current == null || current.Definition != definition) {
 					var replacement = m_OverlayPatches.FirstOrDefault(patch => patch?.Definition == definition)
-						?? CreatePatch(definition, ProgramRenderSize);
+						?? CreateOverlayPatch(definition);
 					m_OverlayPatches[laneIndex] = replacement;
 					DisposeUnreferencedOverlayPatch(current);
 				}
@@ -1616,7 +1633,17 @@ namespace ShitDesigner.Main {
 		}
 
 		private LivePatch CreatePatch(PatchDefinition definition, LiveRenderSize renderSize) {
-			var patch = new LivePatch(definition, _graph.CreateOutput, renderSize);
+			return CreatePatch(definition, new[] { renderSize });
+		}
+
+		private LivePatch CreateOverlayPatch(PatchDefinition definition) {
+			return m_OverlayPatchOutputIndex == 0
+				? CreatePatch(definition, m_ProgramRenderSize)
+				: CreatePatch(definition, m_ProgramRenderSize, m_OverlayRenderSize);
+		}
+
+		private LivePatch CreatePatch(PatchDefinition definition, params LiveRenderSize[] renderSizes) {
+			var patch = new LivePatch(definition, _graph.CreateOutput, renderSizes);
 			try {
 				patch.ApplyResolvedParameters(m_BpmClock.Frame);
 				_createdPatches.Add(patch);
@@ -1723,7 +1750,7 @@ namespace ShitDesigner.Main {
 
 		private void AssignMainCuePatch(int cueIndex, PatchDefinition definition) {
 			if (m_MainCuePatches[cueIndex]?.Definition == definition) return;
-			var nextPatch = CreatePatch(definition, ProgramRenderSize);
+			var nextPatch = CreatePatch(definition, m_ProgramRenderSize);
 			var previousPatch = m_MainCuePatches[cueIndex];
 			m_MainCuePatches[cueIndex] = nextPatch;
 			m_MainCuePatchIds[cueIndex] = definition.Id;
@@ -1797,30 +1824,39 @@ namespace ShitDesigner.Main {
 
 		public LivePatch(PatchDefinition definition,
 			Func<PatchDefinition, LiveRenderSize, LiveProgramOutput> createOutput,
-			LiveRenderSize renderSize) {
+			IEnumerable<LiveRenderSize> renderSizes) {
 			Definition = definition ?? throw new ArgumentNullException(nameof(definition));
 			if (createOutput == null) throw new ArgumentNullException(nameof(createOutput));
-			LiveProgramOutput output = null;
+			var outputs = new List<LiveProgramOutput>();
 			try {
-				output = createOutput(definition, renderSize);
-				Outputs = new[] { output };
+				foreach (var renderSize in renderSizes ?? throw new ArgumentNullException(nameof(renderSizes)))
+					outputs.Add(createOutput(definition, renderSize));
+				if (outputs.Count == 0) throw new ArgumentException("A live patch requires at least one output resolution.", nameof(renderSizes));
+				Outputs = outputs;
 				_parameters = definition.Parameters.ToDictionary(parameter => parameter.Id, parameter => {
 					var graphNode = definition.ProgramGraph.Nodes.FirstOrDefault(node => string.Equals(node.Id, parameter.NodeId, StringComparison.Ordinal));
 					if (graphNode == null) throw new InvalidOperationException("A published parameter references an unknown patch graph node: " + parameter.Id + ".");
 					if (graphNode.IsSceneNode) {
-						if (!output.TryGetSceneParameter(parameter.NodeId, parameter.ParameterId, out var root, out var source)
+						if (!outputs[0].TryGetSceneParameter(parameter.NodeId, parameter.ParameterId, out var root, out var source)
 							|| string.IsNullOrWhiteSpace(source.Id))
 							throw new InvalidOperationException("A published parameter is not provided by its scene graph node: " + parameter.Id + ".");
-						return (ILivePublishedParameter)new LivePublishedParameter(parameter, root, source);
+						var roots = new List<LiveSceneRoot> { root };
+						foreach (var output in outputs.Skip(1)) {
+							if (!output.TryGetSceneParameter(parameter.NodeId, parameter.ParameterId, out var additionalRoot, out var additionalSource)
+								|| additionalSource.Id != source.Id)
+								throw new InvalidOperationException("A published scene parameter is inconsistent across output resolutions: " + parameter.Id + ".");
+							roots.Add(additionalRoot);
+						}
+						return (ILivePublishedParameter)new LivePublishedParameter(parameter, roots, source);
 					}
 					var graphSource = graphNode.FindParameter(parameter.ParameterId);
 					if (graphSource == null || !PatchGraphParameter.IsLiveControllable(graphSource.Type))
 						throw new InvalidOperationException("A published graph parameter must reference a configured parameter supported by the live renderer: " + parameter.Id + ".");
-					return (ILivePublishedParameter)new LivePublishedGraphParameter(parameter, new[] { output }, graphSource.Value);
+					return (ILivePublishedParameter)new LivePublishedGraphParameter(parameter, outputs, graphSource.Value);
 				}, StringComparer.Ordinal);
 			}
 			catch {
-				output?.Dispose();
+				for (var index = outputs.Count - 1; index >= 0; index--) outputs[index].Dispose();
 				throw;
 			}
 		}
@@ -1890,18 +1926,24 @@ namespace ShitDesigner.Main {
 
 	internal sealed class LivePublishedParameter : ILivePublishedParameter {
 		private readonly PatchParameter _definition;
+		private readonly IReadOnlyList<LiveSceneRoot> m_Roots;
 		private readonly bool _isTriggerParameter;
 		private float _baseValue;
 		private bool _isDirty;
 		private bool _hasResolvedValue;
 		private float _lastResolvedValue;
 		private bool m_ReleaseTriggerAfterApply;
-		public LiveSceneRoot Root { get; }
+		public LiveSceneRoot Root => m_Roots[0];
 		public LiveParameterDefinition Source { get; }
 
-		public LivePublishedParameter(PatchParameter definition, LiveSceneRoot root, LiveParameterDefinition source) {
+		public LivePublishedParameter(PatchParameter definition, LiveSceneRoot root, LiveParameterDefinition source)
+			: this(definition, new[] { root }, source) { }
+
+		public LivePublishedParameter(PatchParameter definition, IEnumerable<LiveSceneRoot> roots, LiveParameterDefinition source) {
 			_definition = definition ?? throw new ArgumentNullException(nameof(definition));
-			Root = root ?? throw new ArgumentNullException(nameof(root));
+			m_Roots = (roots ?? throw new ArgumentNullException(nameof(roots))).ToArray();
+			if (m_Roots.Count == 0 || m_Roots.Any(root => root == null))
+				throw new ArgumentException("At least one live scene root is required.", nameof(roots));
 			Source = source;
 			_isTriggerParameter = Root.IsTriggerParameter(source.Id);
 			_baseValue = source.Value;
@@ -1949,16 +1991,19 @@ namespace ShitDesigner.Main {
 				rejectionReason = string.Empty;
 				return true;
 			}
-			if (!Root.TrySetParameter(Source.Id, resolvedValue, out rejectionReason)) return false;
+			foreach (var root in m_Roots)
+				if (!root.TrySetParameter(Source.Id, resolvedValue, out rejectionReason)) return false;
 			_lastResolvedValue = resolvedValue;
 			_hasResolvedValue = true;
 			_isDirty = false;
 			if (m_ReleaseTriggerAfterApply) {
-				if (!Root.TrySetParameter(Source.Id, Source.Minimum, out rejectionReason)) return false;
+				foreach (var root in m_Roots)
+					if (!root.TrySetParameter(Source.Id, Source.Minimum, out rejectionReason)) return false;
 				_baseValue = Source.Minimum;
 				_lastResolvedValue = Source.Minimum;
 				m_ReleaseTriggerAfterApply = false;
 			}
+			rejectionReason = string.Empty;
 			return true;
 		}
 
