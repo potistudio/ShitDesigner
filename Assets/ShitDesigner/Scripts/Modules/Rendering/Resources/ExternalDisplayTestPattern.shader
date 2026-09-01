@@ -1,6 +1,7 @@
 Shader "Hidden/ShitDesigner/ExternalDisplayTestPattern" {
 	Properties {
 		_DisplayNumber("Display Number", Float) = 2
+		_PatternTime("Pattern Time", Float) = 0
 	}
 	SubShader {
 		Tags { "Queue" = "Overlay" "RenderType" = "Opaque" }
@@ -15,6 +16,7 @@ Shader "Hidden/ShitDesigner/ExternalDisplayTestPattern" {
 			#include "UnityCG.cginc"
 
 			float _DisplayNumber;
+			float _PatternTime;
 
 			float Box(float2 coordinate, float2 center, float2 halfSize) {
 				float2 distance = abs(coordinate - center) - halfSize;
@@ -60,6 +62,22 @@ Shader "Hidden/ShitDesigner/ExternalDisplayTestPattern" {
 					centered.x *= 16.0 / 9.0;
 					float circle = 1.0 - smoothstep(0.008, 0.018, abs(length(centered) - 0.55));
 					color = lerp(color, float3(0.6, 0.6, 0.6), circle);
+
+					float sweep = 0.5 + 0.45 * sin(_PatternTime * 1.5707963);
+					float sweepMarker = 1.0 - smoothstep(0.006, 0.012, abs(uv.x - sweep));
+					color = lerp(color, float3(0.0, 1.0, 0.35), sweepMarker);
+
+					float angle = _PatternTime * 3.1415927;
+					float2 handDirection = float2(sin(angle), cos(angle));
+					float alongHand = dot(centered, handDirection);
+					float acrossHand = abs(centered.x * handDirection.y - centered.y * handDirection.x);
+					float hand = (1.0 - step(0.018, acrossHand)) * step(0.0, alongHand) * (1.0 - step(0.50, alongHand));
+					color = lerp(color, float3(1.0, 0.35, 0.0), hand);
+
+					float frameSlot = floor(frac(_PatternTime) * 60.0);
+					float frameCenter = (frameSlot + 0.5) / 60.0;
+					float frameChase = Box(uv, float2(frameCenter, 0.19), float2(0.007, 0.018));
+					color = lerp(color, float3(1.0, 0.35, 0.0), frameChase);
 					float digit = DisplayDigit(float2((uv.x - 0.5) * 4.2, (uv.y - 0.48) * 4.2));
 					color = lerp(color, float3(1.0, 1.0, 1.0), digit);
 				}

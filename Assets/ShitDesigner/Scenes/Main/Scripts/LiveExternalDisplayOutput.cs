@@ -19,6 +19,7 @@ namespace ShitDesigner.Main {
 	public sealed class LiveExternalDisplayOutput : MonoBehaviour, ILiveOutputMenuTarget {
 		private const int OutputCount = 2;
 		[SerializeField] private Shader _displayTransformShader;
+		[SerializeField, Min(0.1f)] private float m_TestPatternMotionSpeed = 1f;
 
 		private DisplayTransformPass _displayTransform;
 		private Material m_TestPatternMaterial;
@@ -137,7 +138,17 @@ namespace ShitDesigner.Main {
 		}
 
 		public void Present(LiveProgramFrames frames) {
-			if (!_initialized || IsTestPatternVisible || !IsOutputActive || frames.Count == 0 || frames.Primary.FrameNumber == 0) return;
+			if (!_initialized) return;
+			if (IsTestPatternVisible) {
+				if (OutputsDoNotMatchConnectedDisplays()) {
+					RebuildOutputs();
+					ApplyOutputVisibility();
+				}
+				RenderTestPatterns();
+				foreach (var output in _outputs.Values) output.Present();
+				return;
+			}
+			if (!IsOutputActive || frames.Count == 0 || frames.Primary.FrameNumber == 0) return;
 			var outputsRebuilt = false;
 			if (IsOutputActive && OutputsDoNotMatchConnectedDisplays()) {
 				RebuildOutputs();
@@ -283,6 +294,7 @@ namespace ShitDesigner.Main {
 		}
 
 		private void RenderTestPatterns() {
+			m_TestPatternMaterial.SetFloat("_PatternTime", Time.unscaledTime * m_TestPatternMotionSpeed);
 			foreach (var output in _outputs) {
 				m_TestPatternMaterial.SetFloat("_DisplayNumber", output.Key);
 				Graphics.Blit(Texture2D.blackTexture, output.Value.Texture, m_TestPatternMaterial);
