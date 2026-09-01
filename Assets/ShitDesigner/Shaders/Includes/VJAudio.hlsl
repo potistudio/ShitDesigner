@@ -33,7 +33,7 @@ float VJAudioLine(float coordinate, float waveform, float thickness)
 #define VJ_AUDIO_CUBE_COUNT 8
 #define VJ_AUDIO_FRACTAL_STEPS 32
 #define VJ_AUDIO_FRACTAL_FOLDS 3
-#define VJ_AUDIO_FRACTAL_ACCUMULATION 0.28
+#define VJ_AUDIO_FRACTAL_ACCUMULATION 0.50
 
 float VJAudioFastGlow(float distanceToLine, float falloff)
 {

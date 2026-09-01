@@ -67,7 +67,7 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 			Assert.That(source, Does.Contain("#define VJ_AUDIO_CUBE_COUNT 8"));
 			Assert.That(source, Does.Contain("#define VJ_AUDIO_FRACTAL_STEPS 32"));
 			Assert.That(source, Does.Contain("#define VJ_AUDIO_FRACTAL_FOLDS 3"));
-			Assert.That(source, Does.Contain("#define VJ_AUDIO_FRACTAL_ACCUMULATION 0.28"));
+			Assert.That(source, Does.Contain("#define VJ_AUDIO_FRACTAL_ACCUMULATION 0.50"));
 			Assert.That(source, Does.Not.Contain("exp(-120.0"));
 			Assert.That(source, Does.Not.Contain("exp(-160.0"));
 		}
