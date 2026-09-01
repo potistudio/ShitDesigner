@@ -327,10 +327,6 @@ namespace ShitDesigner.Scene {
 			if (m_LastProcessedBeat == long.MinValue) {
 				m_LastProcessedBeat = beatIndex;
 			}
-			else if (beatIndex < m_LastProcessedBeat) {
-				Rebuild();
-				m_LastProcessedBeat = beatIndex;
-			}
 			else {
 				while (m_LastProcessedBeat < beatIndex) {
 					var nextBeat = m_LastProcessedBeat + 1L;
