@@ -134,6 +134,15 @@ namespace ShitDesigner.Main {
 			return LiveSequencerOperationResult.Accept();
 		}
 
+		public LiveSequencerOperationResult TurnOnCell(int laneIndex, int stepIndex) {
+			if (laneIndex < 0 || laneIndex >= LaneCount) return LiveSequencerOperationResult.Reject("The sequencer lane does not exist.");
+			if (stepIndex < 0 || stepIndex >= StepCount) return LiveSequencerOperationResult.Reject("The sequencer step does not exist.");
+			var cellIndex = laneIndex * StepCount + stepIndex;
+			if (m_CellModes[cellIndex] == LiveSequencerCellMode.Off) m_CellModes[cellIndex] = LiveSequencerCellMode.Normal;
+			m_ActiveLaneMasks[stepIndex] |= 1 << laneIndex;
+			return LiveSequencerOperationResult.Accept();
+		}
+
 		public LiveSequencerOperationResult SelectLane(int laneIndex) {
 			if (laneIndex < 0 || laneIndex >= LaneCount) return LiveSequencerOperationResult.Reject("The sequencer lane does not exist.");
 			SelectedLaneIndex = SelectedLaneIndex == laneIndex ? -1 : laneIndex;
