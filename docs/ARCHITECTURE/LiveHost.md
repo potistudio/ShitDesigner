@@ -207,6 +207,7 @@
 - `A`は反対側のMainを押している間だけ表示し、離すと元のMainへ戻すMomentary Takeとする。`S`は反対側のMainへ完全に切り替えるPermanent Takeとする。
 - `Shift+A`は反対側のMainを現在のMainへ通常のアルファ合成で重ね、離すと元の合成状態へ戻すMomentary Composite Takeとする。
 - `Shift+S`は同じMain合成をキーから手を離した後も維持するPermanent Composite Takeとする。通常のPermanent TakeまたはMainパッチのLaunchは合成状態を解除する。
+- `S`または`Shift+S`と`[`／`]`を同時に押した場合は、反対側のMainへHot Cueを先に適用し、その後にPermanent TakeまたはPermanent Composite Takeを1回だけ実行する。
 
 ### 2026-08-31: Main Cueの完全切替とフェーダー変化を分離する
 

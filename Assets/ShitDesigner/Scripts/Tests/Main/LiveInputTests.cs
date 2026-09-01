@@ -166,6 +166,57 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void PermanentTakeWithHotCueAppliesTheCueToTheTargetBeforeSwitchingOnce() {
+			Keyboard keyboard = null;
+			try {
+				keyboard = InputSystem.AddDevice<Keyboard>();
+				keyboard.MakeCurrent();
+				var queue = new LiveParameterQueue();
+				var input = new LiveKeyboardInput(queue, new PatchDefinition[0], _ => { }, (_, _) => { }, () => { }, _ => { },
+					completeMainCueSwitch: () => queue.EnqueueToggleMainCue());
+
+				PollKey(input, keyboard, Key.S, Key.LeftBracket);
+
+				var requests = new List<LiveParameterRequest>();
+				queue.Drain(requests);
+				Assert.That(requests.Select(request => request.Kind), Is.EqualTo(new[] {
+					LiveParameterRequestKind.RecallOppositeHotCue,
+					LiveParameterRequestKind.ToggleMainCue
+				}));
+				Assert.That(requests[0].ParameterValue.AsInt(), Is.Zero);
+			}
+			finally {
+				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
+			}
+		}
+
+		[Test]
+		public void PermanentCompositeTakeWithHotCueAppliesTheCueToTheCompositedMainFirst() {
+			Keyboard keyboard = null;
+			try {
+				keyboard = InputSystem.AddDevice<Keyboard>();
+				keyboard.MakeCurrent();
+				var queue = new LiveParameterQueue();
+				var input = new LiveKeyboardInput(queue, new PatchDefinition[0], _ => { }, (_, _) => { }, () => { }, _ => { },
+					completeMainComposite: () => queue.EnqueueSetMainCueComposite(true));
+
+				PollKey(input, keyboard, Key.LeftShift, Key.S, Key.RightBracket);
+
+				var requests = new List<LiveParameterRequest>();
+				queue.Drain(requests);
+				Assert.That(requests.Select(request => request.Kind), Is.EqualTo(new[] {
+					LiveParameterRequestKind.RecallOppositeHotCue,
+					LiveParameterRequestKind.SetMainCueComposite
+				}));
+				Assert.That(requests[0].ParameterValue.AsInt(), Is.EqualTo(1));
+				Assert.That(requests[1].ParameterValue.AsBool(), Is.True);
+			}
+			finally {
+				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
+			}
+		}
+
+		[Test]
 		public void KeyboardMapsMomentaryAndPermanentMainTakesWithCompositeShiftVariants() {
 			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.A));
 			Keyboard keyboard = null;

@@ -95,6 +95,7 @@ namespace ShitDesigner.Main {
 		private readonly Action<bool> m_SetBlackoutActive;
 		private bool m_IsPianoMainCueSwitchHeld;
 		private bool m_IsMomentaryMainCompositeHeld;
+		private bool m_HasCompletedPermanentTakeForCurrentSPress;
 		private bool m_IsBlackoutHeld;
 		private int m_HeldPianoOverlayTakeMask;
 		private int m_HeldLiveParameterMask;
@@ -147,6 +148,7 @@ namespace ShitDesigner.Main {
 			QueueReleasedPatchKeyboardInputs(keyboard);
 			ReleaseLiveParameterKeys(keyboard);
 			if (string.IsNullOrWhiteSpace(loadedPatchId)) return;
+			if (!keyboard.sKey.isPressed) m_HasCompletedPermanentTakeForCurrentSPress = false;
 			EndReleasedPianoOverlayTakes(keyboard);
 			if (EndMomentaryMainTakeIfReleased(keyboard)) return;
 			if (keyboard.tabKey.wasPressedThisFrame && keyboard.shiftKey.isPressed) {
@@ -188,9 +190,8 @@ namespace ShitDesigner.Main {
 				return;
 			}
 			if (keyboard.sKey.wasPressedThisFrame) {
-				if (keyboard.shiftKey.isPressed || keyboard.leftShiftKey.wasPressedThisFrame || keyboard.rightShiftKey.wasPressedThisFrame)
-					m_CompleteMainComposite();
-				else m_CompleteMainCueSwitch();
+				CompletePermanentTake(keyboard.shiftKey.isPressed || keyboard.leftShiftKey.wasPressedThisFrame
+					|| keyboard.rightShiftKey.wasPressedThisFrame);
 				return;
 			}
 
@@ -224,7 +225,16 @@ namespace ShitDesigner.Main {
 		private void RecallHotCue(Keyboard keyboard, int hotCueIndex) {
 			var shiftPressed = keyboard.shiftKey.isPressed || keyboard.leftShiftKey.wasPressedThisFrame
 				|| keyboard.rightShiftKey.wasPressedThisFrame;
-			m_Queue.EnqueueRecallHotCue(hotCueIndex, shiftPressed);
+			var shouldCompletePermanentTake = keyboard.sKey.isPressed && !m_HasCompletedPermanentTakeForCurrentSPress;
+			m_Queue.EnqueueRecallHotCue(hotCueIndex, shouldCompletePermanentTake || shiftPressed);
+			if (shouldCompletePermanentTake) CompletePermanentTake(shiftPressed);
+		}
+
+		private void CompletePermanentTake(bool composite) {
+			if (m_HasCompletedPermanentTakeForCurrentSPress) return;
+			m_HasCompletedPermanentTakeForCurrentSPress = true;
+			if (composite) m_CompleteMainComposite();
+			else m_CompleteMainCueSwitch();
 		}
 
 		private bool EndMomentaryMainTakeIfReleased(Keyboard keyboard) {
