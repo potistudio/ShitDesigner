@@ -359,7 +359,9 @@ namespace ShitDesigner.Main.Tests {
 				var background = presenter.transform.GetChild(0).GetComponent<Image>();
 				Assert.That(background, Is.Not.Null);
 				Assert.That(background.color, Is.EqualTo(Color.black));
-				var image = (RectTransform)presenter.transform.GetChild(1);
+				var emulation = presenter.transform.GetChild(1);
+				Assert.That(emulation.GetComponent<AspectRatioFitter>().aspectMode, Is.EqualTo(AspectRatioFitter.AspectMode.None));
+				var image = (RectTransform)emulation.GetChild(0);
 				Assert.That(image.anchorMin, Is.EqualTo(Vector2.zero));
 				Assert.That(image.anchorMax, Is.EqualTo(Vector2.one));
 				var aspectRatioFitter = image.GetComponent<AspectRatioFitter>();

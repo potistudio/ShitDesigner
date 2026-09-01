@@ -5,6 +5,7 @@
 
 #include <array>
 #include <atomic>
+#include <cmath>
 #include <mutex>
 
 #include "IUnityGraphics.h"
@@ -19,6 +20,7 @@ struct OutputState {
   std::atomic<void *> source{nullptr};
   std::atomic<bool> visible{false};
   std::atomic<int> scalingMode{1};
+  std::atomic<float> emulationAspect{0.0f};
 };
 
 IUnityInterfaces *s_interfaces = nullptr;
@@ -52,10 +54,13 @@ vertex VertexOutput vertex_main(uint vertexId [[vertex_id]]) {
 fragment half4 fragment_main(VertexOutput input [[stage_in]], texture2d<half> source [[texture(0)]],
                              constant float4 &displayParams [[buffer(0)]]) {
   constexpr sampler textureSampler(mag_filter::linear, min_filter::linear, address::clamp_to_edge);
-  float2 uv = (input.uv - 0.5) * displayParams.xy + 0.5;
-  if (displayParams.z > 0.5 && (any(uv < 0.0) || any(uv > 1.0)))
+  float2 emulationUv = (input.uv - 0.5) * displayParams.xy + 0.5;
+  if (any(emulationUv < 0.0) || any(emulationUv > 1.0))
     return half4(0.0, 0.0, 0.0, 1.0);
-  return source.sample(textureSampler, uv);
+  float2 sourceUv = (emulationUv - 0.5) * displayParams.zw + 0.5;
+  if (any(sourceUv < 0.0) || any(sourceUv > 1.0))
+    return half4(0.0, 0.0, 0.0, 1.0);
+  return source.sample(textureSampler, sourceUv);
 }
 )METAL";
 
@@ -160,6 +165,7 @@ void PresentOutput(int displayIndex) {
   CAMetalLayer *layer = nil;
   void *sourcePointer = nullptr;
   int scalingMode = 1;
+  float emulationAspect = 0.0f;
   {
     std::lock_guard<std::mutex> lock(s_outputsMutex);
     if (displayIndex <= 0 || displayIndex >= MaxDisplays)
@@ -170,6 +176,7 @@ void PresentOutput(int displayIndex) {
     layer = state->layer;
     sourcePointer = state->source.load();
     scalingMode = state->scalingMode.load();
+    emulationAspect = state->emulationAspect.load();
   }
 
   @autoreleasepool {
@@ -194,18 +201,24 @@ void PresentOutput(int displayIndex) {
                                  static_cast<float>(sourceTexture.height);
       const float targetAspect = static_cast<float>(drawable.texture.width) /
                                  static_cast<float>(drawable.texture.height);
-      float displayParams[4] = {1.0f, 1.0f, 0.0f, 0.0f};
+      const float virtualAspect = emulationAspect > 0.0f
+                                      ? emulationAspect
+                                      : targetAspect;
+      float displayParams[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+      if (virtualAspect > targetAspect)
+        displayParams[1] = virtualAspect / targetAspect;
+      else if (virtualAspect < targetAspect)
+        displayParams[0] = targetAspect / virtualAspect;
       if (scalingMode == 1) {
-        if (sourceAspect > targetAspect)
-          displayParams[0] = targetAspect / sourceAspect;
-        else if (sourceAspect < targetAspect)
-          displayParams[1] = sourceAspect / targetAspect;
+        if (sourceAspect > virtualAspect)
+          displayParams[2] = virtualAspect / sourceAspect;
+        else if (sourceAspect < virtualAspect)
+          displayParams[3] = sourceAspect / virtualAspect;
       } else if (scalingMode == 2) {
-        if (sourceAspect > targetAspect)
-          displayParams[1] = sourceAspect / targetAspect;
-        else if (sourceAspect < targetAspect)
-          displayParams[0] = targetAspect / sourceAspect;
-        displayParams[2] = 1.0f;
+        if (sourceAspect > virtualAspect)
+          displayParams[3] = sourceAspect / virtualAspect;
+        else if (sourceAspect < virtualAspect)
+          displayParams[2] = virtualAspect / sourceAspect;
       }
       [encoder setRenderPipelineState:s_pipeline];
       [encoder setFragmentTexture:sourceTexture atIndex:0];
@@ -267,6 +280,17 @@ ShitDesignerMacDisplaySetScalingMode(int displayIndex, int scalingMode) {
   if (displayIndex > 0 && displayIndex < MaxDisplays &&
       s_outputs[displayIndex] != nullptr)
     s_outputs[displayIndex]->scalingMode.store(scalingMode);
+}
+
+extern "C" UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API
+ShitDesignerMacDisplaySetEmulationAspect(int displayIndex, float aspectRatio) {
+  if (!std::isfinite(aspectRatio))
+    return;
+  std::lock_guard<std::mutex> lock(s_outputsMutex);
+  if (displayIndex > 0 && displayIndex < MaxDisplays &&
+      s_outputs[displayIndex] != nullptr)
+    s_outputs[displayIndex]->emulationAspect.store(
+        aspectRatio > 0.0f ? aspectRatio : 0.0f);
 }
 
 extern "C" UNITY_INTERFACE_EXPORT void UNITY_INTERFACE_API

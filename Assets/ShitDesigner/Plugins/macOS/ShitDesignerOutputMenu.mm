@@ -1,3 +1,4 @@
+#include <array>
 #include <cstdint>
 #include <deque>
 #include <dlfcn.h>
@@ -17,7 +18,15 @@ enum OutputMenuCommand {
   SwapOutputs = 5,
   SetScalingStretch = 6,
   SetScalingFill = 7,
-  SetScalingFit = 8
+  SetScalingFit = 8,
+  SetEmulationDisplay = 9,
+  SetEmulation16x9 = 10,
+  SetEmulation16x10 = 11,
+  SetEmulation4x3 = 12,
+  SetEmulation3x4 = 13,
+  SetEmulation1x1 = 14,
+  SetEmulation9x16 = 15,
+  SetEmulation21x9 = 16
 };
 
 static void *s_appKitLibrary;
@@ -37,6 +46,9 @@ static NativeObject s_scalingMenu;
 static NativeObject s_scalingStretchItem;
 static NativeObject s_scalingFillItem;
 static NativeObject s_scalingFitItem;
+static NativeObject s_emulationItem;
+static NativeObject s_emulationMenu;
+static std::array<NativeObject, 8> s_emulationItems{};
 static std::deque<int> s_commands;
 
 using GetClass = NativeClass (*)(const char *);
@@ -76,7 +88,7 @@ void Release(NativeObject value) {
 
 void HandleOutputMenuItem(NativeObject, NativeSelector, NativeObject sender) {
   const auto tag = SendMessage<std::intptr_t>(sender, "tag");
-  if (tag >= StartProgramOutput && tag <= SetScalingFit)
+  if (tag >= StartProgramOutput && tag <= SetEmulation21x9)
     s_commands.push_back(static_cast<int>(tag));
 }
 
@@ -185,6 +197,29 @@ ShitDesignerOutputMenuCreate(void) {
   s_scalingFitItem = CreateMenuItem("Fit", action, SetScalingFit);
   s_scalingItem = CreateMenuItem("Scaling", nullptr, SetScalingFill);
   SendMessage<void>(s_scalingItem, "setSubmenu:", s_scalingMenu);
+
+  const auto emulationTitle = CreateString("Emulation");
+  s_emulationMenu = SendMessage<NativeObject>(
+      SendMessage<NativeObject>(s_getClass("NSMenu"), "alloc"),
+      "initWithTitle:", emulationTitle);
+  Release(emulationTitle);
+  SendMessage<void>(s_emulationMenu,
+                    "setAutoenablesItems:", static_cast<signed char>(false));
+  const std::array<const char *, 8> emulationTitles{
+      "Native Display", "16:9", "16:10", "4:3",
+      "3:4",            "1:1",  "9:16",  "21:9"};
+  const std::array<OutputMenuCommand, 8> emulationCommands{
+      SetEmulationDisplay, SetEmulation16x9, SetEmulation16x10,
+      SetEmulation4x3,    SetEmulation3x4,  SetEmulation1x1,
+      SetEmulation9x16,   SetEmulation21x9};
+  for (std::size_t index = 0; index < s_emulationItems.size(); ++index) {
+    s_emulationItems[index] =
+        CreateMenuItem(emulationTitles[index], action, emulationCommands[index]);
+    SendMessage<void>(s_emulationItems[index], "setTarget:", s_target);
+    SendMessage<void>(s_emulationMenu, "addItem:", s_emulationItems[index]);
+  }
+  s_emulationItem = CreateMenuItem("Emulation", nullptr, SetEmulationDisplay);
+  SendMessage<void>(s_emulationItem, "setSubmenu:", s_emulationMenu);
   for (const auto item : {s_startProgramItem, s_stopProgramItem,
                           s_startOverlayItem, s_stopOverlayItem,
                           s_identifyItem, s_swapItem, s_scalingStretchItem,
@@ -204,6 +239,7 @@ ShitDesignerOutputMenuCreate(void) {
       SendMessage<NativeObject>(s_getClass("NSMenuItem"), "separatorItem");
   SendMessage<void>(s_submenu, "addItem:", separator);
   SendMessage<void>(s_submenu, "addItem:", s_scalingItem);
+  SendMessage<void>(s_submenu, "addItem:", s_emulationItem);
   separator =
       SendMessage<NativeObject>(s_getClass("NSMenuItem"), "separatorItem");
   SendMessage<void>(s_submenu, "addItem:", separator);
@@ -229,6 +265,10 @@ ShitDesignerOutputMenuDestroy(void) {
   Release(s_scalingFitItem);
   Release(s_scalingItem);
   Release(s_scalingMenu);
+  for (const auto item : s_emulationItems)
+    Release(item);
+  Release(s_emulationItem);
+  Release(s_emulationMenu);
   Release(s_topItem);
   Release(s_submenu);
   Release(s_target);
@@ -243,6 +283,9 @@ ShitDesignerOutputMenuDestroy(void) {
   s_scalingFitItem = nullptr;
   s_scalingItem = nullptr;
   s_scalingMenu = nullptr;
+  s_emulationItems.fill(nullptr);
+  s_emulationItem = nullptr;
+  s_emulationMenu = nullptr;
   s_topItem = nullptr;
   s_submenu = nullptr;
   s_target = nullptr;
@@ -255,7 +298,8 @@ ShitDesignerOutputMenuSetState(bool canStartProgram, bool canStopProgram,
                                bool canStartOverlay, bool canStopOverlay,
                                bool canIdentifyDisplays,
                                bool isTestPatternVisible,
-                               bool canSwapOutputs, int scalingMode) {
+                               bool canSwapOutputs, int scalingMode,
+                               int emulationAspect) {
   if (!EnsureRuntime())
     return;
   SendMessage<void>(s_startProgramItem, "setEnabled:",
@@ -278,6 +322,10 @@ ShitDesignerOutputMenuSetState(bool canStartProgram, bool canStopProgram,
                     static_cast<std::intptr_t>(scalingMode == 1));
   SendMessage<void>(s_scalingFitItem, "setState:",
                     static_cast<std::intptr_t>(scalingMode == 2));
+  for (std::size_t index = 0; index < s_emulationItems.size(); ++index)
+    SendMessage<void>(s_emulationItems[index], "setState:",
+                      static_cast<std::intptr_t>(
+                          emulationAspect == static_cast<int>(index)));
 }
 
 extern "C" __attribute__((visibility("default"))) bool

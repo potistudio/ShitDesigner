@@ -18,9 +18,12 @@ namespace ShitDesigner.Main.Tests {
 				presenter.Initialize(canvas, source);
 
 				var background = presenter.transform.GetChild(0).GetComponent<Image>();
-				var image = presenter.transform.GetChild(1);
+				var emulation = presenter.transform.GetChild(1);
+				var emulationAspectRatioFitter = emulation.GetComponent<AspectRatioFitter>();
+				var image = emulation.GetChild(0);
 				var aspectRatioFitter = image.GetComponent<AspectRatioFitter>();
 				Assert.That(background.color, Is.EqualTo(Color.black));
+				Assert.That(emulationAspectRatioFitter.aspectMode, Is.EqualTo(AspectRatioFitter.AspectMode.None));
 				Assert.That(aspectRatioFitter.aspectRatio, Is.EqualTo(16f / 9f).Within(0.0001f));
 				Assert.That(aspectRatioFitter.aspectMode, Is.EqualTo(AspectRatioFitter.AspectMode.EnvelopeParent));
 
@@ -30,12 +33,31 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(aspectRatioFitter.aspectMode, Is.EqualTo(AspectRatioFitter.AspectMode.FitInParent));
 				presenter.SetScalingMode(ExternalDisplayScalingMode.Fill);
 				Assert.That(aspectRatioFitter.aspectMode, Is.EqualTo(AspectRatioFitter.AspectMode.EnvelopeParent));
+
+				presenter.SetEmulationAspect(ExternalDisplayEmulationAspect.Ratio3x4);
+				Assert.That(emulationAspectRatioFitter.aspectMode, Is.EqualTo(AspectRatioFitter.AspectMode.FitInParent));
+				Assert.That(emulationAspectRatioFitter.aspectRatio, Is.EqualTo(3f / 4f).Within(0.0001f));
+				Assert.That(aspectRatioFitter.aspectMode, Is.EqualTo(AspectRatioFitter.AspectMode.EnvelopeParent));
+				presenter.SetEmulationAspect(ExternalDisplayEmulationAspect.Display);
+				Assert.That(emulationAspectRatioFitter.aspectMode, Is.EqualTo(AspectRatioFitter.AspectMode.None));
 			}
 			finally {
 				source.Release();
 				Object.DestroyImmediate(source);
 				Object.DestroyImmediate(host);
 			}
+		}
+
+		[TestCase(ExternalDisplayEmulationAspect.Display, 0f)]
+		[TestCase(ExternalDisplayEmulationAspect.Ratio16x9, 16f / 9f)]
+		[TestCase(ExternalDisplayEmulationAspect.Ratio16x10, 16f / 10f)]
+		[TestCase(ExternalDisplayEmulationAspect.Ratio4x3, 4f / 3f)]
+		[TestCase(ExternalDisplayEmulationAspect.Ratio3x4, 3f / 4f)]
+		[TestCase(ExternalDisplayEmulationAspect.Ratio1x1, 1f)]
+		[TestCase(ExternalDisplayEmulationAspect.Ratio9x16, 9f / 16f)]
+		[TestCase(ExternalDisplayEmulationAspect.Ratio21x9, 21f / 9f)]
+		public void EmulationAspectMapsToExpectedRatio(ExternalDisplayEmulationAspect aspect, float expected) {
+			Assert.That(aspect.AspectRatio(), Is.EqualTo(expected).Within(0.0001f));
 		}
 
 		[Test]
@@ -62,6 +84,7 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(backend.LastState.IsTestPatternVisible, Is.False);
 				Assert.That(backend.LastState.CanSwapOutputs, Is.True);
 				Assert.That(backend.LastState.ScalingMode, Is.EqualTo(ExternalDisplayScalingMode.Fill));
+				Assert.That(backend.LastState.EmulationAspect, Is.EqualTo(ExternalDisplayEmulationAspect.Display));
 
 				backend.Enqueue(OutputMenuCommand.StartProgram);
 				backend.Enqueue(OutputMenuCommand.StartOverlay);
@@ -100,6 +123,16 @@ namespace ShitDesigner.Main.Tests {
 				controller.Tick();
 				Assert.That(target.ScalingMode, Is.EqualTo(ExternalDisplayScalingMode.Fill));
 				Assert.That(target.ScalingChangeCount, Is.EqualTo(3));
+
+				backend.Enqueue(OutputMenuCommand.SetEmulation3x4);
+				controller.Tick();
+				Assert.That(target.EmulationAspect, Is.EqualTo(ExternalDisplayEmulationAspect.Ratio3x4));
+				Assert.That(backend.LastState.EmulationAspect, Is.EqualTo(ExternalDisplayEmulationAspect.Ratio3x4));
+				backend.Enqueue(OutputMenuCommand.SetEmulation21x9);
+				backend.Enqueue(OutputMenuCommand.SetEmulationDisplay);
+				controller.Tick();
+				Assert.That(target.EmulationAspect, Is.EqualTo(ExternalDisplayEmulationAspect.Display));
+				Assert.That(target.EmulationChangeCount, Is.EqualTo(3));
 			}
 
 			Assert.That(backend.Disposed, Is.True);
@@ -117,6 +150,7 @@ namespace ShitDesigner.Main.Tests {
 				backend.Enqueue(OutputMenuCommand.ToggleTestPattern);
 				backend.Enqueue(OutputMenuCommand.SwapOutputs);
 				backend.Enqueue(OutputMenuCommand.SetScalingFit);
+				backend.Enqueue(OutputMenuCommand.SetEmulation3x4);
 				controller.Tick();
 			}
 
@@ -125,6 +159,8 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(target.SwapCount, Is.Zero);
 			Assert.That(target.ScalingMode, Is.EqualTo(ExternalDisplayScalingMode.Fit));
 			Assert.That(target.ScalingChangeCount, Is.EqualTo(1));
+			Assert.That(target.EmulationAspect, Is.EqualTo(ExternalDisplayEmulationAspect.Ratio3x4));
+			Assert.That(target.EmulationChangeCount, Is.EqualTo(1));
 			Assert.That(backend.LastState.CanStartProgram, Is.False);
 			Assert.That(backend.LastState.CanStopProgram, Is.False);
 			Assert.That(backend.LastState.CanStartOverlay, Is.False);
@@ -140,9 +176,11 @@ namespace ShitDesigner.Main.Tests {
 			public int TestPatternChangeCount { get; private set; }
 			public int SwapCount { get; private set; }
 			public int ScalingChangeCount { get; private set; }
+			public int EmulationChangeCount { get; private set; }
 			public bool IsTestPatternVisible { get; private set; }
 			public bool CanSwapOutputs => m_Available.All(available => available);
 			public ExternalDisplayScalingMode ScalingMode { get; private set; } = ExternalDisplayScalingMode.Fill;
+			public ExternalDisplayEmulationAspect EmulationAspect { get; private set; } = ExternalDisplayEmulationAspect.Display;
 
 			public RecordingOutputTarget(bool programAvailable, bool overlayAvailable) {
 				m_Available = new[] { programAvailable, overlayAvailable };
@@ -166,6 +204,11 @@ namespace ShitDesigner.Main.Tests {
 			public bool SetScalingMode(ExternalDisplayScalingMode mode) {
 				ScalingChangeCount++;
 				ScalingMode = mode;
+				return true;
+			}
+			public bool SetEmulationAspect(ExternalDisplayEmulationAspect aspect) {
+				EmulationChangeCount++;
+				EmulationAspect = aspect;
 				return true;
 			}
 		}
