@@ -48,9 +48,11 @@ vertex VertexOutput vertex_main(uint vertexId [[vertex_id]]) {
   return output;
 }
 
-fragment half4 fragment_main(VertexOutput input [[stage_in]], texture2d<half> source [[texture(0)]]) {
+fragment half4 fragment_main(VertexOutput input [[stage_in]], texture2d<half> source [[texture(0)]],
+                             constant float2 &uvScale [[buffer(0)]]) {
   constexpr sampler textureSampler(mag_filter::linear, min_filter::linear, address::clamp_to_edge);
-  return source.sample(textureSampler, input.uv);
+  float2 uv = (input.uv - 0.5) * uvScale + 0.5;
+  return source.sample(textureSampler, uv);
 }
 )METAL";
 
@@ -182,9 +184,19 @@ void PresentOutput(int displayIndex) {
     id<MTLRenderCommandEncoder> encoder =
         [commandBuffer renderCommandEncoderWithDescriptor:descriptor];
     if (sourcePointer != nullptr) {
+      id<MTLTexture> sourceTexture = (__bridge id<MTLTexture>)sourcePointer;
+      const float sourceAspect = static_cast<float>(sourceTexture.width) /
+                                 static_cast<float>(sourceTexture.height);
+      const float targetAspect = static_cast<float>(drawable.texture.width) /
+                                 static_cast<float>(drawable.texture.height);
+      float uvScale[2] = {1.0f, 1.0f};
+      if (sourceAspect > targetAspect)
+        uvScale[0] = targetAspect / sourceAspect;
+      else if (sourceAspect < targetAspect)
+        uvScale[1] = sourceAspect / targetAspect;
       [encoder setRenderPipelineState:s_pipeline];
-      [encoder setFragmentTexture:(__bridge id<MTLTexture>)sourcePointer
-                          atIndex:0];
+      [encoder setFragmentTexture:sourceTexture atIndex:0];
+      [encoder setFragmentBytes:uvScale length:sizeof(uvScale) atIndex:0];
       [encoder drawPrimitives:MTLPrimitiveTypeTriangle
                   vertexStart:0
                   vertexCount:3];

@@ -342,7 +342,7 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void ExternalProgramDisplayCanvas_FillsTheTargetWithoutACamera() {
+		public void ExternalProgramDisplayCanvas_FillsTheTargetWithoutStretching() {
 			var host = new GameObject("External Program Display Canvas Test");
 			var source = new RenderTexture(4, 4, 0, RenderTextureFormat.ARGB32);
 			try {
@@ -358,8 +358,10 @@ namespace ShitDesigner.Main.Tests {
 				var image = (RectTransform)presenter.transform.GetChild(0);
 				Assert.That(image.anchorMin, Is.EqualTo(Vector2.zero));
 				Assert.That(image.anchorMax, Is.EqualTo(Vector2.one));
-				Assert.That(image.offsetMin, Is.EqualTo(Vector2.zero));
-				Assert.That(image.offsetMax, Is.EqualTo(Vector2.zero));
+				var aspectRatioFitter = image.GetComponent<AspectRatioFitter>();
+				Assert.That(aspectRatioFitter, Is.Not.Null);
+				Assert.That(aspectRatioFitter.aspectMode, Is.EqualTo(AspectRatioFitter.AspectMode.EnvelopeParent));
+				Assert.That(aspectRatioFitter.aspectRatio, Is.EqualTo(1f).Within(0.0001f));
 			}
 			finally {
 				source.Release();

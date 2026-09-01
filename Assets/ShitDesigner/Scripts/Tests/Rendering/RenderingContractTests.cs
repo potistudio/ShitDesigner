@@ -1109,6 +1109,22 @@ namespace ShitDesigner.Rendering.Tests {
 			Assert.That(fallback.UsesProgramMonitor, Is.True);
 		}
 
+		[TestCase(16f / 9f, 16f / 9f, 16f / 9f, 1f)]
+		[TestCase(16f / 9f, 4f / 3f, 16f / 9f, 1f)]
+		[TestCase(16f / 9f, 16f / 10f, 16f / 9f, 1f)]
+		[TestCase(16f / 9f, 21f / 9f, 21f / 9f, 21f / 16f)]
+		[TestCase(16f / 9f, 9f / 16f, 16f / 9f, 1f)]
+		public void ProgramDisplayFillLayout_PreservesAspectAndCropsOverflow(
+			float sourceAspect, float targetAspect, float expectedWidth, float expectedHeight) {
+			var scale = ProgramDisplayFillLayout.Scale(sourceAspect, targetAspect);
+
+			Assert.That(scale.x, Is.EqualTo(expectedWidth).Within(0.0001f));
+			Assert.That(scale.y, Is.EqualTo(expectedHeight).Within(0.0001f));
+			Assert.That(scale.x / scale.y, Is.EqualTo(sourceAspect).Within(0.0001f));
+			Assert.That(scale.x, Is.GreaterThanOrEqualTo(targetAspect));
+			Assert.That(scale.y, Is.GreaterThanOrEqualTo(1f));
+		}
+
 		[Test, Category("ProgramRuntimePolicy")]
 		public void ProgramDisplay_ProjectNumbersConvertToZeroBasedUnityIndices() {
 			Assert.That(ProgramDisplayPolicy.ToUnityIndex(1), Is.EqualTo(0));
