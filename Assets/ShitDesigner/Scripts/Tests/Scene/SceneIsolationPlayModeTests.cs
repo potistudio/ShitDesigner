@@ -15,6 +15,30 @@ namespace ShitDesigner.Tests.Scene {
 		private static NodeInstanceId Node(int index) => new NodeInstanceId($"{index + 10:00000000}-0000-4000-8000-000000000000");
 
 		[UnityTest]
+		public IEnumerator AsyncCreateKeepsNodePreparingUntilPrefabIsIntegrated() {
+			var prefab = new GameObject("Async Prefab Source");
+			var cameraObject = new GameObject("Camera");
+			cameraObject.transform.SetParent(prefab.transform, false);
+			cameraObject.AddComponent<Camera>();
+			cameraObject.AddComponent<UniversalAdditionalCameraData>().renderType = CameraRenderType.Base;
+			var manager = new SceneIsolationManager();
+			var created = manager.CreateAsync(new SceneCreateRequest(Node(33), SceneNodeKind.ThreeD, "SceneIsolation.AsyncPrefab", prefab: prefab));
+			Assert.That(created.IsSuccess, Is.True, created.IsFailure ? created.Error.Message : string.Empty);
+			Assert.That(created.Value.State, Is.EqualTo(SceneLifecycleState.Preparing));
+			Assert.That(created.Value.Root, Is.Null);
+
+			for (var frame = 0; frame < 120 && created.Value.State == SceneLifecycleState.Preparing; frame++) yield return null;
+			Assert.That(created.Value.State, Is.EqualTo(SceneLifecycleState.Ready), created.Value.PreparationDiagnostic?.Message);
+			Assert.That(created.Value.Root.scene, Is.EqualTo(created.Value.Scene));
+			Assert.That(created.Value.Camera.enabled, Is.False);
+
+			created.Value.Dispose();
+			Object.DestroyImmediate(prefab);
+			yield return WaitForDisposed(created.Value);
+			manager.Dispose();
+		}
+
+		[UnityTest]
 		public IEnumerator SingleCameraRenderRequestUpdatesTheIsolatedVolumeStack() {
 			var prefab = new GameObject("Post Processing Prefab");
 			var cameraObject = new GameObject("Camera");

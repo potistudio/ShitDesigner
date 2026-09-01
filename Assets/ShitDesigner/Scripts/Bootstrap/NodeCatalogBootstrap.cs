@@ -28,8 +28,9 @@ namespace ShitDesigner.Bootstrap {
 				: RuntimeDynamicRange.Ldr);
 		}
 
-		public static SceneIsolationManager CreateUnitySceneIsolation(SceneLayerPool layers = null, IScenePhysicsStepper physicsStepper = null)
-			=> new SceneIsolationManager(layers, new UnityCameraRenderSource(), physicsStepper);
+		public static SceneIsolationManager CreateUnitySceneIsolation(SceneLayerPool layers = null, IScenePhysicsStepper physicsStepper = null,
+			float instantiateIntegrationTimeMilliseconds = SceneIsolationManager.DefaultInstantiateIntegrationTimeMilliseconds)
+			=> new SceneIsolationManager(layers, new UnityCameraRenderSource(), physicsStepper, instantiateIntegrationTimeMilliseconds);
 
 		public static IVideoBackendFactory CreateVideoBackendFactory(IVideoBackendFactory unity, IVideoBackendFactory hap)
 			=> new CompositeVideoBackendFactory(unity, hap);

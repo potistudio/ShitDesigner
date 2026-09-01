@@ -32,7 +32,7 @@ namespace ShitDesigner.Scene {
 			try { prefab = _prefabResolver(node); }
 			catch (Exception exception) { return FailureNode("scene.prefab.resolve", exception.Message, node, generationId, exception); }
 			if (prefab == null) return FailureNode("scene.prefab.missing", "Scene node requires an explicit prefab/camera binding.", node, generationId);
-			var created = _manager.Create(new SceneCreateRequest(node.Id, Kind, "ShitDesigner." + TypeId.Value + "." + node.Id.Value, generationId, prefab));
+			var created = _manager.CreateAsync(new SceneCreateRequest(node.Id, Kind, "ShitDesigner." + TypeId.Value + "." + node.Id.Value, generationId, prefab));
 			if (created.IsFailure) return Result.Failure<IRuntimeNode, Diagnostic>(created.Error);
 			return Result.Success<IRuntimeNode, Diagnostic>(new SceneRuntimeNode(node, generationId, created.Value, _applyEffectiveParameters));
 		}
@@ -46,6 +46,8 @@ namespace ShitDesigner.Scene {
 		private readonly SceneNodeRuntime _scene;
 		private readonly Action<SceneNodeRuntime, FrameSnapshot> _applyEffectiveParameters;
 		private IRuntimeImageFrame _lastFrame;
+		private bool m_ClockBound;
+		private bool m_Demanded;
 		private double _lastClock;
 		private bool _disposed;
 		public NodeInstanceId NodeId => _record.Id;
@@ -54,16 +56,29 @@ namespace ShitDesigner.Scene {
 		public RuntimeNodeState State { get; private set; } = RuntimeNodeState.Preparing;
 		public SceneNodeRuntime Scene => _scene;
 
-		internal SceneRuntimeNode(RuntimeNodeCreateInfo record, ulong generationId, SceneNodeRuntime scene, Action<SceneNodeRuntime, FrameSnapshot> applyEffectiveParameters) { _record = record ?? throw new ArgumentNullException(nameof(record)); GenerationId = generationId; _scene = scene ?? throw new ArgumentNullException(nameof(scene)); _scene.BindGraphClock(); _applyEffectiveParameters = applyEffectiveParameters; _lastClock = 0d; }
+		internal SceneRuntimeNode(RuntimeNodeCreateInfo record, ulong generationId, SceneNodeRuntime scene, Action<SceneNodeRuntime, FrameSnapshot> applyEffectiveParameters) { _record = record ?? throw new ArgumentNullException(nameof(record)); GenerationId = generationId; _scene = scene ?? throw new ArgumentNullException(nameof(scene)); _applyEffectiveParameters = applyEffectiveParameters; _lastClock = 0d; }
 		public void OnDemandChanged(bool demanded, FrameEvaluationContext context) {
 			if (context != null) _lastClock = context.Snapshot.GraphClockTime;
-			var activation = demanded ? _scene.Activate() : _scene.Deactivate();
-			if (activation.IsFailure) throw new InvalidOperationException(activation.Error.Message);
+			m_Demanded = demanded;
+			if (_scene.State == SceneLifecycleState.Ready) ApplyDemand();
 		}
 		public void Evaluate(NodeExecutionContext context, NodeOutputWriter outputs) {
 			var image = new PortId("image");
 			if (!context.RequestedOutputs.Contains(image)) return;
 			if (_disposed) { outputs.SetFaulted(image, Failure("scene.node.disposed", "Scene node is disposed.", context)); return; }
+			if (_scene.State != SceneLifecycleState.Ready) {
+				if (_scene.PreparationDiagnostic != null) {
+					State = RuntimeNodeState.Faulted;
+					outputs.SetFaulted(image, _scene.PreparationDiagnostic);
+				}
+				else {
+					State = RuntimeNodeState.Preparing;
+					outputs.SetPreparing(image, Failure("scene.node.preparing", "Scene prefab is loading asynchronously.", context));
+				}
+				return;
+			}
+			if (!m_ClockBound) { _scene.BindGraphClock(); m_ClockBound = true; }
+			ApplyDemand();
 			if (!RuntimeOutputResolutionDemandAccess.TryGet(context, NodeId, image, out var demand)) {
 				outputs.SetPreparing(image, Failure("scene.demand_missing", "Scene output has no propagated Phase-4 resolution demand.", context));
 				State = RuntimeNodeState.Preparing;
@@ -96,6 +111,10 @@ namespace ShitDesigner.Scene {
 			}
 		}
 		public void Dispose() { if (_disposed) return; _disposed = true; _scene.Dispose(); _lastFrame = null; State = RuntimeNodeState.Disposed; }
+		private void ApplyDemand() {
+			var activation = m_Demanded ? _scene.Activate() : _scene.Deactivate();
+			if (activation.IsFailure) throw new InvalidOperationException(activation.Error.Message);
+		}
 		private void WriteLast(NodeExecutionContext context, NodeOutputWriter outputs, PortId image, Diagnostic diagnostic) { if (_lastFrame != null) { outputs.SetAvailable(image, PortValue.FromImageFrame(_lastFrame)); context.Diagnostics.Report(diagnostic); } else outputs.SetPreparing(image, diagnostic); }
 		private Diagnostic Failure(string code, string message, NodeExecutionContext context, Exception exception = null) => new Diagnostic(new DiagnosticCode(code), Severity.Error, message, nodeId: NodeId, nodeTypeId: TypeId, generationId: GenerationId, frameNumber: context == null ? 0 : unchecked((long)context.Snapshot.FrameNumber), module: "scene", exception: exception == null ? null : DiagnosticExceptionInfo.FromException(exception));
 	}

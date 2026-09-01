@@ -23,6 +23,8 @@ namespace ShitDesigner.Bootstrap {
 		[SerializeField] private GameObject _scene3dPrefab;
 		[SerializeField] private GameObject _scene2dPrefab;
 		[SerializeField] private GameObject _videoHostPrefab;
+		[SerializeField, Min(.1f), Tooltip("Maximum main-thread time per frame used to integrate asynchronously instantiated Scene prefabs.")]
+		private float m_SceneInstantiateIntegrationTimeMilliseconds = SceneIsolationManager.DefaultInstantiateIntegrationTimeMilliseconds;
 
 		[Header("Builtin shader roles")]
 		[SerializeField] private Shader _shaderGenerator;
@@ -134,7 +136,7 @@ namespace ShitDesigner.Bootstrap {
 			var conversion = new VideoOutputSurfaceFrameAdapter(new UnityVideoFrameConversionPass(_videoConversionMaterial));
 			var graphics = new VideoGraphicsCapabilities(hapGraphics.SupportsDirectCompressed, hapGraphics.SupportsCompute, hapGraphics.SupportsCpu);
 			var provider = new ExplicitVisualBindingProvider(
-				() => NodeCatalogBootstrap.CreateUnitySceneIsolation(),
+				() => NodeCatalogBootstrap.CreateUnitySceneIsolation(instantiateIntegrationTimeMilliseconds: m_SceneInstantiateIntegrationTimeMilliseconds),
 				_scene3dPrefab,
 				_scene2dPrefab,
 				shaders,
