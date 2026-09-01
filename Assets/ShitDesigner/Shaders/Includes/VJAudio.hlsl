@@ -30,7 +30,15 @@ float VJAudioLine(float coordinate, float waveform, float thickness)
     return 1.0 - smoothstep(thickness, thickness + 0.025, abs(coordinate - waveform));
 }
 
-#define VJ_AUDIO_CUBE_COUNT 12
+#define VJ_AUDIO_CUBE_COUNT 8
+#define VJ_AUDIO_FRACTAL_STEPS 32
+#define VJ_AUDIO_FRACTAL_FOLDS 3
+
+float VJAudioFastGlow(float distanceToLine, float falloff)
+{
+    float attenuation = max(distanceToLine, 0.0) * falloff;
+    return rcp(1.0 + attenuation + 0.48 * attenuation * attenuation);
+}
 
 float2x2 VJAudioCubeRotation(float angle)
 {
@@ -94,18 +102,13 @@ void VJAudioCubeEdge(int index, out int start, out int end)
     end = start + 4;
 }
 
-float2 VJAudioCubeProject(float3 position, float2x2 cameraRotation)
+float3 VJAudioCubeProjectWithDepth(float3 position, float2x2 cameraRotation)
 {
     position.xz = mul(position.xz, cameraRotation);
     position.yz = mul(position.yz, cameraRotation);
     position.z += 2.2;
-    return position.xy / max(position.z, 1.0e-4);
-}
-
-float VJAudioCubeDepth(float3 position, float2x2 cameraRotation)
-{
-    position.xz = mul(position.xz, cameraRotation);
-    return max(position.z + 2.2, 1.0e-4);
+    float depth = max(position.z, 1.0e-4);
+    return float3(position.xy / depth, depth);
 }
 
 float3 VJAudioTransformCubeVertex(float3 vertex, float3 center, float3 size, float2x2 objectRotation)
@@ -119,21 +122,28 @@ float3 VJAudioTransformCubeVertex(float3 vertex, float3 center, float3 size, flo
 void VJAudioDrawWireframeBox(float2 coordinate, float3 center, float3 size, float2x2 cameraRotation,
     float2x2 objectRotation, float4 color, inout float4 outputColor)
 {
+    float2 projectedVertices[8];
+    float vertexDepths[8];
+    [unroll]
+    for (int vertex = 0; vertex < 8; vertex++)
+    {
+        float3 position = VJAudioTransformCubeVertex(VJAudioCubeVertex(vertex), center, size, objectRotation);
+        float3 projection = VJAudioCubeProjectWithDepth(position, cameraRotation);
+        projectedVertices[vertex] = projection.xy;
+        vertexDepths[vertex] = projection.z;
+    }
+
     [unroll]
     for (int edge = 0; edge < 12; edge++)
     {
         int startIndex;
         int endIndex;
         VJAudioCubeEdge(edge, startIndex, endIndex);
-        float3 start = VJAudioTransformCubeVertex(VJAudioCubeVertex(startIndex), center, size, objectRotation);
-        float3 end = VJAudioTransformCubeVertex(VJAudioCubeVertex(endIndex), center, size, objectRotation);
-        float2 projectedStart = VJAudioCubeProject(start, cameraRotation);
-        float2 projectedEnd = VJAudioCubeProject(end, cameraRotation);
-        float averageDepth = (VJAudioCubeDepth(start, cameraRotation) + VJAudioCubeDepth(end, cameraRotation)) * 0.5;
-        float lineDistance = VJAudioSegmentDistance(coordinate, projectedStart, projectedEnd);
+        float averageDepth = (vertexDepths[startIndex] + vertexDepths[endIndex]) * 0.5;
+        float lineDistance = VJAudioSegmentDistance(coordinate, projectedVertices[startIndex], projectedVertices[endIndex]);
         float thickness = 0.0015 / averageDepth;
         float core = smoothstep(thickness, 0.0, lineDistance);
-        float glow = 0.1 * exp(-120.0 * max(0.0, lineDistance));
+        float glow = 0.1 * VJAudioFastGlow(lineDistance, 120.0);
         outputColor += color * (core + glow) / (1.0 + averageDepth * 0.5);
     }
 }
@@ -149,12 +159,13 @@ void VJAudioDrawSubCube(float2 coordinate, float3 center, float3 size, float2x2 
     float3 start = VJAudioTransformCubeVertex(VJAudioCubeVertex(startIndex), center, size, objectRotation);
     float3 end = VJAudioTransformCubeVertex(VJAudioCubeVertex(endIndex), center, size, objectRotation);
     float3 subCubePosition = lerp(start, end, frac(traversalTime));
-    float2 projected = VJAudioCubeProject(subCubePosition, cameraRotation);
-    float depth = VJAudioCubeDepth(subCubePosition, cameraRotation);
+    float3 projection = VJAudioCubeProjectWithDepth(subCubePosition, cameraRotation);
+    float2 projected = projection.xy;
+    float depth = projection.z;
     float radius = size.x * 0.5 / depth;
     float boxDistance = VJAudioBoxDistance(coordinate - projected, radius);
     float core = smoothstep(0.004 / depth, 0.0, boxDistance);
-    float glow = 0.3 * exp(-90.0 * max(0.0, boxDistance));
+    float glow = 0.3 * VJAudioFastGlow(boxDistance, 90.0);
     outputColor += color * 1.6 * (core + glow) / (1.0 + depth * 0.5);
 }
 
@@ -200,8 +211,9 @@ float4 VJAudioWireframeCubeFractal(float2 uv, float4 resolution, float time,
     {
         float3 position = VJAudioCubePosition(cube, time, bounds - cubeRadius);
         positions[cube] = position;
-        depths[cube] = VJAudioCubeDepth(position, cameraRotation);
-        projectedPositions[cube] = VJAudioCubeProject(position, cameraRotation);
+        float3 projection = VJAudioCubeProjectWithDepth(position, cameraRotation);
+        projectedPositions[cube] = projection.xy;
+        depths[cube] = projection.z;
         float hue = (float)cube / (float)VJ_AUDIO_CUBE_COUNT * VJ_TAU + time * 0.2;
         float4 color = 0.5 + 0.5 * sin(hue + float4(0.0, 2.0, 4.0, 0.0));
         color.rgb = smoothstep(0.1, 0.9, color.rgb);
@@ -225,7 +237,7 @@ float4 VJAudioWireframeCubeFractal(float2 uv, float4 resolution, float time,
                 float alpha = smoothstep(maximumDistance, maximumDistance * 0.2, distance3D);
                 float averageDepth = (depths[first] + depths[second]) * 0.5;
                 float core = smoothstep(0.001 / averageDepth, 0.0, lineDistance);
-                float glow = 0.08 * exp(-160.0 * max(0.0, lineDistance)) * alpha;
+                float glow = 0.08 * VJAudioFastGlow(lineDistance, 160.0) * alpha;
                 float4 lineColor = (colors[first] + colors[second]) * 0.5;
                 wireframe += lineColor * (core + glow) * treble / (1.0 + averageDepth * 0.8);
             }
@@ -253,7 +265,7 @@ float4 VJAudioWireframeCubeFractal(float2 uv, float4 resolution, float time,
     float3 fractalColor = 0.0;
     float totalDistance = 0.0;
     [loop]
-    for (int stepIndex = 0; stepIndex < 80; stepIndex++)
+    for (int stepIndex = 0; stepIndex < VJ_AUDIO_FRACTAL_STEPS; stepIndex++)
     {
         float4 fractalPosition = rayDirection * totalDistance;
         float shell = length(fractalPosition) - 1.5;
@@ -263,7 +275,7 @@ float4 VJAudioWireframeCubeFractal(float2 uv, float4 resolution, float time,
         fractalPosition = fractalPosition - 7.0 * floor((fractalPosition + 3.5) / 7.0);
         float scale = 2.0;
         [unroll]
-        for (int fold = 0; fold < 5; fold++)
+        for (int fold = 0; fold < VJ_AUDIO_FRACTAL_FOLDS; fold++)
         {
             fractalPosition = abs(fractalPosition) * 0.95 - 0.25 * cos(fractalPosition * 0.5);
             fractalPosition.xw = mul(fractalPosition.xw, VJAudioFractalRotation(0.5));
@@ -272,10 +284,10 @@ float4 VJAudioWireframeCubeFractal(float2 uv, float4 resolution, float time,
             fractalPosition = fractalPosition * inverseLength - 0.7;
         }
         float distanceToSurface = max(-shell, (length(fractalPosition.yzw) - 0.01) / max(scale, 1.0e-6));
-        totalDistance += distanceToSurface / 30.0;
+        totalDistance += distanceToSurface / 12.0;
         if (distanceToSurface < 1.0e-9) break;
-        if (stepIndex > 14)
-            fractalColor += 0.1 * VJAudioFractalPalette(log(1.0 + scale)) * exp(-totalDistance * 10.0);
+        if (stepIndex > 6)
+            fractalColor += 0.1 * VJAudioFractalPalette(log(1.0 + scale)) * VJAudioFastGlow(totalDistance, 10.0);
     }
     fractalColor = 1.0 - exp(-fractalColor * fractalColor);
     float mixAmount = lerp(0.35, 0.65, saturate(amount));

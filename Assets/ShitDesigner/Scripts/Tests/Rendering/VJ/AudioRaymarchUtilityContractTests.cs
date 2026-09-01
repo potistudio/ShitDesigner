@@ -61,6 +61,17 @@ namespace ShitDesigner.Rendering.Tests.VJ {
 		}
 
 		[Test, Category("VJShaderContract"), Category("Audio")]
+		public void WireframeCubeFractal_KeepsTheReducedGpuWorkBudget() {
+			var path = Path.Combine(Application.dataPath, "ShitDesigner/Shaders/Includes/VJAudio.hlsl");
+			var source = File.ReadAllText(path);
+			Assert.That(source, Does.Contain("#define VJ_AUDIO_CUBE_COUNT 8"));
+			Assert.That(source, Does.Contain("#define VJ_AUDIO_FRACTAL_STEPS 32"));
+			Assert.That(source, Does.Contain("#define VJ_AUDIO_FRACTAL_FOLDS 3"));
+			Assert.That(source, Does.Not.Contain("exp(-120.0"));
+			Assert.That(source, Does.Not.Contain("exp(-160.0"));
+		}
+
+		[Test, Category("VJShaderContract"), Category("Audio")]
 		public void AudioSyntheticFixturesAreDeterministicFiniteAndInputReactive() {
 			const int sampleRate = 48000;
 			var silence = AudioAnalysisFixture.Analyze(new float[512], sampleRate, 0.25d, 120f);
