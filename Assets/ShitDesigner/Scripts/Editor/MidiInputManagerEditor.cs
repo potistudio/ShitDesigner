@@ -88,7 +88,7 @@ namespace ShitDesigner.Editor {
 			var status = manager.IsOpen ? "Connected: " + manager.DeviceName : "Disconnected";
 			EditorGUILayout.HelpBox(status, manager.IsOpen ? MessageType.Info : MessageType.Warning);
 			if (!string.IsNullOrEmpty(manager.LastError)) EditorGUILayout.HelpBox(manager.LastError, MessageType.Error);
-			if (manager.IsOpen && !manager.IsConfigured)
+			if (manager.IsOpen && !manager.IsRoutingConnected)
 				EditorGUILayout.HelpBox("Raw MIDI monitoring is active, but Live Control routing is not connected to Production Bootstrap.", MessageType.Warning);
 
 			using (new EditorGUI.DisabledScope(true)) {
@@ -113,7 +113,8 @@ namespace ShitDesigner.Editor {
 					var item = activity[index];
 					var route = !item.ApplicationConnected
 						? "Monitor only"
-						: item.ForwardedToMidiLearn ? "MIDI Learn" : "Bindings x" + item.MatchedBindings;
+						: item.ForwardedToMidiLearn ? "MIDI Learn"
+						: item.MatchedBindings > 0 ? "Bindings x" + item.MatchedBindings : "Direct MIDI route";
 					EditorGUILayout.LabelField(FormatControl(item.InputEvent.Control) + "  Value " + item.InputEvent.RawValue, route, EditorStyles.miniLabel);
 				}
 			}
