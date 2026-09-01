@@ -338,17 +338,17 @@ namespace ShitDesigner.Input {
 
 		private void ReleaseNativeResources() {
 			if (m_OutputPort != 0) {
-				MIDIPortDispose(m_OutputPort);
+				LogCleanupError(MIDIPortDispose(m_OutputPort), "MIDIOutputPortDispose");
 				m_OutputPort = 0;
 				m_Destination = 0;
 			}
 			if (m_Port != 0) {
-				if (m_Source != 0) MIDIPortDisconnectSource(m_Port, m_Source);
-				MIDIPortDispose(m_Port);
+				if (m_Source != 0) LogCleanupError(MIDIPortDisconnectSource(m_Port, m_Source), "MIDIPortDisconnectSource");
+				LogCleanupError(MIDIPortDispose(m_Port), "MIDIInputPortDispose");
 				m_Port = 0;
 			}
 			if (m_Client != 0) {
-				MIDIClientDispose(m_Client);
+				LogCleanupError(MIDIClientDispose(m_Client), "MIDIClientDispose");
 				m_Client = 0;
 			}
 			if (m_HasSelfHandle) {
@@ -459,6 +459,10 @@ namespace ShitDesigner.Input {
 
 		private static void ThrowIfError(int result, string operation) {
 			if (result != NoError) throw new InvalidOperationException(operation + " failed with CoreMIDI OSStatus " + result + ".");
+		}
+
+		private static void LogCleanupError(int result, string operation) {
+			if (result != NoError) Debug.LogWarning(operation + " failed with CoreMIDI OSStatus " + result + ".");
 		}
 
 		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]

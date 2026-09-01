@@ -6,6 +6,23 @@ using UnityEditor;
 using UnityEngine;
 
 namespace ShitDesigner.Editor {
+	[InitializeOnLoad]
+	internal static class MidiInputManagerEditorLifecycle {
+		static MidiInputManagerEditorLifecycle() {
+			EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+			AssemblyReloadEvents.beforeAssemblyReload += ShutdownAll;
+		}
+
+		private static void OnPlayModeStateChanged(PlayModeStateChange state) {
+			if (state == PlayModeStateChange.ExitingPlayMode) ShutdownAll();
+		}
+
+		private static void ShutdownAll() {
+			var managers = UnityEngine.Object.FindObjectsByType<MidiInputManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+			foreach (var manager in managers) manager.Shutdown();
+		}
+	}
+
 	[CustomEditor(typeof(MidiInputManager))]
 	public sealed class MidiInputManagerEditor : UnityEditor.Editor {
 		private SerializedProperty _deviceId;
