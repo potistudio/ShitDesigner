@@ -36,6 +36,8 @@ namespace ShitDesigner.Main {
 		[SerializeField, Range(0, 127)] public int m_MainCueFaderControlNumber = 5;
 		[SerializeField, Tooltip("Maps latched Main Cue fader travel to alternate Cue opacity.")]
 		public AnimationCurve m_MainCueFaderCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
+		[SerializeField, Range(0f, 1f), Tooltip("Opacity of the alternate Main during a Composite Take.")]
+		public float m_MainCompositeOpacity = .5f;
 		[SerializeField, Range(1, 16)] private int m_SceneTimeEncoderChannel = 16;
 		[SerializeField, Range(0, 127)] private int m_SceneTimeEncoderControlNumber = 77;
 		[SerializeField, Min(.01f)] private float m_SceneTimeJogSpeedPerStep = 1f;
@@ -112,6 +114,7 @@ namespace ShitDesigner.Main {
 				_shutdown.Add(RestoreUnityTimeScale);
 				_runtime = _graphBootstrap.CreateRuntime();
 				_runtime.ConfigureMainCueFaderCurve(m_MainCueFaderCurve);
+				_runtime.ConfigureMainCompositeOpacity(m_MainCompositeOpacity);
 				_runtime.ConfigureSceneTimeJog(m_SceneTimeJogMaximumSpeedOffset);
 				_shutdown.Add(() => { _runtime?.Dispose(); _runtime = null; });
 				_patchIds = _runtime.Patches.Select(patch => patch.Id).ToArray();
@@ -224,6 +227,7 @@ namespace ShitDesigner.Main {
 			m_RebuildRuntimeForProgramWidth = false;
 			var replacement = _graphBootstrap.CreateRuntime();
 			replacement.ConfigureMainCueFaderCurve(m_MainCueFaderCurve);
+			replacement.ConfigureMainCompositeOpacity(m_MainCompositeOpacity);
 			replacement.ConfigureSceneTimeJog(m_SceneTimeJogMaximumSpeedOffset);
 			var previous = _runtime;
 			_runtime = replacement;
