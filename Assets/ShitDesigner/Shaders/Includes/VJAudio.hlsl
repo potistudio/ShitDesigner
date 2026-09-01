@@ -33,7 +33,8 @@ float VJAudioLine(float coordinate, float waveform, float thickness)
 #define VJ_AUDIO_CUBE_COUNT 8
 #define VJ_AUDIO_FRACTAL_STEPS 32
 #define VJ_AUDIO_FRACTAL_FOLDS 3
-#define VJ_AUDIO_FRACTAL_ACCUMULATION 0.50
+#define VJ_AUDIO_FRACTAL_ACCUMULATION 0.28
+#define VJ_AUDIO_FRACTAL_BRIGHTNESS 2.0
 
 float VJAudioFastGlow(float distanceToLine, float falloff)
 {
@@ -292,6 +293,7 @@ float4 VJAudioWireframeCubeFractal(float2 uv, float4 resolution, float time,
                 * VJAudioFastGlow(totalDistance, 10.0);
     }
     fractalColor = 1.0 - exp(-fractalColor * fractalColor);
+    fractalColor *= VJ_AUDIO_FRACTAL_BRIGHTNESS;
     float mixAmount = lerp(0.35, 0.65, saturate(amount));
     float3 combined = lerp(wireframe.rgb, fractalColor, mixAmount) * 5.0 * (1.0 + beatAccent * 0.75);
     return VJFinite4(float4(combined, 1.0));
