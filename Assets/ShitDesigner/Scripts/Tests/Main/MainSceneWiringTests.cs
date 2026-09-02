@@ -213,6 +213,46 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void GlobalFlashStartsWhiteRestartsItsPhaseAndBypassesRenderingWhenInactive() {
+			var shader = Resources.Load<Shader>("Shaders/InstantFlash");
+			Assert.That(shader, Is.Not.Null);
+			var renderer = new LiveGlobalFlashRenderer(shader, new LiveRenderSize(4, 4));
+			var source = new RenderTexture(4, 4, 0, RenderTextureFormat.ARGBHalf);
+			var readback = new Texture2D(1, 1, TextureFormat.RGBAFloat, false, true);
+			var previous = RenderTexture.active;
+			try {
+				Assert.That(source.Create(), Is.True);
+				RenderTexture.active = source;
+				GL.Clear(true, true, new Color(.2f, .3f, .4f, 1f));
+				renderer.Configure(1f, 10f, .35f);
+
+				Assert.That(renderer.Render(source, false, 2d), Is.SameAs(source));
+				AssertFlashPixel(renderer.Render(source, true, 2d), readback, Color.white);
+				AssertFlashPixel(renderer.Render(source, true, 2.05d), readback, new Color(.2f, .3f, .4f, 1f));
+				Assert.That(renderer.Render(source, false, 2.06d), Is.SameAs(source));
+				AssertFlashPixel(renderer.Render(source, true, 5d), readback, Color.white);
+			}
+			finally {
+				RenderTexture.active = previous;
+				renderer.Dispose();
+				source.Release();
+				Object.DestroyImmediate(source);
+				Object.DestroyImmediate(readback);
+			}
+		}
+
+		private static void AssertFlashPixel(RenderTexture texture, Texture2D readback, Color expected) {
+			RenderTexture.active = texture;
+			readback.ReadPixels(new Rect(1f, 1f, 1f, 1f), 0, 0);
+			readback.Apply(false, false);
+			var actual = readback.GetPixel(0, 0);
+			Assert.That(actual.r, Is.EqualTo(expected.r).Within(.03f));
+			Assert.That(actual.g, Is.EqualTo(expected.g).Within(.03f));
+			Assert.That(actual.b, Is.EqualTo(expected.b).Within(.03f));
+			Assert.That(actual.a, Is.EqualTo(expected.a).Within(.03f));
+		}
+
+		[Test]
 		public void MacExternalDisplayPluginIsIncludedInMacPlayers() {
 			const string path = "Assets/ShitDesigner/Plugins/macOS/shitdesigner_mac_display.dylib";
 			var importer = AssetImporter.GetAtPath(path) as PluginImporter;
@@ -258,10 +298,13 @@ namespace ShitDesigner.Main.Tests {
 			asset.CloneTree(root);
 
 			var controls = root.Q<VisualElement>("sequencer-controls");
+			var outputTwo = root.Q<VisualElement>("output-2-preview");
 
 			Assert.That(controls, Is.Not.Null);
 			Assert.That(controls.childCount, Is.EqualTo(2));
-			Assert.That(controls.parent.ClassListContains("preview-stack"), Is.True);
+			Assert.That(controls.parent.ClassListContains("output-2-column"), Is.True);
+			Assert.That(controls.parent, Is.SameAs(outputTwo.parent));
+			Assert.That(controls.parent.IndexOf(controls), Is.EqualTo(controls.parent.IndexOf(outputTwo) + 1));
 			Assert.That(controls.parent.ClassListContains("inspector-column"), Is.False);
 			Assert.That(root.Q<VisualElement>("overlay-sequencer"), Is.Not.Null);
 			Assert.That(root.Q<VisualElement>("effect-sequencer"), Is.Not.Null);

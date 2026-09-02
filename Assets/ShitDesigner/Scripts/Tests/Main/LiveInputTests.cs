@@ -43,6 +43,38 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void SlashKeyImmediatelyTracksGlobalFlashHeldStateOutsideEditMode() {
+			var patch = CreatePatch("patch-a");
+			Keyboard keyboard = null;
+			try {
+				keyboard = InputSystem.AddDevice<Keyboard>();
+				keyboard.MakeCurrent();
+				var flashStates = new List<bool>();
+				var editMode = false;
+				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, _ => { }, (_, _) => { }, () => { }, _ => { },
+					isEditMode: () => editMode, setGlobalFlashActive: flashStates.Add);
+
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Slash));
+				InputSystem.Update();
+				input.Poll("patch-a");
+				input.Poll("patch-a");
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+				InputSystem.Update();
+				input.Poll("patch-a");
+				editMode = true;
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Slash));
+				InputSystem.Update();
+				input.Poll("patch-a");
+
+				Assert.That(flashStates, Is.EqualTo(new[] { true, false }));
+			}
+			finally {
+				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
+				Object.DestroyImmediate(patch);
+			}
+		}
+
+		[Test]
 		public void KeyboardMappingQueuesPressedAndReleasedParameterRequestsForLoadedPatch() {
 			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.G));
 			Keyboard keyboard = null;

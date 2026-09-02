@@ -83,16 +83,18 @@ namespace ShitDesigner.Main {
 		public LiveOverlayCompositor Compositor { get; }
 		public LiveOverlayCompositor OverlayOutputCompositor { get; }
 		public LiveInstantEffectRenderer InstantEffects { get; }
+		public LiveGlobalFlashRenderer GlobalFlash { get; }
 
 		public LiveGraph(SceneIsolationManager sceneManager, RenderTexturePool renderPool, IEnumerable<PatchDefinition> patchDefinitions,
 			Func<PatchDefinition, LiveRenderSize, LiveProgramOutput> createOutput, LiveOverlayCompositor compositor, LiveOverlayCompositor overlayOutputCompositor,
-			LiveInstantEffectRenderer instantEffects) {
+			LiveInstantEffectRenderer instantEffects, LiveGlobalFlashRenderer globalFlash) {
 			_sceneManager = sceneManager ?? throw new ArgumentNullException(nameof(sceneManager));
 			_renderPool = renderPool ?? throw new ArgumentNullException(nameof(renderPool));
 			_createOutput = createOutput ?? throw new ArgumentNullException(nameof(createOutput));
 			Compositor = compositor ?? throw new ArgumentNullException(nameof(compositor));
 			OverlayOutputCompositor = overlayOutputCompositor ?? throw new ArgumentNullException(nameof(overlayOutputCompositor));
 			InstantEffects = instantEffects ?? throw new ArgumentNullException(nameof(instantEffects));
+			GlobalFlash = globalFlash ?? throw new ArgumentNullException(nameof(globalFlash));
 			PatchDefinitions = (patchDefinitions ?? throw new ArgumentNullException(nameof(patchDefinitions))).ToArray();
 			if (PatchDefinitions.Count == 0) throw new ArgumentException("A live graph requires patches.");
 		}
@@ -101,11 +103,93 @@ namespace ShitDesigner.Main {
 			=> _createOutput(patch, renderSize);
 
 		public void Dispose() {
+			GlobalFlash.Dispose();
 			InstantEffects.Dispose();
 			OverlayOutputCompositor.Dispose();
 			Compositor.Dispose();
 			_sceneManager.Dispose();
 			_renderPool.Dispose();
+		}
+	}
+
+	internal sealed class LiveGlobalFlashRenderer : IDisposable {
+		private static readonly int m_FlashTimeId = Shader.PropertyToID("_FlashTime");
+		private static readonly int m_AmountId = Shader.PropertyToID("_Amount");
+		private static readonly int m_StrobeRateId = Shader.PropertyToID("_StrobeRate");
+		private static readonly int m_DutyId = Shader.PropertyToID("_Duty");
+
+		private readonly Material m_Material;
+		private readonly RenderTexture m_Output;
+		private float m_Amount = 1f;
+		private float m_StrobeRate = 12f;
+		private float m_Duty = .35f;
+		private double m_ActivationTime;
+		private bool m_WasActive;
+		private bool m_Disposed;
+
+		public LiveGlobalFlashRenderer(Shader shader, LiveRenderSize renderSize) {
+			if (shader == null) throw new ArgumentNullException(nameof(shader));
+			m_Material = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
+			try { m_Output = CreateTexture("ShitDesigner.Main.GlobalFlash.Output", renderSize); }
+			catch {
+				DestroyObject(m_Material);
+				throw;
+			}
+		}
+
+		public void Configure(float amount, float strobeRate, float duty) {
+			if (!IsFinite(amount) || !IsFinite(strobeRate) || !IsFinite(duty))
+				throw new ArgumentOutOfRangeException(nameof(amount), "Global Flash parameters must be finite.");
+			m_Amount = Mathf.Clamp01(amount);
+			m_StrobeRate = Mathf.Clamp(strobeRate, 1f, 30f);
+			m_Duty = Mathf.Clamp(duty, .05f, .95f);
+		}
+
+		public RenderTexture Render(RenderTexture source, bool active, double unscaledTime) {
+			if (m_Disposed) throw new ObjectDisposedException(nameof(LiveGlobalFlashRenderer));
+			if (source == null) throw new ArgumentNullException(nameof(source));
+			if (!active) {
+				m_WasActive = false;
+				return source;
+			}
+			if (!m_WasActive) {
+				m_WasActive = true;
+				m_ActivationTime = unscaledTime;
+			}
+			var elapsed = Math.Max(0d, unscaledTime - m_ActivationTime);
+			m_Material.SetFloat(m_FlashTimeId, elapsed >= float.MaxValue ? float.MaxValue : (float)elapsed);
+			m_Material.SetFloat(m_AmountId, m_Amount);
+			m_Material.SetFloat(m_StrobeRateId, m_StrobeRate);
+			m_Material.SetFloat(m_DutyId, m_Duty);
+			Graphics.Blit(source, m_Output, m_Material);
+			return m_Output;
+		}
+
+		public void Dispose() {
+			if (m_Disposed) return;
+			m_Disposed = true;
+			m_Output.Release();
+			DestroyObject(m_Output);
+			DestroyObject(m_Material);
+		}
+
+		private static RenderTexture CreateTexture(string name, LiveRenderSize renderSize) {
+			var texture = new RenderTexture(renderSize.Width, renderSize.Height, 0, RenderTextureFormat.ARGBHalf) {
+				name = name,
+				useMipMap = false,
+				autoGenerateMips = false
+			};
+			if (texture.Create()) return texture;
+			DestroyObject(texture);
+			throw new InvalidOperationException("The Global Flash output texture could not be created.");
+		}
+
+		private static bool IsFinite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+
+		private static void DestroyObject(UnityEngine.Object value) {
+			if (value == null) return;
+			if (UnityEngine.Application.isPlaying) UnityEngine.Object.Destroy(value);
+			else UnityEngine.Object.DestroyImmediate(value);
 		}
 	}
 
@@ -1403,6 +1487,7 @@ namespace ShitDesigner.Main {
 		private ulong _frameNumber;
 		private ulong m_PreviewFrameNumber;
 		private double m_GraphTime;
+		private double m_UnscaledEffectTime;
 		private double m_SceneTimeJogSpeedOffset;
 		private double m_SceneTimeJogMaximumSpeedOffset = 4d;
 		private double m_LastGraphDeltaSeconds;
@@ -1460,6 +1545,10 @@ namespace ShitDesigner.Main {
 
 		public void ConfigureMainCompositeOpacity(float opacity) {
 			_graph.Compositor.SetMainCompositeOpacity(opacity);
+		}
+
+		public void ConfigureGlobalFlash(float amount, float strobeRate, float duty) {
+			_graph.GlobalFlash.Configure(amount, strobeRate, duty);
 		}
 
 		public LiveParameterApplicationResult Apply(LiveParameterRequest request) {
@@ -1560,6 +1649,7 @@ namespace ShitDesigner.Main {
 		public void Evaluate(double deltaSeconds) {
 			EnsureUsable();
 			var sourceDeltaSeconds = Math.Max(0d, deltaSeconds);
+			m_UnscaledEffectTime += sourceDeltaSeconds;
 			var playbackRate = SceneTimePlaybackRate;
 			m_SceneTimeJogSpeedOffset = 0d;
 			var clockDeltaSeconds = m_BpmClock.Advance(sourceDeltaSeconds);
@@ -1584,7 +1674,7 @@ namespace ShitDesigner.Main {
 				foreach (var output in overlay.Outputs) output.SceneUpdate(m_LastGraphDeltaSeconds);
 		}
 
-		public LiveProgramFrames Render(IReadOnlyList<int> instantEffectTriggers = null, bool blackout = false) {
+		public LiveProgramFrames Render(IReadOnlyList<int> instantEffectTriggers = null, bool blackout = false, bool globalFlash = false) {
 			EnsureUsable();
 			var nextFrame = _frameNumber + 1;
 			if (nextFrame == 0) nextFrame = 1;
@@ -1607,7 +1697,8 @@ namespace ShitDesigner.Main {
 			var alternateTexture = alternatePatch?.Outputs.Count > 0 ? alternatePatch.Outputs[0].ProgramTexture : null;
 			var composite = _graph.Compositor.Render(mainTexture, alternateTexture, m_MainCueFader.AlternateOpacity, m_IsMainCueCompositeActive,
 				overlayInputs, nextFrame, m_GraphTime);
-			var programOutput = _graph.InstantEffects.Render(composite, instantEffectTriggers, nextFrame, m_GraphTime);
+			var instantEffectOutput = _graph.InstantEffects.Render(composite, instantEffectTriggers, nextFrame, m_GraphTime);
+			var programOutput = _graph.GlobalFlash.Render(instantEffectOutput, globalFlash, m_UnscaledEffectTime);
 			var overlayOutput = _graph.OverlayOutputCompositor.Render(Texture2D.blackTexture, null, 0f, false,
 				output2Inputs, nextFrame, m_GraphTime);
 			if (blackout) {
