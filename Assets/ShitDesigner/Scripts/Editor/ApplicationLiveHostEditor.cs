@@ -8,6 +8,7 @@ using ShitDesigner.Nodes;
 using ShitDesigner.Scene;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Video;
 
 namespace ShitDesigner.Editor {
 	[CustomEditor(typeof(ApplicationLiveHost))]
@@ -16,7 +17,7 @@ namespace ShitDesigner.Editor {
 		private SerializedProperty m_MidiInputManager;
 		private SerializedProperty m_InstantEffectTypeIds;
 		private SerializedProperty m_InstantEffectMidiBindings;
-		private SerializedProperty m_InstantOverlayPatches;
+		private SerializedProperty m_InstantOverlayVideos;
 		private SerializedProperty m_InstantOverlayMidiBindings;
 		private double m_NextRepaint;
 
@@ -25,7 +26,7 @@ namespace ShitDesigner.Editor {
 			m_MidiInputManager = serializedObject.FindProperty("_midiInputManager");
 			m_InstantEffectTypeIds = serializedObject.FindProperty("m_InstantEffectTypeIds");
 			m_InstantEffectMidiBindings = serializedObject.FindProperty("m_InstantEffectMidiBindings");
-			m_InstantOverlayPatches = serializedObject.FindProperty("m_InstantOverlayPatches");
+			m_InstantOverlayVideos = serializedObject.FindProperty("m_InstantOverlayVideos");
 			m_InstantOverlayMidiBindings = serializedObject.FindProperty("m_InstantOverlayMidiBindings");
 			EditorApplication.update += RepaintWhilePlaying;
 		}
@@ -39,12 +40,12 @@ namespace ShitDesigner.Editor {
 			}
 
 			serializedObject.Update();
-			DrawPropertiesExcluding(serializedObject, "m_Script", "m_InstantEffectTypeIds", "m_InstantEffectMidiBindings", "m_InstantOverlayPatches", "m_InstantOverlayMidiBindings");
+			DrawPropertiesExcluding(serializedObject, "m_Script", "m_InstantEffectTypeIds", "m_InstantEffectMidiBindings", "m_InstantOverlayVideos", "m_InstantOverlayMidiBindings");
 			var host = (ApplicationLiveHost)target;
 			var graphBootstrap = m_GraphBootstrap.objectReferenceValue as LiveGraphBootstrap;
 			var midiInputManager = m_MidiInputManager.objectReferenceValue as MidiInputManager;
 			DrawInstantEffectAssignments(host, graphBootstrap);
-			DrawInstantOverlayAssignments(host, graphBootstrap);
+			DrawInstantOverlayAssignments(host);
 			DrawMidiAssignments("Instant Effect", "Cue", m_InstantEffectMidiBindings, midiInputManager);
 			DrawMidiAssignments("Instant Overlay", "Lane", m_InstantOverlayMidiBindings, midiInputManager);
 			serializedObject.ApplyModifiedProperties();
@@ -84,38 +85,21 @@ namespace ShitDesigner.Editor {
 			if (UnityEngine.Application.isPlaying) host.AssignInstantEffect(index, typeId.stringValue);
 		}
 
-		private void DrawInstantOverlayAssignments(ApplicationLiveHost host, LiveGraphBootstrap graphBootstrap) {
+		private void DrawInstantOverlayAssignments(ApplicationLiveHost host) {
 			EditorGUILayout.Space();
 			EditorGUILayout.LabelField("Instant Overlay Assignments", EditorStyles.boldLabel);
-			var overlays = graphBootstrap == null ? Array.Empty<PatchDefinition>() : graphBootstrap.OverlayPatches.Where(patch => patch != null).ToArray();
-			if (graphBootstrap == null) EditorGUILayout.HelpBox("Assign a Live Graph Bootstrap to choose Instant Overlays.", MessageType.Warning);
-			else if (overlays.Length == 0) EditorGUILayout.HelpBox("No Overlay Patches are configured in the Live Graph Bootstrap.", MessageType.Warning);
-			for (var index = 0; index < m_InstantOverlayPatches.arraySize; index++)
-				DrawInstantOverlayAssignment(host, index, m_InstantOverlayPatches.GetArrayElementAtIndex(index), overlays);
+			EditorGUILayout.HelpBox("Assign a video to each lane. Instant Overlay videos are composed with Unmult alpha.", MessageType.None);
+			for (var index = 0; index < m_InstantOverlayVideos.arraySize; index++)
+				DrawInstantOverlayAssignment(host, index, m_InstantOverlayVideos.GetArrayElementAtIndex(index));
 		}
 
-		private static void DrawInstantOverlayAssignment(ApplicationLiveHost host, int index, SerializedProperty patchProperty, IReadOnlyList<PatchDefinition> overlays) {
-			var currentPatch = patchProperty.objectReferenceValue as PatchDefinition;
-			var options = new List<string> { "<Unassigned>" };
-			var patches = new List<PatchDefinition> { null };
-			var selected = 0;
-			for (var patchIndex = 0; patchIndex < overlays.Count; patchIndex++) {
-				var patch = overlays[patchIndex];
-				options.Add(patch.DisplayName);
-				patches.Add(patch);
-				if (patch == currentPatch) selected = patchIndex + 1;
-			}
-			if (currentPatch != null && selected == 0) {
-				options.Add("<Unavailable> " + currentPatch.DisplayName);
-				patches.Add(currentPatch);
-				selected = options.Count - 1;
-			}
-
+		private static void DrawInstantOverlayAssignment(ApplicationLiveHost host, int index, SerializedProperty videoProperty) {
 			EditorGUI.BeginChangeCheck();
-			selected = EditorGUILayout.Popup("Lane " + (index + 1).ToString("00"), selected, options.ToArray());
+			var video = (VideoClip)EditorGUILayout.ObjectField("Lane " + (index + 1).ToString("00"),
+				videoProperty.objectReferenceValue, typeof(VideoClip), false);
 			if (!EditorGUI.EndChangeCheck()) return;
-			patchProperty.objectReferenceValue = patches[selected];
-			if (UnityEngine.Application.isPlaying) host.AssignInstantOverlayPatch(index, patches[selected]);
+			videoProperty.objectReferenceValue = video;
+			if (UnityEngine.Application.isPlaying) host.AssignInstantOverlayVideo(index, video);
 		}
 
 		private static void DrawMidiAssignments(string title, string slotName, SerializedProperty bindings, MidiInputManager midiInputManager) {

@@ -6,6 +6,7 @@ using ShitDesigner.Input;
 using ShitDesigner.Scene;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Video;
 
 namespace ShitDesigner.Main {
 	public enum ApplicationLiveHostState {
@@ -60,8 +61,8 @@ namespace ShitDesigner.Main {
 		[SerializeField, Tooltip("Maps each of the sixteen Instant Overlay lanes to a MIDI message. The lane remains active while the mapped control is pressed.")]
 		private InstantOverlayMidiBinding[] m_InstantOverlayMidiBindings = CreateInstantOverlayMidiBindings();
 		[Header("Instant Overlay")]
-		[SerializeField, Tooltip("Maps each Instant Overlay Lane to an Overlay Patch.")]
-		private PatchDefinition[] m_InstantOverlayPatches = CreateInstantOverlayPatches();
+		[SerializeField, Tooltip("Maps each Instant Overlay Lane to a video. The video is composed with Unmult alpha.")]
+		private VideoClip[] m_InstantOverlayVideos = CreateInstantOverlayVideos();
 
 		private readonly LiveParameterQueue _parameterQueue = new LiveParameterQueue();
 		private readonly LiveBpmTap _bpmTap = new LiveBpmTap();
@@ -131,8 +132,7 @@ namespace ShitDesigner.Main {
 				Array.Resize(ref m_InstantOverlayMidiBindings, LiveStepSequencer.OverlayLaneCount);
 			for (var index = 0; index < m_InstantOverlayMidiBindings.Length; index++)
 				m_InstantOverlayMidiBindings[index] ??= new InstantOverlayMidiBinding();
-			if (m_InstantOverlayPatches == null || m_InstantOverlayPatches.Length != LiveStepSequencer.OverlayLaneCount)
-				Array.Resize(ref m_InstantOverlayPatches, LiveStepSequencer.OverlayLaneCount);
+			EnsureInstantOverlayVideoSlots();
 		}
 
 		private static InstantEffectMidiBinding[] CreateInstantEffectMidiBindings() {
@@ -149,7 +149,12 @@ namespace ShitDesigner.Main {
 			return bindings;
 		}
 
-		private static PatchDefinition[] CreateInstantOverlayPatches() => new PatchDefinition[LiveStepSequencer.OverlayLaneCount];
+		private static VideoClip[] CreateInstantOverlayVideos() => new VideoClip[LiveStepSequencer.OverlayLaneCount];
+
+		private void EnsureInstantOverlayVideoSlots() {
+			if (m_InstantOverlayVideos == null || m_InstantOverlayVideos.Length != LiveStepSequencer.OverlayLaneCount)
+				Array.Resize(ref m_InstantOverlayVideos, LiveStepSequencer.OverlayLaneCount);
+		}
 
 		public bool Boot() {
 			if (State == ApplicationLiveHostState.Running) return true;
@@ -588,23 +593,27 @@ namespace ShitDesigner.Main {
 				: m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).AssignLane(laneIndex, patchId);
 		}
 
-		public bool AssignInstantOverlayPatch(int laneIndex, PatchDefinition patch) {
-			if (laneIndex < 0 || laneIndex >= m_InstantOverlayPatches.Length) return false;
-			if (patch != null && (_graphBootstrap == null || !_graphBootstrap.OverlayPatches.Contains(patch))) return false;
-			m_InstantOverlayPatches[laneIndex] = patch;
+		public bool AssignInstantOverlayVideo(int laneIndex, VideoClip video) {
+			if (laneIndex < 0 || laneIndex >= m_InstantOverlayVideos.Length) return false;
+			m_InstantOverlayVideos[laneIndex] = video;
 			if (_runtime == null) return true;
+			_runtime.SetInstantOverlayVideo(laneIndex, video);
 			var overlay = m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay);
-			if (patch == null) {
+			if (video == null) {
 				overlay.ClearLane(laneIndex);
 				m_OverlayTakeOverrides[laneIndex] = FollowOverlaySequencer;
 				m_PianoReturnOverlayTakeOverrides[laneIndex] = NoPianoOverlayTake;
 				return true;
 			}
-			return overlay.AssignLane(laneIndex, patch.Id).Accepted;
+			return overlay.AssignLane(laneIndex, LiveGraphRuntime.GetInstantOverlayVideoLaneId(laneIndex)).Accepted;
 		}
 
 		public LiveSequencerOperationResult UnassignOverlayPatchFromLane(int laneIndex) {
-			return AssignInstantOverlayPatch(laneIndex, null)
+			if (laneIndex >= 0 && laneIndex < m_InstantOverlayVideos.Length && m_InstantOverlayVideos[laneIndex] != null)
+				return AssignInstantOverlayVideo(laneIndex, null)
+					? LiveSequencerOperationResult.Accept()
+					: LiveSequencerOperationResult.Reject("The sequencer lane does not exist.");
+			return m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).ClearLane(laneIndex).Accepted
 				? LiveSequencerOperationResult.Accept()
 				: LiveSequencerOperationResult.Reject("The sequencer lane does not exist.");
 		}
@@ -636,11 +645,12 @@ namespace ShitDesigner.Main {
 		}
 
 		private void ApplyInstantOverlayAssignments() {
+			EnsureInstantOverlayVideoSlots();
+			_runtime.SetInstantOverlayVideos(m_InstantOverlayVideos);
 			var overlay = m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay);
-			for (var laneIndex = 0; laneIndex < m_InstantOverlayPatches.Length; laneIndex++) {
-				var patch = m_InstantOverlayPatches[laneIndex];
-				if (patch == null || !m_OverlayPatchIds.Contains(patch.Id)) continue;
-				overlay.AssignLane(laneIndex, patch.Id);
+			for (var laneIndex = 0; laneIndex < m_InstantOverlayVideos.Length; laneIndex++) {
+				if (m_InstantOverlayVideos[laneIndex] == null) continue;
+				overlay.AssignLane(laneIndex, LiveGraphRuntime.GetInstantOverlayVideoLaneId(laneIndex));
 			}
 		}
 

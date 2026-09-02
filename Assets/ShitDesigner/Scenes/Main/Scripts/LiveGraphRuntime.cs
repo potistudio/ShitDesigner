@@ -1501,11 +1501,15 @@ namespace ShitDesigner.Main {
 		private readonly LiveBpmClock m_BpmClock;
 		private readonly List<LivePatch> _createdPatches = new List<LivePatch>();
 		private readonly LivePatch[] m_OverlayPatches = new LivePatch[LiveStepSequencer.OverlayLaneCount];
+		private readonly LiveProgramVideoGraphNode[] m_InstantOverlayVideos = new LiveProgramVideoGraphNode[LiveStepSequencer.OverlayLaneCount];
+		private readonly VideoClip[] m_InstantOverlayVideoClips = new VideoClip[LiveStepSequencer.OverlayLaneCount];
+		private readonly bool[] m_UsesInstantOverlayVideo = new bool[LiveStepSequencer.OverlayLaneCount];
 		private readonly LiveSequencerCellMode[] m_OverlayModes = new LiveSequencerCellMode[LiveStepSequencer.OverlayLaneCount];
 		private readonly bool[] m_OverlayOutput2Copies = new bool[LiveStepSequencer.OverlayLaneCount];
 		private readonly Dictionary<string, LivePatchPreview> m_Previews = new Dictionary<string, LivePatchPreview>(StringComparer.Ordinal);
 		private readonly HashSet<string> m_PreviewFailures = new HashSet<string>(StringComparer.Ordinal);
 		private readonly RenderTexture[] m_OverlayPreviewFrames = new RenderTexture[LiveStepSequencer.OverlayLaneCount];
+		private readonly RenderTexture[] m_InstantOverlayVideoPreviewFrames = new RenderTexture[LiveStepSequencer.OverlayLaneCount];
 		private readonly RenderTexture[] m_MainCuePreviewFrames = new RenderTexture[MainCueCount];
 		private readonly LivePatch[] m_MainCuePatches = new LivePatch[MainCueCount];
 		private readonly string[] m_MainCuePatchIds = new string[MainCueCount];
@@ -1697,6 +1701,9 @@ namespace ShitDesigner.Main {
 				overlay.ApplyResolvedParameters(m_BpmClock.Frame);
 				foreach (var output in overlay.Outputs) output.Evaluate(m_LastGraphDeltaSeconds, m_BpmClock.Frame);
 			}
+			for (var laneIndex = 0; laneIndex < m_InstantOverlayVideos.Length; laneIndex++)
+				if (m_UsesInstantOverlayVideo[laneIndex] && m_OverlayModes[laneIndex] != LiveSequencerCellMode.Off)
+					m_InstantOverlayVideos[laneIndex]?.Evaluate(m_LastGraphDeltaSeconds, m_BpmClock.Frame);
 		}
 
 		public void SceneUpdate() {
@@ -1715,9 +1722,25 @@ namespace ShitDesigner.Main {
 				foreach (var output in patch.Outputs) output.Render(m_GraphTime, nextFrame);
 			foreach (var overlay in ActiveOverlayPatches())
 				foreach (var output in overlay.Outputs) output.Render(m_GraphTime, nextFrame);
+			for (var laneIndex = 0; laneIndex < m_InstantOverlayVideos.Length; laneIndex++) {
+				if (!m_UsesInstantOverlayVideo[laneIndex] || m_OverlayModes[laneIndex] == LiveSequencerCellMode.Off) continue;
+				var video = m_InstantOverlayVideos[laneIndex];
+				if (video == null) continue;
+				video.Render(null, m_GraphTime, nextFrame);
+				var preview = m_InstantOverlayVideoPreviewFrames[laneIndex];
+				if (preview != null) Graphics.Blit(video.Target, preview);
+			}
 			var overlayInputs = new List<LiveOverlayInput>();
 			var output2Inputs = new List<LiveOverlayInput>();
 			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++) {
+				if (m_UsesInstantOverlayVideo[laneIndex]) {
+					var video = m_InstantOverlayVideos[laneIndex];
+					if (video == null || m_OverlayModes[laneIndex] == LiveSequencerCellMode.Off) continue;
+					overlayInputs.Add(new LiveOverlayInput(m_OverlayModes[laneIndex], video.Target, true));
+					if (m_OverlayOutput2Copies[laneIndex])
+						output2Inputs.Add(new LiveOverlayInput(m_OverlayModes[laneIndex], video.Target, true));
+					continue;
+				}
 				var overlay = m_OverlayPatches[laneIndex];
 				if (overlay == null || m_OverlayModes[laneIndex] == LiveSequencerCellMode.Off || overlay.Outputs.Count == 0) continue;
 				var usesUnmultAlpha = overlay.Definition.ProgramGraph.Nodes.Any(node => node.TypeId == VideoPlayerContract.NodeTypeId);
@@ -1764,9 +1787,18 @@ namespace ShitDesigner.Main {
 			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++) {
 				var patchId = composition.LanePatchIds.Count > laneIndex ? composition.LanePatchIds[laneIndex] : string.Empty;
 				var current = m_OverlayPatches[laneIndex];
+				var usesInstantOverlayVideo = IsInstantOverlayVideoLaneId(patchId, out var videoLaneIndex)
+					&& videoLaneIndex == laneIndex && m_InstantOverlayVideos[laneIndex] != null;
+				m_UsesInstantOverlayVideo[laneIndex] = usesInstantOverlayVideo;
+				m_OverlayModes[laneIndex] = activeModes.TryGetValue(laneIndex, out var mode) ? mode : LiveSequencerCellMode.Off;
+				m_OverlayOutput2Copies[laneIndex] = composition.IsCopiedToOutput2(laneIndex);
+				if (usesInstantOverlayVideo) {
+					m_OverlayPatches[laneIndex] = null;
+					DisposeUnreferencedOverlayPatch(current);
+					continue;
+				}
 				if (string.IsNullOrEmpty(patchId)) {
 					m_OverlayPatches[laneIndex] = null;
-					m_OverlayModes[laneIndex] = LiveSequencerCellMode.Off;
 					DisposeUnreferencedOverlayPatch(current);
 					continue;
 				}
@@ -1778,8 +1810,6 @@ namespace ShitDesigner.Main {
 					m_OverlayPatches[laneIndex] = replacement;
 					DisposeUnreferencedOverlayPatch(current);
 				}
-				m_OverlayModes[laneIndex] = activeModes.TryGetValue(laneIndex, out var mode) ? mode : LiveSequencerCellMode.Off;
-				m_OverlayOutput2Copies[laneIndex] = composition.IsCopiedToOutput2(laneIndex);
 			}
 			foreach (var patch in m_OverlayPatches.Where(patch => patch != null).Distinct())
 				patch.SetSceneActive(IsOverlayPatchActive(patch));
@@ -1809,6 +1839,9 @@ namespace ShitDesigner.Main {
 			}
 
 			PopulatePreviewFrames(lanePatchIds, m_OverlayPreviewFrames);
+			for (var laneIndex = 0; laneIndex < m_InstantOverlayVideoPreviewFrames.Length; laneIndex++)
+				if (m_UsesInstantOverlayVideo[laneIndex])
+					m_OverlayPreviewFrames[laneIndex] = m_InstantOverlayVideoPreviewFrames[laneIndex];
 			PopulatePreviewFrames(mainCuePatchIds, m_MainCuePreviewFrames);
 		}
 
@@ -1829,11 +1862,57 @@ namespace ShitDesigner.Main {
 			_graph.InstantEffects.Clear(cueIndex);
 		}
 
+		public static string GetInstantOverlayVideoLaneId(int laneIndex) {
+			if (laneIndex < 0 || laneIndex >= LiveStepSequencer.OverlayLaneCount)
+				throw new ArgumentOutOfRangeException(nameof(laneIndex));
+			return "instant-overlay-video-" + laneIndex;
+		}
+
+		public void SetInstantOverlayVideos(IReadOnlyList<VideoClip> videos) {
+			EnsureUsable();
+			for (var laneIndex = 0; laneIndex < LiveStepSequencer.OverlayLaneCount; laneIndex++)
+				SetInstantOverlayVideo(laneIndex, videos != null && laneIndex < videos.Count ? videos[laneIndex] : null);
+		}
+
+		public void SetInstantOverlayVideo(int laneIndex, VideoClip video) {
+			EnsureUsable();
+			if (laneIndex < 0 || laneIndex >= m_InstantOverlayVideos.Length)
+				throw new ArgumentOutOfRangeException(nameof(laneIndex));
+			if (m_InstantOverlayVideoClips[laneIndex] == video) return;
+			m_InstantOverlayVideos[laneIndex]?.Dispose();
+			ReleaseTexture(m_InstantOverlayVideoPreviewFrames[laneIndex]);
+			m_InstantOverlayVideos[laneIndex] = null;
+			m_InstantOverlayVideoPreviewFrames[laneIndex] = null;
+			m_InstantOverlayVideoClips[laneIndex] = video;
+			m_UsesInstantOverlayVideo[laneIndex] = false;
+			if (video == null) return;
+
+			var target = CreateTexture("ShitDesigner.Main.InstantOverlayVideo." + laneIndex, m_OverlayRenderSize);
+			try {
+				m_InstantOverlayVideos[laneIndex] = new LiveProgramVideoGraphNode("instant-overlay-video-" + laneIndex,
+					target, video, true, 0d, 1f, true, LiveBpmClock.DefaultBpm);
+				m_InstantOverlayVideoPreviewFrames[laneIndex] = CreateTexture("ShitDesigner.Main.InstantOverlayPreview." + laneIndex, PreviewRenderSize);
+			}
+			catch {
+				if (m_InstantOverlayVideos[laneIndex] != null) m_InstantOverlayVideos[laneIndex].Dispose();
+				else ReleaseTexture(target);
+				m_InstantOverlayVideos[laneIndex] = null;
+				m_InstantOverlayVideoClips[laneIndex] = null;
+				ReleaseTexture(m_InstantOverlayVideoPreviewFrames[laneIndex]);
+				m_InstantOverlayVideoPreviewFrames[laneIndex] = null;
+				throw;
+			}
+		}
+
 		public void Dispose() {
 			if (_disposed) return;
 			_disposed = true;
 			m_Previews.Clear();
 			m_PreviewFailures.Clear();
+			for (var laneIndex = 0; laneIndex < m_InstantOverlayVideos.Length; laneIndex++) {
+				m_InstantOverlayVideos[laneIndex]?.Dispose();
+				ReleaseTexture(m_InstantOverlayVideoPreviewFrames[laneIndex]);
+			}
 			for (var index = _createdPatches.Count - 1; index >= 0; index--) _createdPatches[index].Dispose();
 			_createdPatches.Clear();
 			_graph.Dispose();
@@ -1883,6 +1962,33 @@ namespace ShitDesigner.Main {
 			if (patch != null && !m_OverlayPatches.Contains(patch)) DisposePatch(patch);
 		}
 
+		private static bool IsInstantOverlayVideoLaneId(string laneId, out int laneIndex) {
+			laneIndex = -1;
+			if (string.IsNullOrEmpty(laneId)) return false;
+			const string prefix = "instant-overlay-video-";
+			if (!laneId.StartsWith(prefix, StringComparison.Ordinal)
+				|| !int.TryParse(laneId.Substring(prefix.Length), out laneIndex)) return false;
+			return laneIndex >= 0 && laneIndex < LiveStepSequencer.OverlayLaneCount;
+		}
+
+		private static RenderTexture CreateTexture(string name, LiveRenderSize renderSize) {
+			var texture = new RenderTexture(renderSize.Width, renderSize.Height, 0, RenderTextureFormat.ARGBHalf) {
+				name = name,
+				useMipMap = false,
+				autoGenerateMips = false
+			};
+			if (texture.Create()) return texture;
+			ReleaseTexture(texture);
+			throw new InvalidOperationException("The Instant Overlay video texture could not be created.");
+		}
+
+		private static void ReleaseTexture(RenderTexture texture) {
+			if (texture == null) return;
+			texture.Release();
+			if (UnityEngine.Application.isPlaying) UnityEngine.Object.Destroy(texture);
+			else UnityEngine.Object.DestroyImmediate(texture);
+		}
+
 		private static HashSet<string> CollectAssignedPreviewPatchIds(IReadOnlyList<string> lanePatchIds, IReadOnlyList<string> mainCuePatchIds) {
 			var patchIds = new HashSet<string>(StringComparer.Ordinal);
 			CollectAssignedPatchIds(lanePatchIds, patchIds);
@@ -1893,7 +1999,7 @@ namespace ShitDesigner.Main {
 		private static void CollectAssignedPatchIds(IReadOnlyList<string> source, ISet<string> destination) {
 			if (source == null) return;
 			foreach (var patchId in source)
-				if (!string.IsNullOrEmpty(patchId)) destination.Add(patchId);
+				if (!string.IsNullOrEmpty(patchId) && !IsInstantOverlayVideoLaneId(patchId, out _)) destination.Add(patchId);
 		}
 
 		private void PopulatePreviewFrames(IReadOnlyList<string> patchIds, RenderTexture[] frames) {
