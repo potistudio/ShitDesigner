@@ -20,6 +20,9 @@ namespace ShitDesigner.Scene {
 		[Header("End Appearance")]
 		[Range(0f, 1f)][SerializeField] private float m_EndOpacity = 1f;
 		[Min(.001f)][SerializeField] private float m_EndDepth = .35f;
+		[Header("Trigger Burst")]
+		[Min(1)][SerializeField] private int m_BurstCount = 1;
+		[Min(0f)][SerializeField] private float m_BurstInterval;
 		[SerializeField] private bool m_TriggerOnColliderEnter = true;
 		[SerializeField] private bool m_ResetToOriginOnTrigger = true;
 
@@ -37,8 +40,11 @@ namespace ShitDesigner.Scene {
 		private float m_CurrentOpacity;
 		private float m_CurrentDepth;
 		private float m_MotionElapsed;
+		private float m_BurstIntervalElapsed;
+		private int m_CompletedBurstCount;
 		private bool m_HasOrigin;
 		private bool m_IsMoving;
+		private bool m_IsWaitingForNextBurst;
 
 		private void OnEnable() {
 			CaptureOrigin();
@@ -50,6 +56,7 @@ namespace ShitDesigner.Scene {
 
 		private void OnDisable() {
 			m_IsMoving = false;
+			m_IsWaitingForNextBurst = false;
 			m_HasOrigin = false;
 			ReleaseSurface();
 		}
@@ -63,10 +70,12 @@ namespace ShitDesigner.Scene {
 			m_Opacity = Mathf.Clamp01(m_Opacity);
 			m_EndOpacity = Mathf.Clamp01(m_EndOpacity);
 			m_EndDepth = Mathf.Max(.001f, m_EndDepth);
+			m_BurstCount = Mathf.Max(1, m_BurstCount);
+			m_BurstInterval = Mathf.Max(0f, m_BurstInterval);
 			m_UpDistance = Mathf.Max(0f, m_UpDistance);
 			m_Duration = Mathf.Max(.001f, m_Duration);
 			m_EaseOut ??= CreateEaseOutCurve();
-			if (!Application.isPlaying || !m_IsMoving) {
+			if (!Application.isPlaying || (!m_IsMoving && !m_IsWaitingForNextBurst)) {
 				m_CurrentOpacity = m_Opacity;
 				m_CurrentDepth = m_Depth;
 			}
@@ -78,7 +87,15 @@ namespace ShitDesigner.Scene {
 		}
 
 		private void Update() {
-			if (!Application.isPlaying || !m_IsMoving)
+			if (!Application.isPlaying)
+				return;
+			if (m_IsWaitingForNextBurst) {
+				m_BurstIntervalElapsed += Time.unscaledDeltaTime;
+				if (m_BurstIntervalElapsed >= m_BurstInterval)
+					StartBurstMotion();
+				return;
+			}
+			if (!m_IsMoving)
 				return;
 
 			m_MotionElapsed += Time.unscaledDeltaTime;
@@ -88,8 +105,14 @@ namespace ShitDesigner.Scene {
 			m_CurrentOpacity = Mathf.LerpUnclamped(m_MotionStartOpacity, m_MotionEndOpacity, easedProgress);
 			m_CurrentDepth = Mathf.LerpUnclamped(m_MotionStartDepth, m_MotionEndDepth, easedProgress);
 			RefreshSurface();
-			if (progress >= 1f)
+			if (progress >= 1f) {
 				m_IsMoving = false;
+				m_CompletedBurstCount++;
+				if (m_CompletedBurstCount < m_BurstCount) {
+					m_IsWaitingForNextBurst = true;
+					m_BurstIntervalElapsed = 0f;
+				}
+			}
 		}
 
 		private void OnTriggerEnter(Collider other) {
@@ -97,10 +120,16 @@ namespace ShitDesigner.Scene {
 				TriggerMoveUp();
 		}
 
-		/// <summary>Starts one upward ease-out motion. This is suitable for a UnityEvent trigger.</summary>
-		[ContextMenu("Trigger Up / Fade / Depth")]
+		/// <summary>Starts the configured upward, fade, and depth burst. This is suitable for a UnityEvent trigger.</summary>
+		[ContextMenu("Trigger Burst")]
 		public void TriggerMoveUp() {
 			CaptureOrigin();
+			m_CompletedBurstCount = 0;
+			m_IsWaitingForNextBurst = false;
+			StartBurstMotion();
+		}
+
+		private void StartBurstMotion() {
 			m_MotionStartPosition = m_ResetToOriginOnTrigger ? m_OriginLocalPosition : transform.localPosition;
 			transform.localPosition = m_MotionStartPosition;
 			m_MotionEndPosition = m_MotionStartPosition + Vector3.up * m_UpDistance;
@@ -112,6 +141,7 @@ namespace ShitDesigner.Scene {
 			m_CurrentDepth = m_MotionStartDepth;
 			m_MotionElapsed = 0f;
 			m_IsMoving = true;
+			m_IsWaitingForNextBurst = false;
 			RefreshSurface();
 		}
 
