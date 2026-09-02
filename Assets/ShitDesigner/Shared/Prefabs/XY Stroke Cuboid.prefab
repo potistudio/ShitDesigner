@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 518763517148528935}
   - component: {fileID: 518763517148528936}
   m_Layer: 0
-  m_Name: XY Stroke Cuboid
+  m_Name: XY Open Cuboid
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -47,5 +47,4 @@ MonoBehaviour:
   m_Width: 16
   m_Height: 9
   m_Depth: 0.35
-  m_StrokeWidth: 0.045
   m_Color: {r: 1, g: 1, b: 1, a: 1}
