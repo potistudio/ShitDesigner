@@ -10,7 +10,7 @@ namespace ShitDesigner.Editor {
 			EditorGUILayout.Space();
 
 			using (new EditorGUI.DisabledScope(!UnityEngine.Application.isPlaying))
-				if (GUILayout.Button("Trigger Move Up"))
+				if (GUILayout.Button("Trigger Up / Fade / Depth"))
 					TriggerSelectedCuboids();
 
 			if (!UnityEngine.Application.isPlaying)
