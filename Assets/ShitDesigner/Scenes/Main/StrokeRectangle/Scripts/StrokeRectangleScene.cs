@@ -3,17 +3,18 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace ShitDesigner.Scene {
-	/// <summary>Draws one large, unfilled rectangle on the local XY plane.</summary>
+	/// <summary>Draws a large, shallow, face-free cuboid around the local XY plane.</summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
 	public sealed class StrokeRectangleScene : MonoBehaviour {
 		[Header("Rectangle")]
 		[Min(.01f)][SerializeField] private float m_Width = 16f;
 		[Min(.01f)][SerializeField] private float m_Height = 9f;
+		[Min(.001f)][SerializeField] private float m_Depth = .35f;
 		[Min(.001f)][SerializeField] private float m_StrokeWidth = .045f;
 		[ColorUsage(false, true)][SerializeField] private Color m_Color = Color.white;
 
-		private LineRenderer m_Stroke;
+		private LineRenderer[] m_Strokes = Array.Empty<LineRenderer>();
 		private Material m_Material;
 
 		private void OnEnable() {
@@ -28,6 +29,7 @@ namespace ShitDesigner.Scene {
 		private void OnValidate() {
 			m_Width = Mathf.Max(.01f, m_Width);
 			m_Height = Mathf.Max(.01f, m_Height);
+			m_Depth = Mathf.Max(.001f, m_Depth);
 			m_StrokeWidth = Mathf.Max(.001f, m_StrokeWidth);
 			if (!isActiveAndEnabled)
 				return;
@@ -37,43 +39,77 @@ namespace ShitDesigner.Scene {
 		}
 
 		private void EnsureStroke() {
-			if (m_Stroke != null)
+			if (m_Strokes.Length != 0)
 				return;
 
-			var strokeObject = new GameObject("XY Stroke") {
-				layer = gameObject.layer,
-				hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSave
-			};
-			strokeObject.transform.SetParent(transform, false);
-			m_Stroke = strokeObject.AddComponent<LineRenderer>();
 			m_Material = CreateMaterial();
-			m_Stroke.sharedMaterial = m_Material;
-			m_Stroke.useWorldSpace = false;
-			m_Stroke.loop = true;
-			m_Stroke.alignment = LineAlignment.TransformZ;
-			m_Stroke.numCornerVertices = 0;
-			m_Stroke.numCapVertices = 0;
-			m_Stroke.shadowCastingMode = ShadowCastingMode.Off;
-			m_Stroke.receiveShadows = false;
-			m_Stroke.allowOcclusionWhenDynamic = false;
+			m_Strokes = new[] {
+				CreateStroke("Front XY Stroke", true),
+				CreateStroke("Rear XY Stroke", true),
+				CreateStroke("Bottom Z Stroke", false),
+				CreateStroke("Right Z Stroke", false),
+				CreateStroke("Top Z Stroke", false),
+				CreateStroke("Left Z Stroke", false)
+			};
 		}
 
 		private void RefreshStroke() {
-			if (m_Stroke == null)
+			if (m_Strokes.Length != 6)
 				return;
 
 			var halfWidth = m_Width * .5f;
 			var halfHeight = m_Height * .5f;
-			m_Stroke.positionCount = 4;
-			m_Stroke.SetPositions(new[] {
-				new Vector3(-halfWidth, -halfHeight, 0f),
-				new Vector3(halfWidth, -halfHeight, 0f),
-				new Vector3(halfWidth, halfHeight, 0f),
-				new Vector3(-halfWidth, halfHeight, 0f)
-			});
-			m_Stroke.widthMultiplier = m_StrokeWidth;
-			m_Stroke.startColor = m_Color;
-			m_Stroke.endColor = m_Color;
+			var halfDepth = m_Depth * .5f;
+			var corners = new[] {
+				new Vector2(-halfWidth, -halfHeight),
+				new Vector2(halfWidth, -halfHeight),
+				new Vector2(halfWidth, halfHeight),
+				new Vector2(-halfWidth, halfHeight)
+			};
+			m_Strokes[0].positionCount = 4;
+			m_Strokes[0].SetPositions(RectangleAtDepth(corners, -halfDepth));
+			m_Strokes[1].positionCount = 4;
+			m_Strokes[1].SetPositions(RectangleAtDepth(corners, halfDepth));
+			for (var index = 0; index < corners.Length; index++) {
+				var stroke = m_Strokes[index + 2];
+				stroke.positionCount = 2;
+				stroke.SetPositions(new[] {
+					new Vector3(corners[index].x, corners[index].y, -halfDepth),
+					new Vector3(corners[index].x, corners[index].y, halfDepth)
+				});
+			}
+
+			for (var index = 0; index < m_Strokes.Length; index++) {
+				m_Strokes[index].widthMultiplier = m_StrokeWidth;
+				m_Strokes[index].startColor = m_Color;
+				m_Strokes[index].endColor = m_Color;
+			}
+		}
+
+		private LineRenderer CreateStroke(string name, bool loop) {
+			var strokeObject = new GameObject(name) {
+				layer = gameObject.layer,
+				hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSave
+			};
+			strokeObject.transform.SetParent(transform, false);
+			var stroke = strokeObject.AddComponent<LineRenderer>();
+			stroke.sharedMaterial = m_Material;
+			stroke.useWorldSpace = false;
+			stroke.loop = loop;
+			stroke.alignment = LineAlignment.View;
+			stroke.numCornerVertices = 0;
+			stroke.numCapVertices = 0;
+			stroke.shadowCastingMode = ShadowCastingMode.Off;
+			stroke.receiveShadows = false;
+			stroke.allowOcclusionWhenDynamic = false;
+			return stroke;
+		}
+
+		private static Vector3[] RectangleAtDepth(Vector2[] corners, float depth) {
+			var positions = new Vector3[corners.Length];
+			for (var index = 0; index < corners.Length; index++)
+				positions[index] = new Vector3(corners[index].x, corners[index].y, depth);
+			return positions;
 		}
 
 		private static Material CreateMaterial() {
@@ -92,11 +128,12 @@ namespace ShitDesigner.Scene {
 		}
 
 		private void ReleaseStroke() {
-			if (m_Stroke != null)
-				DestroyOwned(m_Stroke.gameObject);
+			for (var index = 0; index < m_Strokes.Length; index++)
+				if (m_Strokes[index] != null)
+					DestroyOwned(m_Strokes[index].gameObject);
 			if (m_Material != null)
 				DestroyOwned(m_Material);
-			m_Stroke = null;
+			m_Strokes = Array.Empty<LineRenderer>();
 			m_Material = null;
 		}
 
