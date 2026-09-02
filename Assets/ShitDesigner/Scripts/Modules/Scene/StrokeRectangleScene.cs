@@ -17,6 +17,9 @@ namespace ShitDesigner.Scene {
 		[Min(0f)][SerializeField] private float m_UpDistance = 2f;
 		[Min(.001f)][SerializeField] private float m_Duration = .5f;
 		[SerializeField] private AnimationCurve m_EaseOut = CreateEaseOutCurve();
+		[Header("Trigger Appearance")]
+		[Range(0f, 1f)][SerializeField] private float m_TriggerStartOpacity;
+		[Min(.001f)][SerializeField] private float m_TriggerStartDepth = .001f;
 		[SerializeField] private bool m_TriggerOnColliderEnter = true;
 		[SerializeField] private bool m_ResetToOriginOnTrigger = true;
 
@@ -27,12 +30,20 @@ namespace ShitDesigner.Scene {
 		private Vector3 m_OriginLocalPosition;
 		private Vector3 m_MotionStartPosition;
 		private Vector3 m_MotionEndPosition;
+		private float m_MotionStartOpacity;
+		private float m_MotionEndOpacity;
+		private float m_MotionStartDepth;
+		private float m_MotionEndDepth;
+		private float m_CurrentOpacity;
+		private float m_CurrentDepth;
 		private float m_MotionElapsed;
 		private bool m_HasOrigin;
 		private bool m_IsMoving;
 
 		private void OnEnable() {
 			CaptureOrigin();
+			m_CurrentOpacity = m_Opacity;
+			m_CurrentDepth = m_Depth;
 			EnsureSurface();
 			RefreshSurface();
 		}
@@ -50,9 +61,16 @@ namespace ShitDesigner.Scene {
 			m_Height = Mathf.Max(.01f, m_Height);
 			m_Depth = Mathf.Max(.001f, m_Depth);
 			m_Opacity = Mathf.Clamp01(m_Opacity);
+			m_TriggerStartOpacity = Mathf.Clamp01(m_TriggerStartOpacity);
+			m_TriggerStartDepth = Mathf.Max(.001f, m_TriggerStartDepth);
 			m_UpDistance = Mathf.Max(0f, m_UpDistance);
 			m_Duration = Mathf.Max(.001f, m_Duration);
 			m_EaseOut ??= CreateEaseOutCurve();
+			if (!Application.isPlaying || !m_IsMoving) {
+				m_CurrentOpacity = m_Opacity;
+				m_CurrentDepth = m_Depth;
+			}
+
 			if (!isActiveAndEnabled || m_Filter == null)
 				return;
 
@@ -67,6 +85,9 @@ namespace ShitDesigner.Scene {
 			var progress = Mathf.Clamp01(m_MotionElapsed / m_Duration);
 			var easedProgress = Mathf.Clamp01(m_EaseOut.Evaluate(progress));
 			transform.localPosition = Vector3.LerpUnclamped(m_MotionStartPosition, m_MotionEndPosition, easedProgress);
+			m_CurrentOpacity = Mathf.LerpUnclamped(m_MotionStartOpacity, m_MotionEndOpacity, easedProgress);
+			m_CurrentDepth = Mathf.LerpUnclamped(m_MotionStartDepth, m_MotionEndDepth, easedProgress);
+			RefreshSurface();
 			if (progress >= 1f)
 				m_IsMoving = false;
 		}
@@ -77,14 +98,21 @@ namespace ShitDesigner.Scene {
 		}
 
 		/// <summary>Starts one upward ease-out motion. This is suitable for a UnityEvent trigger.</summary>
-		[ContextMenu("Trigger Move Up")]
+		[ContextMenu("Trigger Up / Fade / Depth")]
 		public void TriggerMoveUp() {
 			CaptureOrigin();
 			m_MotionStartPosition = m_ResetToOriginOnTrigger ? m_OriginLocalPosition : transform.localPosition;
 			transform.localPosition = m_MotionStartPosition;
 			m_MotionEndPosition = m_MotionStartPosition + Vector3.up * m_UpDistance;
+			m_MotionStartOpacity = m_TriggerStartOpacity;
+			m_MotionEndOpacity = m_Opacity;
+			m_MotionStartDepth = m_TriggerStartDepth;
+			m_MotionEndDepth = m_Depth;
+			m_CurrentOpacity = m_MotionStartOpacity;
+			m_CurrentDepth = m_MotionStartDepth;
 			m_MotionElapsed = 0f;
 			m_IsMoving = true;
+			RefreshSurface();
 		}
 
 		private void CaptureOrigin() {
@@ -121,7 +149,7 @@ namespace ShitDesigner.Scene {
 
 			var halfWidth = m_Width * .5f;
 			var halfHeight = m_Height * .5f;
-			var halfDepth = m_Depth * .5f;
+			var halfDepth = m_CurrentDepth * .5f;
 			m_Mesh.Clear();
 			m_Mesh.vertices = new[] {
 				// Bottom: normal -Y.
@@ -145,7 +173,7 @@ namespace ShitDesigner.Scene {
 			};
 			m_Mesh.RecalculateNormals();
 			m_Mesh.RecalculateBounds();
-			ApplyColor(m_Material, m_Color, m_Opacity);
+			ApplyColor(m_Material, m_Color, m_CurrentOpacity);
 		}
 
 		private static Material CreateMaterial() {
