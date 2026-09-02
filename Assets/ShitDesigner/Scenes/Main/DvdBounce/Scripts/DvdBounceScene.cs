@@ -13,13 +13,10 @@ namespace ShitDesigner.Scene {
 		public const float MinimumSpeed = 0.01f;
 
 		[Header("Visual")]
-		[SerializeField] private Texture2D m_Image;
-		[SerializeField] private VideoClip m_Video;
+		[SerializeField] private VideoClip[] m_Videos = Array.Empty<VideoClip>();
+		[SerializeField] private Texture2D[] m_Images = Array.Empty<Texture2D>();
 		[Min(0.01f)][SerializeField] private float m_VisualSize = 2.0f;
 		[Range(MinimumInstanceCount, MaximumInstanceCount)][SerializeField] private int m_InstanceCount = 3;
-
-		[Header("Additional Sources")]
-		[SerializeField] private VisualSource[] m_AdditionalSources = Array.Empty<VisualSource>();
 
 		[Header("Video")]
 		[Min(0f)][SerializeField] private float m_VideoPlaybackSpeed = 1f;
@@ -74,7 +71,8 @@ namespace ShitDesigner.Scene {
 			m_InstanceCount = Mathf.Clamp(m_InstanceCount, MinimumInstanceCount, MaximumInstanceCount);
 			m_VideoPlaybackSpeed = Mathf.Max(0f, m_VideoPlaybackSpeed);
 			m_Speed = Mathf.Max(MinimumSpeed, m_Speed);
-			m_AdditionalSources ??= Array.Empty<VisualSource>();
+			m_Videos ??= Array.Empty<VideoClip>();
+			m_Images ??= Array.Empty<Texture2D>();
 			if (m_InitialDirection.sqrMagnitude < 0.0001f)
 				m_InitialDirection = new Vector2(1f, 0.63f);
 
@@ -238,12 +236,16 @@ namespace ShitDesigner.Scene {
 		}
 
 		private VisualSource GetSource(int index) {
-			var sourceCount = m_AdditionalSources == null ? 0 : m_AdditionalSources.Length;
-			var sourceIndex = index % (sourceCount + 1);
-			if (sourceIndex == 0)
-				return new VisualSource(m_Image, m_Video);
+			var videoCount = m_Videos == null ? 0 : m_Videos.Length;
+			var imageCount = m_Images == null ? 0 : m_Images.Length;
+			var sourceCount = videoCount + imageCount;
+			if (sourceCount == 0)
+				return new VisualSource();
 
-			return m_AdditionalSources[sourceIndex - 1] ?? new VisualSource();
+			var sourceIndex = index % sourceCount;
+			return sourceIndex < videoCount
+				? new VisualSource(null, m_Videos[sourceIndex])
+				: new VisualSource(m_Images[sourceIndex - videoCount], null);
 		}
 
 		private Vector2 GetVisualSize(VisualSource source) {
