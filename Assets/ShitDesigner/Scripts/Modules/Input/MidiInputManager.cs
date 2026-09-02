@@ -232,8 +232,8 @@ namespace ShitDesigner.Input {
 
 		private void ApplyRequestedDeviceMode() {
 			if (_source == null || m_LaunchControlXl3RelativeEncoderRow == 0) return;
-			if (!(_source is ILaunchControlXl3DawModeController controller))
-				throw new NotSupportedException("The selected MIDI backend cannot configure Launch Control XL 3 DAW mode.");
+			if (!LaunchControlXl3DawModeProtocol.IsLaunchControlXl3DawOutput(_source.DeviceName)) return;
+			if (!(_source is ILaunchControlXl3DawModeController controller)) return;
 			controller.EnableRelativeEncoderRow(m_LaunchControlXl3RelativeEncoderRow);
 		}
 

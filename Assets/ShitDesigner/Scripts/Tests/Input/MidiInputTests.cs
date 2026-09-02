@@ -50,6 +50,10 @@ namespace ShitDesigner.Input.Tests {
 			Assert.That(thirdRow, Is.EqualTo(3));
 			Assert.That(LaunchControlXl3DawModeProtocol.TryResolveRelativeEncoderRow(1, 13, out _), Is.False);
 			Assert.That(LaunchControlXl3DawModeProtocol.EnableRelativeEncoderRowMessage(1), Is.EqualTo(0x007f45b6));
+			Assert.That(LaunchControlXl3DawModeProtocol.IsLaunchControlXl3DawOutput("LCXL3 1 DAW Out"), Is.True);
+			Assert.That(LaunchControlXl3DawModeProtocol.IsLaunchControlXl3DawOutput("Launch Control XL 3 DAW Out"), Is.True);
+			Assert.That(LaunchControlXl3DawModeProtocol.IsLaunchControlXl3DawOutput("LCXL3 1 MIDI"), Is.False);
+			Assert.That(LaunchControlXl3DawModeProtocol.IsLaunchControlXl3DawOutput("Other MIDI Device"), Is.False);
 			Assert.That(LaunchControlXl3DawModeProtocol.ResolveDawInputName("LCXL3 1 DAW Out"), Is.EqualTo("LCXL3 1 DAW In"));
 		}
 

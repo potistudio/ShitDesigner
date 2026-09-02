@@ -34,6 +34,7 @@ namespace ShitDesigner.Input {
 	public static class LaunchControlXl3DawModeProtocol {
 		public const uint EnableDawModeMessage = 0x007f0c9f;
 		public const uint DisableDawModeMessage = 0x00000c9f;
+		private const string DawOutputSuffix = " DAW Out";
 
 		public static bool TryResolveRelativeEncoderRow(int channel, int controlNumber, out int row) {
 			row = 0;
@@ -55,11 +56,17 @@ namespace ShitDesigner.Input {
 			return (uint)(0xb6 | (controlNumber << 8) | (127 << 16));
 		}
 
+		public static bool IsLaunchControlXl3DawOutput(string deviceName) {
+			return !string.IsNullOrWhiteSpace(deviceName)
+				&& deviceName.EndsWith(DawOutputSuffix, StringComparison.OrdinalIgnoreCase)
+				&& (deviceName.IndexOf("LCXL3", StringComparison.OrdinalIgnoreCase) >= 0
+					|| deviceName.IndexOf("Launch Control XL 3", StringComparison.OrdinalIgnoreCase) >= 0);
+		}
+
 		public static string ResolveDawInputName(string dawOutputName) {
-			const string suffix = " DAW Out";
-			if (string.IsNullOrWhiteSpace(dawOutputName) || !dawOutputName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+			if (string.IsNullOrWhiteSpace(dawOutputName) || !dawOutputName.EndsWith(DawOutputSuffix, StringComparison.OrdinalIgnoreCase))
 				throw new ArgumentException("The Launch Control XL 3 DAW Out port is required.", nameof(dawOutputName));
-			return dawOutputName.Substring(0, dawOutputName.Length - suffix.Length) + " DAW In";
+			return dawOutputName.Substring(0, dawOutputName.Length - DawOutputSuffix.Length) + " DAW In";
 		}
 	}
 
