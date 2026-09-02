@@ -79,5 +79,7 @@ MonoBehaviour:
   m_EndDepth: 0.35
   m_BurstCount: 1
   m_BurstInterval: 0
+  m_HideSourceDuringPlay: 1
+  m_DestroySpawnedInstanceAfterAnimation: 1
   m_TriggerOnColliderEnter: 1
   m_ResetToOriginOnTrigger: 1
