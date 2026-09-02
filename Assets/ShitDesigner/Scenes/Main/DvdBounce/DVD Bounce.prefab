@@ -122,15 +122,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b3b3c44f21142d2a316ce22c223f66a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: DvdBounce::ShitDesigner.Scene.DvdBounceScene
-  m_Image: {fileID: 0}
-  m_Video: {fileID: 32900000, guid: 94a98c390accb9241a1aa73b993a520c, type: 3}
+  m_Videos:
+  - {fileID: 32900000, guid: 94a98c390accb9241a1aa73b993a520c, type: 3}
+  - {fileID: 32900000, guid: bd04af99426a2d246bff6ccd22e9dfce, type: 3}
+  - {fileID: 32900000, guid: a5a1c2c8b26701c4dadb61ce71b0f4d3, type: 3}
+  m_Images: []
   m_VisualSize: 4.07
   m_InstanceCount: 8
-  m_AdditionalSources:
-  - m_Image: {fileID: 0}
-    m_Video: {fileID: 32900000, guid: bd04af99426a2d246bff6ccd22e9dfce, type: 3}
-  - m_Image: {fileID: 0}
-    m_Video: {fileID: 32900000, guid: a5a1c2c8b26701c4dadb61ce71b0f4d3, type: 3}
   m_VideoPlaybackSpeed: 2.49
   m_Speed: 18.29
   m_InitialDirection: {x: 1, y: 0.63}
