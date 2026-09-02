@@ -12,18 +12,35 @@ namespace ShitDesigner.Scene {
 		[Min(.01f)][SerializeField] private float m_Height = 9f;
 		[Min(.001f)][SerializeField] private float m_Depth = .35f;
 		[ColorUsage(false, true)][SerializeField] private Color m_Color = Color.white;
+		[Header("Trigger Motion")]
+		[Min(0f)][SerializeField] private float m_UpDistance = 2f;
+		[Min(.001f)][SerializeField] private float m_Duration = .5f;
+		[SerializeField] private AnimationCurve m_EaseOut = CreateEaseOutCurve();
+		[SerializeField] private bool m_TriggerOnColliderEnter = true;
+		[SerializeField] private bool m_ResetToOriginOnTrigger = true;
 
 		private MeshFilter m_Filter;
 		private MeshRenderer m_Renderer;
 		private Mesh m_Mesh;
 		private Material m_Material;
+		private Vector3 m_OriginLocalPosition;
+		private Vector3 m_MotionStartPosition;
+		private Vector3 m_MotionEndPosition;
+		private float m_MotionElapsed;
+		private bool m_HasOrigin;
+		private bool m_IsMoving;
 
 		private void OnEnable() {
+			CaptureOrigin();
 			EnsureSurface();
 			RefreshSurface();
 		}
 
-		private void OnDisable() => ReleaseSurface();
+		private void OnDisable() {
+			m_IsMoving = false;
+			m_HasOrigin = false;
+			ReleaseSurface();
+		}
 
 		private void OnDestroy() => ReleaseSurface();
 
@@ -31,11 +48,49 @@ namespace ShitDesigner.Scene {
 			m_Width = Mathf.Max(.01f, m_Width);
 			m_Height = Mathf.Max(.01f, m_Height);
 			m_Depth = Mathf.Max(.001f, m_Depth);
-			if (!isActiveAndEnabled)
+			m_UpDistance = Mathf.Max(0f, m_UpDistance);
+			m_Duration = Mathf.Max(.001f, m_Duration);
+			m_EaseOut ??= CreateEaseOutCurve();
+			if (!isActiveAndEnabled || m_Filter == null)
 				return;
 
-			EnsureSurface();
 			RefreshSurface();
+		}
+
+		private void Update() {
+			if (!Application.isPlaying || !m_IsMoving)
+				return;
+
+			m_MotionElapsed += Time.unscaledDeltaTime;
+			var progress = Mathf.Clamp01(m_MotionElapsed / m_Duration);
+			var easedProgress = Mathf.Clamp01(m_EaseOut.Evaluate(progress));
+			transform.localPosition = Vector3.LerpUnclamped(m_MotionStartPosition, m_MotionEndPosition, easedProgress);
+			if (progress >= 1f)
+				m_IsMoving = false;
+		}
+
+		private void OnTriggerEnter(Collider other) {
+			if (m_TriggerOnColliderEnter)
+				TriggerMoveUp();
+		}
+
+		/// <summary>Starts one upward ease-out motion. This is suitable for a UnityEvent trigger.</summary>
+		[ContextMenu("Trigger Move Up")]
+		public void TriggerMoveUp() {
+			CaptureOrigin();
+			m_MotionStartPosition = m_ResetToOriginOnTrigger ? m_OriginLocalPosition : transform.localPosition;
+			transform.localPosition = m_MotionStartPosition;
+			m_MotionEndPosition = m_MotionStartPosition + Vector3.up * m_UpDistance;
+			m_MotionElapsed = 0f;
+			m_IsMoving = true;
+		}
+
+		private void CaptureOrigin() {
+			if (m_HasOrigin)
+				return;
+
+			m_OriginLocalPosition = transform.localPosition;
+			m_HasOrigin = true;
 		}
 
 		private void EnsureSurface() {
@@ -110,6 +165,10 @@ namespace ShitDesigner.Scene {
 			else if (material.HasProperty("_Color"))
 				material.SetColor("_Color", color);
 		}
+
+		private static AnimationCurve CreateEaseOutCurve() => new AnimationCurve(
+			new Keyframe(0f, 0f, 0f, 2f),
+			new Keyframe(1f, 1f, 0f, 0f));
 
 		private void ReleaseSurface() {
 			if (m_Filter != null)
