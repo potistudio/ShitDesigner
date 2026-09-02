@@ -80,6 +80,32 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(published.ToDefinition().Value, Is.Zero);
 		}
 
+		[Test]
+		public void RandomFieldOfViewTriggerChangesOnlyTheCameraFieldOfView() {
+			_root = new GameObject("Live Random Field Of View");
+			var cameraObject = new GameObject("Camera");
+			cameraObject.transform.SetParent(_root.transform, false);
+			var camera = cameraObject.AddComponent<Camera>();
+			camera.fieldOfView = 1f;
+			var startingCameraPosition = camera.transform.localPosition;
+			var startingCameraRotation = camera.transform.localRotation;
+			var trigger = _root.AddComponent<LiveRandomFieldOfViewTrigger>();
+			SetField(trigger, "m_FieldOfViewRange", new Vector2(35f, 85f));
+			var scene = _root.AddComponent<LiveSceneRoot>();
+			scene.Initialize("random-field-of-view-scene");
+
+			var accepted = scene.TrySetParameter(LiveRandomFieldOfViewTrigger.ParameterId, 1f, out var rejection);
+
+			Assert.That(scene.IsTriggerParameter(LiveRandomFieldOfViewTrigger.ParameterId), Is.True);
+			Assert.That(accepted, Is.True, rejection);
+			Assert.That(camera.fieldOfView, Is.InRange(35f, 85f));
+			Assert.That(camera.transform.localPosition, Is.EqualTo(startingCameraPosition));
+			Assert.That(camera.transform.localRotation, Is.EqualTo(startingCameraRotation));
+			var randomizedFieldOfView = camera.fieldOfView;
+			Assert.That(scene.TrySetParameter(LiveRandomFieldOfViewTrigger.ParameterId, 0f, out rejection), Is.True, rejection);
+			Assert.That(camera.fieldOfView, Is.EqualTo(randomizedFieldOfView));
+		}
+
 		private sealed class RecordingParameter : MonoBehaviour, ILiveSceneParameter {
 			public float Value { get; private set; }
 			public LiveParameterDefinition Definition => new LiveParameterDefinition("scene-specific", "Scene Specific", -5f, 5f, Value);
