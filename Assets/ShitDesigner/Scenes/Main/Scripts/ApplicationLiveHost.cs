@@ -550,6 +550,13 @@ namespace ShitDesigner.Main {
 				: sequencer.CycleCellMode(laneIndex, stepIndex);
 		}
 
+		public LiveSequencerOperationResult TurnOffSequencerCell(LiveSequencerKind kind, int laneIndex, int stepIndex) {
+			var sequencer = m_Sequencers.FirstOrDefault(item => item.Kind == kind);
+			return sequencer == null
+				? LiveSequencerOperationResult.Reject("The requested sequencer does not exist.")
+				: sequencer.TurnOffCell(laneIndex, stepIndex);
+		}
+
 		public LiveSequencerOperationResult ToggleSequencerStep(LiveSequencerKind kind, int stepIndex) {
 			var sequencer = m_Sequencers.FirstOrDefault(item => item.Kind == kind);
 			return sequencer == null
