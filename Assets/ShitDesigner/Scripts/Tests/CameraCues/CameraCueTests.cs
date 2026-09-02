@@ -14,6 +14,23 @@ namespace ShitDesigner.CameraCues.Tests {
 	[TestFixture]
 	public sealed class CameraCueTests {
 		[Test]
+		public void StageLightShowController_SharedBpmClock_DrivesItsBeatPosition() {
+			var root = new GameObject("Stage Light Show Controller Test");
+			try {
+				var controller = root.AddComponent<StageLightShowController>();
+
+				controller.SetBpmClock(new BeatClockFrame(145f, 12.25d));
+
+				Assert.That(controller, Is.InstanceOf<IBpmClockReceiver>());
+				Assert.That(GetField(typeof(StageLightShowController), "m_AdjustedTotalBeats").GetValue(controller), Is.EqualTo(12.25d));
+				Assert.That(GetField(typeof(StageLightShowController), "m_UsesExternalBpmClock").GetValue(controller), Is.EqualTo(true));
+			}
+			finally {
+				Object.DestroyImmediate(root);
+			}
+		}
+
+		[Test]
 		public void StageAssetsWireBothHotCuesToTheCameraDirector() {
 			var patch = AssetDatabase.LoadAssetAtPath<PatchDefinition>(
 				"Assets/ShitDesigner/Scenes/Stage/Stage Patch Definition.asset");

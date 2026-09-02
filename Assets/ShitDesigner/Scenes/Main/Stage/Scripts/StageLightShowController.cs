@@ -1,10 +1,12 @@
 using System.Collections.Generic;
+using ShitDesigner.Core;
+using ShitDesigner.Scene;
 using UnityEngine;
 
 namespace ShitDesigner.Stage {
 	[DisallowMultipleComponent]
 	[DefaultExecutionOrder(10000)]
-	public sealed class StageLightShowController : MonoBehaviour {
+	public sealed class StageLightShowController : MonoBehaviour, IBpmClockReceiver {
 		private static readonly int IntensityId = Shader.PropertyToID("_Intensity");
 		private static readonly int ColorId = Shader.PropertyToID("_Color");
 
@@ -15,17 +17,17 @@ namespace ShitDesigner.Stage {
 		[SerializeField, Min(0f), Tooltip("上下の首振り角度です。")]
 		private float _tiltAmplitude = 28f;
 
-		[SerializeField, Min(0f), Tooltip("左右の首振りの速さです。")]
+		[SerializeField, Min(0f), Tooltip("左右の首振りの速さです（1 ビートあたりの周回数）。")]
 		private float _panSpeed = 0.55f;
 
-		[SerializeField, Min(0f), Tooltip("上下の首振りの速さです。")]
+		[SerializeField, Min(0f), Tooltip("上下の首振りの速さです（1 ビートあたりの周回数）。")]
 		private float _tiltSpeed = 0.8f;
 
 		[Header("Strobe")]
 		[SerializeField, Tooltip("点滅を有効にします。")]
 		private bool _strobeEnabled = true;
 
-		[SerializeField, Min(0f), Tooltip("1 秒あたりの点滅回数です。")]
+		[SerializeField, Min(0f), Tooltip("1 ビートあたりの点滅回数です。")]
 		private float _strobeFrequency = 2.5f;
 
 		[SerializeField, Range(0.01f, 1f), Tooltip("1 回の点滅で点灯している時間の割合です。")]
@@ -38,7 +40,7 @@ namespace ShitDesigner.Stage {
 		[SerializeField, Tooltip("パレットの色を順番に切り替えます。")]
 		private bool _colorCycleEnabled = true;
 
-		[SerializeField, Min(0f), Tooltip("パレットを 1 周する速さです。")]
+		[SerializeField, Min(0f), Tooltip("パレットを 1 周する速さです（1 ビートあたりの周回数）。")]
 		private float _colorCycleSpeed = 0.12f;
 
 		[SerializeField, Tooltip("ライトとビームに適用する色です。")]
@@ -49,14 +51,22 @@ namespace ShitDesigner.Stage {
 			new Color(1f, 0.45f, 0.08f)
 		};
 
+		[Header("Beat Preview")]
+		[SerializeField, Range(30f, 300f), Tooltip("共有 BPM クロックがないときに使用するプレビュー BPM です。")]
+		private float m_PreviewBpm = 145f;
+
 		private readonly List<LightRig> _lightRigs = new();
 		private MaterialPropertyBlock _propertyBlock;
+		private double m_AdjustedTotalBeats;
+		private bool m_UsesExternalBpmClock;
 
 		private void Awake() {
 			_propertyBlock = new MaterialPropertyBlock();
 		}
 
 		private void OnEnable() {
+			m_AdjustedTotalBeats = 0d;
+			m_UsesExternalBpmClock = false;
 			BuildLightRigs();
 		}
 
@@ -66,29 +76,39 @@ namespace ShitDesigner.Stage {
 
 		private void LateUpdate() {
 			if (_lightRigs.Count == 0) BuildLightRigs();
+			if (!m_UsesExternalBpmClock)
+				m_AdjustedTotalBeats += Mathf.Max(0f, Time.unscaledDeltaTime) * m_PreviewBpm / 60d;
 
-			var time = Time.time;
+			var beatPosition = m_AdjustedTotalBeats;
 			foreach (var lightRig in _lightRigs) {
-				var pan = Mathf.Sin((time * _panSpeed + lightRig.Phase) * Mathf.PI * 2f) * _panAmplitude;
-				var tilt = Mathf.Sin((time * _tiltSpeed + lightRig.Phase * 1.7f) * Mathf.PI * 2f) * _tiltAmplitude;
+				var pan = Mathf.Sin(((float)beatPosition * _panSpeed + lightRig.Phase) * Mathf.PI * 2f) * _panAmplitude;
+				var tilt = Mathf.Sin(((float)beatPosition * _tiltSpeed + lightRig.Phase * 1.7f) * Mathf.PI * 2f) * _tiltAmplitude;
 				lightRig.Pivot.localRotation = lightRig.InitialRotation * Quaternion.Euler(tilt, pan, 0f);
 
-				var brightness = GetBrightness(time, lightRig.Phase);
-				lightRig.Apply(_propertyBlock, brightness, GetColor(time, lightRig.Phase));
+				var brightness = GetBrightness(beatPosition, lightRig.Phase);
+				lightRig.Apply(_propertyBlock, brightness, GetColor(beatPosition, lightRig.Phase));
 			}
 		}
 
-		private float GetBrightness(float time, float phase) {
+		public void SetBpmClock(BeatClockFrame frame) {
+			if (!frame.IsAvailable || double.IsNaN(frame.AdjustedTotalBeats) || double.IsInfinity(frame.AdjustedTotalBeats))
+				return;
+
+			m_UsesExternalBpmClock = true;
+			m_AdjustedTotalBeats = frame.AdjustedTotalBeats;
+		}
+
+		private float GetBrightness(double beatPosition, float phase) {
 			if (!_strobeEnabled || _strobeFrequency <= 0f) return 1f;
 
-			var strobeTime = Mathf.Repeat(time * _strobeFrequency + phase, 1f);
+			var strobeTime = Mathf.Repeat((float)beatPosition * _strobeFrequency + phase, 1f);
 			return strobeTime <= _strobeDutyCycle ? 1f : _minimumBrightness;
 		}
 
-		private Color GetColor(float time, float phase) {
+		private Color GetColor(double beatPosition, float phase) {
 			if (!_colorCycleEnabled || _colorPalette == null || _colorPalette.Length == 0) return Color.white;
 
-			var colorPosition = Mathf.Repeat(time * _colorCycleSpeed + phase, 1f) * _colorPalette.Length;
+			var colorPosition = Mathf.Repeat((float)beatPosition * _colorCycleSpeed + phase, 1f) * _colorPalette.Length;
 			var colorIndex = Mathf.FloorToInt(colorPosition);
 			var nextColorIndex = (colorIndex + 1) % _colorPalette.Length;
 			return Color.Lerp(_colorPalette[colorIndex], _colorPalette[nextColorIndex], colorPosition - colorIndex);
