@@ -123,6 +123,94 @@
                                     <ui:Button name="sequencer-overlay-lane-7-step-6" class="sequencer-step"/>
                                     <ui:Button name="sequencer-overlay-lane-7-step-7" class="sequencer-step"/>
                                 </ui:VisualElement>
+                                <ui:VisualElement class="sequencer-lane">
+                                    <ui:Button name="sequencer-overlay-lane-label-8" text="9" class="is-clickable sequencer-lane-label"/>
+                                    <ui:Button name="sequencer-overlay-lane-8-step-0" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-8-step-1" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-8-step-2" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-8-step-3" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-8-step-4" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-8-step-5" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-8-step-6" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-8-step-7" class="sequencer-step"/>
+                                </ui:VisualElement>
+                                <ui:VisualElement class="sequencer-lane">
+                                    <ui:Button name="sequencer-overlay-lane-label-9" text="10" class="is-clickable sequencer-lane-label"/>
+                                    <ui:Button name="sequencer-overlay-lane-9-step-0" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-9-step-1" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-9-step-2" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-9-step-3" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-9-step-4" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-9-step-5" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-9-step-6" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-9-step-7" class="sequencer-step"/>
+                                </ui:VisualElement>
+                                <ui:VisualElement class="sequencer-lane">
+                                    <ui:Button name="sequencer-overlay-lane-label-10" text="11" class="is-clickable sequencer-lane-label"/>
+                                    <ui:Button name="sequencer-overlay-lane-10-step-0" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-10-step-1" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-10-step-2" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-10-step-3" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-10-step-4" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-10-step-5" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-10-step-6" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-10-step-7" class="sequencer-step"/>
+                                </ui:VisualElement>
+                                <ui:VisualElement class="sequencer-lane">
+                                    <ui:Button name="sequencer-overlay-lane-label-11" text="12" class="is-clickable sequencer-lane-label"/>
+                                    <ui:Button name="sequencer-overlay-lane-11-step-0" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-11-step-1" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-11-step-2" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-11-step-3" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-11-step-4" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-11-step-5" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-11-step-6" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-11-step-7" class="sequencer-step"/>
+                                </ui:VisualElement>
+                                <ui:VisualElement class="sequencer-lane">
+                                    <ui:Button name="sequencer-overlay-lane-label-12" text="13" class="is-clickable sequencer-lane-label"/>
+                                    <ui:Button name="sequencer-overlay-lane-12-step-0" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-12-step-1" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-12-step-2" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-12-step-3" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-12-step-4" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-12-step-5" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-12-step-6" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-12-step-7" class="sequencer-step"/>
+                                </ui:VisualElement>
+                                <ui:VisualElement class="sequencer-lane">
+                                    <ui:Button name="sequencer-overlay-lane-label-13" text="14" class="is-clickable sequencer-lane-label"/>
+                                    <ui:Button name="sequencer-overlay-lane-13-step-0" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-13-step-1" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-13-step-2" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-13-step-3" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-13-step-4" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-13-step-5" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-13-step-6" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-13-step-7" class="sequencer-step"/>
+                                </ui:VisualElement>
+                                <ui:VisualElement class="sequencer-lane">
+                                    <ui:Button name="sequencer-overlay-lane-label-14" text="15" class="is-clickable sequencer-lane-label"/>
+                                    <ui:Button name="sequencer-overlay-lane-14-step-0" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-14-step-1" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-14-step-2" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-14-step-3" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-14-step-4" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-14-step-5" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-14-step-6" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-14-step-7" class="sequencer-step"/>
+                                </ui:VisualElement>
+                                <ui:VisualElement class="sequencer-lane">
+                                    <ui:Button name="sequencer-overlay-lane-label-15" text="16" class="is-clickable sequencer-lane-label"/>
+                                    <ui:Button name="sequencer-overlay-lane-15-step-0" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-15-step-1" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-15-step-2" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-15-step-3" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-15-step-4" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-15-step-5" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-15-step-6" class="sequencer-step"/>
+                                    <ui:Button name="sequencer-overlay-lane-15-step-7" class="sequencer-step"/>
+                                </ui:VisualElement>
                             </ui:VisualElement>
                             <!--
                             <ui:VisualElement name="effect-sequencer" class="sequencer">
