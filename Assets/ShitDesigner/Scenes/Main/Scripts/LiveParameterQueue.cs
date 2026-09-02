@@ -19,7 +19,8 @@ namespace ShitDesigner.Main {
 		ToggleMainCueComposite,
 		RecallHotCue,
 		RecallOppositeHotCue,
-		UnassignMainCue
+		UnassignMainCue,
+		AssignMainCue
 	}
 
 	public readonly struct LiveParameterRequest {
@@ -121,6 +122,11 @@ namespace ShitDesigner.Main {
 			=> cueIndex < 0 || cueIndex >= LiveGraphRuntime.MainCueCount
 				? LiveParameterEnqueueResult.Reject("The Main Cue Slot does not exist.")
 				: Enqueue(LiveParameterRequestKind.UnassignMainCue, string.Empty, string.Empty, ParameterValue.FromInt(cueIndex));
+
+		public LiveParameterEnqueueResult EnqueueAssignMainCue(int cueIndex, string patchId)
+			=> cueIndex < 0 || cueIndex >= LiveGraphRuntime.MainCueCount
+				? LiveParameterEnqueueResult.Reject("The Main Cue Slot does not exist.")
+				: Enqueue(LiveParameterRequestKind.AssignMainCue, patchId, string.Empty, ParameterValue.FromInt(cueIndex));
 
 		public int Drain(ICollection<LiveParameterRequest> destination) {
 			if (destination == null) throw new ArgumentNullException(nameof(destination));

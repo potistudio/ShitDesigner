@@ -184,6 +184,23 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void AssignMainCuePreservesTheRequestedCueSlot() {
+			var queue = new LiveParameterQueue();
+
+			var assignment = queue.EnqueueAssignMainCue(0, "patch-a");
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+
+			Assert.That(assignment.Accepted, Is.True);
+			Assert.That(requests, Has.Count.EqualTo(1));
+			Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.AssignMainCue));
+			Assert.That(requests[0].PatchId, Is.EqualTo("patch-a"));
+			Assert.That(requests[0].ParameterValue.AsInt(), Is.Zero);
+			Assert.That(queue.EnqueueAssignMainCue(-1, "patch-a").Accepted, Is.False);
+			Assert.That(queue.EnqueueAssignMainCue(ApplicationLiveHost.MainCueCount, "patch-a").Accepted, Is.False);
+		}
+
+		[Test]
 		public void FullQueueRejectsNewRequestsWithoutAssigningASequence() {
 			var queue = new LiveParameterQueue();
 			for (var index = 0; index < LiveParameterQueue.Capacity; index++)

@@ -1631,6 +1631,15 @@ namespace ShitDesigner.Main {
 				RefreshMainCueActivation();
 				return Accept(request);
 			}
+			if (request.Kind == LiveParameterRequestKind.AssignMainCue) {
+				var mainCueIndex = request.ParameterValue.AsInt();
+				if (mainCueIndex < 0 || mainCueIndex >= MainCueCount) return Reject(request, "The Main Cue Slot does not exist.");
+				if (m_MainCuePatches[mainCueIndex] != null) return Reject(request, "The Main Cue Slot is already assigned.");
+				if (!_patchDefinitionsById.TryGetValue(request.PatchId, out var assignedDefinition)) return Reject(request, "The requested patch does not exist.");
+				AssignMainCuePatch(mainCueIndex, assignedDefinition);
+				RefreshMainCueActivation();
+				return Accept(request);
+			}
 			if (request.Kind == LiveParameterRequestKind.SetParameter
 				&& LiveInstantEffectRenderer.TryParseParameterAddress(request.ParameterId, out var cueIndex, out var effectParameterId))
 				return _graph.InstantEffects.TrySetParameter(cueIndex, effectParameterId, request.ParameterValue, out var effectRejection)
