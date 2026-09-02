@@ -394,12 +394,6 @@ namespace ShitDesigner.Main {
 		private void OnSequencerCellClicked(ClickEvent change) {
 			var target = change.target as VisualElement;
 			var button = target as Button ?? target?.GetFirstAncestorOfType<Button>();
-			if (_host != null && change.button == 1 && button?.userData is SequencerLaneAddress unassignLaneAddress
-				&& unassignLaneAddress.Kind == LiveSequencerKind.Overlay) {
-				ShowSequencerRejection(_host.UnassignOverlayPatchFromLane(unassignLaneAddress.LaneIndex));
-				change.StopImmediatePropagation();
-				return;
-			}
 			if (change.button != 0) return;
 			var lane = target;
 			while (lane != null && lane.userData is not SequencerLaneAddress) lane = lane.parent;
@@ -693,6 +687,16 @@ namespace ShitDesigner.Main {
 		}
 
 		private void OnPatchPointerDown(PointerDownEvent evt) {
+			if (evt.button == 1) {
+				var rightClickTarget = evt.target as VisualElement;
+				var rightClickButton = rightClickTarget as Button ?? rightClickTarget?.GetFirstAncestorOfType<Button>();
+				if (_host != null && rightClickButton?.userData is SequencerLaneAddress laneAddress
+					&& laneAddress.Kind == LiveSequencerKind.Overlay) {
+					ShowSequencerRejection(_host.UnassignOverlayPatchFromLane(laneAddress.LaneIndex));
+					evt.StopImmediatePropagation();
+				}
+				return;
+			}
 			if (evt.button != 0 || m_PatchDragPointerId >= 0) return;
 			var target = evt.target as VisualElement;
 			var button = target as Button ?? target?.GetFirstAncestorOfType<Button>();

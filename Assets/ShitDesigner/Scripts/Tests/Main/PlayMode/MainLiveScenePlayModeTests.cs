@@ -284,8 +284,8 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(host.ReadModel.OverlayLanePreviews, Has.Count.EqualTo(LiveStepSequencer.OverlayLaneCount));
 			Assert.That(host.ReadModel.OverlayLanePreviews[0], Is.Not.Null);
 			Assert.That(ui.Q<Button>("sequencer-overlay-lane-label-0").ClassListContains("has-preview"), Is.True);
-			using (var click = ClickEvent.GetPooled(new Event { type = EventType.MouseUp, button = 1 }))
-				ui.Q<Button>("sequencer-overlay-lane-label-0").SendEvent(click);
+			using (var pointerDown = PointerDownEvent.GetPooled(new Event { type = EventType.MouseDown, button = 1 }))
+				ui.Q<Button>("sequencer-overlay-lane-label-0").SendEvent(pointerDown);
 			yield return null;
 			Assert.That(host.ReadModel.Sequencers.Single(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).LanePatchIds[0], Is.Empty);
 			Assert.That(host.ReadModel.OverlayLanePreviews[0], Is.Null);
