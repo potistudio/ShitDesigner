@@ -1537,12 +1537,9 @@ namespace ShitDesigner.Main {
 				&& programRenderSize.Height == overlayRenderSize.Height ? 0 : 1;
 			m_BpmClock = new LiveBpmClock(LiveBpmClock.DefaultBpm, globalTimeEasing);
 			_patchDefinitionsById = graph.PatchDefinitions.ToDictionary(definition => definition.Id, StringComparer.Ordinal);
-			m_MainCuePatches[0] = CreatePatch(graph.PatchDefinitions[0], m_ProgramRenderSize);
-			m_MainCuePatchIds[0] = graph.PatchDefinitions[0].Id;
 			m_ActiveMainCueIndex = 0;
-			LoadedMainPatch.SetSceneActive(true);
 			CurrentFrames = new LiveProgramFrames(new[] {
-				new LiveProgramFrame(LoadedMainPatch.Outputs[0].ProgramTexture, 0),
+				new LiveProgramFrame(_graph.Compositor.Output, 0),
 				new LiveProgramFrame(_graph.OverlayOutputCompositor.Output, 0)
 			});
 			CurrentFrame = CurrentFrames.Primary;
