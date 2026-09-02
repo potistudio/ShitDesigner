@@ -52,12 +52,11 @@ namespace ShitDesigner.Scene {
 		private bool _graphClockDriven;
 
 		public int GeneratedObjectCount => _generatedRoot == null ? 0 : _generatedRoot.childCount;
-		public Vector3 GeneratedFieldLocalPosition => _generatedRoot == null ? Vector3.zero : _generatedRoot.localPosition;
+		public Vector3 FirstGeneratedObjectLocalPosition => _generatedRoot == null || _generatedRoot.childCount == 0
+			? Vector3.zero
+			: _generatedRoot.GetChild(0).localPosition;
 
-		private void OnEnable() {
-			Rebuild();
-			ResetObjectFieldPosition();
-		}
+		private void OnEnable() => Rebuild();
 
 		private void Update() {
 			if (_rebuildRequested) Rebuild();
@@ -108,19 +107,19 @@ namespace ShitDesigner.Scene {
 			}
 		}
 
-		[ContextMenu("Reset Object Field Position")]
-		public void ResetObjectFieldPosition() {
-			if (_generatedRoot == null) return;
-			_generatedRoot.localPosition = Vector3.zero;
-		}
+		[ContextMenu("Reset Object Field")]
+		public void ResetObjectField() => Rebuild();
 
 		private void MoveObjects(float deltaTime) {
 			if (_generatedRoot == null) return;
-			var position = _generatedRoot.localPosition;
-			position.z -= objectSpeed * deltaTime;
-			if (loopObjects && position.z <= -tunnelLength)
-				position.z = -Mathf.Repeat(-position.z, tunnelLength);
-			_generatedRoot.localPosition = position;
+			for (var index = 0; index < _generatedRoot.childCount; index++) {
+				var item = _generatedRoot.GetChild(index);
+				var position = item.localPosition;
+				position.z -= objectSpeed * deltaTime;
+				if (loopObjects && position.z < objectStartZ)
+					position.z = objectStartZ + Mathf.Repeat(position.z - objectStartZ, tunnelLength);
+				item.localPosition = position;
+			}
 		}
 
 		private GameObject CreateObject(int index, System.Random random) {
