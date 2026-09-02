@@ -472,7 +472,13 @@ namespace ShitDesigner.Main.Tests {
 			var overlaySequencer = host.ReadModel.Sequencers.Single(sequencer => sequencer.Kind == LiveSequencerKind.Overlay);
 			var triggerStep = (overlaySequencer.CurrentStep + 1) % LiveStepSequencer.StepCount;
 			Assert.That(host.CycleSequencerCellMode(LiveSequencerKind.Overlay, 0, triggerStep).Accepted, Is.True);
-			Assert.That(host.ToggleOverlayLaneOutput2Copy(0).Accepted, Is.True);
+			using (var altClick = ClickEvent.GetPooled(new Event {
+				type = EventType.MouseUp,
+				button = 0,
+				modifiers = EventModifiers.Alt
+			})) {
+				ui.Q<Button>("sequencer-overlay-lane-0-step-" + triggerStep).SendEvent(altClick);
+			}
 			yield return null;
 			Assert.That(host.ReadModel.Sequencers.Single(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).IsCopiedToOutput2(0), Is.True);
 			for (var frame = 0; frame < 120 && host.ReadModel.Sequencers.Single(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).CurrentStep != triggerStep; frame++) yield return null;

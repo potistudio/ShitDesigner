@@ -365,8 +365,8 @@ namespace ShitDesigner.Main {
 						laneLabel.tooltip = sequencer.Kind == LiveSequencerKind.Effect
 							? "LANE " + (laneIndex + 1) + " · CLICK TO TOGGLE ROW"
 							: string.IsNullOrEmpty(patchId)
-								? "LANE " + (laneIndex + 1) + " · CLICK TO TOGGLE ROW · DROP OVERLAY SCENE"
-								: "LANE " + (laneIndex + 1) + " · " + (string.IsNullOrEmpty(patch.Name) ? patchId : patch.Name) + " · CLICK TO TOGGLE ROW · RIGHT-CLICK TO UNASSIGN";
+								? "LANE " + (laneIndex + 1) + " · CLICK TO TOGGLE ROW · ALT+CLICK TO TOGGLE OUTPUT 2 · DROP OVERLAY SCENE"
+								: "LANE " + (laneIndex + 1) + " · " + (string.IsNullOrEmpty(patch.Name) ? patchId : patch.Name) + " · CLICK TO TOGGLE ROW · ALT+CLICK TO TOGGLE OUTPUT 2 · RIGHT-CLICK TO UNASSIGN";
 						if (isCopiedToOutput2) laneLabel.tooltip += " · OUTPUT 2 COPY";
 						laneLabel.EnableInClassList("is-assigned", !string.IsNullOrEmpty(patchId));
 						laneLabel.parent?.EnableInClassList("is-output-2-copy", isCopiedToOutput2);
@@ -396,7 +396,7 @@ namespace ShitDesigner.Main {
 			while (lane != null && lane.userData is not SequencerLaneAddress) lane = lane.parent;
 			if (_host != null && lane?.userData is SequencerLaneAddress outputLaneAddress
 				&& outputLaneAddress.Kind == LiveSequencerKind.Overlay
-				&& (change.modifiers & (EventModifiers.Control | EventModifiers.Command)) != 0) {
+				&& (change.modifiers & EventModifiers.Alt) != 0) {
 				ShowSequencerRejection(_host.ToggleOverlayLaneOutput2Copy(outputLaneAddress.LaneIndex));
 				change.StopImmediatePropagation();
 				return;
