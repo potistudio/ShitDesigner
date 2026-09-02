@@ -490,7 +490,7 @@ namespace ShitDesigner.Main.Tests {
 				manager.Configure(new NullMidiApplication(), new NullLiveControlApplication(), source);
 				var takes = new List<string>();
 				var bindings = new InstantOverlayMidiBinding[LiveStepSequencer.OverlayLaneCount];
-				bindings[7] = new InstantOverlayMidiBinding(MidiControlKind.Note, 2, 48);
+				bindings[15] = new InstantOverlayMidiBinding(MidiControlKind.Note, 2, 48);
 				using (var input = new LiveMidiInput(manager, new LiveParameterQueue(), new[] { patch },
 					instantOverlayMidiBindings: bindings, beginInstantOverlay: laneIndex => takes.Add("begin:" + laneIndex),
 					endInstantOverlay: laneIndex => takes.Add("end:" + laneIndex))) {
@@ -499,7 +499,7 @@ namespace ShitDesigner.Main.Tests {
 					manager.Poll();
 				}
 
-				Assert.That(takes, Is.EqualTo(new[] { "begin:7", "end:7" }));
+				Assert.That(takes, Is.EqualTo(new[] { "begin:15", "end:15" }));
 			}
 			finally {
 				Object.DestroyImmediate(owner);

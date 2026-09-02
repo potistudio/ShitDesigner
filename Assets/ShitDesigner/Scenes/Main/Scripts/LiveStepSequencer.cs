@@ -98,7 +98,7 @@ namespace ShitDesigner.Main {
 
 	/// <summary>Stores an independent compositing mode for every lane and step in an eight-beat sequence.</summary>
 	public sealed class LiveStepSequencer {
-		public const int OverlayLaneCount = 8;
+		public const int OverlayLaneCount = 16;
 		public const int EffectLaneCount = 4;
 		public const int StepCount = 8;
 

@@ -168,7 +168,7 @@ namespace ShitDesigner.Main {
 				return;
 			}
 
-			for (var laneIndex = 0; laneIndex < LiveStepSequencer.OverlayLaneCount; laneIndex++) {
+			for (var laneIndex = 0; laneIndex < Math.Min(LiveStepSequencer.OverlayLaneCount, 8); laneIndex++) {
 				var key = OverlayTakeKey(keyboard, laneIndex);
 				if (!key.wasPressedThisFrame) continue;
 				if (keyboard.shiftKey.isPressed || keyboard.leftShiftKey.wasPressedThisFrame || keyboard.rightShiftKey.wasPressedThisFrame) {
@@ -214,7 +214,7 @@ namespace ShitDesigner.Main {
 		}
 
 		private void EndReleasedPianoOverlayTakes(Keyboard keyboard) {
-			for (var laneIndex = 0; laneIndex < LiveStepSequencer.OverlayLaneCount; laneIndex++)
+			for (var laneIndex = 0; laneIndex < Math.Min(LiveStepSequencer.OverlayLaneCount, 8); laneIndex++)
 				if ((m_HeldPianoOverlayTakeMask & (1 << laneIndex)) != 0 && !OverlayTakeKey(keyboard, laneIndex).isPressed)
 					EndPianoOverlayTake(laneIndex);
 		}

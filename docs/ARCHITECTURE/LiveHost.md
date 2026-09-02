@@ -27,7 +27,7 @@
 
 ### 2026-08-30: Overlayシーケンサーは既存ノードRuntimeでProgramへ合成する
 
-- Overlayシーケンサーの8レーンは、割り当てられたOverlayパッチのRuntimeをレーンごとに保持する。セルがOffでも割り当てが変わるまでRuntimeを維持する。
+- Overlayシーケンサーの16レーンは、割り当てられたOverlayパッチのRuntimeをレーンごとに保持する。セルがOffでも割り当てが変わるまでRuntimeを維持する。
 - Overlayパッチの評価、Scene更新および描画は現在ステップで有効な間だけ行う。Offへ移った時点でSceneを非アクティブ化し、ProgramはMain Textureへ直接戻す。
 - 割り当て済みOverlayシーンは、レーン選択ボタンに160×90の低解像度サムネイルを表示する。同じシーンを複数レーンへ割り当てた場合はプレビューRuntimeを共有し、10fpsで更新する。
 - 現在ステップで有効なレーンを0から7の順にMain Textureへ合成し、後のレーンを前面として扱う。
@@ -194,7 +194,7 @@
 ### 2026-08-27: ライブ用キーボードは全体操作とパッチ入力を扱う
 
 - 左右矢印はMain／Overlay／FXタブを切り替え、上下矢印はタブ内のカタログ選択を移動する。`1`から`8`は対応するOverlayレーンを押している間だけTakeするPianoモードとする。恒常キーの`Shift+1`から`Shift+8`は、押した時点のビートに対応するセルだけをONにし、他のビートやレーンは変更しない。MainまたはOverlayタブではEnterで選択パッチを直接Launchする。FXタブの選択ノードはLaunchしない。
-- Instant Overlayは8本のOverlayレーンに対応するグローバルな一時Takeである。各レーンのMIDI入力は`ApplicationLiveHost`のInspectorで任意に割り当て、正値でTakeを開始し値0で解除する。既存の数字キーと同じ経路を使うため、カタログ選択やLoaded Patchには依存しない。
+- Instant Overlayは16本のOverlayレーンに対応するグローバルな一時Takeである。各レーンのMIDI入力は`ApplicationLiveHost`のInspectorで任意に割り当て、正値でTakeを開始し値0で解除する。数字キーはレーン1から8の既存キー操作を維持し、9から16はUIまたはMIDIで操作する。すべてカタログ選択やLoaded Patchには依存しない。
 - 同じOverlayシーンを複数レーンへ割り当てた場合、フル解像度のScene Runtimeは共有し、評価・物理更新・描画をフレームごとに1回だけ行う。各レーンの合成モードは共有出力へ独立して適用する。
 - Overlayレーンは既定でOutput 1だけへ合成する。Ctrl/Cmdを押しながらシーケンサー行をクリックすると、そのレーンの共有出力をOutput 2へもコピーする状態を切り替える。
 - SpaceはUIのTAPボタンと同じBPM Tap入力とする。

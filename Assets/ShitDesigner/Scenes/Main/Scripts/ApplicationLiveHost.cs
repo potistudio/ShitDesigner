@@ -44,7 +44,7 @@ namespace ShitDesigner.Main {
 		[SerializeField, Tooltip("Maps each Instant Effect slot to a MIDI message. Disabled slots remain available through their on-screen control.")]
 		private InstantEffectMidiBinding[] m_InstantEffectMidiBindings = CreateInstantEffectMidiBindings();
 		[Header("Instant Overlay MIDI")]
-		[SerializeField, Tooltip("Maps each Instant Overlay lane to a MIDI message. The lane remains active while the mapped control is pressed.")]
+		[SerializeField, Tooltip("Maps each of the sixteen Instant Overlay lanes to a MIDI message. The lane remains active while the mapped control is pressed.")]
 		private InstantOverlayMidiBinding[] m_InstantOverlayMidiBindings = CreateInstantOverlayMidiBindings();
 
 		private readonly LiveParameterQueue _parameterQueue = new LiveParameterQueue();
