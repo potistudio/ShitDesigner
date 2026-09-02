@@ -11,6 +11,10 @@ namespace ShitDesigner.Main {
 		SetParameter,
 		SetBpm,
 		AlignBeat,
+		SetSceneQuantizeMode,
+		SetHotCueQuantizeMode,
+		SetMainCueQuantizeMode,
+		SetPianoFxQuantizeMode,
 		SetTimeEasingEnabled,
 		JogSceneTime,
 		SetMainCueFader,
@@ -89,6 +93,18 @@ namespace ShitDesigner.Main {
 		public LiveParameterEnqueueResult EnqueueAlignBeat()
 			=> Enqueue(LiveParameterRequestKind.AlignBeat, string.Empty, string.Empty, ParameterValue.FromFloat(0f));
 
+		public LiveParameterEnqueueResult EnqueueSetSceneQuantizeMode(bool enabled)
+			=> Enqueue(LiveParameterRequestKind.SetSceneQuantizeMode, string.Empty, string.Empty, ParameterValue.FromBool(enabled));
+
+		public LiveParameterEnqueueResult EnqueueSetHotCueQuantizeMode(bool enabled)
+			=> Enqueue(LiveParameterRequestKind.SetHotCueQuantizeMode, string.Empty, string.Empty, ParameterValue.FromBool(enabled));
+
+		public LiveParameterEnqueueResult EnqueueSetMainCueQuantizeMode(bool enabled)
+			=> Enqueue(LiveParameterRequestKind.SetMainCueQuantizeMode, string.Empty, string.Empty, ParameterValue.FromBool(enabled));
+
+		public LiveParameterEnqueueResult EnqueueSetPianoFxQuantizeMode(bool enabled)
+			=> Enqueue(LiveParameterRequestKind.SetPianoFxQuantizeMode, string.Empty, string.Empty, ParameterValue.FromBool(enabled));
+
 		public LiveParameterEnqueueResult EnqueueSetTimeEasingEnabled(bool enabled)
 			=> Enqueue(LiveParameterRequestKind.SetTimeEasingEnabled, string.Empty, string.Empty, ParameterValue.FromBool(enabled));
 
@@ -148,7 +164,9 @@ namespace ShitDesigner.Main {
 		}
 
 		private static bool IsGlobalRequest(LiveParameterRequestKind kind)
-			=> kind == LiveParameterRequestKind.SetBpm || kind == LiveParameterRequestKind.AlignBeat || kind == LiveParameterRequestKind.SetTimeEasingEnabled
+			=> kind == LiveParameterRequestKind.SetBpm || kind == LiveParameterRequestKind.AlignBeat || kind == LiveParameterRequestKind.SetSceneQuantizeMode
+				|| kind == LiveParameterRequestKind.SetHotCueQuantizeMode || kind == LiveParameterRequestKind.SetMainCueQuantizeMode
+				|| kind == LiveParameterRequestKind.SetPianoFxQuantizeMode || kind == LiveParameterRequestKind.SetTimeEasingEnabled
 				|| kind == LiveParameterRequestKind.JogSceneTime || kind == LiveParameterRequestKind.RecallHotCue
 				|| kind == LiveParameterRequestKind.RecallOppositeHotCue
 				|| kind == LiveParameterRequestKind.SetMainCueFader
@@ -162,5 +180,57 @@ namespace ShitDesigner.Main {
 			if (_nextSequenceNumber == 0) _nextSequenceNumber = 1;
 			return sequenceNumber;
 		}
+	}
+
+	/// <summary>Holds discrete live actions until the next shared beat.</summary>
+	public sealed class LiveBeatQuantizedRequestQueue {
+		private const double BeatBoundaryTolerance = 1e-9d;
+		public const int Capacity = 4096;
+
+		private readonly List<PendingRequest> m_Requests = new List<PendingRequest>();
+
+		private readonly struct PendingRequest {
+			public LiveParameterRequest Request { get; }
+			public long TargetBeat { get; }
+
+			public PendingRequest(LiveParameterRequest request, long targetBeat) {
+				Request = request;
+				TargetBeat = targetBeat;
+			}
+		}
+
+		public bool TryEnqueue(LiveParameterRequest request, double adjustedTotalBeats, out string rejectionReason) {
+			if (double.IsNaN(adjustedTotalBeats) || double.IsInfinity(adjustedTotalBeats))
+				throw new ArgumentOutOfRangeException(nameof(adjustedTotalBeats));
+			if (m_Requests.Count >= Capacity) {
+				rejectionReason = "The beat-quantized live action queue is full.";
+				return false;
+			}
+			m_Requests.Add(new PendingRequest(request,
+				checked((long)Math.Floor(adjustedTotalBeats + BeatBoundaryTolerance) + 1L)));
+			rejectionReason = string.Empty;
+			return true;
+		}
+
+		public IReadOnlyList<LiveParameterRequest> DrainDue(double adjustedTotalBeats) {
+			if (double.IsNaN(adjustedTotalBeats) || double.IsInfinity(adjustedTotalBeats))
+				throw new ArgumentOutOfRangeException(nameof(adjustedTotalBeats));
+			var reachedBeat = checked((long)Math.Floor(adjustedTotalBeats + BeatBoundaryTolerance));
+			var due = new List<PendingRequest>();
+			for (var index = m_Requests.Count - 1; index >= 0; index--) {
+				if (m_Requests[index].TargetBeat > reachedBeat) continue;
+				due.Add(m_Requests[index]);
+				m_Requests.RemoveAt(index);
+			}
+			due.Sort((left, right) => {
+				var byBeat = left.TargetBeat.CompareTo(right.TargetBeat);
+				return byBeat != 0 ? byBeat : left.Request.SequenceNumber.CompareTo(right.Request.SequenceNumber);
+			});
+			var requests = new List<LiveParameterRequest>(due.Count);
+			foreach (var item in due) requests.Add(item.Request);
+			return requests;
+		}
+
+		public void Clear() => m_Requests.Clear();
 	}
 }

@@ -171,46 +171,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 8602383494862072824, guid: 6223708dbba9b4b44921a788572b80aa, type: 3}
-      propertyPath: m_Speed
-      value: 5.8
-      objectReference: {fileID: 0}
-    - target: {fileID: 8602383494862072824, guid: 6223708dbba9b4b44921a788572b80aa, type: 3}
-      propertyPath: m_VisualSize
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 8602383494862072824, guid: 6223708dbba9b4b44921a788572b80aa, type: 3}
-      propertyPath: m_InstanceCount
-      value: 11
-      objectReference: {fileID: 0}
-    - target: {fileID: 8602383494862072824, guid: 6223708dbba9b4b44921a788572b80aa, type: 3}
-      propertyPath: m_Videos.Array.size
-      value: 4
-      objectReference: {fileID: 0}
-    - target: {fileID: 8602383494862072824, guid: 6223708dbba9b4b44921a788572b80aa, type: 3}
-      propertyPath: m_Videos.Array.data[0]
-      value:
-      objectReference: {fileID: 32900000, guid: 5e1851a21fcb14a43b2d1784bf2bb66a, type: 3}
-    - target: {fileID: 8602383494862072824, guid: 6223708dbba9b4b44921a788572b80aa, type: 3}
-      propertyPath: m_Videos.Array.data[1]
-      value:
-      objectReference: {fileID: 32900000, guid: 26e81a4cd508df84bbd0dd014b071196, type: 3}
-    - target: {fileID: 8602383494862072824, guid: 6223708dbba9b4b44921a788572b80aa, type: 3}
-      propertyPath: m_Videos.Array.data[2]
-      value:
-      objectReference: {fileID: 32900000, guid: a5a1c2c8b26701c4dadb61ce71b0f4d3, type: 3}
-    - target: {fileID: 8602383494862072824, guid: 6223708dbba9b4b44921a788572b80aa, type: 3}
-      propertyPath: m_Videos.Array.data[3]
-      value:
-      objectReference: {fileID: 32900000, guid: fead77aa65b9351459bd070f3ef3500c, type: 3}
-    - target: {fileID: 8602383494862072824, guid: 6223708dbba9b4b44921a788572b80aa, type: 3}
-      propertyPath: m_Images.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8602383494862072824, guid: 6223708dbba9b4b44921a788572b80aa, type: 3}
-      propertyPath: m_Images.Array.data[0]
-      value:
-      objectReference: {fileID: 2800000, guid: 15b824f579528024b80664e392a872a0, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

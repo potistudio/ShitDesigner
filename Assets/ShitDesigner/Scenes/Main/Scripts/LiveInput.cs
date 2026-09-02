@@ -25,7 +25,8 @@ namespace ShitDesigner.Main {
 		private readonly Action m_ToggleEditMode;
 		private readonly Action<int> m_AssignInstantEffect;
 		private readonly Func<bool> m_IsEditMode;
-		private readonly Action<int> m_CueInstantEffect;
+		private readonly Action<int> m_BeginPianoInstantEffect;
+		private readonly Action<int> m_EndPianoInstantEffect;
 		private readonly Action<int> m_FocusInstantEffectParameters;
 		private readonly Action m_ToggleSelectedEffectCategory;
 		private readonly Action m_BeginPianoMainCueSwitch;
@@ -46,6 +47,7 @@ namespace ShitDesigner.Main {
 		private bool m_IsBlackoutHeld;
 		private bool m_IsGlobalFlashHeld;
 		private int m_HeldPianoOverlayTakeMask;
+		private int m_HeldPianoInstantEffectMask;
 		private int m_HeldLiveParameterMask;
 		private Key m_HeldOutput2AdjustmentKey = Key.None;
 		private double m_NextOutput2AdjustmentTime;
@@ -59,7 +61,8 @@ namespace ShitDesigner.Main {
 			Action<int> turnOnOverlaySequencerStep = null, Action<int, int, bool> adjustOutput2Viewport = null,
 			Func<bool> isOutput2AdjustmentMode = null, Action<int, bool> fireLiveParameter = null,
 			Key blackoutKey = Key.Backquote, Action<bool> setBlackoutActive = null, Action beginMomentaryMainComposite = null,
-			Action endMomentaryMainComposite = null, Action completeMainComposite = null, Action<bool> setGlobalFlashActive = null) {
+			Action endMomentaryMainComposite = null, Action completeMainComposite = null, Action<bool> setGlobalFlashActive = null,
+			Action<int> endPianoInstantEffect = null) {
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));
 
@@ -78,7 +81,8 @@ namespace ShitDesigner.Main {
 			m_ToggleEditMode = toggleEditMode ?? (() => { });
 			m_AssignInstantEffect = assignInstantEffect ?? (_ => { });
 			m_IsEditMode = isEditMode ?? (() => false);
-			m_CueInstantEffect = cueInstantEffect ?? (_ => { });
+			m_BeginPianoInstantEffect = cueInstantEffect ?? (_ => { });
+			m_EndPianoInstantEffect = endPianoInstantEffect ?? (_ => { });
 			m_FocusInstantEffectParameters = focusInstantEffectParameters ?? (_ => { });
 			m_ToggleSelectedEffectCategory = toggleSelectedEffectCategory ?? (() => { });
 			m_BeginPianoMainCueSwitch = beginPianoMainCueSwitch ?? (() => { });
@@ -98,6 +102,7 @@ namespace ShitDesigner.Main {
 		public void Poll(string loadedPatchId) {
 			var keyboard = Keyboard.current;
 			if (keyboard == null) {
+				EndAllPianoInstantEffects();
 				SetBlackoutActive(false);
 				SetGlobalFlashActive(false);
 				return;
@@ -105,6 +110,7 @@ namespace ShitDesigner.Main {
 			SetBlackoutActive(m_BlackoutKey != Key.None && keyboard[m_BlackoutKey].isPressed);
 			SetGlobalFlashActive(!m_IsEditMode() && keyboard.slashKey.isPressed);
 			QueueReleasedPatchKeyboardInputs(keyboard);
+			EndReleasedPianoInstantEffects(keyboard);
 			ReleaseLiveParameterKeys(keyboard);
 			if (m_IsOutput2AdjustmentMode() && HandleOutput2Adjustment(keyboard)) return;
 			m_HeldOutput2AdjustmentKey = Key.None;
@@ -174,7 +180,7 @@ namespace ShitDesigner.Main {
 			if (keyboard.downArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, 1);
 			if (keyboard.enterKey.wasPressedThisFrame) m_LaunchSelectedPatch();
 			if (keyboard.spaceKey.wasPressedThisFrame) m_TapBpm(Time.unscaledTimeAsDouble);
-			if (CuePressedInstantEffects(keyboard)) return;
+			if (BeginPressedPianoInstantEffects(keyboard)) return;
 			if (FirePressedLiveParameters(keyboard)) return;
 			QueuePressedPatchKeyboardInputs(keyboard, loadedPatchId);
 		}
@@ -271,19 +277,49 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		private bool CuePressedInstantEffects(Keyboard keyboard) {
+		private bool BeginPressedPianoInstantEffects(Keyboard keyboard) {
 			var fired = false;
-			if (keyboard.qKey.wasPressedThisFrame) { m_CueInstantEffect(1); fired = true; }
-			if (keyboard.wKey.wasPressedThisFrame) { m_CueInstantEffect(2); fired = true; }
-			if (keyboard.eKey.wasPressedThisFrame) { m_CueInstantEffect(3); fired = true; }
-			if (keyboard.rKey.wasPressedThisFrame) { m_CueInstantEffect(4); fired = true; }
-			if (keyboard.tKey.wasPressedThisFrame) { m_CueInstantEffect(5); fired = true; }
-			if (keyboard.yKey.wasPressedThisFrame) { m_CueInstantEffect(6); fired = true; }
-			if (keyboard.uKey.wasPressedThisFrame) { m_CueInstantEffect(7); fired = true; }
-			if (keyboard.iKey.wasPressedThisFrame) { m_CueInstantEffect(8); fired = true; }
-			if (keyboard.oKey.wasPressedThisFrame) { m_CueInstantEffect(9); fired = true; }
-			if (keyboard.pKey.wasPressedThisFrame) { m_CueInstantEffect(10); fired = true; }
+			for (var cueIndex = 0; cueIndex < InstantEffectTriggerContract.TriggerCount; cueIndex++) {
+				if (!InstantEffectKey(keyboard, cueIndex).wasPressedThisFrame) continue;
+				m_HeldPianoInstantEffectMask |= 1 << cueIndex;
+				m_BeginPianoInstantEffect(cueIndex + 1);
+				fired = true;
+			}
 			return fired;
+		}
+
+		private void EndReleasedPianoInstantEffects(Keyboard keyboard) {
+			for (var cueIndex = 0; cueIndex < InstantEffectTriggerContract.TriggerCount; cueIndex++) {
+				var cueMask = 1 << cueIndex;
+				if ((m_HeldPianoInstantEffectMask & cueMask) == 0 || InstantEffectKey(keyboard, cueIndex).isPressed) continue;
+				m_HeldPianoInstantEffectMask &= ~cueMask;
+				m_EndPianoInstantEffect(cueIndex + 1);
+			}
+		}
+
+		public void EndAllPianoInstantEffects() {
+			for (var cueIndex = 0; cueIndex < InstantEffectTriggerContract.TriggerCount; cueIndex++) {
+				var cueMask = 1 << cueIndex;
+				if ((m_HeldPianoInstantEffectMask & cueMask) == 0) continue;
+				m_HeldPianoInstantEffectMask &= ~cueMask;
+				m_EndPianoInstantEffect(cueIndex + 1);
+			}
+		}
+
+		private static KeyControl InstantEffectKey(Keyboard keyboard, int cueIndex) {
+			switch (cueIndex) {
+				case 0: return keyboard.qKey;
+				case 1: return keyboard.wKey;
+				case 2: return keyboard.eKey;
+				case 3: return keyboard.rKey;
+				case 4: return keyboard.tKey;
+				case 5: return keyboard.yKey;
+				case 6: return keyboard.uKey;
+				case 7: return keyboard.iKey;
+				case 8: return keyboard.oKey;
+				case 9: return keyboard.pKey;
+				default: throw new ArgumentOutOfRangeException(nameof(cueIndex));
+			}
 		}
 
 		private static int PressedInstantEffectIndex(Keyboard keyboard) {
@@ -362,53 +398,6 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-	}
-
-	public sealed class LiveBeatQuantizedTriggerQueue {
-		private const double BeatBoundaryTolerance = 1e-9d;
-		private readonly Dictionary<int, long> m_TargetBeats = new Dictionary<int, long>();
-
-		public void Enqueue(int triggerNumber, double adjustedTotalBeats) {
-			InstantEffectTriggerContract.Validate(triggerNumber);
-			if (double.IsNaN(adjustedTotalBeats) || double.IsInfinity(adjustedTotalBeats))
-				throw new ArgumentOutOfRangeException(nameof(adjustedTotalBeats));
-			var targetBeat = checked((long)Math.Floor(adjustedTotalBeats + BeatBoundaryTolerance) + 1L);
-			if (!m_TargetBeats.TryGetValue(triggerNumber, out var existingTarget) || targetBeat < existingTarget)
-				m_TargetBeats[triggerNumber] = targetBeat;
-		}
-
-		public IReadOnlyList<int> DrainDue(double adjustedTotalBeats) {
-			if (double.IsNaN(adjustedTotalBeats) || double.IsInfinity(adjustedTotalBeats))
-				throw new ArgumentOutOfRangeException(nameof(adjustedTotalBeats));
-			var reachedBeat = checked((long)Math.Floor(adjustedTotalBeats + BeatBoundaryTolerance));
-			var due = m_TargetBeats.Where(item => item.Value <= reachedBeat).Select(item => item.Key).OrderBy(value => value).ToArray();
-			foreach (var triggerNumber in due) m_TargetBeats.Remove(triggerNumber);
-			return due;
-		}
-	}
-
-	public sealed class LiveBeatEffectGate {
-		private const double BeatBoundaryTolerance = 1e-9d;
-		private readonly Dictionary<int, long> m_ActiveUntilBeats = new Dictionary<int, long>();
-
-		public void Activate(IEnumerable<int> triggerNumbers, double adjustedTotalBeats) {
-			if (double.IsNaN(adjustedTotalBeats) || double.IsInfinity(adjustedTotalBeats))
-				throw new ArgumentOutOfRangeException(nameof(adjustedTotalBeats));
-			var activeUntilBeat = checked((long)Math.Floor(adjustedTotalBeats + BeatBoundaryTolerance) + 1L);
-			foreach (var triggerNumber in triggerNumbers ?? Enumerable.Empty<int>()) {
-				InstantEffectTriggerContract.Validate(triggerNumber);
-				m_ActiveUntilBeats[triggerNumber] = activeUntilBeat;
-			}
-		}
-
-		public IReadOnlyList<int> GetActive(double adjustedTotalBeats) {
-			if (double.IsNaN(adjustedTotalBeats) || double.IsInfinity(adjustedTotalBeats))
-				throw new ArgumentOutOfRangeException(nameof(adjustedTotalBeats));
-			var reachedBeat = checked((long)Math.Floor(adjustedTotalBeats + BeatBoundaryTolerance));
-			foreach (var triggerNumber in m_ActiveUntilBeats.Where(item => item.Value <= reachedBeat).Select(item => item.Key).ToArray())
-				m_ActiveUntilBeats.Remove(triggerNumber);
-			return m_ActiveUntilBeats.Keys.OrderBy(value => value).ToArray();
-		}
 	}
 
 	/// <summary>Maps MIDI events to live requests without owning the MIDI device lifecycle.</summary>

@@ -48,6 +48,15 @@ namespace ShitDesigner.Main {
 		[SerializeField, Range(0f, 1f)] private float m_GlobalFlashAmount = 1f;
 		[SerializeField, Range(1f, 30f)] private float m_GlobalFlashRate = 12f;
 		[SerializeField, Range(.05f, .95f)] private float m_GlobalFlashDuty = .35f;
+		[Header("Global Quantization")]
+		[SerializeField, Tooltip("Queues scene takes until the next beat.")]
+		private bool m_IsSceneQuantizeEnabled;
+		[SerializeField, Tooltip("Queues Hot Cues until the next beat.")]
+		private bool m_IsHotCueQuantizeEnabled;
+		[SerializeField, Tooltip("Queues Main Cue changes until the next beat.")]
+		private bool m_IsMainCueQuantizeEnabled;
+		[SerializeField, Tooltip("Queues Piano FX until the next beat.")]
+		private bool m_IsPianoFxQuantizeEnabled;
 
 		private readonly LiveParameterQueue _parameterQueue = new LiveParameterQueue();
 		private readonly LiveBpmTap _bpmTap = new LiveBpmTap();
@@ -57,6 +66,7 @@ namespace ShitDesigner.Main {
 		};
 		private readonly List<LiveParameterRequest> _pendingRequests = new List<LiveParameterRequest>();
 		private readonly List<LiveParameterApplicationResult> _requestResults = new List<LiveParameterApplicationResult>();
+		private readonly LiveBeatQuantizedRequestQueue m_QuantizedRequestQueue = new LiveBeatQuantizedRequestQueue();
 		private readonly List<Action> _shutdown = new List<Action>();
 		private LiveGraphRuntime _runtime;
 		private LiveKeyboardInput _keyboard;
@@ -73,8 +83,9 @@ namespace ShitDesigner.Main {
 		private int m_SelectedOverlayPatchIndex;
 		private int m_SelectedEffectNodeIndex;
 		private readonly string[] m_InstantEffectTypeIds = new string[ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount];
-		private readonly LiveBeatQuantizedTriggerQueue m_InstantEffectTriggerQueue = new LiveBeatQuantizedTriggerQueue();
-		private readonly LiveBeatEffectGate m_InstantEffectGate = new LiveBeatEffectGate();
+		private readonly Dictionary<int, int> m_PianoInstantEffectHoldCounts = new Dictionary<int, int>();
+		private readonly Dictionary<int, int> m_QuantizedPianoInstantEffectHoldCounts = new Dictionary<int, int>();
+		private readonly Dictionary<int, long> m_QuantizedPianoInstantEffectTargetBeats = new Dictionary<int, long>();
 		private IReadOnlyList<int> m_FiredInstantEffectTriggers = Array.Empty<int>();
 		private int m_LiveParameterCueIndex = -1;
 		private bool m_IsEditMode;
@@ -98,6 +109,10 @@ namespace ShitDesigner.Main {
 		public string LastDiagnostic { get; private set; } = string.Empty;
 		public IReadOnlyList<LiveStepSequencer> Sequencers => m_Sequencers;
 		public bool IsEditMode => m_IsEditMode;
+		public bool IsSceneQuantizeEnabled => m_IsSceneQuantizeEnabled;
+		public bool IsHotCueQuantizeEnabled => m_IsHotCueQuantizeEnabled;
+		public bool IsMainCueQuantizeEnabled => m_IsMainCueQuantizeEnabled;
+		public bool IsPianoFxQuantizeEnabled => m_IsPianoFxQuantizeEnabled;
 		public event Action<IReadOnlyList<int>> InstantEffectTriggersFired;
 
 		private void Awake() {
@@ -148,13 +163,13 @@ namespace ShitDesigner.Main {
 				m_PianoReturnMainPatchId = string.Empty;
 				ShitDesigner.Runtime.InstantEffectInputMode.SetEditing(false);
 				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, BeginPianoOverlayTake, MoveCatalogSelection, () => { LaunchSelectedCatalogPatch(); }, TapBpm,
-					ToggleEditMode, cueIndex => { AssignSelectedEffectToCue(cueIndex); }, () => m_IsEditMode, QueueInstantEffectTrigger,
+					ToggleEditMode, cueIndex => { AssignSelectedEffectToCue(cueIndex); }, () => m_IsEditMode, BeginPianoInstantEffect,
 					cueIndex => { FocusInstantEffectParameters(cueIndex); }, ToggleSelectedEffectCategory, BeginPianoMainCueSwitch,
 					EndPianoMainCueSwitch, CompleteMainCueSwitch, EndPianoOverlayTake, TurnOnOverlaySequencerStep,
 					(horizontalDelta, verticalDelta, move) => _externalDisplay.AdjustOutput2Viewport(horizontalDelta, verticalDelta, move),
 					() => _externalDisplay.IsOutput2AdjustmentMode, FireLiveParameter, m_BlackoutKey,
 					active => { m_IsBlackoutActive = active; }, BeginMomentaryMainComposite,
-					EndMomentaryMainComposite, CompleteMainComposite, SetGlobalFlashActive);
+					EndMomentaryMainComposite, CompleteMainComposite, SetGlobalFlashActive, EndPianoInstantEffect);
 				_midiInputManager.InitializeForHostPolling();
 				_midiInputManager.ConfigureLaunchControlXl3RelativeEncoder(m_SceneTimeEncoderChannel, m_SceneTimeEncoderControlNumber);
 				_shutdown.Add(_midiInputManager.Shutdown);
@@ -193,10 +208,9 @@ namespace ShitDesigner.Main {
 				var deltaSeconds = Math.Max(0d, Time.unscaledDeltaTime);
 				ApplyRequests();
 				var projectedBeatPosition = _runtime.BpmFrame.AdjustedTotalBeats + deltaSeconds * _runtime.BpmFrame.Bpm / 60d;
-				var firedInstantEffectTriggers = m_InstantEffectTriggerQueue.DrainDue(projectedBeatPosition);
-				if (firedInstantEffectTriggers.Count > 0) InstantEffectTriggersFired?.Invoke(firedInstantEffectTriggers);
-				m_InstantEffectGate.Activate(firedInstantEffectTriggers, projectedBeatPosition);
-				m_FiredInstantEffectTriggers = m_InstantEffectGate.GetActive(projectedBeatPosition);
+				ApplyQuantizedRequests(projectedBeatPosition);
+				ActivateDuePianoInstantEffects(projectedBeatPosition);
+				m_FiredInstantEffectTriggers = m_PianoInstantEffectHoldCounts.Keys.OrderBy(triggerNumber => triggerNumber).ToArray();
 				var overlayComposition = UpdateOverlayComposition(projectedBeatPosition);
 				_runtime.Evaluate(deltaSeconds);
 				ApplyUnityTimeScale(_runtime.GraphTimeScale);
@@ -220,13 +234,22 @@ namespace ShitDesigner.Main {
 			m_IsEditMode = false;
 			m_IsBlackoutActive = false;
 			m_IsGlobalFlashActive = false;
+			m_QuantizedRequestQueue.Clear();
+			_uiController?.EndAllPianoInstantEffectPointers();
+			_keyboard?.EndAllPianoInstantEffects();
+			ClearPianoInstantEffects();
 			ShitDesigner.Runtime.InstantEffectInputMode.SetEditing(false);
 			State = ApplicationLiveHostState.Offline;
 		}
 
 		public void ToggleEditMode() {
 			m_IsEditMode = !m_IsEditMode;
-			if (m_IsEditMode) SetGlobalFlashActive(false);
+			if (m_IsEditMode) {
+				SetGlobalFlashActive(false);
+				_keyboard?.EndAllPianoInstantEffects();
+				_uiController?.EndAllPianoInstantEffectPointers();
+				ClearPianoInstantEffects();
+			}
 			ShitDesigner.Runtime.InstantEffectInputMode.SetEditing(m_IsEditMode);
 			if (m_IsEditMode) {
 				m_SelectedCatalogRole = LiveCatalogRole.Effect;
@@ -244,7 +267,12 @@ namespace ShitDesigner.Main {
 		}
 
 		private void OnApplicationFocus(bool hasFocus) {
-			if (!hasFocus) SetGlobalFlashActive(false);
+			if (!hasFocus) {
+				SetGlobalFlashActive(false);
+				_keyboard?.EndAllPianoInstantEffects();
+				_uiController?.EndAllPianoInstantEffectPointers();
+				ClearPianoInstantEffects();
+			}
 		}
 
 		public bool AssignSelectedEffectToCue(int cueIndex) {
@@ -261,11 +289,48 @@ namespace ShitDesigner.Main {
 			return true;
 		}
 
-		public void QueueInstantEffectTrigger(int triggerNumber) {
+		public void BeginPianoInstantEffect(int triggerNumber) {
 			if (State != ApplicationLiveHostState.Running || m_IsEditMode || _runtime == null) return;
 			ShitDesigner.Runtime.InstantEffectTriggerContract.Validate(triggerNumber);
 			if (string.IsNullOrEmpty(m_InstantEffectTypeIds[triggerNumber - 1])) return;
-			m_InstantEffectTriggerQueue.Enqueue(triggerNumber, _runtime.BpmFrame.AdjustedTotalBeats);
+			if (m_IsPianoFxQuantizeEnabled && !m_PianoInstantEffectHoldCounts.ContainsKey(triggerNumber)) {
+				if (m_QuantizedPianoInstantEffectHoldCounts.TryGetValue(triggerNumber, out var quantizedHoldCount))
+					m_QuantizedPianoInstantEffectHoldCounts[triggerNumber] = quantizedHoldCount + 1;
+				else {
+					m_QuantizedPianoInstantEffectHoldCounts.Add(triggerNumber, 1);
+					m_QuantizedPianoInstantEffectTargetBeats.Add(triggerNumber,
+						checked((long)Math.Floor(_runtime.BpmFrame.AdjustedTotalBeats + 1e-9d) + 1L));
+				}
+				return;
+			}
+			if (m_PianoInstantEffectHoldCounts.TryGetValue(triggerNumber, out var holdCount)) {
+				m_PianoInstantEffectHoldCounts[triggerNumber] = holdCount + 1;
+				return;
+			}
+			m_PianoInstantEffectHoldCounts.Add(triggerNumber, 1);
+			InstantEffectTriggersFired?.Invoke(new[] { triggerNumber });
+		}
+
+		public void EndPianoInstantEffect(int triggerNumber) {
+			ShitDesigner.Runtime.InstantEffectTriggerContract.Validate(triggerNumber);
+			if (m_PianoInstantEffectHoldCounts.TryGetValue(triggerNumber, out var holdCount)) {
+				if (holdCount <= 1) m_PianoInstantEffectHoldCounts.Remove(triggerNumber);
+				else m_PianoInstantEffectHoldCounts[triggerNumber] = holdCount - 1;
+				return;
+			}
+			if (!m_QuantizedPianoInstantEffectHoldCounts.TryGetValue(triggerNumber, out var quantizedHoldCount)) return;
+			if (quantizedHoldCount <= 1) {
+				m_QuantizedPianoInstantEffectHoldCounts.Remove(triggerNumber);
+				m_QuantizedPianoInstantEffectTargetBeats.Remove(triggerNumber);
+			}
+			else m_QuantizedPianoInstantEffectHoldCounts[triggerNumber] = quantizedHoldCount - 1;
+		}
+
+		private void ClearPianoInstantEffects() {
+			m_PianoInstantEffectHoldCounts.Clear();
+			m_QuantizedPianoInstantEffectHoldCounts.Clear();
+			m_QuantizedPianoInstantEffectTargetBeats.Clear();
+			m_FiredInstantEffectTriggers = Array.Empty<int>();
 		}
 
 		public bool FocusInstantEffectParameters(int cueIndex) {
@@ -518,10 +583,55 @@ namespace ShitDesigner.Main {
 			if (clearResults) _requestResults.Clear();
 			_parameterQueue.Drain(_pendingRequests);
 			foreach (var request in _pendingRequests) {
+				if (TrySetQuantizeMode(request)) {
+					_requestResults.Add(new LiveParameterApplicationResult(request.SequenceNumber, true, string.Empty));
+					continue;
+				}
+				if (ShouldQuantize(request.Kind)) {
+					if (!m_QuantizedRequestQueue.TryEnqueue(request, _runtime.BpmFrame.AdjustedTotalBeats, out var rejectionReason))
+						_requestResults.Add(new LiveParameterApplicationResult(request.SequenceNumber, false, rejectionReason));
+					continue;
+				}
 				try { _requestResults.Add(_runtime.Apply(request)); }
 				catch (Exception exception) { _requestResults.Add(new LiveParameterApplicationResult(request.SequenceNumber, false, exception.Message)); }
 			}
 		}
+
+		private bool TrySetQuantizeMode(LiveParameterRequest request) {
+			switch (request.Kind) {
+				case LiveParameterRequestKind.SetSceneQuantizeMode: m_IsSceneQuantizeEnabled = request.ParameterValue.AsBool(); return true;
+				case LiveParameterRequestKind.SetHotCueQuantizeMode: m_IsHotCueQuantizeEnabled = request.ParameterValue.AsBool(); return true;
+				case LiveParameterRequestKind.SetMainCueQuantizeMode: m_IsMainCueQuantizeEnabled = request.ParameterValue.AsBool(); return true;
+				case LiveParameterRequestKind.SetPianoFxQuantizeMode: m_IsPianoFxQuantizeEnabled = request.ParameterValue.AsBool(); return true;
+				default: return false;
+			}
+		}
+
+		private void ApplyQuantizedRequests(double adjustedTotalBeats) {
+			foreach (var request in m_QuantizedRequestQueue.DrainDue(adjustedTotalBeats)) {
+				try { _requestResults.Add(_runtime.Apply(request)); }
+				catch (Exception exception) { _requestResults.Add(new LiveParameterApplicationResult(request.SequenceNumber, false, exception.Message)); }
+			}
+		}
+
+		private void ActivateDuePianoInstantEffects(double adjustedTotalBeats) {
+			var reachedBeat = checked((long)Math.Floor(adjustedTotalBeats + 1e-9d));
+			foreach (var triggerNumber in m_QuantizedPianoInstantEffectTargetBeats
+				.Where(item => item.Value <= reachedBeat).Select(item => item.Key).ToArray()) {
+				m_QuantizedPianoInstantEffectTargetBeats.Remove(triggerNumber);
+				if (!m_QuantizedPianoInstantEffectHoldCounts.TryGetValue(triggerNumber, out var holdCount)) continue;
+				m_QuantizedPianoInstantEffectHoldCounts.Remove(triggerNumber);
+				m_PianoInstantEffectHoldCounts[triggerNumber] = m_PianoInstantEffectHoldCounts.TryGetValue(triggerNumber, out var activeHoldCount)
+					? activeHoldCount + holdCount : holdCount;
+				InstantEffectTriggersFired?.Invoke(new[] { triggerNumber });
+			}
+		}
+
+		private bool ShouldQuantize(LiveParameterRequestKind kind)
+			=> (m_IsSceneQuantizeEnabled && (kind == LiveParameterRequestKind.LoadPatch || kind == LiveParameterRequestKind.LaunchPatch))
+				|| (m_IsHotCueQuantizeEnabled && (kind == LiveParameterRequestKind.RecallHotCue || kind == LiveParameterRequestKind.RecallOppositeHotCue))
+				|| (m_IsMainCueQuantizeEnabled && (kind == LiveParameterRequestKind.ToggleMainCue
+					|| kind == LiveParameterRequestKind.SetMainCueComposite || kind == LiveParameterRequestKind.ToggleMainCueComposite));
 
 		private LiveSequencerReadModel UpdateOverlayComposition(double adjustedTotalBeats) {
 			var overlay = m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay)
@@ -532,7 +642,8 @@ namespace ShitDesigner.Main {
 
 		private void PublishReadModel(string diagnostic) {
 			ReadModel = new LiveUiReadModel(_tickFrameNumber, _patches, m_EffectNodes, m_SelectedCatalogRole, SelectedCatalogItemId, _runtime?.LoadedPatchId, _runtime?.OverlayPreviewFrames, _runtime?.MainCuePreviewFrames,
-				_runtime?.BpmDefinition ?? default, _runtime?.IsTimeEasingEnabled ?? false, CreateLiveParameterDefinitions(), CreateSequencerReadModels(), _runtime?.CurrentFrames ?? default(LiveProgramFrames), _externalDisplay,
+				_runtime?.BpmDefinition ?? default, _runtime?.IsTimeEasingEnabled ?? false, m_IsSceneQuantizeEnabled, m_IsHotCueQuantizeEnabled,
+				m_IsMainCueQuantizeEnabled, m_IsPianoFxQuantizeEnabled, CreateLiveParameterDefinitions(), CreateSequencerReadModels(), _runtime?.CurrentFrames ?? default(LiveProgramFrames), _externalDisplay,
 				_capabilityMonitor != null ? _capabilityMonitor.Snapshot : default(LiveCapabilitySnapshot), diagnostic,
 				_requestResults.ToArray(), m_IsEditMode, m_InstantEffectTypeIds, m_FiredInstantEffectTriggers, m_LiveParameterCueIndex, m_OpenEffectCategory,
 				m_IsEffectCategorySelected, m_SelectedEffectCategory);

@@ -658,6 +658,11 @@
     border-color: rgb(255, 190, 74);
 }
 
+.tempo-quantize-mode-button.is-quantize-mode-enabled {
+    color: rgb(255, 190, 74);
+    border-color: rgb(255, 190, 74);
+}
+
 .parameter-controls {
     flex-grow: 1;
     flex-direction: row;

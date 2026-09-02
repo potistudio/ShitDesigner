@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 398c17eaef8e41318d623bd76888d12a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.LiveSceneRoot
 --- !u!114 &7869385937561023258
 MonoBehaviour:
@@ -57,7 +57,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e7c4b0a829b64abf9cc322ed7fcb94a1, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: DvdBounce::ShitDesigner.Scene.DvdBounceLiveParameters
   m_SpeedId: speed
   m_SpeedDisplayName: Speed
@@ -109,14 +109,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: DvdBounce::ShitDesigner.Scene.DvdBounceScene
   m_Videos:
-  - {fileID: 32900000, guid: 94a98c390accb9241a1aa73b993a520c, type: 3}
-  - {fileID: 32900000, guid: bd04af99426a2d246bff6ccd22e9dfce, type: 3}
+  - {fileID: 32900000, guid: 5e1851a21fcb14a43b2d1784bf2bb66a, type: 3}
+  - {fileID: 32900000, guid: 26e81a4cd508df84bbd0dd014b071196, type: 3}
   - {fileID: 32900000, guid: a5a1c2c8b26701c4dadb61ce71b0f4d3, type: 3}
-  m_Images: []
-  m_VisualSize: 4.07
-  m_InstanceCount: 8
+  - {fileID: 32900000, guid: fead77aa65b9351459bd070f3ef3500c, type: 3}
+  m_Images:
+  - {fileID: 2800000, guid: 15b824f579528024b80664e392a872a0, type: 3}
+  - {fileID: 2800000, guid: 01111eb0e60c759418df20438bbc6046, type: 3}
+  - {fileID: 2800000, guid: 784b178d822e94548820fa0b2dfd1199, type: 3}
+  - {fileID: 2800000, guid: def68c563d7297b4b91f0166009b5e38, type: 3}
+  m_VisualSize: 3
+  m_InstanceCount: 11
   m_VideoPlaybackSpeed: 2.49
-  m_Speed: 18.29
+  m_Speed: 5.8
   m_InitialDirection: {x: 1, y: 0.63}
   m_InitialPosition: {x: 0, y: 0}
 --- !u!1 &2787290270262086346

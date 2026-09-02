@@ -189,16 +189,16 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
                 <ui:VisualElement name="instant-effect-cues" class="instant-effect-cues">
-                    <ui:Button name="instant-effect-cue-1" text="Q" tooltip="Instant Effect Trigger 1" class="instant-effect-cue-button"/>
-                    <ui:Button name="instant-effect-cue-2" text="W" tooltip="Instant Effect Trigger 2" class="instant-effect-cue-button"/>
-                    <ui:Button name="instant-effect-cue-3" text="E" tooltip="Instant Effect Trigger 3" class="instant-effect-cue-button"/>
-                    <ui:Button name="instant-effect-cue-4" text="R" tooltip="Instant Effect Trigger 4" class="instant-effect-cue-button"/>
-                    <ui:Button name="instant-effect-cue-5" text="T" tooltip="Instant Effect Trigger 5" class="instant-effect-cue-button"/>
-                    <ui:Button name="instant-effect-cue-6" text="Y" tooltip="Instant Effect Trigger 6" class="instant-effect-cue-button"/>
-                    <ui:Button name="instant-effect-cue-7" text="U" tooltip="Instant Effect Trigger 7" class="instant-effect-cue-button"/>
-                    <ui:Button name="instant-effect-cue-8" text="I" tooltip="Instant Effect Trigger 8" class="instant-effect-cue-button"/>
-                    <ui:Button name="instant-effect-cue-9" text="O" tooltip="Instant Effect Trigger 9" class="instant-effect-cue-button"/>
-                    <ui:Button name="instant-effect-cue-10" text="P" tooltip="Instant Effect Trigger 10" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-1" text="Q" tooltip="Hold for Piano FX 1" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-2" text="W" tooltip="Hold for Piano FX 2" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-3" text="E" tooltip="Hold for Piano FX 3" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-4" text="R" tooltip="Hold for Piano FX 4" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-5" text="T" tooltip="Hold for Piano FX 5" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-6" text="Y" tooltip="Hold for Piano FX 6" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-7" text="U" tooltip="Hold for Piano FX 7" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-8" text="I" tooltip="Hold for Piano FX 8" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-9" text="O" tooltip="Hold for Piano FX 9" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-10" text="P" tooltip="Hold for Piano FX 10" class="instant-effect-cue-button"/>
                 </ui:VisualElement>
                 <ui:VisualElement class="live-fader-panel">
                     <ui:VisualElement name="parameter-controls" class="parameter-controls"/>
@@ -224,13 +224,17 @@
             </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement class="bottom-bar">
-            <ui:VisualElement name="tempo-controls" class="tempo-controls is-hidden">
+            <ui:VisualElement name="tempo-controls" class="tempo-controls">
                 <ui:VisualElement class="tempo-input-row">
                     <ui:TextField name="bpm-field" class="tempo-bpm-input" is-delayed="true"/>
                     <ui:Button name="bpm-tap" text="TAP" class="tempo-tap-button"/>
                 </ui:VisualElement>
                 <ui:Button name="beat-alignment-button" text="ALIGN BEAT" class="tempo-alignment-button"/>
                 <ui:Button name="time-easing-button" text="TIME EASE ON" class="tempo-alignment-button tempo-time-easing-button"/>
+                <ui:Button name="scene-quantize-button" text="SCENE Q OFF" class="tempo-alignment-button tempo-quantize-mode-button"/>
+                <ui:Button name="hot-cue-quantize-button" text="HOT CUE Q OFF" class="tempo-alignment-button tempo-quantize-mode-button"/>
+                <ui:Button name="main-cue-quantize-button" text="MAIN CUE Q OFF" class="tempo-alignment-button tempo-quantize-mode-button"/>
+                <ui:Button name="piano-fx-quantize-button" text="PIANO FX Q OFF" class="tempo-alignment-button tempo-quantize-mode-button"/>
             </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="edit-mode-highlight" class="edit-mode-highlight" picking-mode="Ignore"/>

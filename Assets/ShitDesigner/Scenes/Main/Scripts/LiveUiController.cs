@@ -39,11 +39,16 @@ namespace ShitDesigner.Main {
 		private VisualElement m_PatchDragStroke;
 		private Button[] m_SidebarTabButtons = Array.Empty<Button>();
 		private Button[] m_InstantEffectCueButtons = Array.Empty<Button>();
+		private readonly Dictionary<int, int> m_PianoInstantEffectPointers = new Dictionary<int, int>();
 		private VisualElement[] m_SidebarTabContents = Array.Empty<VisualElement>();
 		private TextField _bpmField;
 		private Button _bpmTapButton;
 		private Button m_BeatAlignmentButton;
 		private Button m_TimeEasingButton;
+		private Button m_SceneQuantizeButton;
+		private Button m_HotCueQuantizeButton;
+		private Button m_MainCueQuantizeButton;
+		private Button m_PianoFxQuantizeButton;
 		private Label _capabilityLabel;
 		private Label _diagnosticLabel;
 		private LiveOutputMenuController m_OutputMenu;
@@ -159,7 +164,13 @@ namespace ShitDesigner.Main {
 			m_InstantEffectCueButtons = Enumerable.Range(1, InstantEffectTriggerContract.TriggerCount)
 				.Select(index => Required<Button>(root, "instant-effect-cue-" + index))
 				.ToArray();
-			for (var index = 0; index < m_InstantEffectCueButtons.Length; index++) m_InstantEffectCueButtons[index].userData = index + 1;
+			for (var index = 0; index < m_InstantEffectCueButtons.Length; index++) {
+				var button = m_InstantEffectCueButtons[index];
+				button.userData = index + 1;
+				button.RegisterCallback<PointerDownEvent>(OnPianoInstantEffectPointerDown);
+				button.RegisterCallback<PointerUpEvent>(OnPianoInstantEffectPointerUp);
+				button.RegisterCallback<PointerCancelEvent>(OnPianoInstantEffectPointerCancel);
+			}
 			for (var tabIndex = 0; tabIndex < m_SidebarTabButtons.Length; tabIndex++) {
 				m_SidebarTabButtons[tabIndex].userData = (LiveCatalogRole)tabIndex;
 				m_SidebarTabButtons[tabIndex].RegisterCallback<ClickEvent>(OnSidebarTabClicked);
@@ -169,6 +180,10 @@ namespace ShitDesigner.Main {
 			_bpmTapButton = Required<Button>(root, "bpm-tap");
 			m_BeatAlignmentButton = Required<Button>(root, "beat-alignment-button");
 			m_TimeEasingButton = Required<Button>(root, "time-easing-button");
+			m_SceneQuantizeButton = Required<Button>(root, "scene-quantize-button");
+			m_HotCueQuantizeButton = Required<Button>(root, "hot-cue-quantize-button");
+			m_MainCueQuantizeButton = Required<Button>(root, "main-cue-quantize-button");
+			m_PianoFxQuantizeButton = Required<Button>(root, "piano-fx-quantize-button");
 			_capabilityLabel = Required<Label>(root, "capability-status");
 			_diagnosticLabel = Required<Label>(root, "diagnostic-status");
 			m_Root.RegisterCallback<PointerDownEvent>(OnPatchPointerDown, TrickleDown.TrickleDown);
@@ -182,7 +197,6 @@ namespace ShitDesigner.Main {
 			m_Root.RegisterCallback<MouseMoveEvent>(OnPatchMouseMove, TrickleDown.TrickleDown);
 			m_Root.RegisterCallback<MouseUpEvent>(OnPatchMouseUp, TrickleDown.TrickleDown);
 			m_SequencerControls.RegisterCallback<ClickEvent>(OnSequencerCellClicked);
-			m_InstantEffectCueControls.RegisterCallback<ClickEvent>(OnInstantEffectCueClicked);
 			BindSequencers(root);
 			_bpmField.RegisterValueChangedCallback(OnBpmInputChanged);
 			_bpmField.RegisterCallback<FocusInEvent>(OnBpmFocusIn);
@@ -190,6 +204,10 @@ namespace ShitDesigner.Main {
 			_bpmTapButton.clicked += TapBpm;
 			m_BeatAlignmentButton.clicked += AlignBeat;
 			m_TimeEasingButton.clicked += ToggleTimeEasing;
+			m_SceneQuantizeButton.clicked += ToggleSceneQuantizeMode;
+			m_HotCueQuantizeButton.clicked += ToggleHotCueQuantizeMode;
+			m_MainCueQuantizeButton.clicked += ToggleMainCueQuantizeMode;
+			m_PianoFxQuantizeButton.clicked += TogglePianoFxQuantizeMode;
 			_initialized = true;
 		}
 
@@ -227,7 +245,12 @@ namespace ShitDesigner.Main {
 			m_MainCueSlots = Array.Empty<VisualElement>();
 			m_PatchDragStroke = null;
 			if (m_SequencerControls != null) m_SequencerControls.UnregisterCallback<ClickEvent>(OnSequencerCellClicked);
-			if (m_InstantEffectCueControls != null) m_InstantEffectCueControls.UnregisterCallback<ClickEvent>(OnInstantEffectCueClicked);
+			EndAllPianoInstantEffectPointers();
+			foreach (var button in m_InstantEffectCueButtons) {
+				button.UnregisterCallback<PointerDownEvent>(OnPianoInstantEffectPointerDown);
+				button.UnregisterCallback<PointerUpEvent>(OnPianoInstantEffectPointerUp);
+				button.UnregisterCallback<PointerCancelEvent>(OnPianoInstantEffectPointerCancel);
+			}
 			foreach (var button in m_SidebarTabButtons) button.UnregisterCallback<ClickEvent>(OnSidebarTabClicked);
 			m_SidebarTabButtons = Array.Empty<Button>();
 			m_SidebarTabContents = Array.Empty<VisualElement>();
@@ -241,6 +264,10 @@ namespace ShitDesigner.Main {
 			if (_bpmTapButton != null) _bpmTapButton.clicked -= TapBpm;
 			if (m_BeatAlignmentButton != null) m_BeatAlignmentButton.clicked -= AlignBeat;
 			if (m_TimeEasingButton != null) m_TimeEasingButton.clicked -= ToggleTimeEasing;
+			if (m_SceneQuantizeButton != null) m_SceneQuantizeButton.clicked -= ToggleSceneQuantizeMode;
+			if (m_HotCueQuantizeButton != null) m_HotCueQuantizeButton.clicked -= ToggleHotCueQuantizeMode;
+			if (m_MainCueQuantizeButton != null) m_MainCueQuantizeButton.clicked -= ToggleMainCueQuantizeMode;
+			if (m_PianoFxQuantizeButton != null) m_PianoFxQuantizeButton.clicked -= TogglePianoFxQuantizeMode;
 			_initialized = false;
 			m_Root = null;
 			m_MainUi = null;
@@ -308,8 +335,8 @@ namespace ShitDesigner.Main {
 				var effectName = string.IsNullOrEmpty(effect.Name) ? typeId : effect.Name;
 				m_InstantEffectCueButtons[index].text = string.IsNullOrEmpty(typeId) ? m_InstantEffectCueKeys[index] : effectName;
 				m_InstantEffectCueButtons[index].tooltip = string.IsNullOrEmpty(typeId)
-					? m_InstantEffectCueKeys[index] + " · Instant Effect Trigger " + (index + 1)
-					: m_InstantEffectCueKeys[index] + " · " + (model.IsEditMode ? "Replace " : string.Empty) + effectName;
+					? m_InstantEffectCueKeys[index] + " · Piano FX " + (index + 1)
+					: m_InstantEffectCueKeys[index] + " · " + (model.IsEditMode ? "Replace " : "Hold for ") + effectName;
 				m_InstantEffectCueButtons[index].EnableInClassList("is-assigned", !string.IsNullOrEmpty(typeId));
 				m_InstantEffectCueButtons[index].EnableInClassList("is-edit-key-active", model.IsEditMode && IsInstantEffectCueKeyPressed(Keyboard.current, index));
 				m_InstantEffectCueButtons[index].EnableInClassList("is-trigger-fired", model.FiredInstantEffectTriggers.Contains(index + 1));
@@ -317,12 +344,36 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		private void OnInstantEffectCueClicked(ClickEvent click) {
-			var target = click.target as VisualElement;
-			var button = target as Button ?? target?.GetFirstAncestorOfType<Button>();
-			if (_host == null || button?.userData is not int triggerNumber) return;
-			if (_host.IsEditMode) _host.AssignSelectedEffectToCue(triggerNumber - 1);
-			else _host.QueueInstantEffectTrigger(triggerNumber);
+		private void OnPianoInstantEffectPointerDown(PointerDownEvent pointer) {
+			if (_host == null || pointer.currentTarget is not Button button || button.userData is not int triggerNumber) return;
+			if (_host.IsEditMode) {
+				_host.AssignSelectedEffectToCue(triggerNumber - 1);
+				return;
+			}
+			if (m_PianoInstantEffectPointers.ContainsKey(pointer.pointerId)) return;
+			m_PianoInstantEffectPointers.Add(pointer.pointerId, triggerNumber);
+			button.CapturePointer(pointer.pointerId);
+			_host.BeginPianoInstantEffect(triggerNumber);
+		}
+
+		private void OnPianoInstantEffectPointerUp(PointerUpEvent pointer) => EndPianoInstantEffectPointer(pointer.pointerId, pointer.currentTarget as VisualElement);
+
+		private void OnPianoInstantEffectPointerCancel(PointerCancelEvent pointer) => EndPianoInstantEffectPointer(pointer.pointerId, pointer.currentTarget as VisualElement);
+
+		private void EndPianoInstantEffectPointer(int pointerId, VisualElement pointerOwner) {
+			if (!m_PianoInstantEffectPointers.TryGetValue(pointerId, out var triggerNumber)) return;
+			m_PianoInstantEffectPointers.Remove(pointerId);
+			if (pointerOwner?.HasPointerCapture(pointerId) == true) pointerOwner.ReleasePointer(pointerId);
+			_host?.EndPianoInstantEffect(triggerNumber);
+		}
+
+		public void EndAllPianoInstantEffectPointers() {
+			foreach (var pointer in m_PianoInstantEffectPointers.ToArray()) {
+				var button = m_InstantEffectCueButtons.FirstOrDefault(candidate => candidate.userData is int triggerNumber && triggerNumber == pointer.Value);
+				if (button?.HasPointerCapture(pointer.Key) == true) button.ReleasePointer(pointer.Key);
+				_host?.EndPianoInstantEffect(pointer.Value);
+			}
+			m_PianoInstantEffectPointers.Clear();
 		}
 
 		private static bool IsInstantEffectCueKeyPressed(Keyboard keyboard, int index) {
@@ -917,10 +968,13 @@ namespace ShitDesigner.Main {
 		}
 
 		private void RefreshTempoControls(LiveUiReadModel model) {
-			_tempoControls.RemoveFromClassList("is-hidden");
 			if (!_editingBpm) _bpmField.SetValueWithoutNotify(FormatBpm(model.Bpm.Value));
 			m_TimeEasingButton.text = model.IsTimeEasingEnabled ? "TIME EASE ON" : "TIME EASE OFF";
 			m_TimeEasingButton.EnableInClassList("is-time-easing-enabled", model.IsTimeEasingEnabled);
+			RefreshQuantizeButton(m_SceneQuantizeButton, "SCENE Q", model.IsSceneQuantizeEnabled);
+			RefreshQuantizeButton(m_HotCueQuantizeButton, "HOT CUE Q", model.IsHotCueQuantizeEnabled);
+			RefreshQuantizeButton(m_MainCueQuantizeButton, "MAIN CUE Q", model.IsMainCueQuantizeEnabled);
+			RefreshQuantizeButton(m_PianoFxQuantizeButton, "PIANO FX Q", model.IsPianoFxQuantizeEnabled);
 		}
 
 		private void OnBpmInputChanged(ChangeEvent<string> change) {
@@ -943,6 +997,31 @@ namespace ShitDesigner.Main {
 		private void ToggleTimeEasing() {
 			if (_host?.ReadModel == null) return;
 			ShowEnqueueRejection(_host.ParameterQueue.EnqueueSetTimeEasingEnabled(!_host.ReadModel.IsTimeEasingEnabled));
+		}
+
+		private void ToggleSceneQuantizeMode() {
+			if (_host?.ReadModel == null) return;
+			ShowEnqueueRejection(_host.ParameterQueue.EnqueueSetSceneQuantizeMode(!_host.ReadModel.IsSceneQuantizeEnabled));
+		}
+
+		private void ToggleHotCueQuantizeMode() {
+			if (_host?.ReadModel == null) return;
+			ShowEnqueueRejection(_host.ParameterQueue.EnqueueSetHotCueQuantizeMode(!_host.ReadModel.IsHotCueQuantizeEnabled));
+		}
+
+		private void ToggleMainCueQuantizeMode() {
+			if (_host?.ReadModel == null) return;
+			ShowEnqueueRejection(_host.ParameterQueue.EnqueueSetMainCueQuantizeMode(!_host.ReadModel.IsMainCueQuantizeEnabled));
+		}
+
+		private void TogglePianoFxQuantizeMode() {
+			if (_host?.ReadModel == null) return;
+			ShowEnqueueRejection(_host.ParameterQueue.EnqueueSetPianoFxQuantizeMode(!_host.ReadModel.IsPianoFxQuantizeEnabled));
+		}
+
+		private static void RefreshQuantizeButton(Button button, string label, bool enabled) {
+			button.text = label + (enabled ? " ON" : " OFF");
+			button.EnableInClassList("is-quantize-mode-enabled", enabled);
 		}
 
 		private void TapBpm() {
