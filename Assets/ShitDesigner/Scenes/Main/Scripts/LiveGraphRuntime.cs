@@ -1783,14 +1783,12 @@ namespace ShitDesigner.Main {
 			EnsureUsable();
 			if (composition.Kind != LiveSequencerKind.Overlay)
 				throw new ArgumentException("The live overlay compositor requires the overlay sequencer.", nameof(composition));
-			var activeModes = composition.GetActiveLayers().ToDictionary(layer => layer.LaneIndex, layer => layer.Mode);
 			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++) {
 				var patchId = composition.LanePatchIds.Count > laneIndex ? composition.LanePatchIds[laneIndex] : string.Empty;
 				var current = m_OverlayPatches[laneIndex];
-				var usesInstantOverlayVideo = IsInstantOverlayVideoLaneId(patchId, out var videoLaneIndex)
-					&& videoLaneIndex == laneIndex && m_InstantOverlayVideos[laneIndex] != null;
+				var usesInstantOverlayVideo = m_InstantOverlayVideos[laneIndex] != null;
 				m_UsesInstantOverlayVideo[laneIndex] = usesInstantOverlayVideo;
-				m_OverlayModes[laneIndex] = activeModes.TryGetValue(laneIndex, out var mode) ? mode : LiveSequencerCellMode.Off;
+				m_OverlayModes[laneIndex] = composition.GetCellMode(laneIndex, composition.CurrentStep);
 				m_OverlayOutput2Copies[laneIndex] = composition.IsCopiedToOutput2(laneIndex);
 				if (usesInstantOverlayVideo) {
 					m_OverlayPatches[laneIndex] = null;
@@ -1860,12 +1858,6 @@ namespace ShitDesigner.Main {
 		public void ClearInstantEffect(int cueIndex) {
 			EnsureUsable();
 			_graph.InstantEffects.Clear(cueIndex);
-		}
-
-		public static string GetInstantOverlayVideoLaneId(int laneIndex) {
-			if (laneIndex < 0 || laneIndex >= LiveStepSequencer.OverlayLaneCount)
-				throw new ArgumentOutOfRangeException(nameof(laneIndex));
-			return "instant-overlay-video-" + laneIndex;
 		}
 
 		public void SetInstantOverlayVideos(IReadOnlyList<VideoClip> videos) {
@@ -1962,15 +1954,6 @@ namespace ShitDesigner.Main {
 			if (patch != null && !m_OverlayPatches.Contains(patch)) DisposePatch(patch);
 		}
 
-		private static bool IsInstantOverlayVideoLaneId(string laneId, out int laneIndex) {
-			laneIndex = -1;
-			if (string.IsNullOrEmpty(laneId)) return false;
-			const string prefix = "instant-overlay-video-";
-			if (!laneId.StartsWith(prefix, StringComparison.Ordinal)
-				|| !int.TryParse(laneId.Substring(prefix.Length), out laneIndex)) return false;
-			return laneIndex >= 0 && laneIndex < LiveStepSequencer.OverlayLaneCount;
-		}
-
 		private static RenderTexture CreateTexture(string name, LiveRenderSize renderSize) {
 			var texture = new RenderTexture(renderSize.Width, renderSize.Height, 0, RenderTextureFormat.ARGBHalf) {
 				name = name,
@@ -1999,7 +1982,7 @@ namespace ShitDesigner.Main {
 		private static void CollectAssignedPatchIds(IReadOnlyList<string> source, ISet<string> destination) {
 			if (source == null) return;
 			foreach (var patchId in source)
-				if (!string.IsNullOrEmpty(patchId) && !IsInstantOverlayVideoLaneId(patchId, out _)) destination.Add(patchId);
+				if (!string.IsNullOrEmpty(patchId)) destination.Add(patchId);
 		}
 
 		private void PopulatePreviewFrames(IReadOnlyList<string> patchIds, RenderTexture[] frames) {

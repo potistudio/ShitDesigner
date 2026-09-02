@@ -500,6 +500,7 @@ namespace ShitDesigner.Main {
 
 		private bool CanTakeOverlayLane(int laneIndex) {
 			if (laneIndex < 0 || laneIndex >= LiveStepSequencer.OverlayLaneCount) return false;
+			if (laneIndex < m_InstantOverlayVideos.Length && m_InstantOverlayVideos[laneIndex] != null) return true;
 			var overlay = m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).CreateReadModel(0d);
 			return overlay.LanePatchIds.Count > laneIndex && !string.IsNullOrEmpty(overlay.LanePatchIds[laneIndex]);
 		}
@@ -588,6 +589,8 @@ namespace ShitDesigner.Main {
 		}
 
 		public LiveSequencerOperationResult AssignOverlayPatchToLane(int laneIndex, string patchId) {
+			if (laneIndex >= 0 && laneIndex < m_InstantOverlayVideos.Length && m_InstantOverlayVideos[laneIndex] != null)
+				return LiveSequencerOperationResult.Reject("Clear the Instant Overlay video before assigning an overlay scene.");
 			return !m_OverlayPatchIds.Contains(patchId)
 				? LiveSequencerOperationResult.Reject("Only overlay scenes can be assigned to the overlay sequencer.")
 				: m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).AssignLane(laneIndex, patchId);
@@ -599,13 +602,10 @@ namespace ShitDesigner.Main {
 			if (_runtime == null) return true;
 			_runtime.SetInstantOverlayVideo(laneIndex, video);
 			var overlay = m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay);
-			if (video == null) {
-				overlay.ClearLane(laneIndex);
-				m_OverlayTakeOverrides[laneIndex] = FollowOverlaySequencer;
-				m_PianoReturnOverlayTakeOverrides[laneIndex] = NoPianoOverlayTake;
-				return true;
-			}
-			return overlay.AssignLane(laneIndex, LiveGraphRuntime.GetInstantOverlayVideoLaneId(laneIndex)).Accepted;
+			overlay.ClearLane(laneIndex);
+			m_OverlayTakeOverrides[laneIndex] = FollowOverlaySequencer;
+			m_PianoReturnOverlayTakeOverrides[laneIndex] = NoPianoOverlayTake;
+			return true;
 		}
 
 		public LiveSequencerOperationResult UnassignOverlayPatchFromLane(int laneIndex) {
@@ -650,7 +650,7 @@ namespace ShitDesigner.Main {
 			var overlay = m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay);
 			for (var laneIndex = 0; laneIndex < m_InstantOverlayVideos.Length; laneIndex++) {
 				if (m_InstantOverlayVideos[laneIndex] == null) continue;
-				overlay.AssignLane(laneIndex, LiveGraphRuntime.GetInstantOverlayVideoLaneId(laneIndex));
+				overlay.ClearLane(laneIndex);
 			}
 		}
 
