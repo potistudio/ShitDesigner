@@ -481,6 +481,33 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void InstantOverlayMidiBindingUsesPressAndReleaseForItsLane() {
+			var owner = new GameObject("MIDI");
+			var patch = CreatePatch("patch-a");
+			try {
+				var manager = owner.AddComponent<MidiInputManager>();
+				var source = new QueueMidiInputSource();
+				manager.Configure(new NullMidiApplication(), new NullLiveControlApplication(), source);
+				var takes = new List<string>();
+				var bindings = new InstantOverlayMidiBinding[LiveStepSequencer.OverlayLaneCount];
+				bindings[7] = new InstantOverlayMidiBinding(MidiControlKind.Note, 2, 48);
+				using (var input = new LiveMidiInput(manager, new LiveParameterQueue(), new[] { patch },
+					instantOverlayMidiBindings: bindings, beginInstantOverlay: laneIndex => takes.Add("begin:" + laneIndex),
+					endInstantOverlay: laneIndex => takes.Add("end:" + laneIndex))) {
+					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.Note, 2, 48), 127));
+					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.Note, 2, 48), 0));
+					manager.Poll();
+				}
+
+				Assert.That(takes, Is.EqualTo(new[] { "begin:7", "end:7" }));
+			}
+			finally {
+				Object.DestroyImmediate(owner);
+				Object.DestroyImmediate(patch);
+			}
+		}
+
+		[Test]
 		public void LaunchControlFirstFaderQueuesMainCueOpacityWithoutDrivingPatchParameters() {
 			var owner = new GameObject("MIDI");
 			var patch = CreatePatch("patch-a", new PatchMidiInputBinding("motion", MidiControlKind.ControlChange, 16, 5));

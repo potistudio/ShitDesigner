@@ -45,6 +45,31 @@ namespace ShitDesigner.Main {
 		}
 	}
 
+	[Serializable]
+	public sealed class InstantOverlayMidiBinding {
+		[SerializeField] private bool m_IsAssigned;
+		[SerializeField] private MidiControlKind m_MessageType = MidiControlKind.Note;
+		[SerializeField, Range(1, 16)] private int m_Channel = 1;
+		[SerializeField, Range(0, 127)] private int m_Number;
+
+		public bool IsAssigned => m_IsAssigned;
+		public MidiControlKind MessageType => m_MessageType;
+		public int Channel => m_Channel;
+		public int Number => m_Number;
+
+		public InstantOverlayMidiBinding() { }
+
+		public InstantOverlayMidiBinding(MidiControlKind messageType, int channel, int number) {
+			m_IsAssigned = true;
+			m_MessageType = messageType;
+			m_Channel = channel;
+			m_Number = number;
+		}
+
+		public bool Matches(MidiControl control)
+			=> m_IsAssigned && control.Kind == m_MessageType && control.Channel == m_Channel && control.Number == m_Number;
+	}
+
 	/// <summary>Maps live keyboard controls to live requests without owning a PlayerLoop.</summary>
 	public sealed class LiveKeyboardInput {
 		private readonly LiveParameterQueue m_Queue;
@@ -305,12 +330,17 @@ namespace ShitDesigner.Main {
 		private readonly float m_SceneTimeJogSpeedPerStep;
 		private readonly IReadOnlyList<InstantEffectMidiBinding> m_InstantEffectMidiBindings;
 		private readonly Action<int> m_ActivateInstantEffect;
+		private readonly IReadOnlyList<InstantOverlayMidiBinding> m_InstantOverlayMidiBindings;
+		private readonly Action<int> m_BeginInstantOverlay;
+		private readonly Action<int> m_EndInstantOverlay;
 		private string m_LoadedPatchId;
 
 		public LiveMidiInput(MidiInputManager manager, LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches,
 			int mainCueFaderChannel = 16, int mainCueFaderControlNumber = 5, int sceneTimeEncoderChannel = 16,
 			int sceneTimeEncoderControlNumber = 77, float sceneTimeJogSpeedPerStep = 1f,
-			IReadOnlyList<InstantEffectMidiBinding> instantEffectMidiBindings = null, Action<int> activateInstantEffect = null) {
+			IReadOnlyList<InstantEffectMidiBinding> instantEffectMidiBindings = null, Action<int> activateInstantEffect = null,
+			IReadOnlyList<InstantOverlayMidiBinding> instantOverlayMidiBindings = null, Action<int> beginInstantOverlay = null,
+			Action<int> endInstantOverlay = null) {
 			m_Manager = manager ?? throw new ArgumentNullException(nameof(manager));
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));
@@ -327,6 +357,9 @@ namespace ShitDesigner.Main {
 			m_SceneTimeJogSpeedPerStep = sceneTimeJogSpeedPerStep;
 			m_InstantEffectMidiBindings = instantEffectMidiBindings ?? Array.Empty<InstantEffectMidiBinding>();
 			m_ActivateInstantEffect = activateInstantEffect ?? (_ => { });
+			m_InstantOverlayMidiBindings = instantOverlayMidiBindings ?? Array.Empty<InstantOverlayMidiBinding>();
+			m_BeginInstantOverlay = beginInstantOverlay ?? (_ => { });
+			m_EndInstantOverlay = endInstantOverlay ?? (_ => { });
 
 			var patchIds = new List<string>(patches.Count);
 			var patchesById = new Dictionary<string, PatchDefinition>(StringComparer.Ordinal);
@@ -351,6 +384,13 @@ namespace ShitDesigner.Main {
 				var binding = m_InstantEffectMidiBindings[cueIndex];
 				if (binding == null || !binding.Matches(inputEvent.Control)) continue;
 				if (inputEvent.RawValue > 0) m_ActivateInstantEffect(cueIndex + 1);
+				return;
+			}
+			for (var laneIndex = 0; laneIndex < m_InstantOverlayMidiBindings.Count && laneIndex < LiveStepSequencer.OverlayLaneCount; laneIndex++) {
+				var binding = m_InstantOverlayMidiBindings[laneIndex];
+				if (binding == null || !binding.Matches(inputEvent.Control)) continue;
+				if (inputEvent.RawValue > 0) m_BeginInstantOverlay(laneIndex);
+				else m_EndInstantOverlay(laneIndex);
 				return;
 			}
 			var control = inputEvent.Control;

@@ -43,6 +43,9 @@ namespace ShitDesigner.Main {
 		[Header("Instant Effect MIDI")]
 		[SerializeField, Tooltip("Maps each Instant Effect slot to a MIDI message. Disabled slots remain available through their on-screen control.")]
 		private InstantEffectMidiBinding[] m_InstantEffectMidiBindings = CreateInstantEffectMidiBindings();
+		[Header("Instant Overlay MIDI")]
+		[SerializeField, Tooltip("Maps each Instant Overlay lane to a MIDI message. The lane remains active while the mapped control is pressed.")]
+		private InstantOverlayMidiBinding[] m_InstantOverlayMidiBindings = CreateInstantOverlayMidiBindings();
 
 		private readonly LiveParameterQueue _parameterQueue = new LiveParameterQueue();
 		private readonly LiveBpmTap _bpmTap = new LiveBpmTap();
@@ -91,6 +94,7 @@ namespace ShitDesigner.Main {
 		public string LastDiagnostic { get; private set; } = string.Empty;
 		public IReadOnlyList<LiveStepSequencer> Sequencers => m_Sequencers;
 		public IReadOnlyList<InstantEffectMidiBinding> InstantEffectMidiBindings => m_InstantEffectMidiBindings;
+		public IReadOnlyList<InstantOverlayMidiBinding> InstantOverlayMidiBindings => m_InstantOverlayMidiBindings;
 		public bool IsEditMode => m_IsEditMode;
 		public event Action<IReadOnlyList<int>> InstantEffectTriggersFired;
 
@@ -103,11 +107,21 @@ namespace ShitDesigner.Main {
 				Array.Resize(ref m_InstantEffectMidiBindings, ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount);
 			for (var index = 0; index < m_InstantEffectMidiBindings.Length; index++)
 				m_InstantEffectMidiBindings[index] ??= new InstantEffectMidiBinding();
+			if (m_InstantOverlayMidiBindings == null || m_InstantOverlayMidiBindings.Length != LiveStepSequencer.OverlayLaneCount)
+				Array.Resize(ref m_InstantOverlayMidiBindings, LiveStepSequencer.OverlayLaneCount);
+			for (var index = 0; index < m_InstantOverlayMidiBindings.Length; index++)
+				m_InstantOverlayMidiBindings[index] ??= new InstantOverlayMidiBinding();
 		}
 
 		private static InstantEffectMidiBinding[] CreateInstantEffectMidiBindings() {
 			var bindings = new InstantEffectMidiBinding[ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount];
 			for (var index = 0; index < bindings.Length; index++) bindings[index] = new InstantEffectMidiBinding();
+			return bindings;
+		}
+
+		private static InstantOverlayMidiBinding[] CreateInstantOverlayMidiBindings() {
+			var bindings = new InstantOverlayMidiBinding[LiveStepSequencer.OverlayLaneCount];
+			for (var index = 0; index < bindings.Length; index++) bindings[index] = new InstantOverlayMidiBinding();
 			return bindings;
 		}
 
@@ -168,7 +182,7 @@ namespace ShitDesigner.Main {
 					triggerNumber => {
 						if (m_IsEditMode) AssignSelectedEffectToCue(triggerNumber - 1);
 						else QueueInstantEffectTrigger(triggerNumber);
-					});
+					}, m_InstantOverlayMidiBindings, BeginPianoOverlayTake, EndPianoOverlayTake);
 				_shutdown.Add(() => { _midi?.Dispose(); _midi = null; });
 				_externalDisplay.Initialize();
 				_shutdown.Add(_externalDisplay.Shutdown);
