@@ -408,7 +408,7 @@ namespace ShitDesigner.Main {
 						if (button == null) continue;
 						var mode = sequencer.GetCellMode(laneIndex, stepIndex);
 						button.text = FormatSequencerCellMode(mode);
-						button.tooltip = mode.ToString().ToUpperInvariant();
+						button.tooltip = mode.ToString().ToUpperInvariant() + " · RIGHT-CLICK: OFF";
 						button.EnableInClassList("is-set", mode != LiveSequencerCellMode.Off);
 						button.EnableInClassList("is-playhead", sequencer.CurrentStep == stepIndex);
 					}
@@ -729,6 +729,11 @@ namespace ShitDesigner.Main {
 			if (evt.button == 1) {
 				var rightClickTarget = evt.target as VisualElement;
 				var rightClickButton = rightClickTarget as Button ?? rightClickTarget?.GetFirstAncestorOfType<Button>();
+				if (_host != null && rightClickButton?.userData is SequencerCellAddress cellAddress) {
+					ShowSequencerRejection(_host.TurnOffSequencerCell(cellAddress.Kind, cellAddress.LaneIndex, cellAddress.StepIndex));
+					evt.StopImmediatePropagation();
+					return;
+				}
 				if (_host != null && rightClickButton?.userData is SequencerLaneAddress laneAddress
 					&& laneAddress.Kind == LiveSequencerKind.Overlay) {
 					ShowSequencerRejection(_host.UnassignOverlayPatchFromLane(laneAddress.LaneIndex));

@@ -296,6 +296,18 @@ namespace ShitDesigner.Main.Tests {
 				Has.Count.EqualTo(LiveStepSequencer.OverlayLaneCount * LiveStepSequencer.StepCount));
 			Assert.That(ui.Q<Button>("sequencer-overlay-lane-label-7"), Is.Not.Null);
 			Assert.That(ui.Q<VisualElement>("effect-sequencer"), Is.Null);
+			var overlayCell = ui.Q<Button>("sequencer-overlay-lane-2-step-4");
+			Assert.That(host.CycleSequencerCellMode(LiveSequencerKind.Overlay, 2, 4).Accepted, Is.True);
+			Assert.That(host.CycleSequencerCellMode(LiveSequencerKind.Overlay, 2, 4).Accepted, Is.True);
+			yield return null;
+			Assert.That(overlayCell.text, Is.EqualTo("ADD"));
+			using (var pointerDown = PointerDownEvent.GetPooled(new Event { type = EventType.MouseDown, button = 1 }))
+				overlayCell.SendEvent(pointerDown);
+			yield return null;
+			var overlayAfterRightClick = host.ReadModel.Sequencers.Single(sequencer => sequencer.Kind == LiveSequencerKind.Overlay);
+			Assert.That(overlayAfterRightClick.GetCellMode(2, 4), Is.EqualTo(LiveSequencerCellMode.Off));
+			Assert.That(overlayCell.text, Is.EqualTo("OFF"));
+			Assert.That(overlayCell.ClassListContains("is-set"), Is.False);
 			Assert.That(ui.Q<VisualElement>("patch-slot-controls"), Is.Null);
 			Assert.That(ui.Query<Button>(className: "is-loaded").ToList(), Is.Empty);
 			var rememberedMainPatch = host.ReadModel.Patches.Last(patch => patch.Role == LivePatchRole.Main);

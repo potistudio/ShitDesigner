@@ -33,6 +33,22 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void TurningOffACellImmediatelyClearsItsModeAndActiveMask() {
+			var sequencer = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
+			sequencer.CycleCellMode(2, 3);
+			sequencer.CycleCellMode(2, 3);
+			sequencer.CycleCellMode(1, 3);
+
+			Assert.That(sequencer.TurnOffCell(2, 3).Accepted, Is.True);
+
+			var readModel = sequencer.CreateReadModel(0d);
+			Assert.That(readModel.GetCellMode(2, 3), Is.EqualTo(LiveSequencerCellMode.Off));
+			Assert.That(readModel.IsActive(2, 3), Is.False);
+			Assert.That(readModel.GetCellMode(1, 3), Is.EqualTo(LiveSequencerCellMode.Normal));
+			Assert.That(readModel.IsActive(1, 3), Is.True);
+		}
+
+		[Test]
 		public void TogglingAStepTurnsEveryLaneOnThenOff() {
 			var sequencer = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
 			sequencer.CycleCellMode(2, 3);
@@ -121,6 +137,8 @@ namespace ShitDesigner.Main.Tests {
 
 			Assert.That(sequencer.CycleCellMode(sequencer.LaneCount, 0).Accepted, Is.False);
 			Assert.That(sequencer.CycleCellMode(0, LiveStepSequencer.StepCount).Accepted, Is.False);
+			Assert.That(sequencer.TurnOffCell(sequencer.LaneCount, 0).Accepted, Is.False);
+			Assert.That(sequencer.TurnOffCell(0, LiveStepSequencer.StepCount).Accepted, Is.False);
 			Assert.That(sequencer.CreateReadModel(0d).ActiveLaneMasks, Is.All.Zero);
 		}
 
