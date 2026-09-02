@@ -332,11 +332,13 @@ namespace ShitDesigner.Main {
 	internal readonly struct LiveOverlayInput {
 		public LiveSequencerCellMode Mode { get; }
 		public Texture Texture { get; }
+		public bool UsesUnmultAlpha { get; }
 
-		public LiveOverlayInput(LiveSequencerCellMode mode, Texture texture) {
+		public LiveOverlayInput(LiveSequencerCellMode mode, Texture texture, bool usesUnmultAlpha) {
 			if (mode == LiveSequencerCellMode.Off) throw new ArgumentException("An overlay input requires an active compositing mode.", nameof(mode));
 			Mode = mode;
 			Texture = texture ?? throw new ArgumentNullException(nameof(texture));
+			UsesUnmultAlpha = usesUnmultAlpha;
 		}
 	}
 
@@ -428,13 +430,15 @@ namespace ShitDesigner.Main {
 		private readonly ShaderPassGraphRuntimeNode m_InvertNode;
 		private readonly ShaderPassGraphRuntimeNode m_CrossfadeNode;
 		private readonly RenderTexture m_InvertedOverlay;
+		private readonly RenderTexture m_UnmultOverlay;
+		private readonly Material m_UnmultAlphaMaterial;
 		private float m_MainCompositeOpacity = .5f;
 		private bool m_Disposed;
 
 		public RenderTexture Output { get; }
 
 		public LiveOverlayCompositor(IReadOnlyDictionary<NodeTypeId, LiveProgramShaderDefinition> shaderDefinitions,
-			RenderTexturePool renderPool, LiveRenderSize renderSize) {
+			RenderTexturePool renderPool, LiveRenderSize renderSize, Material unmultAlphaMaterial) {
 			if (shaderDefinitions == null) throw new ArgumentNullException(nameof(shaderDefinitions));
 			if (renderPool == null) throw new ArgumentNullException(nameof(renderPool));
 			try {
@@ -443,6 +447,8 @@ namespace ShitDesigner.Main {
 				m_Scratch[0] = CreateTexture("ShitDesigner.Main.Composite.Scratch.0", renderSize);
 				m_Scratch[1] = CreateTexture("ShitDesigner.Main.Composite.Scratch.1", renderSize);
 				m_InvertedOverlay = CreateTexture("ShitDesigner.Main.Composite.InvertedOverlay", renderSize);
+				m_UnmultOverlay = CreateTexture("ShitDesigner.Main.Composite.UnmultOverlay", renderSize);
+				m_UnmultAlphaMaterial = unmultAlphaMaterial;
 				foreach (var pair in BlendTypeIds)
 					m_BlendNodes.Add(pair.Key, CreateNode(pair.Value, shaderDefinitions, renderPool));
 				m_InvertNode = CreateNode(InvertTypeId, shaderDefinitions, renderPool);
@@ -483,6 +489,11 @@ namespace ShitDesigner.Main {
 			foreach (var overlay in overlays) {
 				var foreground = overlay.Texture;
 				var mode = overlay.Mode;
+				if (overlay.UsesUnmultAlpha) {
+					if (m_UnmultAlphaMaterial == null) throw new InvalidOperationException("Instant Overlay video requires an Unmult Alpha material.");
+					Graphics.Blit(foreground, m_UnmultOverlay, m_UnmultAlphaMaterial);
+					foreground = m_UnmultOverlay;
+				}
 				if (mode == LiveSequencerCellMode.Invert) {
 					var inverted = m_InvertNode.Render(foreground as RenderTexture, m_InvertedOverlay, frameNumber, graphTime);
 					if (inverted.IsFailure) throw new InvalidOperationException(inverted.Error.Message);
@@ -516,6 +527,7 @@ namespace ShitDesigner.Main {
 			m_InvertNode?.Dispose();
 			m_CrossfadeNode?.Dispose();
 			ReleaseTexture(m_InvertedOverlay);
+			ReleaseTexture(m_UnmultOverlay);
 			foreach (var texture in m_Scratch) ReleaseTexture(texture);
 			ReleaseTexture(Output);
 		}
@@ -1708,9 +1720,10 @@ namespace ShitDesigner.Main {
 			for (var laneIndex = 0; laneIndex < m_OverlayPatches.Length; laneIndex++) {
 				var overlay = m_OverlayPatches[laneIndex];
 				if (overlay == null || m_OverlayModes[laneIndex] == LiveSequencerCellMode.Off || overlay.Outputs.Count == 0) continue;
-				overlayInputs.Add(new LiveOverlayInput(m_OverlayModes[laneIndex], overlay.Outputs[0].ProgramTexture));
+				var usesUnmultAlpha = overlay.Definition.ProgramGraph.Nodes.Any(node => node.TypeId == VideoPlayerContract.NodeTypeId);
+				overlayInputs.Add(new LiveOverlayInput(m_OverlayModes[laneIndex], overlay.Outputs[0].ProgramTexture, usesUnmultAlpha));
 				if (m_OverlayOutput2Copies[laneIndex])
-					output2Inputs.Add(new LiveOverlayInput(m_OverlayModes[laneIndex], overlay.Outputs[m_OverlayPatchOutputIndex].ProgramTexture));
+					output2Inputs.Add(new LiveOverlayInput(m_OverlayModes[laneIndex], overlay.Outputs[m_OverlayPatchOutputIndex].ProgramTexture, usesUnmultAlpha));
 			}
 			var referencePatch = m_MainCuePatches[m_MainCueFader.ReferenceCueIndex];
 			var alternatePatch = m_MainCuePatches[m_MainCueFader.AlternateCueIndex];

@@ -37,6 +37,7 @@ namespace ShitDesigner.Main {
 		[SerializeField] private Material m_HapPremultiplyMaterial;
 		[SerializeField] private Material m_HapYCoCgMaterial;
 		[SerializeField] private Material m_HapAlphaMaterial;
+		[SerializeField] private Material m_InstantOverlayUnmultMaterial;
 		[SerializeField] private ComputeShader m_HapDecodeShader;
 
 		public PatchDefinition[] MainPatches => m_MainPatches ?? Array.Empty<PatchDefinition>();
@@ -84,8 +85,8 @@ namespace ShitDesigner.Main {
 			LiveInstantEffectRenderer instantEffects = null;
 			LiveGlobalFlashRenderer globalFlash = null;
 			try {
-				compositor = new LiveOverlayCompositor(shaderDefinitions, renderPool, programRenderSize);
-				overlayOutputCompositor = new LiveOverlayCompositor(shaderDefinitions, renderPool, overlayRenderSize);
+				compositor = new LiveOverlayCompositor(shaderDefinitions, renderPool, programRenderSize, m_InstantOverlayUnmultMaterial);
+				overlayOutputCompositor = new LiveOverlayCompositor(shaderDefinitions, renderPool, overlayRenderSize, m_InstantOverlayUnmultMaterial);
 				instantEffects = new LiveInstantEffectRenderer(shaderDefinitions, renderPool, programRenderSize);
 				var globalFlashShader = Resources.Load<Shader>(GlobalFlashShaderResourcePath);
 				if (globalFlashShader == null) throw new InvalidOperationException("The Global Flash shader resource is missing.");
