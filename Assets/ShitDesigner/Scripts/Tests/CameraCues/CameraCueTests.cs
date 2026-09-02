@@ -17,10 +17,14 @@ namespace ShitDesigner.CameraCues.Tests {
 		public void StageAssetsWireBothHotCuesToTheCameraDirector() {
 			var patch = AssetDatabase.LoadAssetAtPath<PatchDefinition>(
 				"Assets/ShitDesigner/Scenes/Stage/Stage Patch Definition.asset");
+			var definition = AssetDatabase.LoadAssetAtPath<Scene3DDefinition>(
+				"Assets/ShitDesigner/Scenes/Stage/Stage Scene Definition.asset");
 			var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/ShitDesigner/Scenes/Stage/Stage.prefab");
 
 			Assert.That(patch, Is.Not.Null);
 			Assert.That(patch.Validate().IsSuccess, Is.True);
+			Assert.That(definition, Is.Not.Null);
+			Assert.That(definition.UseTransparentBackground, Is.False);
 			var cue1 = patch.GetHotCue(0).ConfiguredValues.Single();
 			var cue2 = patch.GetHotCue(1).ConfiguredValues.Single();
 			Assert.That(cue1.NodeId, Is.EqualTo("scene"));
@@ -30,6 +34,7 @@ namespace ShitDesigner.CameraCues.Tests {
 			Assert.That(cue2.Id, Is.EqualTo(StageCameraDirector.Cue2ParameterId));
 			Assert.That(cue2.Value.AsFloat(), Is.EqualTo(1f));
 			Assert.That(prefab, Is.Not.Null);
+			Assert.That(prefab.GetComponentInChildren<Camera>(true).clearFlags, Is.EqualTo(CameraClearFlags.Skybox));
 			var director = prefab.GetComponent<StageCameraDirector>();
 			Assert.That(director, Is.Not.Null);
 			Assert.That(director.LiveParameters, Has.Count.EqualTo(StageCameraDirector.CueCount));

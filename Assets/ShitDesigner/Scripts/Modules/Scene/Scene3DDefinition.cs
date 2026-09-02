@@ -8,9 +8,11 @@ namespace ShitDesigner.Scene {
 	public sealed class Scene3DDefinition : ScriptableObject {
 		[SerializeField] private string _id;
 		[SerializeField] private GameObject _prefab;
+		[SerializeField] private bool m_PreserveCameraBackground;
 
 		public string Id => _id ?? string.Empty;
 		public GameObject Prefab => _prefab;
+		public bool UseTransparentBackground => !m_PreserveCameraBackground;
 
 		public UnitResult<Diagnostic> Validate() {
 			if (_prefab == null) return Failure("scene.definition.prefab", "A Scene3DDefinition requires a prefab.");

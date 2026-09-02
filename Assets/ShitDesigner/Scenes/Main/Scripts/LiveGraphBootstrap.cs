@@ -198,7 +198,8 @@ namespace ShitDesigner.Main {
 								throw new InvalidOperationException("The live Program scene node does not accept image inputs: " + node.Id + ".");
 							var created = sceneManager.Create(new SceneCreateRequest(NodeInstanceId.New(), SceneNodeKind.ThreeD,
 								"ShitDesigner.Main.LiveScene." + outputId + "." + node.Id,
-								1, authoredNode.SceneDefinition.Prefab, transparentBackground: true));
+								1, authoredNode.SceneDefinition.Prefab,
+								transparentBackground: authoredNode.SceneDefinition.UseTransparentBackground));
 							if (created.IsFailure) throw new InvalidOperationException(created.Error.Message);
 							sceneRuntime = created.Value;
 							var root = sceneRuntime.Root.GetComponent<LiveSceneRoot>();

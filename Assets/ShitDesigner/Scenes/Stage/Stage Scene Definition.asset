@@ -14,3 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.Scene3DDefinition
   _id: a9a82432-a238-4764-b876-78d1d8258f06
   _prefab: {fileID: 1729966189130493997, guid: 723bfbdaab71a9f418b1c0525aaf45ea, type: 3}
+  m_PreserveCameraBackground: 1
