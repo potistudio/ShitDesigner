@@ -1674,9 +1674,9 @@ namespace ShitDesigner.Main {
 
 		public void SceneUpdate() {
 			EnsureUsable();
-			// Presentation demand may deactivate a scene while its dynamic bodies still need
-			// to settle. Step every loaded scene so physical state does not freeze offscreen.
-			foreach (var patch in LoadedPatches())
+			// Presentation demand and preview cadence must not control physics. Advance every
+			// created scene here, once per host frame, so offscreen bodies keep settling.
+			foreach (var patch in _createdPatches)
 				foreach (var output in patch.Outputs) output.SceneUpdate(m_LastGraphDeltaSeconds);
 		}
 
@@ -1946,11 +1946,6 @@ namespace ShitDesigner.Main {
 			if (alternatePatch != null && (m_IsMainCueCompositeActive || m_MainCueFader.AlternateOpacity > 0f)) yield return alternatePatch;
 		}
 
-		private IEnumerable<LivePatch> LoadedPatches() => m_MainCuePatches
-			.Concat(m_OverlayPatches)
-			.Where(patch => patch != null)
-			.Distinct();
-
 		private void RefreshMainCueActivation() {
 			m_ActiveMainCueIndex = m_MainCueFader.DominantCueIndex;
 			for (var cueIndex = 0; cueIndex < m_MainCuePatches.Length; cueIndex++) {
@@ -1988,7 +1983,6 @@ namespace ShitDesigner.Main {
 			m_Patch.ApplyResolvedParameters(bpmFrame);
 			foreach (var output in m_Patch.Outputs) {
 				output.Evaluate(deltaSeconds, bpmFrame);
-				output.SceneUpdate(deltaSeconds);
 				output.Render(graphTime, frameNumber);
 			}
 			m_LastGraphTime = graphTime;
