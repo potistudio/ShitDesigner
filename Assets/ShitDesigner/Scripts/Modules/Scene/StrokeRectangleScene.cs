@@ -21,6 +21,7 @@ namespace ShitDesigner.Scene {
 		[Header("End Appearance")]
 		[Range(0f, 1f)][SerializeField] private float m_EndOpacity = 1f;
 		[Min(.001f)][SerializeField] private float m_EndDepth = .35f;
+		[SerializeField] private Vector3 m_EndRotationOffset;
 		[Header("Trigger Burst")]
 		[Min(1)][SerializeField] private int m_BurstCount = 1;
 		[Min(0f)][SerializeField] private float m_BurstInitialDelay;
@@ -38,6 +39,8 @@ namespace ShitDesigner.Scene {
 		private Vector3 m_OriginLocalPosition;
 		private Vector3 m_MotionStartPosition;
 		private Vector3 m_MotionEndPosition;
+		private Quaternion m_MotionStartRotation;
+		private Quaternion m_MotionEndRotation;
 		private float m_MotionStartOpacity;
 		private float m_MotionEndOpacity;
 		private float m_MotionStartDepth;
@@ -99,6 +102,7 @@ namespace ShitDesigner.Scene {
 			var progress = Mathf.Clamp01(m_MotionElapsed / m_Duration);
 			var easedProgress = Mathf.Clamp01(m_EaseOut.Evaluate(progress));
 			transform.localPosition = Vector3.LerpUnclamped(m_MotionStartPosition, m_MotionEndPosition, easedProgress);
+			transform.localRotation = Quaternion.SlerpUnclamped(m_MotionStartRotation, m_MotionEndRotation, easedProgress);
 			m_CurrentOpacity = Mathf.LerpUnclamped(m_MotionStartOpacity, m_MotionEndOpacity, easedProgress);
 			m_CurrentDepth = Mathf.LerpUnclamped(m_MotionStartDepth, m_MotionEndDepth, easedProgress);
 			RefreshSurface();
@@ -156,6 +160,8 @@ namespace ShitDesigner.Scene {
 			m_MotionStartPosition = m_ResetToOriginOnTrigger ? m_OriginLocalPosition : transform.localPosition;
 			transform.localPosition = m_MotionStartPosition;
 			m_MotionEndPosition = m_MotionStartPosition + Vector3.up * m_UpDistance;
+			m_MotionStartRotation = transform.localRotation;
+			m_MotionEndRotation = m_MotionStartRotation * Quaternion.Euler(m_EndRotationOffset);
 			m_MotionStartOpacity = m_Opacity;
 			m_MotionEndOpacity = m_EndOpacity;
 			m_MotionStartDepth = m_Depth;
