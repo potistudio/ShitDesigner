@@ -77,5 +77,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   m_EndOpacity: 1
   m_EndDepth: 0.35
+  m_BurstCount: 1
+  m_BurstInterval: 0
   m_TriggerOnColliderEnter: 1
   m_ResetToOriginOnTrigger: 1
