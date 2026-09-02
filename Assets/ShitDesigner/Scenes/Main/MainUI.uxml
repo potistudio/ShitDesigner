@@ -125,6 +125,7 @@
                                     <ui:Button name="sequencer-overlay-lane-7-step-7" class="sequencer-step"/>
                                 </ui:VisualElement>
                             </ui:VisualElement>
+                            <!--
                             <ui:VisualElement name="effect-sequencer" class="sequencer">
                                 <ui:Label name="sequencer-title-effect" text="EFFECT" class="sequencer-title"/>
                                 <ui:VisualElement class="sequencer-beat-header">
@@ -183,6 +184,7 @@
                                     <ui:Button name="sequencer-effect-lane-3-step-7" class="sequencer-step"/>
                                 </ui:VisualElement>
                             </ui:VisualElement>
+                            -->
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:VisualElement>

@@ -325,6 +325,18 @@
     flex-shrink: 0;
 }
 
+#overlay-sequencer .sequencer-title,
+#overlay-sequencer .sequencer-beat-header,
+#overlay-sequencer .sequencer-lane,
+#overlay-sequencer .sequencer-lane-label,
+#overlay-sequencer .sequencer-corner,
+#overlay-sequencer .sequencer-beat-label,
+#overlay-sequencer .sequencer-step {
+    height: 35.2px;
+    min-height: 35.2px;
+    max-height: 35.2px;
+}
+
 .sequencer-title {
     height: 22px;
     min-height: 22px;

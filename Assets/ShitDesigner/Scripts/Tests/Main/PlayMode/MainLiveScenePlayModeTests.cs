@@ -293,25 +293,10 @@ namespace ShitDesigner.Main.Tests {
 			yield return null;
 			var sequencerControls = ui.Q<VisualElement>("sequencer-controls");
 			Assert.That(sequencerControls.Query<Button>(className: "sequencer-step").ToList(),
-				Has.Count.EqualTo((LiveStepSequencer.OverlayLaneCount + LiveStepSequencer.EffectLaneCount) * LiveStepSequencer.StepCount));
+				Has.Count.EqualTo(LiveStepSequencer.OverlayLaneCount * LiveStepSequencer.StepCount));
 			Assert.That(ui.Q<Button>("sequencer-overlay-lane-label-7"), Is.Not.Null);
+			Assert.That(ui.Q<VisualElement>("effect-sequencer"), Is.Null);
 			Assert.That(ui.Q<VisualElement>("patch-slot-controls"), Is.Null);
-			var effectCell = ui.Q<Button>("sequencer-effect-lane-2-step-4");
-			using (var click = ClickEvent.GetPooled()) effectCell.SendEvent(click);
-			Assert.That(host.CycleSequencerCellMode(LiveSequencerKind.Effect, 1, 4).Accepted, Is.True);
-			yield return null;
-			Assert.That(effectCell.ClassListContains("is-set"), Is.True);
-			Assert.That(ui.Q<Button>("sequencer-effect-lane-1-step-4").ClassListContains("is-set"), Is.True);
-			Assert.That(effectCell.text, Is.EqualTo("NORMAL"));
-			var effectLaneLabel = ui.Q<Button>("sequencer-effect-lane-label-1");
-			using (var click = ClickEvent.GetPooled()) effectLaneLabel.SendEvent(click);
-			yield return null;
-			Assert.That(Enumerable.Range(0, LiveStepSequencer.StepCount)
-				.All(stepIndex => ui.Q<Button>("sequencer-effect-lane-1-step-" + stepIndex).ClassListContains("is-set")), Is.True);
-			using (var click = ClickEvent.GetPooled()) effectLaneLabel.SendEvent(click);
-			yield return null;
-			Assert.That(Enumerable.Range(0, LiveStepSequencer.StepCount)
-				.Any(stepIndex => ui.Q<Button>("sequencer-effect-lane-1-step-" + stepIndex).ClassListContains("is-set")), Is.False);
 			Assert.That(ui.Query<Button>(className: "is-loaded").ToList(), Is.Empty);
 			var rememberedMainPatch = host.ReadModel.Patches.Last(patch => patch.Role == LivePatchRole.Main);
 			var rememberedOverlayPatch = host.ReadModel.Patches.First(patch => patch.Role == LivePatchRole.Overlay);
