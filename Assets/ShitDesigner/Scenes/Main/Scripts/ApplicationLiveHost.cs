@@ -575,6 +575,12 @@ namespace ShitDesigner.Main {
 			return overlay.AssignLane(laneIndex, patch.Id).Accepted;
 		}
 
+		public LiveSequencerOperationResult UnassignOverlayPatchFromLane(int laneIndex) {
+			return AssignInstantOverlayPatch(laneIndex, null)
+				? LiveSequencerOperationResult.Accept()
+				: LiveSequencerOperationResult.Reject("The sequencer lane does not exist.");
+		}
+
 		private void ApplyRequests(bool clearResults = true) {
 			_pendingRequests.Clear();
 			if (clearResults) _requestResults.Clear();

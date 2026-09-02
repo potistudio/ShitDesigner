@@ -284,6 +284,13 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(host.ReadModel.OverlayLanePreviews, Has.Count.EqualTo(LiveStepSequencer.OverlayLaneCount));
 			Assert.That(host.ReadModel.OverlayLanePreviews[0], Is.Not.Null);
 			Assert.That(ui.Q<Button>("sequencer-overlay-lane-label-0").ClassListContains("has-preview"), Is.True);
+			using (var click = ClickEvent.GetPooled(new Event { type = EventType.MouseUp, button = 1 }))
+				ui.Q<Button>("sequencer-overlay-lane-label-0").SendEvent(click);
+			yield return null;
+			Assert.That(host.ReadModel.Sequencers.Single(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).LanePatchIds[0], Is.Empty);
+			Assert.That(host.ReadModel.OverlayLanePreviews[0], Is.Null);
+			Assert.That(ui.Q<Button>("sequencer-overlay-lane-label-0").ClassListContains("is-assigned"), Is.False);
+			Assert.That(host.AssignOverlayPatchToLane(0, rememberedOverlayPatch.Id).Accepted, Is.True);
 			Assert.That(host.SelectSequencerLane(LiveSequencerKind.Overlay, 1).Accepted, Is.True);
 			Assert.That(host.AssignSelectedSequencerPatch(rememberedOverlayPatch.Id).Accepted, Is.True);
 			yield return null;
