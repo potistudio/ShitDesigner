@@ -86,7 +86,6 @@ namespace ShitDesigner.Main.Tests {
 			var runtime = (LiveGraphRuntime)typeof(ApplicationLiveHost).GetField("_runtime", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(host);
 			Assert.That(runtime.MainCuePatchIds, Is.EqualTo(new[] { host.ReadModel.LoadedPatchId, string.Empty }));
 			Assert.That(host.MainCuePatchIds, Is.EqualTo(runtime.MainCuePatchIds));
-			Assert.That(host.UnassignMainPatchFromCue(0).Accepted, Is.False);
 			Assert.That(runtime.ActiveMainCueIndex, Is.Zero);
 			Assert.That(runtime.CurrentFrames.Count, Is.EqualTo(2));
 			Assert.That(runtime.CurrentFrames[0].Texture, Is.SameAs(host.ReadModel.ProgramTexture));
@@ -267,6 +266,24 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(host.ReadModel.MainCuePreviews[activeCueIndex], Is.Null);
 			Assert.That(cueSlots[activeCueIndex].Q<Label>().text, Is.EqualTo("Cue Slot " + (activeCueIndex + 1)));
 			Assert.That(cueSlots[activeCueIndex].ClassListContains("has-preview"), Is.False);
+			using (var pointerDown = PointerDownEvent.GetPooled(new Event {
+				type = EventType.MouseDown,
+				button = 1,
+				mousePosition = cueSlots[remainingCueIndex].worldBound.center
+			})) {
+				cueSlots[remainingCueIndex].SendEvent(pointerDown);
+			}
+			for (var frame = 0; frame < 60 && !string.IsNullOrEmpty(host.MainCuePatchIds[remainingCueIndex]); frame++) yield return null;
+			Assert.That(host.MainCuePatchIds, Has.All.Empty);
+			Assert.That(host.ReadModel.LoadedPatchId, Is.Empty);
+			Assert.That(host.ReadModel.MainCuePreviews, Has.All.Null);
+			Assert.That(host.ReadModel.ProgramTexture, Is.Not.Null);
+			Assert.That(host.State, Is.EqualTo(ApplicationLiveHostState.Running), host.LastDiagnostic);
+			var relaunch = host.ParameterQueue.EnqueueLaunchPatch(mainPatches[0].Id);
+			for (var frame = 0; frame < 60 && host.ReadModel.LoadedPatchId != mainPatches[0].Id; frame++) yield return null;
+			Assert.That(relaunch.Accepted, Is.True);
+			Assert.That(host.ReadModel.LoadedPatchId, Is.EqualTo(mainPatches[0].Id));
+			Assert.That(host.State, Is.EqualTo(ApplicationLiveHostState.Running), host.LastDiagnostic);
 			Assert.That(firstMainButton.worldBound.yMin, Is.EqualTo(mainPatchControls.contentViewport.worldBound.yMin).Within(0.5f));
 			var initialMainListTop = firstMainButton.worldBound.yMin;
 			host.MoveCatalogSelection(0, 1);

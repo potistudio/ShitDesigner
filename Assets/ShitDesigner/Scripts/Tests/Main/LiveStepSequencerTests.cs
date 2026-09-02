@@ -33,6 +33,33 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void TogglingAStepTurnsEveryLaneOnThenOff() {
+			var sequencer = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
+			sequencer.CycleCellMode(2, 3);
+			sequencer.CycleCellMode(2, 3);
+
+			Assert.That(sequencer.ToggleStep(3).Accepted, Is.True);
+
+			var enabled = sequencer.CreateReadModel(0d);
+			Assert.That(Enumerable.Range(0, sequencer.LaneCount).All(laneIndex => enabled.IsActive(laneIndex, 3)), Is.True);
+			Assert.That(enabled.GetCellMode(2, 3), Is.EqualTo(LiveSequencerCellMode.Add));
+
+			Assert.That(sequencer.ToggleStep(3).Accepted, Is.True);
+
+			var disabled = sequencer.CreateReadModel(0d);
+			Assert.That(Enumerable.Range(0, sequencer.LaneCount).Any(laneIndex => disabled.IsActive(laneIndex, 3)), Is.False);
+			Assert.That(Enumerable.Range(0, sequencer.LaneCount).All(laneIndex => disabled.GetCellMode(laneIndex, 3) == LiveSequencerCellMode.Off), Is.True);
+		}
+
+		[Test]
+		public void InvalidStepToggleIsRejectedWithoutChangingState() {
+			var sequencer = new LiveStepSequencer(LiveSequencerKind.Effect, "EFFECT");
+
+			Assert.That(sequencer.ToggleStep(LiveStepSequencer.StepCount).Accepted, Is.False);
+			Assert.That(sequencer.CreateReadModel(0d).ActiveLaneMasks, Is.All.Zero);
+		}
+
+		[Test]
 		public void CellModeCyclesThroughTheSupportedModes() {
 			var sequencer = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
 			var expectedModes = new[] {

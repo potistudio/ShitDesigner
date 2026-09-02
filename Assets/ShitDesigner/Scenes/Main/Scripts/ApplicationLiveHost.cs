@@ -474,6 +474,13 @@ namespace ShitDesigner.Main {
 				: sequencer.CycleCellMode(laneIndex, stepIndex);
 		}
 
+		public LiveSequencerOperationResult ToggleSequencerStep(LiveSequencerKind kind, int stepIndex) {
+			var sequencer = m_Sequencers.FirstOrDefault(item => item.Kind == kind);
+			return sequencer == null
+				? LiveSequencerOperationResult.Reject("The requested sequencer does not exist.")
+				: sequencer.ToggleStep(stepIndex);
+		}
+
 		public LiveSequencerOperationResult ToggleOverlayLaneOutput2Copy(int laneIndex) {
 			return m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).ToggleOutput2Copy(laneIndex);
 		}
