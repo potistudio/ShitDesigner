@@ -178,7 +178,7 @@ namespace ShitDesigner.Main {
 			m_Root.RegisterCallback<MouseUpEvent>(OnPatchMouseUp, TrickleDown.TrickleDown);
 			m_SequencerControls.RegisterCallback<ClickEvent>(OnSequencerCellClicked);
 			m_InstantEffectCueControls.RegisterCallback<ClickEvent>(OnInstantEffectCueClicked);
-			BuildSequencers(root);
+			BindSequencers(root);
 			_bpmField.RegisterValueChangedCallback(OnBpmInputChanged);
 			_bpmField.RegisterCallback<FocusInEvent>(OnBpmFocusIn);
 			_bpmField.RegisterCallback<FocusOutEvent>(OnBpmFocusOut);
@@ -323,51 +323,24 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		private void BuildSequencers(VisualElement root) {
+		private void BindSequencers(VisualElement root) {
 			foreach (var sequencer in _host.Sequencers) {
 				var container = Required<VisualElement>(root, GetSequencerElementName(sequencer.Kind));
-				container.Clear();
-				container.Add(new Label(sequencer.DisplayName) { name = "sequencer-title-" + GetSequencerId(sequencer.Kind) });
-				container[0].AddToClassList("sequencer-title");
-
-				var header = new VisualElement();
-				header.AddToClassList("sequencer-beat-header");
-				var corner = new Label("LANE");
-				corner.AddToClassList("sequencer-corner");
-				header.Add(corner);
 				for (var stepIndex = 0; stepIndex < LiveStepSequencer.StepCount; stepIndex++) {
-					var beat = new Button {
-						text = (stepIndex + 1).ToString(CultureInfo.InvariantCulture),
-						tooltip = "TOGGLE ALL LANES",
-						userData = new SequencerStepAddress(sequencer.Kind, stepIndex)
-					};
-					beat.AddToClassList("sequencer-beat-label");
-					header.Add(beat);
+					Required<Button>(container, GetSequencerStepName(sequencer.Kind, stepIndex)).userData =
+						new SequencerStepAddress(sequencer.Kind, stepIndex);
 				}
-				container.Add(header);
 
 				for (var laneIndex = 0; laneIndex < sequencer.LaneCount; laneIndex++) {
-					var lane = new VisualElement();
-					lane.AddToClassList("sequencer-lane");
+					var laneLabel = Required<Button>(container, GetSequencerLaneName(sequencer.Kind, laneIndex));
+					var lane = laneLabel.parent;
 					if (sequencer.Kind == LiveSequencerKind.Overlay)
 						lane.userData = new SequencerLaneAddress(sequencer.Kind, laneIndex);
-					var laneLabel = new Button {
-						name = GetSequencerLaneName(sequencer.Kind, laneIndex),
-						text = (laneIndex + 1).ToString(CultureInfo.InvariantCulture),
-						userData = new SequencerLaneAddress(sequencer.Kind, laneIndex)
-					};
-					laneLabel.AddToClassList("is-clickable");
-					laneLabel.AddToClassList("sequencer-lane-label");
-					lane.Add(laneLabel);
+					laneLabel.userData = new SequencerLaneAddress(sequencer.Kind, laneIndex);
 					for (var stepIndex = 0; stepIndex < LiveStepSequencer.StepCount; stepIndex++) {
-						var button = new Button {
-							name = GetSequencerCellName(sequencer.Kind, laneIndex, stepIndex),
-							userData = new SequencerCellAddress(sequencer.Kind, laneIndex, stepIndex)
-						};
-						button.AddToClassList("sequencer-step");
-						lane.Add(button);
+						Required<Button>(lane, GetSequencerCellName(sequencer.Kind, laneIndex, stepIndex)).userData =
+							new SequencerCellAddress(sequencer.Kind, laneIndex, stepIndex);
 					}
-					container.Add(lane);
 				}
 			}
 		}
@@ -450,6 +423,10 @@ namespace ShitDesigner.Main {
 
 		private static string GetSequencerCellName(LiveSequencerKind kind, int laneIndex, int stepIndex) {
 			return "sequencer-" + GetSequencerId(kind) + "-lane-" + laneIndex + "-step-" + stepIndex;
+		}
+
+		private static string GetSequencerStepName(LiveSequencerKind kind, int stepIndex) {
+			return "sequencer-" + GetSequencerId(kind) + "-step-" + stepIndex;
 		}
 
 		private static string GetSequencerLaneName(LiveSequencerKind kind, int laneIndex) {
