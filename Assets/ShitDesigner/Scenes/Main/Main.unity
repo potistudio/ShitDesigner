@@ -278,6 +278,35 @@ MonoBehaviour:
   - {fileID: 11400000, guid: a6227cc86972e4817ac1b62208d7adab, type: 2}
   - {fileID: 11400000, guid: d972d0662c8584b93897427a005c19f3, type: 2}
   - {fileID: 11400000, guid: 9f23982b9b28e489ca676c536d7bea64, type: 2}
+  - {fileID: 11400000, guid: d23f201e638d413dbe1ece2a8dfc589b, type: 2}
+  - {fileID: 11400000, guid: 08875a2066324f5c85e757ea706e6666, type: 2}
+  - {fileID: 11400000, guid: 9ad4f0f2129e4b76a02b82aaf2c20944, type: 2}
+  - {fileID: 11400000, guid: 113712071665439db6252034d8717af8, type: 2}
+  - {fileID: 11400000, guid: 7230c331d27b4b388436e1c1984c5fb6, type: 2}
+  - {fileID: 11400000, guid: e5693b2b267e418797ad87696791eca5, type: 2}
+  - {fileID: 11400000, guid: c3936d11502a4a29914dafd5425e5559, type: 2}
+  - {fileID: 11400000, guid: 45fd0721128d4b9aac7cfb57eb8feaa4, type: 2}
+  - {fileID: 11400000, guid: 63e2d38e33e14aafbf411c2fec79297f, type: 2}
+  - {fileID: 11400000, guid: ead73542798148fead00e7338555bf72, type: 2}
+  - {fileID: 11400000, guid: a9c1c4c46c434ed0b018bf25c70bc23d, type: 2}
+  - {fileID: 11400000, guid: c769d886b3ad42f39c206db822ad7842, type: 2}
+  - {fileID: 11400000, guid: 47e04fd05d67482fa0551805cf62a062, type: 2}
+  - {fileID: 11400000, guid: 3b048e4344bb4427a881f88afd4797d7, type: 2}
+  - {fileID: 11400000, guid: 791ff8770b5442ee9178bb4ac3534922, type: 2}
+  - {fileID: 11400000, guid: 13d8d94c95764e9c83b384cbbaff252d, type: 2}
+  - {fileID: 11400000, guid: 30c745110194418b923f504ae504ac16, type: 2}
+  - {fileID: 11400000, guid: b9652a0bd11a4d2294477687f010851d, type: 2}
+  - {fileID: 11400000, guid: 1f6035a70f374686926e7d7c126b2467, type: 2}
+  - {fileID: 11400000, guid: f6ca6533b30d42299abdf0ce332d9679, type: 2}
+  - {fileID: 11400000, guid: c9471a76e02e4da5b084712e51926713, type: 2}
+  - {fileID: 11400000, guid: fbe97814af3c45c2b8e6ae298243595d, type: 2}
+  - {fileID: 11400000, guid: b477b7700fbe451dbe729a4ffb59e902, type: 2}
+  - {fileID: 11400000, guid: c160b888e01e4e2d85ce64b90bea7736, type: 2}
+  - {fileID: 11400000, guid: 1ba6e6a46b694ba599676f3994a829ef, type: 2}
+  - {fileID: 11400000, guid: 119d8160da5444d98e95e2025a74c034, type: 2}
+  - {fileID: 11400000, guid: f3587c68344c48d19ef83a78dfa8702e, type: 2}
+  - {fileID: 11400000, guid: 1c14aa30d8984ee69abf542e34a23c1e, type: 2}
+  - {fileID: 11400000, guid: 1b1f9a89efa74ee0960173e2ec18e056, type: 2}
   m_OverlayPatches:
   - {fileID: 11400000, guid: f5c5327b2f9e10544aa82240c82735cb, type: 2}
   - {fileID: 11400000, guid: c7e98bd2a7f64fe2b2539ceae6b0b9b4, type: 2}
