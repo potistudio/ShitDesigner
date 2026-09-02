@@ -93,10 +93,12 @@ namespace ShitDesigner.Main {
 		private readonly Action<int, bool> m_FireLiveParameter;
 		private readonly Key m_BlackoutKey;
 		private readonly Action<bool> m_SetBlackoutActive;
+		private readonly Action<bool> m_SetGlobalFlashActive;
 		private bool m_IsPianoMainCueSwitchHeld;
 		private bool m_IsMomentaryMainCompositeHeld;
 		private bool m_HasCompletedPermanentTakeForCurrentSPress;
 		private bool m_IsBlackoutHeld;
+		private bool m_IsGlobalFlashHeld;
 		private int m_HeldPianoOverlayTakeMask;
 		private int m_HeldLiveParameterMask;
 		private readonly List<(Key Key, string PatchId, string ParameterId)> m_HeldPatchKeyboardInputs
@@ -107,7 +109,7 @@ namespace ShitDesigner.Main {
 			Action endPianoMainCueSwitch = null, Action completeMainCueSwitch = null, Action<int> endPianoOverlayTake = null,
 			Action<int> turnOnOverlaySequencerStep = null, Action<int, int> adjustOutput2Resolution = null, Action<int, bool> fireLiveParameter = null,
 			Key blackoutKey = Key.Backquote, Action<bool> setBlackoutActive = null, Action beginMomentaryMainComposite = null,
-			Action endMomentaryMainComposite = null, Action completeMainComposite = null) {
+			Action endMomentaryMainComposite = null, Action completeMainComposite = null, Action<bool> setGlobalFlashActive = null) {
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));
 
@@ -136,15 +138,18 @@ namespace ShitDesigner.Main {
 			m_FireLiveParameter = fireLiveParameter ?? ((_, _) => { });
 			m_BlackoutKey = blackoutKey;
 			m_SetBlackoutActive = setBlackoutActive ?? (_ => { });
+			m_SetGlobalFlashActive = setGlobalFlashActive ?? (_ => { });
 		}
 
 		public void Poll(string loadedPatchId) {
 			var keyboard = Keyboard.current;
 			if (keyboard == null) {
 				SetBlackoutActive(false);
+				SetGlobalFlashActive(false);
 				return;
 			}
 			SetBlackoutActive(m_BlackoutKey != Key.None && keyboard[m_BlackoutKey].isPressed);
+			SetGlobalFlashActive(!m_IsEditMode() && keyboard.slashKey.isPressed);
 			QueueReleasedPatchKeyboardInputs(keyboard);
 			ReleaseLiveParameterKeys(keyboard);
 			if (string.IsNullOrWhiteSpace(loadedPatchId)) return;
@@ -224,6 +229,12 @@ namespace ShitDesigner.Main {
 			if (m_IsBlackoutHeld == active) return;
 			m_IsBlackoutHeld = active;
 			m_SetBlackoutActive(active);
+		}
+
+		private void SetGlobalFlashActive(bool active) {
+			if (m_IsGlobalFlashHeld == active) return;
+			m_IsGlobalFlashHeld = active;
+			m_SetGlobalFlashActive(active);
 		}
 
 		private void RecallHotCue(Keyboard keyboard, int hotCueIndex) {

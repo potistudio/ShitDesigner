@@ -17,6 +17,7 @@ namespace ShitDesigner.Main {
 	/// </summary>
 	[DisallowMultipleComponent]
 	public sealed class LiveGraphBootstrap : MonoBehaviour {
+		private const string GlobalFlashShaderResourcePath = "Shaders/InstantFlash";
 		private const string VideoPlayerTypeId = "shitdesigner.video.player";
 		private const string PlayingParameterId = "transport.playing";
 		private const string PlayheadParameterId = "transport.playhead_seconds";
@@ -81,14 +82,19 @@ namespace ShitDesigner.Main {
 			LiveOverlayCompositor compositor = null;
 			LiveOverlayCompositor overlayOutputCompositor = null;
 			LiveInstantEffectRenderer instantEffects = null;
+			LiveGlobalFlashRenderer globalFlash = null;
 			try {
 				compositor = new LiveOverlayCompositor(shaderDefinitions, renderPool, programRenderSize);
 				overlayOutputCompositor = new LiveOverlayCompositor(shaderDefinitions, renderPool, overlayRenderSize);
 				instantEffects = new LiveInstantEffectRenderer(shaderDefinitions, renderPool, programRenderSize);
+				var globalFlashShader = Resources.Load<Shader>(GlobalFlashShaderResourcePath);
+				if (globalFlashShader == null) throw new InvalidOperationException("The Global Flash shader resource is missing.");
+				globalFlash = new LiveGlobalFlashRenderer(globalFlashShader, programRenderSize);
 				return new LiveGraph(sceneManager, renderPool, definitions, (patch, outputSize) =>
-					BuildOutput(sceneManager, renderPool, patch, programGraphs[patch.Id], shaderDefinitions, outputSize), compositor, overlayOutputCompositor, instantEffects);
+					BuildOutput(sceneManager, renderPool, patch, programGraphs[patch.Id], shaderDefinitions, outputSize), compositor, overlayOutputCompositor, instantEffects, globalFlash);
 			}
 			catch {
+				globalFlash?.Dispose();
 				instantEffects?.Dispose();
 				overlayOutputCompositor?.Dispose();
 				compositor?.Dispose();

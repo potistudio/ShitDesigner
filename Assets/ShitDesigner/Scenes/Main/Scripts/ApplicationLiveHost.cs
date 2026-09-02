@@ -45,6 +45,10 @@ namespace ShitDesigner.Main {
 		[SerializeField, Range(.01f, 8f)] private float m_SceneTimeJogMaximumSpeedOffset = 4f;
 		[SerializeField, Min(0f)] private float m_ThumbnailTimeOffsetSeconds = .05f;
 		[SerializeField, Tooltip("Blacks out the rendered Program and Overlay frames while held. Test patterns are unaffected.")] private Key m_BlackoutKey = Key.Backquote;
+		[Header("Global Flash")]
+		[SerializeField, Range(0f, 1f)] private float m_GlobalFlashAmount = 1f;
+		[SerializeField, Range(1f, 30f)] private float m_GlobalFlashRate = 12f;
+		[SerializeField, Range(.05f, .95f)] private float m_GlobalFlashDuty = .35f;
 
 		[Header("Instant Effect MIDI")]
 		[SerializeField, Tooltip("Maps each Instant Effect slot to a MIDI message. Disabled slots remain available through their on-screen control.")]
@@ -98,6 +102,7 @@ namespace ShitDesigner.Main {
 		private bool m_OwnsUnityTimeScale;
 		private bool m_RebuildRuntimeForOutputResolution;
 		private bool m_IsBlackoutActive;
+		private bool m_IsGlobalFlashActive;
 
 		public ApplicationLiveHostState State { get; private set; } = ApplicationLiveHostState.Cold;
 		public LiveUiReadModel ReadModel { get; private set; }
@@ -162,6 +167,7 @@ namespace ShitDesigner.Main {
 				_runtime.ConfigureMainCueFaderCurve(m_MainCueFaderCurve);
 				_runtime.ConfigureMainCompositeOpacity(m_MainCompositeOpacity);
 				_runtime.ConfigureSceneTimeJog(m_SceneTimeJogMaximumSpeedOffset);
+				_runtime.ConfigureGlobalFlash(m_GlobalFlashAmount, m_GlobalFlashRate, m_GlobalFlashDuty);
 				_shutdown.Add(() => { _runtime?.Dispose(); _runtime = null; });
 				_patchIds = _runtime.Patches.Select(patch => patch.Id).ToArray();
 				var mainPatchIds = new HashSet<string>(_graphBootstrap.MainPatches.Where(patch => patch != null).Select(patch => patch.Id), StringComparer.Ordinal);
@@ -197,7 +203,7 @@ namespace ShitDesigner.Main {
 						LiveGraphRuntime.AdjustOverlayResolution(widthDelta, heightDelta);
 						m_RebuildRuntimeForOutputResolution = true;
 					}, FireLiveParameter, m_BlackoutKey, active => { m_IsBlackoutActive = active; }, BeginMomentaryMainComposite,
-					EndMomentaryMainComposite, CompleteMainComposite);
+					EndMomentaryMainComposite, CompleteMainComposite, SetGlobalFlashActive);
 				_midiInputManager.InitializeForHostPolling();
 				_midiInputManager.ConfigureLaunchControlXl3RelativeEncoder(m_SceneTimeEncoderChannel, m_SceneTimeEncoderControlNumber);
 				_shutdown.Add(_midiInputManager.Shutdown);
@@ -252,7 +258,7 @@ namespace ShitDesigner.Main {
 				_runtime.Evaluate(deltaSeconds);
 				ApplyUnityTimeScale(_runtime.GraphTimeScale);
 				_runtime.SceneUpdate();
-				var frames = _runtime.Render(m_FiredInstantEffectTriggers, m_IsBlackoutActive);
+				var frames = _runtime.Render(m_FiredInstantEffectTriggers, m_IsBlackoutActive, m_IsGlobalFlashActive);
 				_runtime.RenderPreviews(overlayComposition.LanePatchIds, _runtime.MainCuePatchIds, deltaSeconds,
 					m_ThumbnailTimeOffsetSeconds);
 				_externalDisplay.Present(frames);
@@ -270,6 +276,7 @@ namespace ShitDesigner.Main {
 			ShutdownStartedComponents();
 			m_IsEditMode = false;
 			m_IsBlackoutActive = false;
+			m_IsGlobalFlashActive = false;
 			ShitDesigner.Runtime.InstantEffectInputMode.SetEditing(false);
 			State = ApplicationLiveHostState.Offline;
 		}
@@ -280,6 +287,7 @@ namespace ShitDesigner.Main {
 			replacement.ConfigureMainCueFaderCurve(m_MainCueFaderCurve);
 			replacement.ConfigureMainCompositeOpacity(m_MainCompositeOpacity);
 			replacement.ConfigureSceneTimeJog(m_SceneTimeJogMaximumSpeedOffset);
+			replacement.ConfigureGlobalFlash(m_GlobalFlashAmount, m_GlobalFlashRate, m_GlobalFlashDuty);
 			var previous = _runtime;
 			_runtime = replacement;
 			previous.Dispose();
@@ -289,6 +297,7 @@ namespace ShitDesigner.Main {
 
 		public void ToggleEditMode() {
 			m_IsEditMode = !m_IsEditMode;
+			if (m_IsEditMode) SetGlobalFlashActive(false);
 			ShitDesigner.Runtime.InstantEffectInputMode.SetEditing(m_IsEditMode);
 			if (m_IsEditMode) {
 				m_SelectedCatalogRole = LiveCatalogRole.Effect;
@@ -299,6 +308,14 @@ namespace ShitDesigner.Main {
 			else {
 				m_IsEffectCategorySelected = false;
 			}
+		}
+
+		private void SetGlobalFlashActive(bool active) {
+			m_IsGlobalFlashActive = State == ApplicationLiveHostState.Running && !m_IsEditMode && active;
+		}
+
+		private void OnApplicationFocus(bool hasFocus) {
+			if (!hasFocus) SetGlobalFlashActive(false);
 		}
 
 		public bool AssignSelectedEffectToCue(int cueIndex) {

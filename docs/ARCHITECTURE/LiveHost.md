@@ -199,6 +199,7 @@
 - Overlayレーンは既定でOutput 1だけへ合成する。Ctrl/Cmdを押しながらシーケンサー行をクリックすると、そのレーンの共有出力をOutput 2へもコピーする状態を切り替える。
 - SpaceはUIのTAPボタンと同じBPM Tap入力とする。
 - 通常操作中の`Q`から`P`または対応するCueボタンは、押下時点では発火せず、共有BPMクロックの次の整数拍へ予約する。同じCueが発火前に複数回押された場合は1回へまとめる。
+- `/`はグローバルFlashのMomentary入力とし、通常操作中に押している間だけProgram映像を白色ストロボで即時点滅させる。Flashはクオンタイズせず、BPM、Beat Phase、Scene再生速度およびUnity Time Scaleから独立した実時間で評価する。通常Instant FXの後、Blackoutの前へ適用し、押下ごとに発光位相を先頭へ戻す。
 - `PatchDefinition` のKeyboard Inputsは、キー押下時だけ1.0をロード中パッチの公開パラメーターへ送る。離上では要求を生成せず、キーボードの全体操作はこの設定とは別に固定される。
 - Motion、Scaleなどの連続値はMIDI入力またはUIの操作面から要求する。
 
