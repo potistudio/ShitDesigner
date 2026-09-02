@@ -78,6 +78,7 @@ MonoBehaviour:
   m_EndOpacity: 1
   m_EndDepth: 0.35
   m_BurstCount: 1
+  m_BurstInitialDelay: 0
   m_BurstInterval: 0
   m_HideSourceDuringPlay: 1
   m_DestroySpawnedInstanceAfterAnimation: 1
