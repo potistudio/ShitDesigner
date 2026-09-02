@@ -165,11 +165,22 @@
 
 .output-previews {
     width: 1280px;
-    height: 420px;
+    height: 712px;
     min-width: 1280px;
-    min-height: 420px;
+    min-height: 712px;
     flex-direction: row;
     align-items: flex-start;
+    flex-shrink: 0;
+}
+
+.output-2-column {
+    width: 640px;
+    min-width: 640px;
+    max-width: 640px;
+    height: 712px;
+    min-height: 712px;
+    max-height: 712px;
+    flex-grow: 0;
     flex-shrink: 0;
 }
 
@@ -286,13 +297,13 @@
 }
 
 .sequencer-controls {
-    width: 1280px;
-    min-width: 1280px;
-    max-width: 1280px;
-    height: 220px;
-    min-height: 220px;
-    max-height: 220px;
-    flex-direction: row;
+    width: 640px;
+    min-width: 640px;
+    max-width: 640px;
+    height: 352px;
+    min-height: 352px;
+    max-height: 352px;
+    flex-direction: column;
     flex-shrink: 0;
     background-color: rgb(13, 15, 18);
 }
