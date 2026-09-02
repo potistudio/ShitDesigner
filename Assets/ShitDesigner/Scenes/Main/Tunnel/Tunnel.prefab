@@ -141,6 +141,7 @@ GameObject:
   - component: {fileID: 4680049667518520785}
   - component: {fileID: 6129218759055021738}
   - component: {fileID: 6129218759055021739}
+  - component: {fileID: 6129218759055021740}
   m_Layer: 0
   m_Name: Tunnel
   m_TagString: Untagged
@@ -243,3 +244,20 @@ MonoBehaviour:
   _value: 0.5
   _minimumMultiplier: 0.75
   _maximumMultiplier: 1.25
+--- !u!114 &6129218759055021740
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7787689742687978739}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: faf4c7a0cce44bf59f273d2f1031e211, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.LiveRandomFieldOfViewTrigger
+  m_Id: random_fov
+  m_DisplayName: Random Field of View
+  m_Camera: {fileID: 8028075610238429505}
+  m_FieldOfViewRange: {x: 35, y: 85}
+  m_RandomSeed: 9202
