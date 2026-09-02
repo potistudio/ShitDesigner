@@ -28,7 +28,8 @@ enum OutputMenuCommand {
   SetEmulation9x16 = 15,
   SetEmulation21x9 = 16,
   SetEmulation5x1 = 17,
-  SetEmulation4_5x1 = 18
+  SetEmulation4_5x1 = 18,
+  ToggleOutput2AdjustmentMode = 19
 };
 
 static void *s_appKitLibrary;
@@ -41,6 +42,7 @@ static NativeObject s_startProgramItem;
 static NativeObject s_stopProgramItem;
 static NativeObject s_startOverlayItem;
 static NativeObject s_stopOverlayItem;
+static NativeObject s_output2AdjustmentItem;
 static NativeObject s_identifyItem;
 static NativeObject s_swapItem;
 static NativeObject s_scalingItem;
@@ -90,7 +92,7 @@ void Release(NativeObject value) {
 
 void HandleOutputMenuItem(NativeObject, NativeSelector, NativeObject sender) {
   const auto tag = SendMessage<std::intptr_t>(sender, "tag");
-  if (tag >= StartProgramOutput && tag <= SetEmulation4_5x1)
+  if (tag >= StartProgramOutput && tag <= ToggleOutput2AdjustmentMode)
     s_commands.push_back(static_cast<int>(tag));
 }
 
@@ -182,6 +184,8 @@ ShitDesignerOutputMenuCreate(void) {
       CreateMenuItem("Start Output 2 (Overlay)", action, StartOverlayOutput);
   s_stopOverlayItem =
       CreateMenuItem("Stop Output 2 (Overlay)", action, StopOverlayOutput);
+  s_output2AdjustmentItem = CreateMenuItem(
+      "Output 2 Adjustment Mode", action, ToggleOutput2AdjustmentMode);
   s_identifyItem =
       CreateMenuItem("Display Test Pattern", action, ToggleTestPattern);
   s_swapItem = CreateMenuItem("Swap Output Displays", action, SwapOutputs);
@@ -225,6 +229,7 @@ ShitDesignerOutputMenuCreate(void) {
   SendMessage<void>(s_emulationItem, "setSubmenu:", s_emulationMenu);
   for (const auto item : {s_startProgramItem, s_stopProgramItem,
                           s_startOverlayItem, s_stopOverlayItem,
+                          s_output2AdjustmentItem,
                           s_identifyItem, s_swapItem, s_scalingStretchItem,
                           s_scalingFillItem, s_scalingFitItem})
     SendMessage<void>(item, "setTarget:", s_target);
@@ -238,6 +243,7 @@ ShitDesignerOutputMenuCreate(void) {
   SendMessage<void>(s_submenu, "addItem:", separator);
   SendMessage<void>(s_submenu, "addItem:", s_startOverlayItem);
   SendMessage<void>(s_submenu, "addItem:", s_stopOverlayItem);
+  SendMessage<void>(s_submenu, "addItem:", s_output2AdjustmentItem);
   separator =
       SendMessage<NativeObject>(s_getClass("NSMenuItem"), "separatorItem");
   SendMessage<void>(s_submenu, "addItem:", separator);
@@ -261,6 +267,7 @@ ShitDesignerOutputMenuDestroy(void) {
   Release(s_stopProgramItem);
   Release(s_startOverlayItem);
   Release(s_stopOverlayItem);
+  Release(s_output2AdjustmentItem);
   Release(s_identifyItem);
   Release(s_swapItem);
   Release(s_scalingStretchItem);
@@ -279,6 +286,7 @@ ShitDesignerOutputMenuDestroy(void) {
   s_stopProgramItem = nullptr;
   s_startOverlayItem = nullptr;
   s_stopOverlayItem = nullptr;
+  s_output2AdjustmentItem = nullptr;
   s_identifyItem = nullptr;
   s_swapItem = nullptr;
   s_scalingStretchItem = nullptr;
@@ -301,7 +309,8 @@ ShitDesignerOutputMenuSetState(bool canStartProgram, bool canStopProgram,
                                bool canStartOverlay, bool canStopOverlay,
                                bool canIdentifyDisplays,
                                bool isTestPatternVisible,
-                               bool canSwapOutputs, int scalingMode,
+                               bool canSwapOutputs,
+                               bool isOutput2AdjustmentMode, int scalingMode,
                                int emulationAspect) {
   if (!EnsureRuntime())
     return;
@@ -319,6 +328,8 @@ ShitDesignerOutputMenuSetState(bool canStartProgram, bool canStopProgram,
                     static_cast<std::intptr_t>(isTestPatternVisible));
   SendMessage<void>(s_swapItem, "setEnabled:",
                     static_cast<signed char>(canSwapOutputs));
+  SendMessage<void>(s_output2AdjustmentItem, "setState:",
+                    static_cast<std::intptr_t>(isOutput2AdjustmentMode));
   SendMessage<void>(s_scalingStretchItem, "setState:",
                     static_cast<std::intptr_t>(scalingMode == 0));
   SendMessage<void>(s_scalingFillItem, "setState:",

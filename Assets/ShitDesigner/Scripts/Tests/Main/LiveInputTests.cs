@@ -83,7 +83,8 @@ namespace ShitDesigner.Main.Tests {
 				var movements = new List<(int Horizontal, int Vertical)>();
 				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, _ => { },
 					(horizontal, vertical) => movements.Add((horizontal, vertical)), () => { }, _ => { },
-					adjustOutput2Viewport: (horizontal, vertical, move) => adjustments.Add((horizontal, vertical, move)));
+					adjustOutput2Viewport: (horizontal, vertical, move) => adjustments.Add((horizontal, vertical, move)),
+					isOutput2AdjustmentMode: () => true);
 
 				PollKey(input, keyboard, Key.RightArrow);
 				PollKey(input, keyboard, Key.LeftArrow);
@@ -102,6 +103,33 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void ArrowKeysDoNotAdjustOutput2WhenAdjustmentModeIsOff() {
+			var patch = CreatePatch("patch-a");
+			Keyboard keyboard = null;
+			try {
+				keyboard = InputSystem.AddDevice<Keyboard>();
+				keyboard.MakeCurrent();
+				var adjustments = new List<(int Horizontal, int Vertical, bool Move)>();
+				var movements = new List<(int Horizontal, int Vertical)>();
+				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, _ => { },
+					(horizontal, vertical) => movements.Add((horizontal, vertical)), () => { }, _ => { },
+					adjustOutput2Viewport: (horizontal, vertical, move) => adjustments.Add((horizontal, vertical, move)),
+					isOutput2AdjustmentMode: () => false);
+
+				PollKey(input, keyboard, Key.RightArrow);
+				PollKey(input, keyboard, Key.UpArrow);
+				PollKey(input, keyboard, Key.DownArrow);
+
+				Assert.That(adjustments, Is.Empty);
+				Assert.That(movements, Is.EqualTo(new[] { (0, -1), (0, 1) }));
+			}
+			finally {
+				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
+				Object.DestroyImmediate(patch);
+			}
+		}
+
+		[Test]
 		public void ShiftArrowKeysMoveOutput2Viewport() {
 			var patch = CreatePatch("patch-a");
 			Keyboard keyboard = null;
@@ -111,7 +139,8 @@ namespace ShitDesigner.Main.Tests {
 				var adjustments = new List<(int Horizontal, int Vertical, bool Move)>();
 				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, _ => { },
 					(_, _) => { }, () => { }, _ => { },
-					adjustOutput2Viewport: (horizontal, vertical, move) => adjustments.Add((horizontal, vertical, move)));
+					adjustOutput2Viewport: (horizontal, vertical, move) => adjustments.Add((horizontal, vertical, move)),
+					isOutput2AdjustmentMode: () => true);
 
 				PollKey(input, keyboard, Key.LeftShift, Key.RightArrow);
 				PollKey(input, keyboard, Key.LeftShift, Key.UpArrow);

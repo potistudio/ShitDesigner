@@ -77,6 +77,7 @@ namespace ShitDesigner.Main {
 		public ulong PresentedFrameNumber => _presentedFrameNumber;
 		public string DisplayIdentity => DescribeDisplays();
 		public string LastError { get; private set; } = string.Empty;
+		public bool IsOutput2AdjustmentMode { get; private set; }
 		public LiveOutputViewport Output2Viewport => m_Output2Viewport;
 		public RectInt Output2ContentRect => m_Output2Viewport.ResolveRect(LiveGraphRuntime.OverlayWidth, LiveGraphRuntime.OverlayHeight);
 
@@ -101,6 +102,10 @@ namespace ShitDesigner.Main {
 					LiveGraphRuntime.OverlayWidth, LiveGraphRuntime.OverlayHeight);
 			SaveOutput2Viewport();
 			_presentedFrameNumber = 0;
+		}
+
+		public void SetOutput2AdjustmentMode(bool enabled) {
+			IsOutput2AdjustmentMode = enabled;
 		}
 
 		public bool IsActive(LiveOutputKind output) => m_OutputActive[OutputIndex(output)];
@@ -239,6 +244,7 @@ namespace ShitDesigner.Main {
 			Array.Clear(m_OutputActive, 0, m_OutputActive.Length);
 			IsTestPatternVisible = false;
 			m_OutputsSwapped = false;
+			IsOutput2AdjustmentMode = false;
 			_initialized = false;
 			m_LatestFrames = default(LiveProgramFrames);
 			_presentedFrameNumber = 0;

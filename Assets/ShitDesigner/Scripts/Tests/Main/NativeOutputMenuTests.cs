@@ -114,6 +114,18 @@ namespace ShitDesigner.Main.Tests {
 				Assert.That(backend.LastState.CanSwapOutputs, Is.True);
 				Assert.That(backend.LastState.ScalingMode, Is.EqualTo(ExternalDisplayScalingMode.Fill));
 				Assert.That(backend.LastState.EmulationAspect, Is.EqualTo(ExternalDisplayEmulationAspect.Display));
+				Assert.That(backend.LastState.IsOutput2AdjustmentMode, Is.False);
+
+				backend.Enqueue(OutputMenuCommand.ToggleOutput2AdjustmentMode);
+				controller.Tick();
+				Assert.That(target.IsOutput2AdjustmentMode, Is.True);
+				Assert.That(target.AdjustmentModeChangeCount, Is.EqualTo(1));
+				Assert.That(backend.LastState.IsOutput2AdjustmentMode, Is.True);
+
+				backend.Enqueue(OutputMenuCommand.ToggleOutput2AdjustmentMode);
+				controller.Tick();
+				Assert.That(target.IsOutput2AdjustmentMode, Is.False);
+				Assert.That(target.AdjustmentModeChangeCount, Is.EqualTo(2));
 
 				backend.Enqueue(OutputMenuCommand.StartProgram);
 				backend.Enqueue(OutputMenuCommand.StartOverlay);
@@ -213,7 +225,9 @@ namespace ShitDesigner.Main.Tests {
 			public int SwapCount { get; private set; }
 			public int ScalingChangeCount { get; private set; }
 			public int EmulationChangeCount { get; private set; }
+			public int AdjustmentModeChangeCount { get; private set; }
 			public bool IsTestPatternVisible { get; private set; }
+			public bool IsOutput2AdjustmentMode { get; private set; }
 			public bool CanSwapOutputs => m_Available.All(available => available);
 			public ExternalDisplayScalingMode ScalingMode { get; private set; } = ExternalDisplayScalingMode.Fill;
 			public ExternalDisplayEmulationAspect EmulationAspect { get; private set; } = ExternalDisplayEmulationAspect.Display;
@@ -246,6 +260,10 @@ namespace ShitDesigner.Main.Tests {
 				EmulationChangeCount++;
 				EmulationAspect = aspect;
 				return true;
+			}
+			public void SetOutput2AdjustmentMode(bool enabled) {
+				AdjustmentModeChangeCount++;
+				IsOutput2AdjustmentMode = enabled;
 			}
 		}
 

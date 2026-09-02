@@ -146,7 +146,8 @@ namespace ShitDesigner.Main {
 					cueIndex => { FocusInstantEffectParameters(cueIndex); }, ToggleSelectedEffectCategory, BeginPianoMainCueSwitch,
 					EndPianoMainCueSwitch, CompleteMainCueSwitch, EndPianoOverlayTake, TurnOnOverlaySequencerStep,
 					(horizontalDelta, verticalDelta, move) => _externalDisplay.AdjustOutput2Viewport(horizontalDelta, verticalDelta, move),
-					FireLiveParameter, m_BlackoutKey, active => { m_IsBlackoutActive = active; }, BeginMomentaryMainComposite,
+					() => _externalDisplay.IsOutput2AdjustmentMode, FireLiveParameter, m_BlackoutKey,
+					active => { m_IsBlackoutActive = active; }, BeginMomentaryMainComposite,
 					EndMomentaryMainComposite, CompleteMainComposite);
 				_midiInputManager.InitializeForHostPolling();
 				_midiInputManager.ConfigureLaunchControlXl3RelativeEncoder(m_SceneTimeEncoderChannel, m_SceneTimeEncoderControlNumber);
