@@ -26,6 +26,7 @@ namespace ShitDesigner.Editor {
 	[CustomEditor(typeof(MidiInputManager))]
 	public sealed class MidiInputManagerEditor : UnityEditor.Editor {
 		private SerializedProperty _deviceId;
+		private SerializedProperty m_SecondaryDeviceId;
 		private SerializedProperty _openOnConfigure;
 		private SerializedProperty _bindings;
 		private IReadOnlyList<MidiInputDeviceInfo> _devices = Array.Empty<MidiInputDeviceInfo>();
@@ -34,6 +35,7 @@ namespace ShitDesigner.Editor {
 
 		private void OnEnable() {
 			_deviceId = serializedObject.FindProperty("_deviceId");
+			m_SecondaryDeviceId = serializedObject.FindProperty("m_SecondaryDeviceId");
 			_openOnConfigure = serializedObject.FindProperty("_openOnConfigure");
 			_bindings = serializedObject.FindProperty("_bindings");
 			RefreshDevices();
@@ -48,13 +50,15 @@ namespace ShitDesigner.Editor {
 
 			EditorGUILayout.LabelField("MIDI Device", EditorStyles.boldLabel);
 			var previousDeviceId = _deviceId.intValue;
+			var previousSecondaryDeviceId = m_SecondaryDeviceId.intValue;
 			var previousOpen = _openOnConfigure.boolValue;
 			DrawDeviceSelector();
 			EditorGUILayout.PropertyField(_openOnConfigure, new GUIContent("Open On Play"));
 
 			var deviceChanged = serializedObject.ApplyModifiedProperties();
 			if (deviceChanged && UnityEngine.Application.isPlaying) {
-				var reopenDevice = previousDeviceId != manager.DeviceId || previousOpen != _openOnConfigure.boolValue;
+				var reopenDevice = previousDeviceId != manager.DeviceId || previousSecondaryDeviceId != manager.SecondaryDeviceId
+					|| previousOpen != _openOnConfigure.boolValue;
 				manager.ApplyInspectorConfiguration(reopenDevice);
 			}
 
@@ -73,26 +77,34 @@ namespace ShitDesigner.Editor {
 		}
 
 		private void DrawDeviceSelector() {
+			DrawDeviceSelector("Primary Device", _deviceId, false);
+			DrawDeviceSelector("Secondary Device", m_SecondaryDeviceId, true);
+
+			if (!string.IsNullOrEmpty(_deviceScanError)) EditorGUILayout.HelpBox(_deviceScanError, MessageType.Warning);
+			else if (_devices.Count == 0) EditorGUILayout.HelpBox("No MIDI input devices found.", MessageType.Info);
+		}
+
+		private void DrawDeviceSelector(string label, SerializedProperty deviceId, bool allowNone) {
 			using (new EditorGUILayout.HorizontalScope()) {
 				if (_devices.Count == 0) {
-					EditorGUILayout.PropertyField(_deviceId, new GUIContent("Device ID"));
+					EditorGUILayout.PropertyField(deviceId, new GUIContent(label + " ID"));
 				}
 				else {
-					var names = new string[_devices.Count];
+					var offset = allowNone ? 1 : 0;
+					var names = new string[_devices.Count + offset];
+					if (allowNone) names[0] = "<None>";
 					var selected = 0;
 					for (var index = 0; index < _devices.Count; index++) {
-						names[index] = "[" + _devices[index].Id + "] " + _devices[index].Name;
-						if (_devices[index].Id == (uint)Math.Max(0, _deviceId.intValue)) selected = index;
+						names[index + offset] = "[" + _devices[index].Id + "] " + _devices[index].Name;
+						if (deviceId.intValue >= 0 && _devices[index].Id == (uint)deviceId.intValue) selected = index + offset;
 					}
-					selected = EditorGUILayout.Popup("Device", selected, names);
-					_deviceId.intValue = (int)_devices[selected].Id;
+					selected = EditorGUILayout.Popup(label, selected, names);
+					deviceId.intValue = allowNone && selected == 0 ? -1 : (int)_devices[selected - offset].Id;
 				}
 
 				if (GUILayout.Button("Refresh", GUILayout.Width(64f))) RefreshDevices();
 			}
 
-			if (!string.IsNullOrEmpty(_deviceScanError)) EditorGUILayout.HelpBox(_deviceScanError, MessageType.Warning);
-			else if (_devices.Count == 0) EditorGUILayout.HelpBox("No MIDI input devices found.", MessageType.Info);
 		}
 
 		private void DrawInputActivity(MidiInputManager manager) {
@@ -206,6 +218,7 @@ namespace ShitDesigner.Editor {
 			if (!manager.HasLastEvent || index < 0 || index >= _bindings.arraySize) return;
 			var input = manager.LastEvent;
 			var binding = _bindings.GetArrayElementAtIndex(index);
+			binding.FindPropertyRelative("m_DeviceName").stringValue = input.Control.DeviceName;
 			binding.FindPropertyRelative("_messageType").enumValueIndex = (int)input.Control.Kind;
 			binding.FindPropertyRelative("_channel").intValue = input.Control.Channel;
 			binding.FindPropertyRelative("_number").intValue = input.Control.Number;
@@ -215,7 +228,8 @@ namespace ShitDesigner.Editor {
 			manager.ApplyInspectorConfiguration(false);
 		}
 
-		private static string FormatControl(MidiControl control) => control.Kind + "  Ch " + control.Channel + "  #" + control.Number;
+		private static string FormatControl(MidiControl control)
+			=> control.DeviceName + "  " + control.Kind + "  Ch " + control.Channel + "  #" + control.Number;
 
 		private static string ShortId(string id) => string.IsNullOrEmpty(id) || id.Length <= 8 ? id ?? string.Empty : id.Substring(0, 8);
 

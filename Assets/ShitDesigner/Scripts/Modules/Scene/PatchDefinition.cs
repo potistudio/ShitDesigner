@@ -361,6 +361,7 @@ namespace ShitDesigner.Scene {
 
 	[Serializable]
 	public sealed class PatchMidiInputBinding {
+		[SerializeField] private string m_DeviceName = string.Empty;
 		[SerializeField] private MidiControlKind m_MessageType = MidiControlKind.ControlChange;
 		[SerializeField, Range(1, 16)] private int m_Channel = 1;
 		[SerializeField, Range(0, 127)] private int m_Number;
@@ -369,6 +370,7 @@ namespace ShitDesigner.Scene {
 		[SerializeField] private bool m_Invert;
 		[SerializeField] private string m_ParameterId;
 
+		public string DeviceName => (m_DeviceName ?? string.Empty).Trim();
 		public MidiControlKind MessageType => m_MessageType;
 		public int Channel => m_Channel;
 		public int Number => m_Number;
@@ -380,8 +382,9 @@ namespace ShitDesigner.Scene {
 		public PatchMidiInputBinding() { }
 
 		public PatchMidiInputBinding(string parameterId, MidiControlKind messageType, int channel, int number,
-			int rawMinimum = 0, int rawMaximum = 127, bool invert = false) {
+			int rawMinimum = 0, int rawMaximum = 127, bool invert = false, string deviceName = "") {
 			m_ParameterId = parameterId ?? string.Empty;
+			m_DeviceName = deviceName ?? string.Empty;
 			m_MessageType = messageType;
 			m_Channel = channel;
 			m_Number = number;
@@ -391,7 +394,8 @@ namespace ShitDesigner.Scene {
 		}
 
 		public bool Matches(MidiControl control)
-			=> control.Kind == MessageType && control.Channel == Channel && control.Number == Number;
+			=> (string.IsNullOrEmpty(DeviceName) || string.Equals(control.DeviceName, DeviceName, StringComparison.Ordinal))
+				&& control.Kind == MessageType && control.Channel == Channel && control.Number == Number;
 
 		public float Normalize(int rawValue) {
 			if (RawMinimum >= RawMaximum) throw new InvalidOperationException("Raw Minimum must be less than Raw Maximum.");

@@ -15,89 +15,30 @@ MonoBehaviour:
   _id: bpm-shapes
   _displayName: BPM Shapes
   _programGraph:
-    _outputNodeId: composite
+    _outputNodeId: bpm-shapes
     _nodes:
     - _id: bpm-shapes
       _typeId: shitdesigner.scene.3d
       m_SceneDefinition: {fileID: 11400000, guid: d4bdff6ba4854394acc490d905b97d92, type: 2}
+      m_VideoPath: 
+      m_VideoClip: {fileID: 0}
+      m_VideoBpm: 120
       _parameters: []
-    - _id: background
-      _typeId: shitdesigner.shader.generator.concentric-rings
-      _parameters:
-      - _id: color_a
-        _type: 5
-        _floatValue: 0
-        _intValue: 0
-        _boolValue: 0
-        _vector2Value: {x: 0, y: 0}
-        _vector3Value: {x: 0, y: 0, z: 0}
-        _vector4Value: {x: 1, y: 0, z: 0, w: 1}
-        _colorValue: {r: 1, g: 1, b: 1, a: 1}
-        _textValue: 
-      - _id: color_b
-        _type: 5
-        _floatValue: 0
-        _intValue: 0
-        _boolValue: 0
-        _vector2Value: {x: 0, y: 0}
-        _vector3Value: {x: 0, y: 0, z: 0}
-        _vector4Value: {x: 0, y: 0, z: 1, w: 1}
-        _colorValue: {r: 1, g: 1, b: 1, a: 1}
-        _textValue: 
-      - _id: color_c
-        _type: 5
-        _floatValue: 0
-        _intValue: 0
-        _boolValue: 0
-        _vector2Value: {x: 0, y: 0}
-        _vector3Value: {x: 0, y: 0, z: 0}
-        _vector4Value: {x: 0, y: 1, z: 0, w: 1}
-        _colorValue: {r: 1, g: 1, b: 1, a: 1}
-        _textValue: 
-      - _id: amount
-        _type: 0
-        _floatValue: 0
-        _intValue: 0
-        _boolValue: 0
-        _vector2Value: {x: 0, y: 0}
-        _vector3Value: {x: 0, y: 0, z: 0}
-        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
-        _colorValue: {r: 1, g: 1, b: 1, a: 1}
-        _textValue: 
-    - _id: composite
-      _typeId: shitdesigner.shader.blend.premultiplied_over
-      _parameters:
-      - _id: amount
-        _type: 0
-        _floatValue: 1
-        _intValue: 0
-        _boolValue: 0
-        _vector2Value: {x: 0, y: 0}
-        _vector3Value: {x: 0, y: 0, z: 0}
-        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
-        _colorValue: {r: 1, g: 1, b: 1, a: 1}
-        _textValue: 
-      - _id: external_mask
-        _type: 0
-        _floatValue: 0
-        _intValue: 0
-        _boolValue: 0
-        _vector2Value: {x: 0, y: 0}
-        _vector3Value: {x: 0, y: 0, z: 0}
-        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
-        _colorValue: {r: 1, g: 1, b: 1, a: 1}
-        _textValue: 
-    _connections:
-    - _sourceNodeId: bpm-shapes
-      _sourcePortId: image
-      _targetNodeId: composite
-      _targetPortId: a
-    - _sourceNodeId: background
-      _sourcePortId: image
-      _targetNodeId: composite
-      _targetPortId: b
+    _connections: []
   _parameters:
   - _id: motion
     _displayName: Motion
     _nodeId: bpm-shapes
     _parameterId: motion
+    m_BeatModulation:
+      m_Enabled: 0
+      m_Signal: 0
+      m_Strength: 0
+      m_Minimum: 0
+      m_Maximum: 1
+  m_HotCue1:
+    m_Values: []
+  m_HotCue2:
+    m_Values: []
+  m_KeyboardInputs: []
+  m_MidiInputs: []

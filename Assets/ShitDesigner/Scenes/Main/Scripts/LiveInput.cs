@@ -13,27 +13,32 @@ namespace ShitDesigner.Main {
 	[Serializable]
 	public sealed class InstantEffectMidiBinding {
 		[SerializeField] private bool m_IsAssigned;
+		[SerializeField] private string m_DeviceName = string.Empty;
 		[SerializeField] private MidiControlKind m_MessageType = MidiControlKind.Note;
 		[SerializeField, Range(1, 16)] private int m_Channel = 1;
 		[SerializeField, Range(0, 127)] private int m_Number;
 
 		public bool IsAssigned => m_IsAssigned;
+		public string DeviceName => (m_DeviceName ?? string.Empty).Trim();
 		public MidiControlKind MessageType => m_MessageType;
 		public int Channel => m_Channel;
 		public int Number => m_Number;
-		public string DisplayName => m_IsAssigned ? MessageTypeLabel() + " " + m_Channel + ":" + m_Number : string.Empty;
+		public string DisplayName => m_IsAssigned ? (string.IsNullOrEmpty(DeviceName) ? string.Empty : DeviceName + " ")
+			+ MessageTypeLabel() + " " + m_Channel + ":" + m_Number : string.Empty;
 
 		public InstantEffectMidiBinding() { }
 
-		public InstantEffectMidiBinding(MidiControlKind messageType, int channel, int number) {
+		public InstantEffectMidiBinding(MidiControlKind messageType, int channel, int number, string deviceName = "") {
 			m_IsAssigned = true;
+			m_DeviceName = deviceName ?? string.Empty;
 			m_MessageType = messageType;
 			m_Channel = channel;
 			m_Number = number;
 		}
 
 		public bool Matches(MidiControl control)
-			=> m_IsAssigned && control.Kind == m_MessageType && control.Channel == m_Channel && control.Number == m_Number;
+			=> m_IsAssigned && (string.IsNullOrEmpty(DeviceName) || string.Equals(control.DeviceName, DeviceName, StringComparison.Ordinal))
+				&& control.Kind == m_MessageType && control.Channel == m_Channel && control.Number == m_Number;
 
 		private string MessageTypeLabel() {
 			switch (m_MessageType) {
@@ -48,26 +53,30 @@ namespace ShitDesigner.Main {
 	[Serializable]
 	public sealed class InstantOverlayMidiBinding {
 		[SerializeField] private bool m_IsAssigned;
+		[SerializeField] private string m_DeviceName = string.Empty;
 		[SerializeField] private MidiControlKind m_MessageType = MidiControlKind.Note;
 		[SerializeField, Range(1, 16)] private int m_Channel = 1;
 		[SerializeField, Range(0, 127)] private int m_Number;
 
 		public bool IsAssigned => m_IsAssigned;
+		public string DeviceName => (m_DeviceName ?? string.Empty).Trim();
 		public MidiControlKind MessageType => m_MessageType;
 		public int Channel => m_Channel;
 		public int Number => m_Number;
 
 		public InstantOverlayMidiBinding() { }
 
-		public InstantOverlayMidiBinding(MidiControlKind messageType, int channel, int number) {
+		public InstantOverlayMidiBinding(MidiControlKind messageType, int channel, int number, string deviceName = "") {
 			m_IsAssigned = true;
+			m_DeviceName = deviceName ?? string.Empty;
 			m_MessageType = messageType;
 			m_Channel = channel;
 			m_Number = number;
 		}
 
 		public bool Matches(MidiControl control)
-			=> m_IsAssigned && control.Kind == m_MessageType && control.Channel == m_Channel && control.Number == m_Number;
+			=> m_IsAssigned && (string.IsNullOrEmpty(DeviceName) || string.Equals(control.DeviceName, DeviceName, StringComparison.Ordinal))
+				&& control.Kind == m_MessageType && control.Channel == m_Channel && control.Number == m_Number;
 	}
 
 	/// <summary>Maps live keyboard controls to live requests without owning a PlayerLoop.</summary>
@@ -411,8 +420,11 @@ namespace ShitDesigner.Main {
 		private readonly IReadOnlyDictionary<string, PatchDefinition> m_PatchesById;
 		private readonly int m_MainCueFaderChannel;
 		private readonly int m_MainCueFaderControlNumber;
+		private readonly string m_MainCueFaderDeviceName;
 		private readonly int m_SceneTimeEncoderChannel;
 		private readonly int m_SceneTimeEncoderControlNumber;
+		private readonly string m_SceneTimeEncoderDeviceName;
+		private readonly string m_PatchSelectionDeviceName;
 		private readonly float m_SceneTimeJogSpeedPerStep;
 		private readonly IReadOnlyList<InstantEffectMidiBinding> m_InstantEffectMidiBindings;
 		private readonly Action<int> m_ActivateInstantEffect;
@@ -426,7 +438,8 @@ namespace ShitDesigner.Main {
 			int sceneTimeEncoderControlNumber = 77, float sceneTimeJogSpeedPerStep = 1f,
 			IReadOnlyList<InstantEffectMidiBinding> instantEffectMidiBindings = null, Action<int> activateInstantEffect = null,
 			IReadOnlyList<InstantOverlayMidiBinding> instantOverlayMidiBindings = null, Action<int> beginInstantOverlay = null,
-			Action<int> endInstantOverlay = null) {
+			Action<int> endInstantOverlay = null, string mainCueFaderDeviceName = "", string sceneTimeEncoderDeviceName = "",
+			string patchSelectionDeviceName = "") {
 			m_Manager = manager ?? throw new ArgumentNullException(nameof(manager));
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));
@@ -438,8 +451,11 @@ namespace ShitDesigner.Main {
 				throw new ArgumentOutOfRangeException(nameof(sceneTimeJogSpeedPerStep));
 			m_MainCueFaderChannel = mainCueFaderChannel;
 			m_MainCueFaderControlNumber = mainCueFaderControlNumber;
+			m_MainCueFaderDeviceName = (mainCueFaderDeviceName ?? string.Empty).Trim();
 			m_SceneTimeEncoderChannel = sceneTimeEncoderChannel;
 			m_SceneTimeEncoderControlNumber = sceneTimeEncoderControlNumber;
+			m_SceneTimeEncoderDeviceName = (sceneTimeEncoderDeviceName ?? string.Empty).Trim();
+			m_PatchSelectionDeviceName = (patchSelectionDeviceName ?? string.Empty).Trim();
 			m_SceneTimeJogSpeedPerStep = sceneTimeJogSpeedPerStep;
 			m_InstantEffectMidiBindings = instantEffectMidiBindings ?? Array.Empty<InstantEffectMidiBinding>();
 			m_ActivateInstantEffect = activateInstantEffect ?? (_ => { });
@@ -480,25 +496,27 @@ namespace ShitDesigner.Main {
 				return;
 			}
 			var control = inputEvent.Control;
-			if (control.Kind == MidiControlKind.ControlChange && control.Channel == m_SceneTimeEncoderChannel
+			if (MatchesDevice(control, m_SceneTimeEncoderDeviceName) && control.Kind == MidiControlKind.ControlChange && control.Channel == m_SceneTimeEncoderChannel
 				&& control.Number == m_SceneTimeEncoderControlNumber) {
 				var steps = inputEvent.RawValue - RelativeEncoderPivot;
 				if (steps != 0) m_Queue.EnqueueJogSceneTime(steps * m_SceneTimeJogSpeedPerStep);
 				return;
 			}
-			if (control.Kind == MidiControlKind.ControlChange && control.Channel == m_MainCueFaderChannel
+			if (MatchesDevice(control, m_MainCueFaderDeviceName) && control.Kind == MidiControlKind.ControlChange && control.Channel == m_MainCueFaderChannel
 				&& control.Number == m_MainCueFaderControlNumber) {
 				m_Queue.EnqueueSetMainCueFader(inputEvent.RawValue / (float)control.RawMaximum);
 				return;
 			}
-			if (control.Channel == PatchSelectionChannel && control.Kind == MidiControlKind.Note && inputEvent.RawValue > 0) {
+			if (MatchesDevice(control, m_PatchSelectionDeviceName) && control.Channel == PatchSelectionChannel
+				&& control.Kind == MidiControlKind.Note && inputEvent.RawValue > 0) {
 				var sceneIndex = control.Number - 36;
 				if (sceneIndex >= 0 && sceneIndex < m_PatchIds.Count) {
 					SelectPatch(m_PatchIds[sceneIndex]);
 					return;
 				}
 			}
-			if (control.Channel == PatchSelectionChannel && control.Kind == MidiControlKind.ControlChange && control.Number == 20 &&
+			if (MatchesDevice(control, m_PatchSelectionDeviceName) && control.Channel == PatchSelectionChannel
+				&& control.Kind == MidiControlKind.ControlChange && control.Number == 20 &&
 				!string.IsNullOrWhiteSpace(m_LoadedPatchId) && m_PatchIds.Count > 0) {
 				var normalized = inputEvent.RawValue / (float)control.RawMaximum;
 				var index = Mathf.RoundToInt(normalized * (m_PatchIds.Count - 1));
@@ -520,5 +538,8 @@ namespace ShitDesigner.Main {
 		private void SelectPatch(string patchId) {
 			m_Queue.EnqueueLaunchPatch(patchId);
 		}
+
+		private static bool MatchesDevice(MidiControl control, string deviceName)
+			=> string.IsNullOrEmpty(deviceName) || string.Equals(control.DeviceName, deviceName, StringComparison.Ordinal);
 	}
 }

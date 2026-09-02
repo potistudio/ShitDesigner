@@ -39,6 +39,7 @@ namespace ShitDesigner.Input {
 	public sealed class MidiLiveControlBinding {
 		[SerializeField] private string _liveControlId = string.Empty;
 		[SerializeField] private MidiControlKind _messageType = MidiControlKind.ControlChange;
+		[SerializeField] private string m_DeviceName = string.Empty;
 		[SerializeField, Range(1, 16)] private int _channel = 1;
 		[SerializeField, Range(0, 127)] private int _number;
 		[SerializeField] private int _rawMinimum;
@@ -47,6 +48,7 @@ namespace ShitDesigner.Input {
 
 		public string LiveControlId => _liveControlId ?? string.Empty;
 		public MidiControlKind MessageType => _messageType;
+		public string DeviceName => (m_DeviceName ?? string.Empty).Trim();
 		public int Channel => _channel;
 		public int Number => _number;
 		public int RawMinimum => _rawMinimum;
@@ -55,9 +57,11 @@ namespace ShitDesigner.Input {
 
 		public MidiLiveControlBinding() { }
 
-		public MidiLiveControlBinding(string liveControlId, MidiControlKind messageType, int channel, int number, int rawMinimum = 0, int rawMaximum = 127, bool invert = false) {
+		public MidiLiveControlBinding(string liveControlId, MidiControlKind messageType, int channel, int number, int rawMinimum = 0, int rawMaximum = 127, bool invert = false,
+			string deviceName = "") {
 			_liveControlId = liveControlId ?? string.Empty;
 			_messageType = messageType;
+			m_DeviceName = deviceName ?? string.Empty;
 			_channel = channel;
 			_number = number;
 			_rawMinimum = rawMinimum;
@@ -76,7 +80,8 @@ namespace ShitDesigner.Input {
 			return true;
 		}
 
-		public bool Matches(MidiControl control) => control.Kind == _messageType && control.Channel == _channel && control.Number == _number;
+		public bool Matches(MidiControl control) => (string.IsNullOrEmpty(DeviceName) || string.Equals(control.DeviceName, DeviceName, StringComparison.Ordinal))
+			&& control.Kind == _messageType && control.Channel == _channel && control.Number == _number;
 
 		public float Normalize(int rawValue) {
 			if (_rawMinimum >= _rawMaximum) throw new InvalidOperationException("Raw Minimum must be less than Raw Maximum.");
@@ -103,6 +108,7 @@ namespace ShitDesigner.Input {
 		}
 
 		[SerializeField, Min(0)] private int _deviceId;
+		[SerializeField] private int m_SecondaryDeviceId = -1;
 		[SerializeField] private bool _openOnConfigure = true;
 		[SerializeField] private List<MidiLiveControlBinding> _bindings = new List<MidiLiveControlBinding>();
 
@@ -112,7 +118,8 @@ namespace ShitDesigner.Input {
 		private IMidiInputApplicationPort _midiApplication;
 		private ILiveControlApplicationPort _liveControlApplication;
 		private IProjectApplicationReadPort _projectApplication;
-		private IMidiInputSource _source;
+		private readonly List<IMidiInputSource> m_Sources = new List<IMidiInputSource>();
+		private readonly List<int> m_SourceDeviceIds = new List<int>();
 		private bool _ownsSource;
 		private bool _usesInjectedSource;
 		private bool _deferOpenUntilReconnect;
@@ -120,9 +127,17 @@ namespace ShitDesigner.Input {
 		private int m_LaunchControlXl3RelativeEncoderRow;
 
 		public int DeviceId => _deviceId;
-		public string DeviceName => _source?.DeviceName ?? string.Empty;
+		public int SecondaryDeviceId => m_SecondaryDeviceId;
+		public string DeviceName => string.Join(", ", m_Sources.ConvertAll(source => source.DeviceName));
+		public IReadOnlyList<string> DeviceNames => m_Sources.ConvertAll(source => source.DeviceName);
 		public string LastError { get; private set; } = string.Empty;
-		public bool IsOpen => _source != null && (!(_source is IMidiInputAvailability availability) || availability.IsAvailable);
+		public bool IsOpen {
+			get {
+				if (_usesInjectedSource) return m_Sources.Count > 0 && m_Sources.TrueForAll(IsSourceAvailable);
+				if (!IsDeviceOpen(_deviceId)) return false;
+				return m_SecondaryDeviceId < 0 || m_SecondaryDeviceId == _deviceId || IsDeviceOpen(m_SecondaryDeviceId);
+			}
+		}
 		public bool IsConfigured => _midiApplication != null && _liveControlApplication != null;
 		public bool IsRoutingConnected => IsConfigured || InputReceived != null;
 		public IReadOnlyList<MidiLiveControlBinding> Bindings => _bindings;
@@ -148,13 +163,11 @@ namespace ShitDesigner.Input {
 
 		public void Configure(IMidiInputApplicationPort midiApplication, ILiveControlApplicationPort liveControlApplication, IMidiInputSource source = null) {
 			Shutdown();
-			_midiApplication = midiApplication ?? throw new ArgumentNullException(nameof(midiApplication));
-			_liveControlApplication = liveControlApplication ?? throw new ArgumentNullException(nameof(liveControlApplication));
-			_projectApplication = liveControlApplication as IProjectApplicationReadPort;
-			RefreshBindings();
+			ConfigureApplications(midiApplication, liveControlApplication);
 
 			if (source != null) {
-				_source = source;
+				m_Sources.Add(source);
+				m_SourceDeviceIds.Add(-1);
 				_ownsSource = false;
 				_usesInjectedSource = true;
 				return;
@@ -164,11 +177,31 @@ namespace ShitDesigner.Input {
 			OpenConfiguredDevice();
 		}
 
+		public void ConfigureSources(IMidiInputApplicationPort midiApplication, ILiveControlApplicationPort liveControlApplication,
+			IEnumerable<IMidiInputSource> sources) {
+			Shutdown();
+			ConfigureApplications(midiApplication, liveControlApplication);
+			foreach (var source in sources ?? throw new ArgumentNullException(nameof(sources))) {
+				if (source == null) throw new ArgumentException("MIDI input sources cannot contain null.", nameof(sources));
+				m_Sources.Add(source);
+				m_SourceDeviceIds.Add(-1);
+			}
+			_ownsSource = false;
+			_usesInjectedSource = true;
+		}
+
+		private void ConfigureApplications(IMidiInputApplicationPort midiApplication, ILiveControlApplicationPort liveControlApplication) {
+			_midiApplication = midiApplication ?? throw new ArgumentNullException(nameof(midiApplication));
+			_liveControlApplication = liveControlApplication ?? throw new ArgumentNullException(nameof(liveControlApplication));
+			_projectApplication = liveControlApplication as IProjectApplicationReadPort;
+			RefreshBindings();
+		}
+
 		public void ApplyInspectorConfiguration(bool reopenDevice) {
 			RefreshBindings();
 			if (!UnityEngine.Application.isPlaying || !reopenDevice) return;
 			if (_usesInjectedSource) return;
-			CloseOwnedSource();
+			CloseOwnedSources();
 			if (_openOnConfigure) OpenConfiguredDevice();
 		}
 
@@ -189,11 +222,15 @@ namespace ShitDesigner.Input {
 		/// <summary>Retries an owned device that was absent during startup or
 		/// became unavailable later. Injected sources keep their own lifetime.</summary>
 		public bool TryReconnect() {
-			if (_source != null && !IsOpen) CloseOwnedSource();
-			if (_source != null) return true;
 			if (_usesInjectedSource || !_openOnConfigure) return false;
-			OpenConfiguredDevice();
-			return _source != null;
+			for (var index = m_Sources.Count - 1; index >= 0; index--) {
+				if (IsSourceAvailable(m_Sources[index])) continue;
+				m_Sources[index].Dispose();
+				m_Sources.RemoveAt(index);
+				m_SourceDeviceIds.RemoveAt(index);
+			}
+			OpenMissingConfiguredDevices();
+			return IsOpen;
 		}
 
 		public void ResetMonitor() {
@@ -213,28 +250,46 @@ namespace ShitDesigner.Input {
 
 		private void OpenConfiguredDevice() {
 			LastError = string.Empty;
+			OpenMissingConfiguredDevices();
+		}
 
-			try {
-				_source = MidiInputDevices.Open((uint)Math.Max(0, _deviceId));
-				_ownsSource = true;
-				ApplyRequestedDeviceMode();
+		private void OpenMissingConfiguredDevices() {
+			OpenDeviceIfMissing(_deviceId);
+			if (m_SecondaryDeviceId >= 0 && m_SecondaryDeviceId != _deviceId) OpenDeviceIfMissing(m_SecondaryDeviceId);
+			if (IsOpen) {
+				LastError = string.Empty;
 				_reportedConnectionError = string.Empty;
 			}
+		}
+
+		private void OpenDeviceIfMissing(int deviceId) {
+			if (m_SourceDeviceIds.Contains(deviceId)) return;
+			IMidiInputSource source = null;
+			try {
+				source = MidiInputDevices.Open((uint)Math.Max(0, deviceId));
+				ApplyRequestedDeviceMode(source);
+				m_Sources.Add(source);
+				m_SourceDeviceIds.Add(deviceId);
+				_ownsSource = true;
+			}
 			catch (Exception exception) {
-				CloseOwnedSource();
-				LastError = exception.Message;
-				if (!string.Equals(_reportedConnectionError, LastError, StringComparison.Ordinal)) {
-					_reportedConnectionError = LastError;
-					Debug.LogWarning("MIDI Input Manager could not open device " + _deviceId + ": " + LastError, this);
-				}
+				source?.Dispose();
+				LastError = "Device " + deviceId + ": " + exception.Message;
+				if (string.Equals(_reportedConnectionError, LastError, StringComparison.Ordinal)) return;
+				_reportedConnectionError = LastError;
+				Debug.LogWarning("MIDI Input Manager could not open device " + deviceId + ": " + exception.Message, this);
 			}
 		}
 
 		private void ApplyRequestedDeviceMode() {
-			if (_source == null || m_LaunchControlXl3RelativeEncoderRow == 0) return;
-			if (!LaunchControlXl3DawModeProtocol.IsLaunchControlXl3DawOutput(_source.DeviceName)) return;
-			if (!(_source is ILaunchControlXl3DawModeController controller)) return;
-			controller.EnableRelativeEncoderRow(m_LaunchControlXl3RelativeEncoderRow);
+			if (m_LaunchControlXl3RelativeEncoderRow == 0) return;
+			foreach (var source in m_Sources) ApplyRequestedDeviceMode(source);
+		}
+
+		private void ApplyRequestedDeviceMode(IMidiInputSource source) {
+			if (m_LaunchControlXl3RelativeEncoderRow == 0 || source == null) return;
+			if (!LaunchControlXl3DawModeProtocol.IsLaunchControlXl3DawOutput(source.DeviceName)) return;
+			if (source is ILaunchControlXl3DawModeController controller) controller.EnableRelativeEncoderRow(m_LaunchControlXl3RelativeEncoderRow);
 		}
 
 		public void RefreshBindings() {
@@ -263,39 +318,46 @@ namespace ShitDesigner.Input {
 		}
 
 		public int Poll() {
-			if (!isActiveAndEnabled || _source == null) return 0;
+			if (!isActiveAndEnabled || m_Sources.Count == 0) return 0;
 			var count = 0;
-			while (count < MaximumEventsPerPoll && _source.TryDequeue(out var inputEvent)) {
-				ReceivedEventCount++;
-				HasLastEvent = true;
-				LastEvent = inputEvent;
-				InputReceived?.Invoke(inputEvent);
-				var handled = false;
-				var matches = 0;
-				foreach (var binding in _runtimeBindings) {
-					if (!binding.Definition.Matches(inputEvent.Control)) continue;
-					var normalizedValue = binding.Definition.Normalize(inputEvent.RawValue);
-					binding.State.Record(inputEvent.RawValue, normalizedValue);
-					_liveControlApplication?.SetLiveControlValue(binding.LiveControlId, normalizedValue);
-					MatchedBindingCount++;
-					matches++;
-					handled = true;
+			var receivedAny = true;
+			while (count < MaximumEventsPerPoll && receivedAny) {
+				receivedAny = false;
+				foreach (var source in m_Sources) {
+					if (count >= MaximumEventsPerPoll || !source.TryDequeue(out var inputEvent)) continue;
+					receivedAny = true;
+					ReceivedEventCount++;
+					HasLastEvent = true;
+					LastEvent = inputEvent;
+					InputReceived?.Invoke(inputEvent);
+					var handled = false;
+					var matches = 0;
+					foreach (var binding in _runtimeBindings) {
+						if (!binding.Definition.Matches(inputEvent.Control)) continue;
+						var normalizedValue = binding.Definition.Normalize(inputEvent.RawValue);
+						binding.State.Record(inputEvent.RawValue, normalizedValue);
+						_liveControlApplication?.SetLiveControlValue(binding.LiveControlId, normalizedValue);
+						MatchedBindingCount++;
+						matches++;
+						handled = true;
+					}
+					var forwarded = !handled && _midiApplication != null;
+					if (forwarded) {
+						_midiApplication.HandleMidi(inputEvent);
+						ForwardedEventCount++;
+					}
+					_recentActivity.Insert(0, new MidiInputActivity(inputEvent, matches, IsRoutingConnected, forwarded));
+					if (_recentActivity.Count > RecentActivityCapacity) _recentActivity.RemoveAt(_recentActivity.Count - 1);
+					count++;
 				}
-				var forwarded = !handled && _midiApplication != null;
-				if (forwarded) {
-					_midiApplication.HandleMidi(inputEvent);
-					ForwardedEventCount++;
-				}
-				_recentActivity.Insert(0, new MidiInputActivity(inputEvent, matches, IsRoutingConnected, forwarded));
-				if (_recentActivity.Count > RecentActivityCapacity) _recentActivity.RemoveAt(_recentActivity.Count - 1);
-				count++;
 			}
 			return count;
 		}
 
 		public void Shutdown() {
-			CloseOwnedSource();
-			_source = null;
+			CloseOwnedSources();
+			m_Sources.Clear();
+			m_SourceDeviceIds.Clear();
 			m_LaunchControlXl3RelativeEncoderRow = 0;
 			_usesInjectedSource = false;
 			_deferOpenUntilReconnect = false;
@@ -307,19 +369,29 @@ namespace ShitDesigner.Input {
 			_recentActivity.Clear();
 		}
 
-		private void CloseOwnedSource() {
-			if (_ownsSource) _source?.Dispose();
-			_source = null;
+		private void CloseOwnedSources() {
+			if (_ownsSource) foreach (var source in m_Sources) source.Dispose();
+			m_Sources.Clear();
+			m_SourceDeviceIds.Clear();
 			_ownsSource = false;
+		}
+
+		private static bool IsSourceAvailable(IMidiInputSource source)
+			=> source != null && (!(source is IMidiInputAvailability availability) || availability.IsAvailable);
+
+		private bool IsDeviceOpen(int deviceId) {
+			var index = m_SourceDeviceIds.IndexOf(deviceId);
+			return index >= 0 && index < m_Sources.Count && IsSourceAvailable(m_Sources[index]);
 		}
 
 		private void OnValidate() {
 			if (_deviceId < 0) _deviceId = 0;
+			if (m_SecondaryDeviceId < -1) m_SecondaryDeviceId = -1;
 			if (UnityEngine.Application.isPlaying && _liveControlApplication != null) RefreshBindings();
 		}
 
 		private void Start() {
-			if (_source != null || !_openOnConfigure || _deferOpenUntilReconnect) return;
+			if (m_Sources.Count > 0 || !_openOnConfigure || _deferOpenUntilReconnect) return;
 			RefreshBindings();
 			OpenConfiguredDevice();
 		}

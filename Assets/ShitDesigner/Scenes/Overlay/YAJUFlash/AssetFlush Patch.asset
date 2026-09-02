@@ -1,0 +1,76 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36a7c9fd8af84f24a8db20cf4457e4ca, type: 3}
+  m_Name: AssetFlush Patch
+  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
+  _id: yaju_flush
+  _displayName: Asset Flush
+  _programGraph:
+    _outputNodeId: scene
+    _nodes:
+    - _id: scene
+      _typeId: shitdesigner.scene.3d
+      m_SceneDefinition: {fileID: 11400000, guid: 542ae67bcd193194a9af160d08b78d33, type: 2}
+      m_VideoPath: 
+      m_VideoClip: {fileID: 0}
+      m_VideoBpm: 120
+      _parameters: []
+    _connections: []
+  _parameters:
+  - _id: 1
+    _displayName: 1
+    _nodeId: scene
+    _parameterId: asset_1
+    m_BeatModulation:
+      m_Enabled: 0
+      m_Signal: 0
+      m_Strength: 1
+      m_Minimum: 0
+      m_Maximum: 1
+  - _id: 2
+    _displayName: 2
+    _nodeId: scene
+    _parameterId: asset_2
+    m_BeatModulation:
+      m_Enabled: 0
+      m_Signal: 0
+      m_Strength: 1
+      m_Minimum: 0
+      m_Maximum: 1
+  m_HotCue1:
+    m_Values:
+    - m_NodeId: scene
+      _id: asset_1
+      _type: 0
+      _floatValue: 1
+      _intValue: 0
+      _boolValue: 0
+      _vector2Value: {x: 0, y: 0}
+      _vector3Value: {x: 0, y: 0, z: 0}
+      _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+      _colorValue: {r: 0, g: 0, b: 0, a: 0}
+      _textValue: 
+  m_HotCue2:
+    m_Values:
+    - m_NodeId: scene
+      _id: asset_2
+      _type: 0
+      _floatValue: 1
+      _intValue: 0
+      _boolValue: 0
+      _vector2Value: {x: 0, y: 0}
+      _vector3Value: {x: 0, y: 0, z: 0}
+      _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+      _colorValue: {r: 0, g: 0, b: 0, a: 0}
+      _textValue: 
+  m_KeyboardInputs: []
+  m_MidiInputs: []

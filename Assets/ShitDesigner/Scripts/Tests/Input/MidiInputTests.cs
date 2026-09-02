@@ -83,6 +83,15 @@ namespace ShitDesigner.Input.Tests {
 		}
 
 		[Test]
+		public void InspectorBindingCanRestrictAMessageToOneDevice() {
+			var binding = new MidiLiveControlBinding(LogicalControlId.New().Value, MidiControlKind.ControlChange, 2, 21,
+				deviceName: "Controller A");
+
+			Assert.That(binding.Matches(new MidiControl("Controller A", MidiControlKind.ControlChange, 2, 21)), Is.True);
+			Assert.That(binding.Matches(new MidiControl("Controller B", MidiControlKind.ControlChange, 2, 21)), Is.False);
+		}
+
+		[Test]
 		public void InspectorBindingReportsUnselectedLiveControlClearly() {
 			var binding = new MidiLiveControlBinding(string.Empty, MidiControlKind.ControlChange, 1, 0);
 

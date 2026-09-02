@@ -190,6 +190,7 @@ namespace ShitDesigner.Editor {
 
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
 			EditorGUI.BeginProperty(position, label, property);
+			var deviceName = property.FindPropertyRelative("m_DeviceName");
 			var messageType = property.FindPropertyRelative("m_MessageType");
 			var channel = property.FindPropertyRelative("m_Channel");
 			var number = property.FindPropertyRelative("m_Number");
@@ -200,6 +201,7 @@ namespace ShitDesigner.Editor {
 			var y = position.y;
 			var previousType = (MidiControlKind)messageType.enumValueIndex;
 
+			EditorGUI.PropertyField(Line(position, ref y), deviceName, new GUIContent("MIDI Device"));
 			EditorGUI.PropertyField(Line(position, ref y), messageType, new GUIContent("Message Type"));
 			var currentType = (MidiControlKind)messageType.enumValueIndex;
 			if (previousType != currentType && rawMaximum.intValue == NativeMaximum(previousType))
@@ -218,7 +220,7 @@ namespace ShitDesigner.Editor {
 		}
 
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
-			=> EditorGUIUtility.singleLineHeight * 7f + LineSpacing * 6f;
+			=> EditorGUIUtility.singleLineHeight * 8f + LineSpacing * 7f;
 
 		private static int NativeMaximum(MidiControlKind type) => type == MidiControlKind.PitchBend ? 16383 : 127;
 

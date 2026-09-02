@@ -34,16 +34,19 @@ namespace ShitDesigner.Main {
 		[SerializeField] private bool _bootOnAwake = true;
 
 		[Header("Main Cue MIDI")]
+		[SerializeField] private string m_MainCueFaderDeviceName = string.Empty;
 		[SerializeField, Range(1, 16)] public int m_MainCueFaderChannel = 16;
 		[SerializeField, Range(0, 127)] public int m_MainCueFaderControlNumber = 5;
 		[SerializeField, Tooltip("Maps latched Main Cue fader travel to alternate Cue opacity.")]
 		public AnimationCurve m_MainCueFaderCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
 		[SerializeField, Range(0f, 1f), Tooltip("Opacity of the alternate Main during a Composite Take.")]
 		public float m_MainCompositeOpacity = .5f;
+		[SerializeField] private string m_SceneTimeEncoderDeviceName = string.Empty;
 		[SerializeField, Range(1, 16)] private int m_SceneTimeEncoderChannel = 16;
 		[SerializeField, Range(0, 127)] private int m_SceneTimeEncoderControlNumber = 77;
 		[SerializeField, Min(.01f)] private float m_SceneTimeJogSpeedPerStep = 1f;
 		[SerializeField, Range(.01f, 8f)] private float m_SceneTimeJogMaximumSpeedOffset = 4f;
+		[SerializeField] private string m_PatchSelectionDeviceName = string.Empty;
 		[SerializeField, Min(0f)] private float m_ThumbnailTimeOffsetSeconds = .05f;
 		[SerializeField, Tooltip("Blacks out the rendered Program and Overlay frames while held. Test patterns are unaffected.")] private Key m_BlackoutKey = Key.Backquote;
 		[Header("Global Flash")]
@@ -218,7 +221,8 @@ namespace ShitDesigner.Main {
 					triggerNumber => {
 						if (m_IsEditMode) AssignSelectedEffectToCue(triggerNumber - 1);
 						else QueueInstantEffectTrigger(triggerNumber);
-					}, m_InstantOverlayMidiBindings, BeginPianoOverlayTake, EndPianoOverlayTake);
+					}, m_InstantOverlayMidiBindings, BeginPianoOverlayTake, EndPianoOverlayTake, m_MainCueFaderDeviceName,
+					m_SceneTimeEncoderDeviceName, m_PatchSelectionDeviceName);
 				_shutdown.Add(() => { _midi?.Dispose(); _midi = null; });
 				_externalDisplay.Initialize();
 				_shutdown.Add(_externalDisplay.Shutdown);

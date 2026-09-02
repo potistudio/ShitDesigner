@@ -120,6 +120,7 @@ namespace ShitDesigner.Editor {
 
 		private static void DrawBinding(string slotName, int index, SerializedProperty binding, MidiInputManager midiInputManager) {
 			var isAssigned = binding.FindPropertyRelative("m_IsAssigned");
+			var deviceName = binding.FindPropertyRelative("m_DeviceName");
 			var messageType = binding.FindPropertyRelative("m_MessageType");
 			var channel = binding.FindPropertyRelative("m_Channel");
 			var number = binding.FindPropertyRelative("m_Number");
@@ -128,13 +129,14 @@ namespace ShitDesigner.Editor {
 				EditorGUILayout.LabelField(slotName + " " + (index + 1).ToString("00"), GUILayout.Width(82f));
 				isAssigned.boolValue = EditorGUILayout.ToggleLeft("Enabled", isAssigned.boolValue, GUILayout.Width(72f));
 				using (new EditorGUI.DisabledScope(midiInputManager == null || !UnityEngine.Application.isPlaying || !midiInputManager.HasLastEvent)) {
-					if (GUILayout.Button("Learn", GUILayout.Width(48f))) AssignLastMessage(isAssigned, messageType, channel, number, midiInputManager.LastEvent);
+					if (GUILayout.Button("Learn", GUILayout.Width(48f))) AssignLastMessage(isAssigned, deviceName, messageType, channel, number, midiInputManager.LastEvent);
 				}
 				using (new EditorGUI.DisabledScope(!isAssigned.boolValue)) {
 					if (GUILayout.Button("Clear", GUILayout.Width(48f))) isAssigned.boolValue = false;
 				}
 			}
 			EditorGUI.BeginChangeCheck();
+			EditorGUILayout.PropertyField(deviceName, new GUIContent("MIDI Device"));
 			EditorGUILayout.PropertyField(messageType, new GUIContent("Message Type"));
 			channel.intValue = Mathf.Clamp(EditorGUILayout.IntField("Channel", channel.intValue), 1, 16);
 			var numberLabel = messageType.enumValueIndex == (int)MidiControlKind.ControlChange ? "CC Number" : "Number";
@@ -142,14 +144,16 @@ namespace ShitDesigner.Editor {
 			if (EditorGUI.EndChangeCheck()) isAssigned.boolValue = true;
 		}
 
-		private static void AssignLastMessage(SerializedProperty isAssigned, SerializedProperty messageType, SerializedProperty channel, SerializedProperty number, MidiInputEvent inputEvent) {
+		private static void AssignLastMessage(SerializedProperty isAssigned, SerializedProperty deviceName, SerializedProperty messageType, SerializedProperty channel, SerializedProperty number, MidiInputEvent inputEvent) {
 			isAssigned.boolValue = true;
+			deviceName.stringValue = inputEvent.Control.DeviceName;
 			messageType.enumValueIndex = (int)inputEvent.Control.Kind;
 			channel.intValue = inputEvent.Control.Channel;
 			number.intValue = inputEvent.Control.Number;
 		}
 
-		private static string FormatControl(MidiControl control) => control.Kind + "  Ch " + control.Channel + "  #" + control.Number;
+		private static string FormatControl(MidiControl control)
+			=> control.DeviceName + "  " + control.Kind + "  Ch " + control.Channel + "  #" + control.Number;
 
 		private void RepaintWhilePlaying() {
 			if (!UnityEngine.Application.isPlaying || EditorApplication.timeSinceStartup < m_NextRepaint) return;

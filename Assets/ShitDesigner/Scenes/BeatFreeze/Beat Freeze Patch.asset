@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36a7c9fd8af84f24a8db20cf4457e4ca, type: 3}
   m_Name: Beat Freeze Patch
   m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
-  _id: beat_freeze
+  _id: beat_freeze_a
   _displayName: Beat Freeze
   _programGraph:
     _outputNodeId: scene
@@ -20,10 +20,15 @@ MonoBehaviour:
     - _id: scene
       _typeId: shitdesigner.scene.3d
       m_SceneDefinition: {fileID: 11400000, guid: 09998b5506b9475f9d0d42fa6ce853d4, type: 2}
-      m_VideoPath:
+      m_VideoPath: 
       m_VideoClip: {fileID: 0}
+      m_VideoBpm: 120
       _parameters: []
     _connections: []
   _parameters: []
+  m_HotCue1:
+    m_Values: []
+  m_HotCue2:
+    m_Values: []
   m_KeyboardInputs: []
   m_MidiInputs: []

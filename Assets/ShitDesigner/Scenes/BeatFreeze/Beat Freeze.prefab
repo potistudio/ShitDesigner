@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 398c17eaef8e41318d623bd76888d12a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: ShitDesigner.Main::ShitDesigner.Main.LiveSceneRoot
 --- !u!114 &1140000000000000002
 MonoBehaviour:
@@ -57,9 +57,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3d1a7cb8f51c4160bd5d89bafefb1b34, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: ShitDesigner.BeatFreeze::ShitDesigner.BeatFreeze.BeatFreezeScene
-  m_Video: {fileID: 32900000, guid: b0a44827de705d64794aa2e1a4d762cc, type: 3}
+  m_Video: {fileID: 32900000, guid: 853116ec32ca5d748bfc0188c77da9c1, type: 3}
   m_TargetRenderer: {fileID: 2300000000000000001}
   m_TextureProperty: _BaseMap
   m_FreezeBeats: 0.5
@@ -159,7 +159,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
   m_RenderShadows: 0
   m_RequiresDepthTextureOption: 2
@@ -273,7 +273,7 @@ MeshRenderer:
   m_ImportantGI: 0
   m_StitchLightmapSeams: 1
   m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 1
+  m_MinimumChartSize: 4
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}

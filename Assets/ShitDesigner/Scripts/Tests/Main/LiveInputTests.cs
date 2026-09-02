@@ -15,6 +15,42 @@ namespace ShitDesigner.Main.Tests {
 	[TestFixture]
 	public sealed class LiveInputTests {
 		[Test]
+		public void MidiManagerPollsTwoInputSourcesInTheSameFrame() {
+			var owner = new GameObject("midi-manager-test");
+			try {
+				var manager = owner.AddComponent<MidiInputManager>();
+				var first = new QueueMidiInputSource("Controller A");
+				var second = new QueueMidiInputSource("Controller B");
+				var received = new List<MidiInputEvent>();
+				manager.ConfigureSources(new NullMidiApplication(), new NullLiveControlApplication(), new IMidiInputSource[] { first, second });
+				manager.InputReceived += received.Add;
+				first.Enqueue(new MidiInputEvent(new MidiControl("Controller A", MidiControlKind.ControlChange, 1, 10), 32));
+				second.Enqueue(new MidiInputEvent(new MidiControl("Controller B", MidiControlKind.ControlChange, 1, 10), 96));
+
+				Assert.That(manager.Poll(), Is.EqualTo(2));
+				Assert.That(received.Select(input => input.Control.DeviceName), Is.EqualTo(new[] { "Controller A", "Controller B" }));
+				Assert.That(manager.DeviceNames, Is.EqualTo(new[] { "Controller A", "Controller B" }));
+			}
+			finally { Object.DestroyImmediate(owner); }
+		}
+
+		[Test]
+		public void MidiBindingsCanSeparateIdenticalMessagesByDevice() {
+			var effect = new InstantEffectMidiBinding(MidiControlKind.Note, 1, 40, "Controller A");
+			var overlay = new InstantOverlayMidiBinding(MidiControlKind.Note, 1, 40, "Controller B");
+			var patch = new PatchMidiInputBinding("motion", MidiControlKind.Note, 1, 40, deviceName: "Controller A");
+			var fromA = new MidiControl("Controller A", MidiControlKind.Note, 1, 40);
+			var fromB = new MidiControl("Controller B", MidiControlKind.Note, 1, 40);
+
+			Assert.That(effect.Matches(fromA), Is.True);
+			Assert.That(effect.Matches(fromB), Is.False);
+			Assert.That(overlay.Matches(fromA), Is.False);
+			Assert.That(overlay.Matches(fromB), Is.True);
+			Assert.That(patch.Matches(fromA), Is.True);
+			Assert.That(patch.Matches(fromB), Is.False);
+		}
+
+		[Test]
 		public void BlackoutKeyIsGlobalAndTracksItsHeldState() {
 			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.Backquote));
 			Keyboard keyboard = null;
@@ -599,6 +635,33 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void MainCueFaderIgnoresTheSameControlFromAnotherDevice() {
+			var owner = new GameObject("MIDI");
+			var patch = CreatePatch("patch-a");
+			try {
+				var manager = owner.AddComponent<MidiInputManager>();
+				var source = new QueueMidiInputSource("Controller A");
+				manager.Configure(new NullMidiApplication(), new NullLiveControlApplication(), source);
+				var queue = new LiveParameterQueue();
+				using (var input = new LiveMidiInput(manager, queue, new[] { patch }, mainCueFaderDeviceName: "Controller A")) {
+					source.Enqueue(new MidiInputEvent(new MidiControl("Controller B", MidiControlKind.ControlChange, 16, 5), 64));
+					source.Enqueue(new MidiInputEvent(new MidiControl("Controller A", MidiControlKind.ControlChange, 16, 5), 96));
+					manager.Poll();
+				}
+
+				var requests = new List<LiveParameterRequest>();
+				queue.Drain(requests);
+				Assert.That(requests, Has.Count.EqualTo(1));
+				Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.SetMainCueFader));
+				Assert.That(requests[0].Value, Is.EqualTo(96f / 127f).Within(.0001f));
+			}
+			finally {
+				Object.DestroyImmediate(owner);
+				Object.DestroyImmediate(patch);
+			}
+		}
+
+		[Test]
 		public void LaunchControlRelativeEncoderQueuesSceneTimeJogSpeedChanges() {
 			var owner = new GameObject("MIDI");
 			var patch = CreatePatch("patch-a", new PatchMidiInputBinding("motion", MidiControlKind.ControlChange, 16, 77));
@@ -679,7 +742,8 @@ namespace ShitDesigner.Main.Tests {
 
 		private sealed class QueueMidiInputSource : IMidiInputSource {
 			private readonly Queue<MidiInputEvent> _events = new Queue<MidiInputEvent>();
-			public string DeviceName => "Test";
+			public string DeviceName { get; }
+			public QueueMidiInputSource(string deviceName = "Test") { DeviceName = deviceName; }
 			public void Enqueue(MidiInputEvent inputEvent) => _events.Enqueue(inputEvent);
 			public bool TryDequeue(out MidiInputEvent inputEvent) {
 				if (_events.Count > 0) { inputEvent = _events.Dequeue(); return true; }

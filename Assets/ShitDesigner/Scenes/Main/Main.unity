@@ -194,10 +194,170 @@ MonoBehaviour:
   m_GlobalFlashAmount: 1
   m_GlobalFlashRate: 12
   m_GlobalFlashDuty: 0.35
-  m_IsSceneQuantizeEnabled: 0
-  m_IsHotCueQuantizeEnabled: 0
-  m_IsMainCueQuantizeEnabled: 0
-  m_IsPianoFxQuantizeEnabled: 0
+  m_InstantEffectMidiBindings:
+  - m_IsAssigned: 1
+    m_MessageType: 1
+    m_Channel: 1
+    m_Number: 56
+  - m_IsAssigned: 1
+    m_MessageType: 1
+    m_Channel: 1
+    m_Number: 57
+  - m_IsAssigned: 1
+    m_MessageType: 1
+    m_Channel: 1
+    m_Number: 58
+  - m_IsAssigned: 1
+    m_MessageType: 1
+    m_Channel: 1
+    m_Number: 59
+  - m_IsAssigned: 1
+    m_MessageType: 1
+    m_Channel: 1
+    m_Number: 60
+  - m_IsAssigned: 1
+    m_MessageType: 1
+    m_Channel: 1
+    m_Number: 61
+  - m_IsAssigned: 1
+    m_MessageType: 1
+    m_Channel: 1
+    m_Number: 62
+  - m_IsAssigned: 1
+    m_MessageType: 1
+    m_Channel: 1
+    m_Number: 63
+  - m_IsAssigned: 1
+    m_MessageType: 1
+    m_Channel: 1
+    m_Number: 64
+  - m_IsAssigned: 1
+    m_MessageType: 1
+    m_Channel: 1
+    m_Number: 65
+  - m_IsAssigned: 1
+    m_MessageType: 1
+    m_Channel: 1
+    m_Number: 66
+  - m_IsAssigned: 1
+    m_MessageType: 1
+    m_Channel: 1
+    m_Number: 67
+  - m_IsAssigned: 1
+    m_MessageType: 1
+    m_Channel: 1
+    m_Number: 68
+  - m_IsAssigned: 1
+    m_MessageType: 1
+    m_Channel: 1
+    m_Number: 69
+  - m_IsAssigned: 1
+    m_MessageType: 1
+    m_Channel: 1
+    m_Number: 70
+  - m_IsAssigned: 1
+    m_MessageType: 1
+    m_Channel: 1
+    m_Number: 71
+  m_InstantEffectTypeIds:
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  m_InstantOverlayMidiBindings:
+  - m_IsAssigned: 1
+    m_MessageType: 1
+    m_Channel: 1
+    m_Number: 72
+  - m_IsAssigned: 1
+    m_MessageType: 0
+    m_Channel: 1
+    m_Number: 73
+  - m_IsAssigned: 1
+    m_MessageType: 0
+    m_Channel: 1
+    m_Number: 74
+  - m_IsAssigned: 1
+    m_MessageType: 0
+    m_Channel: 1
+    m_Number: 75
+  - m_IsAssigned: 0
+    m_MessageType: 0
+    m_Channel: 1
+    m_Number: 0
+  - m_IsAssigned: 0
+    m_MessageType: 0
+    m_Channel: 1
+    m_Number: 0
+  - m_IsAssigned: 0
+    m_MessageType: 0
+    m_Channel: 1
+    m_Number: 0
+  - m_IsAssigned: 0
+    m_MessageType: 0
+    m_Channel: 1
+    m_Number: 0
+  - m_IsAssigned: 0
+    m_MessageType: 0
+    m_Channel: 1
+    m_Number: 0
+  - m_IsAssigned: 0
+    m_MessageType: 0
+    m_Channel: 1
+    m_Number: 0
+  - m_IsAssigned: 0
+    m_MessageType: 0
+    m_Channel: 1
+    m_Number: 0
+  - m_IsAssigned: 0
+    m_MessageType: 0
+    m_Channel: 1
+    m_Number: 0
+  - m_IsAssigned: 0
+    m_MessageType: 0
+    m_Channel: 1
+    m_Number: 0
+  - m_IsAssigned: 0
+    m_MessageType: 0
+    m_Channel: 1
+    m_Number: 0
+  - m_IsAssigned: 0
+    m_MessageType: 0
+    m_Channel: 1
+    m_Number: 0
+  - m_IsAssigned: 0
+    m_MessageType: 0
+    m_Channel: 1
+    m_Number: 0
+  m_InstantOverlayVideos:
+  - {fileID: 32900000, guid: 5caf93e3917b0284e8902dd7e2f48e3b, type: 3}
+  - {fileID: 32900000, guid: 7565d2381848f684093cdb632e99a018, type: 3}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
 --- !u!114 &444072068
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -278,6 +438,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: a6227cc86972e4817ac1b62208d7adab, type: 2}
   - {fileID: 11400000, guid: d972d0662c8584b93897427a005c19f3, type: 2}
   - {fileID: 11400000, guid: 9f23982b9b28e489ca676c536d7bea64, type: 2}
+  - {fileID: 11400000, guid: b7579d183f31d0b4285f623b646f2f7b, type: 2}
   - {fileID: 11400000, guid: d23f201e638d413dbe1ece2a8dfc589b, type: 2}
   - {fileID: 11400000, guid: 08875a2066324f5c85e757ea706e6666, type: 2}
   - {fileID: 11400000, guid: 9ad4f0f2129e4b76a02b82aaf2c20944, type: 2}
@@ -336,7 +497,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c52f4760adeb45ff980c5d0bc525fb9f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ShitDesigner.Input::ShitDesigner.Input.MidiInputManager
-  _deviceId: 1
+  _deviceId: 2
   _openOnConfigure: 1
   _bindings: []
 --- !u!4 &444072072
