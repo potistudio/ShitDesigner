@@ -127,11 +127,11 @@ namespace ShitDesigner.Editor {
 			using (new EditorGUILayout.HorizontalScope()) {
 				EditorGUILayout.LabelField(slotName + " " + (index + 1).ToString("00"), GUILayout.Width(62f));
 				EditorGUILayout.PropertyField(isAssigned, GUIContent.none, GUILayout.Width(18f));
-				using (new EditorGUI.DisabledScope(!isAssigned.boolValue)) {
-					EditorGUILayout.PropertyField(messageType, GUIContent.none, GUILayout.MinWidth(105f));
-					EditorGUILayout.PropertyField(channel, GUIContent.none, GUILayout.Width(42f));
-					EditorGUILayout.PropertyField(number, GUIContent.none, GUILayout.Width(48f));
-				}
+				EditorGUI.BeginChangeCheck();
+				EditorGUILayout.PropertyField(messageType, GUIContent.none, GUILayout.MinWidth(105f));
+				EditorGUILayout.PropertyField(channel, GUIContent.none, GUILayout.Width(42f));
+				EditorGUILayout.PropertyField(number, GUIContent.none, GUILayout.Width(48f));
+				if (EditorGUI.EndChangeCheck()) isAssigned.boolValue = true;
 				using (new EditorGUI.DisabledScope(midiInputManager == null || !UnityEngine.Application.isPlaying || !midiInputManager.HasLastEvent)) {
 					if (GUILayout.Button("Learn", GUILayout.Width(48f))) AssignLastMessage(isAssigned, messageType, channel, number, midiInputManager.LastEvent);
 				}
