@@ -18,7 +18,8 @@ namespace ShitDesigner.Main {
 		SetMainCueComposite,
 		ToggleMainCueComposite,
 		RecallHotCue,
-		RecallOppositeHotCue
+		RecallOppositeHotCue,
+		UnassignMainCue
 	}
 
 	public readonly struct LiveParameterRequest {
@@ -116,6 +117,11 @@ namespace ShitDesigner.Main {
 		public LiveParameterEnqueueResult EnqueueToggleMainCueComposite()
 			=> Enqueue(LiveParameterRequestKind.ToggleMainCueComposite, string.Empty, string.Empty, ParameterValue.FromFloat(0f));
 
+		public LiveParameterEnqueueResult EnqueueUnassignMainCue(int cueIndex)
+			=> cueIndex < 0 || cueIndex >= LiveGraphRuntime.MainCueCount
+				? LiveParameterEnqueueResult.Reject("The Main Cue Slot does not exist.")
+				: Enqueue(LiveParameterRequestKind.UnassignMainCue, string.Empty, string.Empty, ParameterValue.FromInt(cueIndex));
+
 		public int Drain(ICollection<LiveParameterRequest> destination) {
 			if (destination == null) throw new ArgumentNullException(nameof(destination));
 
@@ -142,7 +148,8 @@ namespace ShitDesigner.Main {
 				|| kind == LiveParameterRequestKind.SetMainCueFader
 				|| kind == LiveParameterRequestKind.ToggleMainCue
 				|| kind == LiveParameterRequestKind.SetMainCueComposite
-				|| kind == LiveParameterRequestKind.ToggleMainCueComposite;
+				|| kind == LiveParameterRequestKind.ToggleMainCueComposite
+				|| kind == LiveParameterRequestKind.UnassignMainCue;
 
 		private ulong NextSequenceNumber() {
 			var sequenceNumber = _nextSequenceNumber++;
