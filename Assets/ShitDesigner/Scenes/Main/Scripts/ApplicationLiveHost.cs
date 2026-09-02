@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ShitDesigner.Input;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace ShitDesigner.Main {
 	public enum ApplicationLiveHostState {
@@ -39,6 +40,10 @@ namespace ShitDesigner.Main {
 		[SerializeField, Min(.01f)] private float m_SceneTimeJogSpeedPerStep = 1f;
 		[SerializeField, Range(.01f, 8f)] private float m_SceneTimeJogMaximumSpeedOffset = 4f;
 		[SerializeField, Min(0f)] private float m_ThumbnailTimeOffsetSeconds = .05f;
+
+		[Header("Instant Effect Keyboard")]
+		[SerializeField, Tooltip("Maps each Instant Effect slot to a keyboard key. None leaves the slot available through its on-screen control.")]
+		private Key[] m_InstantEffectKeys = new Key[ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount];
 
 		private readonly LiveParameterQueue _parameterQueue = new LiveParameterQueue();
 		private readonly LiveBpmTap _bpmTap = new LiveBpmTap();
@@ -86,11 +91,17 @@ namespace ShitDesigner.Main {
 		public int ActiveMainCueIndex => _runtime?.ActiveMainCueIndex ?? -1;
 		public string LastDiagnostic { get; private set; } = string.Empty;
 		public IReadOnlyList<LiveStepSequencer> Sequencers => m_Sequencers;
+		public IReadOnlyList<Key> InstantEffectKeys => m_InstantEffectKeys;
 		public bool IsEditMode => m_IsEditMode;
 		public event Action<IReadOnlyList<int>> InstantEffectTriggersFired;
 
 		private void Awake() {
 			if (_bootOnAwake) Boot();
+		}
+
+		private void OnValidate() {
+			if (m_InstantEffectKeys == null || m_InstantEffectKeys.Length != ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount)
+				Array.Resize(ref m_InstantEffectKeys, ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount);
 		}
 
 		public bool Boot() {
@@ -141,7 +152,7 @@ namespace ShitDesigner.Main {
 					delta => {
 						LiveGraphRuntime.AdjustProgramWidth(delta);
 						m_RebuildRuntimeForProgramWidth = true;
-					});
+					}, m_InstantEffectKeys);
 				_midiInputManager.InitializeForHostPolling();
 				_midiInputManager.ConfigureLaunchControlXl3RelativeEncoder(m_SceneTimeEncoderChannel, m_SceneTimeEncoderControlNumber);
 				_shutdown.Add(_midiInputManager.Shutdown);

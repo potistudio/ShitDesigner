@@ -30,6 +30,7 @@ namespace ShitDesigner.Main {
 		private readonly Action m_EndPianoMainCueSwitch;
 		private readonly Action m_CompleteMainCueSwitch;
 		private readonly Action<int> m_AdjustProgramWidth;
+		private readonly IReadOnlyList<Key> m_InstantEffectKeys;
 		private bool m_IsPianoMainCueSwitchHeld;
 		private bool m_HasCompletedMainCueSwitchForCurrentAPress;
 		private int m_HeldPianoOverlayTakeMask;
@@ -40,7 +41,7 @@ namespace ShitDesigner.Main {
 			Action toggleEditMode = null, Action<int> assignInstantEffect = null, Func<bool> isEditMode = null, Action<int> cueInstantEffect = null,
 			Action<int> focusInstantEffectParameters = null, Action toggleSelectedEffectCategory = null, Action beginPianoMainCueSwitch = null,
 			Action endPianoMainCueSwitch = null, Action completeMainCueSwitch = null, Action<int> endPianoOverlayTake = null,
-			Action<int> turnOnOverlaySequencerStep = null, Action<int> adjustProgramWidth = null) {
+			Action<int> turnOnOverlaySequencerStep = null, Action<int> adjustProgramWidth = null, IReadOnlyList<Key> instantEffectKeys = null) {
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));
 
@@ -66,6 +67,7 @@ namespace ShitDesigner.Main {
 			m_EndPianoMainCueSwitch = endPianoMainCueSwitch ?? (() => { });
 			m_CompleteMainCueSwitch = completeMainCueSwitch ?? (() => { });
 			m_AdjustProgramWidth = adjustProgramWidth ?? (_ => { });
+			m_InstantEffectKeys = instantEffectKeys ?? Array.Empty<Key>();
 		}
 
 		public void Poll(string loadedPatchId) {
@@ -103,6 +105,7 @@ namespace ShitDesigner.Main {
 				if (effectIndex >= 0) m_AssignInstantEffect(effectIndex);
 				return;
 			}
+			if (CuePressedInstantEffects(keyboard)) return;
 			if (keyboard.leftBracketKey.wasPressedThisFrame) {
 				RecallHotCue(keyboard, 0);
 				return;
@@ -141,7 +144,6 @@ namespace ShitDesigner.Main {
 			if (keyboard.downArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, 1);
 			if (keyboard.enterKey.wasPressedThisFrame) m_LaunchSelectedPatch();
 			if (keyboard.spaceKey.wasPressedThisFrame) m_TapBpm(Time.unscaledTimeAsDouble);
-			if (CuePressedInstantEffects(keyboard)) return;
 			QueuePressedPatchKeyboardInputs(keyboard, loadedPatchId);
 		}
 
@@ -197,32 +199,25 @@ namespace ShitDesigner.Main {
 
 		private bool CuePressedInstantEffects(Keyboard keyboard) {
 			var fired = false;
-			if (keyboard.qKey.wasPressedThisFrame) { m_CueInstantEffect(1); fired = true; }
-			if (keyboard.wKey.wasPressedThisFrame) { m_CueInstantEffect(2); fired = true; }
-			if (keyboard.eKey.wasPressedThisFrame) { m_CueInstantEffect(3); fired = true; }
-			if (keyboard.rKey.wasPressedThisFrame) { m_CueInstantEffect(4); fired = true; }
-			if (keyboard.tKey.wasPressedThisFrame) { m_CueInstantEffect(5); fired = true; }
-			if (keyboard.yKey.wasPressedThisFrame) { m_CueInstantEffect(6); fired = true; }
-			if (keyboard.uKey.wasPressedThisFrame) { m_CueInstantEffect(7); fired = true; }
-			if (keyboard.iKey.wasPressedThisFrame) { m_CueInstantEffect(8); fired = true; }
-			if (keyboard.oKey.wasPressedThisFrame) { m_CueInstantEffect(9); fired = true; }
-			if (keyboard.pKey.wasPressedThisFrame) { m_CueInstantEffect(10); fired = true; }
+			for (var index = 0; index < m_InstantEffectKeys.Count && index < InstantEffectTriggerContract.TriggerCount; index++) {
+				var key = KeyControlFor(keyboard, m_InstantEffectKeys[index]);
+				if (key == null || !key.wasPressedThisFrame) continue;
+				m_CueInstantEffect(index + 1);
+				fired = true;
+			}
 			return fired;
 		}
 
-		private static int PressedInstantEffectIndex(Keyboard keyboard) {
-			if (keyboard.qKey.wasPressedThisFrame) return 0;
-			if (keyboard.wKey.wasPressedThisFrame) return 1;
-			if (keyboard.eKey.wasPressedThisFrame) return 2;
-			if (keyboard.rKey.wasPressedThisFrame) return 3;
-			if (keyboard.tKey.wasPressedThisFrame) return 4;
-			if (keyboard.yKey.wasPressedThisFrame) return 5;
-			if (keyboard.uKey.wasPressedThisFrame) return 6;
-			if (keyboard.iKey.wasPressedThisFrame) return 7;
-			if (keyboard.oKey.wasPressedThisFrame) return 8;
-			if (keyboard.pKey.wasPressedThisFrame) return 9;
+		private int PressedInstantEffectIndex(Keyboard keyboard) {
+			for (var index = 0; index < m_InstantEffectKeys.Count && index < InstantEffectTriggerContract.TriggerCount; index++) {
+				var key = KeyControlFor(keyboard, m_InstantEffectKeys[index]);
+				if (key != null && key.wasPressedThisFrame) return index;
+			}
 			return -1;
 		}
+
+		private static KeyControl KeyControlFor(Keyboard keyboard, Key key)
+			=> key == Key.None ? null : keyboard.allKeys.FirstOrDefault(control => control.keyCode == key);
 
 		private void QueuePressedPatchKeyboardInputs(Keyboard keyboard, string loadedPatchId) {
 			if (!m_PatchesById.TryGetValue(loadedPatchId, out var patch)) return;

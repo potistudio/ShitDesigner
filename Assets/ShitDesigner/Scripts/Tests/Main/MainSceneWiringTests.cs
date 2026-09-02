@@ -285,7 +285,7 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void MainUiDefinesInstantEffectCueRowInKeyboardOrder() {
+		public void MainUiDefinesSixteenNumberedInstantEffectCueSlots() {
 			var asset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/ShitDesigner/Scenes/Main/MainUI.uxml");
 			Assert.That(asset, Is.Not.Null);
 			var root = new VisualElement();
@@ -299,7 +299,8 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(cues.Query<Label>().ToList(), Is.Empty);
 			Assert.That(buttons.Select(button => button.name), Is.EqualTo(Enumerable.Range(1, ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount)
 				.Select(index => "instant-effect-cue-" + index)));
-			Assert.That(buttons.Select(button => button.text), Is.EqualTo(new[] { "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P" }));
+			Assert.That(buttons.Select(button => button.text), Is.EqualTo(Enumerable.Range(1, ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount)
+				.Select(index => index.ToString())));
 		}
 
 		[Test]

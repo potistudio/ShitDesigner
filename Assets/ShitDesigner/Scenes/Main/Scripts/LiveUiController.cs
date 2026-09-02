@@ -14,10 +14,6 @@ namespace ShitDesigner.Main {
 	[DisallowMultipleComponent]
 	[DefaultExecutionOrder(1100)]
 	public sealed class LiveUiController : MonoBehaviour {
-		private static readonly string[] m_InstantEffectCueLabels = {
-			"Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "11", "12", "13", "14", "15", "16"
-		};
-
 		[SerializeField] private PanelRenderer m_PanelRenderer;
 
 		private VisualElement m_Root;
@@ -271,7 +267,7 @@ namespace ShitDesigner.Main {
 				var typeId = index < model.InstantEffectTypeIds.Count ? model.InstantEffectTypeIds[index] : string.Empty;
 				var effect = model.EffectNodes.FirstOrDefault(candidate => candidate.TypeId == typeId);
 				var effectName = string.IsNullOrEmpty(effect.Name) ? typeId : effect.Name;
-				var cueLabel = m_InstantEffectCueLabels[index];
+				var cueLabel = InstantEffectCueLabel(index);
 				m_InstantEffectCueButtons[index].text = string.IsNullOrEmpty(typeId) ? cueLabel : effectName;
 				m_InstantEffectCueButtons[index].tooltip = string.IsNullOrEmpty(typeId)
 					? cueLabel + " · Instant Effect Trigger " + (index + 1)
@@ -291,21 +287,20 @@ namespace ShitDesigner.Main {
 			else _host.QueueInstantEffectTrigger(triggerNumber);
 		}
 
-		private static bool IsInstantEffectCueKeyPressed(Keyboard keyboard, int index) {
+		private string InstantEffectCueLabel(int index) {
+			var key = InstantEffectCueKey(index);
+			return key == Key.None ? (index + 1).ToString(CultureInfo.InvariantCulture) : key.ToString().ToUpperInvariant();
+		}
+
+		private bool IsInstantEffectCueKeyPressed(Keyboard keyboard, int index) {
 			if (keyboard == null) return false;
-			switch (index) {
-				case 0: return keyboard.qKey.isPressed;
-				case 1: return keyboard.wKey.isPressed;
-				case 2: return keyboard.eKey.isPressed;
-				case 3: return keyboard.rKey.isPressed;
-				case 4: return keyboard.tKey.isPressed;
-				case 5: return keyboard.yKey.isPressed;
-				case 6: return keyboard.uKey.isPressed;
-				case 7: return keyboard.iKey.isPressed;
-				case 8: return keyboard.oKey.isPressed;
-				case 9: return keyboard.pKey.isPressed;
-				default: return false;
-			}
+			var key = InstantEffectCueKey(index);
+			return key != Key.None && keyboard.allKeys.Any(control => control.keyCode == key && control.isPressed);
+		}
+
+		private Key InstantEffectCueKey(int index) {
+			var keys = _host?.InstantEffectKeys;
+			return keys != null && index >= 0 && index < keys.Count ? keys[index] : Key.None;
 		}
 
 		private void OnSidebarTabClicked(ClickEvent click) {
