@@ -102,14 +102,22 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(runtime.CurrentFrames[1].Texture.height, Is.EqualTo(outputSizes.Overlay.Height));
 			Assert.That(HasVisiblePixels(host.ReadModel.ProgramTexture), Is.False);
 
-			var nextPatch = host.ReadModel.Patches.First();
+			var initialPatch = host.ReadModel.Patches.First();
+			Assert.That(host.AssignMainPatchToCue(0, initialPatch.Id), Is.True);
+			for (var frame = 0; frame < 60 && host.ReadModel.LoadedPatchId != initialPatch.Id; frame++) yield return null;
+
+			Assert.That(host.ReadModel.LoadedPatchId, Is.EqualTo(initialPatch.Id));
+			Assert.That(runtime.MainCuePatchIds, Is.EqualTo(new[] { initialPatch.Id, string.Empty }));
+			Assert.That(runtime.ActiveMainCueIndex, Is.Zero);
+
+			var nextPatch = host.ReadModel.Patches.First(patch => patch.Id != initialPatch.Id);
 			var preload = host.ParameterQueue.EnqueuePreloadPatch(nextPatch.Id);
 			Assert.That(preload.Accepted, Is.True);
 			for (var frame = 0; frame < 60 && runtime.PreloadedPatchId != nextPatch.Id; frame++) yield return null;
 
-			Assert.That(host.ReadModel.LoadedPatchId, Is.Empty);
+			Assert.That(host.ReadModel.LoadedPatchId, Is.EqualTo(initialPatch.Id));
 			Assert.That(runtime.PreloadedPatchId, Is.EqualTo(nextPatch.Id));
-			Assert.That(runtime.MainCuePatchIds, Is.EqualTo(new[] { string.Empty, nextPatch.Id }));
+			Assert.That(runtime.MainCuePatchIds, Is.EqualTo(new[] { initialPatch.Id, nextPatch.Id }));
 			Assert.That(runtime.ActiveMainCueIndex, Is.Zero);
 			Assert.That(host.ReadModel.RequestResults.Any(result => result.SequenceNumber == preload.SequenceNumber && result.Applied), Is.True);
 			var load = host.ParameterQueue.EnqueueLoadPatch(nextPatch.Id);
@@ -117,7 +125,7 @@ namespace ShitDesigner.Main.Tests {
 			for (var frame = 0; frame < 60 && host.ReadModel.LoadedPatchId != nextPatch.Id; frame++) yield return null;
 
 			Assert.That(host.ReadModel.LoadedPatchId, Is.EqualTo(nextPatch.Id));
-			Assert.That(runtime.MainCuePatchIds, Is.EqualTo(new[] { string.Empty, nextPatch.Id }));
+			Assert.That(runtime.MainCuePatchIds, Is.EqualTo(new[] { initialPatch.Id, nextPatch.Id }));
 			Assert.That(runtime.ActiveMainCueIndex, Is.EqualTo(1));
 			Assert.That(host.ReadModel.RequestResults.Any(result => result.SequenceNumber == load.SequenceNumber && result.Applied), Is.True);
 			Assert.That(host.ReadModel.ProgramFrameNumber, Is.GreaterThan(1));
