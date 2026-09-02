@@ -684,7 +684,7 @@ namespace ShitDesigner.Main {
 				m_MainCueSlots[index].EnableInClassList("is-active", assigned && index == _host.ActiveMainCueIndex);
 				m_MainCueSlots[index].tooltip = !assigned
 					? "CUE SLOT " + (index + 1) + " · ASSIGN MAIN SCENE"
-					: patch.Name + " · RIGHT-CLICK TO UNASSIGN";
+					: patch.Name + " · DRAG MAIN SCENE TO REPLACE · RIGHT-CLICK TO UNASSIGN";
 				var preview = index < model.MainCuePreviews.Count ? model.MainCuePreviews[index] : null;
 				if (m_MainCuePreviewTextures[index] == preview) continue;
 				m_MainCuePreviewTextures[index] = preview;
@@ -782,8 +782,7 @@ namespace ShitDesigner.Main {
 				UpdatePatchDropTarget(pointerPosition);
 				if (m_DraggedPatchRole == LivePatchRole.Main) {
 					var cueIndex = Array.IndexOf(m_MainCueSlots, m_PatchDropTarget);
-					var rejected = m_PatchDropTarget?.ClassListContains("is-active") == true;
-					if (cueIndex >= 0 && !rejected && !(_host?.AssignMainPatchToCue(cueIndex, m_DraggedPatchId) ?? false))
+					if (cueIndex >= 0 && !(_host?.AssignMainPatchToCue(cueIndex, m_DraggedPatchId) ?? false))
 						_diagnosticLabel.text = "Only Main scenes can be assigned to a Cue Slot.";
 				}
 				else if (m_PatchDropTarget?.userData is SequencerLaneAddress laneAddress) {
@@ -820,9 +819,8 @@ namespace ShitDesigner.Main {
 			if (target == m_PatchDropTarget) return;
 			m_PatchDropTarget?.RemoveFromClassList("is-drop-target");
 			m_PatchDropTarget = target;
-			var rejected = m_DraggedPatchRole == LivePatchRole.Main && m_PatchDropTarget?.ClassListContains("is-active") == true;
-			if (!rejected) m_PatchDropTarget?.AddToClassList("is-drop-target");
-			m_PatchDragStroke.EnableInClassList("is-rejected", rejected);
+			m_PatchDropTarget?.AddToClassList("is-drop-target");
+			m_PatchDragStroke.EnableInClassList("is-rejected", false);
 			m_PatchDragStroke.MarkDirtyRepaint();
 		}
 

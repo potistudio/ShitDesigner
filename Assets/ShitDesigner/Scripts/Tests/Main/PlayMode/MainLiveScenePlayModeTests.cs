@@ -231,7 +231,6 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(firstMainButton.ClassListContains("is-dragging"), Is.False);
 			Assert.That(cueSlots[0].ClassListContains("is-drop-target"), Is.False);
 			Assert.That(dragStroke.ClassListContains("is-active"), Is.False);
-			Assert.That(host.AssignMainPatchToCue(host.ActiveMainCueIndex, mainPatches[0].Id), Is.False);
 			Assert.That(host.AssignMainPatchToCue(1 - host.ActiveMainCueIndex,
 				host.ReadModel.Patches.First(patch => patch.Role == LivePatchRole.Overlay).Id), Is.False);
 			Assert.That(host.MainCuePatchIds, Has.All.Not.Empty);
@@ -256,8 +255,8 @@ namespace ShitDesigner.Main.Tests {
 			})) {
 				ui.SendEvent(pointerMove);
 			}
-			Assert.That(cueSlots[activeCueIndex].ClassListContains("is-drop-target"), Is.False);
-			Assert.That(dragStroke.ClassListContains("is-rejected"), Is.True);
+			Assert.That(cueSlots[activeCueIndex].ClassListContains("is-drop-target"), Is.True);
+			Assert.That(dragStroke.ClassListContains("is-rejected"), Is.False);
 			using (var pointerUp = PointerUpEvent.GetPooled(new Event {
 				type = EventType.MouseUp,
 				button = 0,
@@ -265,7 +264,8 @@ namespace ShitDesigner.Main.Tests {
 			})) {
 				ui.SendEvent(pointerUp);
 			}
-			Assert.That(host.MainCuePatchIds[activeCueIndex], Is.EqualTo(activeCuePatchId));
+			for (var frame = 0; frame < 60 && host.MainCuePatchIds[activeCueIndex] != replacementButton.userData as string; frame++) yield return null;
+			Assert.That(host.MainCuePatchIds[activeCueIndex], Is.EqualTo(replacementButton.userData as string));
 			Assert.That(dragStroke.ClassListContains("is-rejected"), Is.False);
 			var remainingCueIndex = 1 - activeCueIndex;
 			using (var pointerDown = PointerDownEvent.GetPooled(new Event {

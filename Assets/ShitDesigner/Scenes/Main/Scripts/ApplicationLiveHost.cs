@@ -422,8 +422,7 @@ namespace ShitDesigner.Main {
 		}
 
 		public bool AssignMainPatchToCue(int cueIndex, string patchId) {
-			if (_runtime == null || cueIndex < 0 || cueIndex >= MainCueCount || !string.IsNullOrEmpty(_runtime.MainCuePatchIds[cueIndex])
-				|| !m_MainPatchIds.Contains(patchId))
+			if (_runtime == null || cueIndex < 0 || cueIndex >= MainCueCount || !m_MainPatchIds.Contains(patchId))
 				return false;
 			return _parameterQueue.EnqueueAssignMainCue(cueIndex, patchId).Accepted;
 		}
