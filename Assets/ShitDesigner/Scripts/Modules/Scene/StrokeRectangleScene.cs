@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace ShitDesigner.Scene {
-	/// <summary>Draws a large, shallow, face-free cuboid around the local XY plane.</summary>
+	/// <summary>Draws a shallow cuboid using only its four side surfaces.</summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
 	public sealed class StrokeRectangleScene : MonoBehaviour {
@@ -11,115 +11,92 @@ namespace ShitDesigner.Scene {
 		[Min(.01f)][SerializeField] private float m_Width = 16f;
 		[Min(.01f)][SerializeField] private float m_Height = 9f;
 		[Min(.001f)][SerializeField] private float m_Depth = .35f;
-		[Min(.001f)][SerializeField] private float m_StrokeWidth = .045f;
 		[ColorUsage(false, true)][SerializeField] private Color m_Color = Color.white;
 
-		private LineRenderer[] m_Strokes = Array.Empty<LineRenderer>();
+		private MeshFilter m_Filter;
+		private MeshRenderer m_Renderer;
+		private Mesh m_Mesh;
 		private Material m_Material;
 
 		private void OnEnable() {
-			EnsureStroke();
-			RefreshStroke();
+			EnsureSurface();
+			RefreshSurface();
 		}
 
-		private void OnDisable() => ReleaseStroke();
+		private void OnDisable() => ReleaseSurface();
 
-		private void OnDestroy() => ReleaseStroke();
+		private void OnDestroy() => ReleaseSurface();
 
 		private void OnValidate() {
 			m_Width = Mathf.Max(.01f, m_Width);
 			m_Height = Mathf.Max(.01f, m_Height);
 			m_Depth = Mathf.Max(.001f, m_Depth);
-			m_StrokeWidth = Mathf.Max(.001f, m_StrokeWidth);
 			if (!isActiveAndEnabled)
 				return;
 
-			EnsureStroke();
-			RefreshStroke();
+			EnsureSurface();
+			RefreshSurface();
 		}
 
-		private void EnsureStroke() {
-			if (m_Strokes.Length != 0)
+		private void EnsureSurface() {
+			if (m_Filter != null)
 				return;
 
-			m_Material = CreateMaterial();
-			m_Strokes = new[] {
-				CreateStroke("Front XY Stroke", true),
-				CreateStroke("Rear XY Stroke", true),
-				CreateStroke("Bottom Z Stroke", false),
-				CreateStroke("Right Z Stroke", false),
-				CreateStroke("Top Z Stroke", false),
-				CreateStroke("Left Z Stroke", false)
+			var surfaceObject = new GameObject("Open Cuboid Surfaces") {
+				layer = gameObject.layer,
+				hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSave
 			};
+			surfaceObject.transform.SetParent(transform, false);
+			m_Filter = surfaceObject.AddComponent<MeshFilter>();
+			m_Renderer = surfaceObject.AddComponent<MeshRenderer>();
+			m_Mesh = new Mesh { name = "ShitDesigner.OpenCuboidSideSurfaces" };
+			m_Material = CreateMaterial();
+			m_Filter.sharedMesh = m_Mesh;
+			m_Renderer.sharedMaterial = m_Material;
+			m_Renderer.shadowCastingMode = ShadowCastingMode.Off;
+			m_Renderer.receiveShadows = false;
+			m_Renderer.allowOcclusionWhenDynamic = false;
 		}
 
-		private void RefreshStroke() {
-			if (m_Strokes.Length != 6)
+		private void RefreshSurface() {
+			if (m_Mesh == null || m_Material == null)
 				return;
 
 			var halfWidth = m_Width * .5f;
 			var halfHeight = m_Height * .5f;
 			var halfDepth = m_Depth * .5f;
-			var corners = new[] {
-				new Vector2(-halfWidth, -halfHeight),
-				new Vector2(halfWidth, -halfHeight),
-				new Vector2(halfWidth, halfHeight),
-				new Vector2(-halfWidth, halfHeight)
+			m_Mesh.Clear();
+			m_Mesh.vertices = new[] {
+				// Bottom: normal -Y.
+				new Vector3(-halfWidth, -halfHeight, -halfDepth), new Vector3(halfWidth, -halfHeight, -halfDepth),
+				new Vector3(halfWidth, -halfHeight, halfDepth), new Vector3(-halfWidth, -halfHeight, halfDepth),
+				// Right: normal +X.
+				new Vector3(halfWidth, -halfHeight, -halfDepth), new Vector3(halfWidth, halfHeight, -halfDepth),
+				new Vector3(halfWidth, halfHeight, halfDepth), new Vector3(halfWidth, -halfHeight, halfDepth),
+				// Top: normal +Y.
+				new Vector3(halfWidth, halfHeight, -halfDepth), new Vector3(-halfWidth, halfHeight, -halfDepth),
+				new Vector3(-halfWidth, halfHeight, halfDepth), new Vector3(halfWidth, halfHeight, halfDepth),
+				// Left: normal -X.
+				new Vector3(-halfWidth, halfHeight, -halfDepth), new Vector3(-halfWidth, -halfHeight, -halfDepth),
+				new Vector3(-halfWidth, -halfHeight, halfDepth), new Vector3(-halfWidth, halfHeight, halfDepth)
 			};
-			m_Strokes[0].positionCount = 4;
-			m_Strokes[0].SetPositions(RectangleAtDepth(corners, -halfDepth));
-			m_Strokes[1].positionCount = 4;
-			m_Strokes[1].SetPositions(RectangleAtDepth(corners, halfDepth));
-			for (var index = 0; index < corners.Length; index++) {
-				var stroke = m_Strokes[index + 2];
-				stroke.positionCount = 2;
-				stroke.SetPositions(new[] {
-					new Vector3(corners[index].x, corners[index].y, -halfDepth),
-					new Vector3(corners[index].x, corners[index].y, halfDepth)
-				});
-			}
-
-			for (var index = 0; index < m_Strokes.Length; index++) {
-				m_Strokes[index].widthMultiplier = m_StrokeWidth;
-				m_Strokes[index].startColor = m_Color;
-				m_Strokes[index].endColor = m_Color;
-			}
-		}
-
-		private LineRenderer CreateStroke(string name, bool loop) {
-			var strokeObject = new GameObject(name) {
-				layer = gameObject.layer,
-				hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSave
+			m_Mesh.triangles = new[] {
+				0, 1, 2, 2, 3, 0,
+				4, 5, 6, 6, 7, 4,
+				8, 9, 10, 10, 11, 8,
+				12, 13, 14, 14, 15, 12
 			};
-			strokeObject.transform.SetParent(transform, false);
-			var stroke = strokeObject.AddComponent<LineRenderer>();
-			stroke.sharedMaterial = m_Material;
-			stroke.useWorldSpace = false;
-			stroke.loop = loop;
-			stroke.alignment = LineAlignment.View;
-			stroke.numCornerVertices = 0;
-			stroke.numCapVertices = 0;
-			stroke.shadowCastingMode = ShadowCastingMode.Off;
-			stroke.receiveShadows = false;
-			stroke.allowOcclusionWhenDynamic = false;
-			return stroke;
-		}
-
-		private static Vector3[] RectangleAtDepth(Vector2[] corners, float depth) {
-			var positions = new Vector3[corners.Length];
-			for (var index = 0; index < corners.Length; index++)
-				positions[index] = new Vector3(corners[index].x, corners[index].y, depth);
-			return positions;
+			m_Mesh.RecalculateNormals();
+			m_Mesh.RecalculateBounds();
+			ApplyColor(m_Material, m_Color);
 		}
 
 		private static Material CreateMaterial() {
 			var shader = Shader.Find("Universal Render Pipeline/Unlit");
 			if (shader == null)
-				shader = Shader.Find("Sprites/Default");
-			if (shader == null)
 				shader = Shader.Find("Unlit/Color");
 			if (shader == null)
-				throw new InvalidOperationException("An unlit shader is required for the rectangle stroke.");
+				throw new InvalidOperationException("An unlit shader is required for the open cuboid surfaces.");
 
 			var material = new Material(shader) { hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSave };
 			if (material.HasProperty("_Cull"))
@@ -127,13 +104,23 @@ namespace ShitDesigner.Scene {
 			return material;
 		}
 
-		private void ReleaseStroke() {
-			for (var index = 0; index < m_Strokes.Length; index++)
-				if (m_Strokes[index] != null)
-					DestroyOwned(m_Strokes[index].gameObject);
+		private static void ApplyColor(Material material, Color color) {
+			if (material.HasProperty("_BaseColor"))
+				material.SetColor("_BaseColor", color);
+			else if (material.HasProperty("_Color"))
+				material.SetColor("_Color", color);
+		}
+
+		private void ReleaseSurface() {
+			if (m_Filter != null)
+				DestroyOwned(m_Filter.gameObject);
+			if (m_Mesh != null)
+				DestroyOwned(m_Mesh);
 			if (m_Material != null)
 				DestroyOwned(m_Material);
-			m_Strokes = Array.Empty<LineRenderer>();
+			m_Filter = null;
+			m_Renderer = null;
+			m_Mesh = null;
 			m_Material = null;
 		}
 
