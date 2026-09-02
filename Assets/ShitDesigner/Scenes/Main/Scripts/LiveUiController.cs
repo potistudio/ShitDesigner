@@ -74,6 +74,16 @@ namespace ShitDesigner.Main {
 			}
 		}
 
+		private readonly struct SequencerStepAddress {
+			public LiveSequencerKind Kind { get; }
+			public int StepIndex { get; }
+
+			public SequencerStepAddress(LiveSequencerKind kind, int stepIndex) {
+				Kind = kind;
+				StepIndex = stepIndex;
+			}
+		}
+
 		private readonly struct SequencerLaneAddress {
 			public LiveSequencerKind Kind { get; }
 			public int LaneIndex { get; }
@@ -313,7 +323,11 @@ namespace ShitDesigner.Main {
 				corner.AddToClassList("sequencer-corner");
 				header.Add(corner);
 				for (var stepIndex = 0; stepIndex < LiveStepSequencer.StepCount; stepIndex++) {
-					var beat = new Label((stepIndex + 1).ToString(CultureInfo.InvariantCulture));
+					var beat = new Button {
+						text = (stepIndex + 1).ToString(CultureInfo.InvariantCulture),
+						tooltip = "TOGGLE ALL LANES",
+						userData = new SequencerStepAddress(sequencer.Kind, stepIndex)
+					};
 					beat.AddToClassList("sequencer-beat-label");
 					header.Add(beat);
 				}
@@ -405,6 +419,10 @@ namespace ShitDesigner.Main {
 				return;
 			}
 			if (_host == null || button == null) return;
+			if (button.userData is SequencerStepAddress stepAddress) {
+				ShowSequencerRejection(_host.ToggleSequencerStep(stepAddress.Kind, stepAddress.StepIndex));
+				return;
+			}
 			if (button.userData is SequencerCellAddress cellAddress) {
 				ShowSequencerRejection(_host.CycleSequencerCellMode(cellAddress.Kind, cellAddress.LaneIndex, cellAddress.StepIndex));
 				return;

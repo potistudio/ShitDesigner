@@ -373,8 +373,7 @@ namespace ShitDesigner.Main {
 		public RenderTexture Render(Texture main, Texture alternateMain, float alternateOpacity, bool compositeMain,
 			IReadOnlyList<LiveOverlayInput> overlays, ulong frameNumber, double graphTime) {
 			if (m_Disposed) throw new ObjectDisposedException(nameof(LiveOverlayCompositor));
-			if (main == null) throw new ArgumentNullException(nameof(main));
-			Texture accumulated = main;
+			Texture accumulated = main == null ? Texture2D.blackTexture : main;
 			var scratchIndex = 0;
 			var mainMix = compositeMain ? m_MainCompositeOpacity : alternateOpacity;
 			if (alternateMain != null && mainMix > 0f) {
@@ -383,7 +382,7 @@ namespace ShitDesigner.Main {
 					if (!m_CrossfadeNode.TrySetDirectParameter("progress", ParameterValue.FromFloat(mainMix), out var rejectionReason))
 						throw new InvalidOperationException("The Main Cue crossfade could not be configured: " + rejectionReason);
 					var inputs = new Dictionary<PortId, Texture> {
-						{ new PortId("a"), main },
+						{ new PortId("a"), accumulated },
 						{ new PortId("b"), alternateMain }
 					};
 					var crossfaded = m_CrossfadeNode.Render(inputs, m_Scratch[0], frameNumber, graphTime);
@@ -1536,7 +1535,6 @@ namespace ShitDesigner.Main {
 				var unassignedPatch = m_MainCuePatches[mainCueIndex];
 				if (unassignedPatch == null) return Reject(request, "The Main Cue Slot is already empty.");
 				var remainingCueIndex = 1 - mainCueIndex;
-				if (m_MainCuePatches[remainingCueIndex] == null) return Reject(request, "At least one Main Cue Slot must remain assigned.");
 				m_MainCuePatches[mainCueIndex] = null;
 				m_MainCuePatchIds[mainCueIndex] = string.Empty;
 				m_IsMainCueCompositeActive = false;
@@ -1884,7 +1882,6 @@ namespace ShitDesigner.Main {
 
 		private void EnsureUsable() {
 			if (_disposed) throw new ObjectDisposedException(nameof(LiveGraphRuntime));
-			if (LoadedMainPatch == null) throw new InvalidOperationException("A patch is not loaded.");
 		}
 
 		private static LiveParameterApplicationResult Accept(LiveParameterRequest request) => new LiveParameterApplicationResult(request.SequenceNumber, true, string.Empty);
