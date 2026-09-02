@@ -518,7 +518,7 @@ namespace ShitDesigner.Main {
 		}
 
 		private void SelectPatch(string patchId) {
-			m_Queue.EnqueueLoadPatch(patchId);
+			m_Queue.EnqueueLaunchPatch(patchId);
 		}
 	}
 }
