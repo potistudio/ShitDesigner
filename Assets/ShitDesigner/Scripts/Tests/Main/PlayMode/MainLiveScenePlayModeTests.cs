@@ -316,6 +316,37 @@ namespace ShitDesigner.Main.Tests {
 			var rememberedMainPatch = host.ReadModel.Patches.Last(patch => patch.Role == LivePatchRole.Main);
 			var rememberedOverlayPatch = host.ReadModel.Patches.First(patch => patch.Role == LivePatchRole.Overlay);
 			var nextOverlayPatch = host.ReadModel.Patches.Where(patch => patch.Role == LivePatchRole.Overlay).Skip(1).First();
+			var overlayPatchButton = ui.Q<Button>("patch-" + rememberedOverlayPatch.Id);
+			var overlayDropLane = ui.Q<VisualElement>("sequencer-overlay-lane-label-3").parent;
+			using (var pointerDown = PointerDownEvent.GetPooled(new Event {
+				type = EventType.MouseDown,
+				button = 0,
+				mousePosition = overlayPatchButton.worldBound.center
+			})) {
+				overlayPatchButton.SendEvent(pointerDown);
+			}
+			using (var pointerMove = PointerMoveEvent.GetPooled(new Event {
+				type = EventType.MouseMove,
+				mousePosition = overlayDropLane.worldBound.center
+			})) {
+				ui.SendEvent(pointerMove);
+			}
+			Assert.That(overlayDropLane.ClassListContains("is-drop-target"), Is.True);
+			using (var pointerUp = PointerUpEvent.GetPooled(new Event {
+				type = EventType.MouseUp,
+				button = 0,
+				mousePosition = overlayDropLane.worldBound.center
+			})) {
+				ui.SendEvent(pointerUp);
+			}
+			using (var click = ClickEvent.GetPooled()) ui.Q<Button>("sequencer-overlay-lane-label-3").SendEvent(click);
+			yield return null;
+			var overlayAfterDrop = host.ReadModel.Sequencers.Single(sequencer => sequencer.Kind == LiveSequencerKind.Overlay);
+			Assert.That(overlayAfterDrop.LanePatchIds[3], Is.EqualTo(rememberedOverlayPatch.Id));
+			Assert.That(Enumerable.Range(0, LiveStepSequencer.StepCount).Any(stepIndex => overlayAfterDrop.IsActive(3, stepIndex)), Is.False,
+				"The click synthesized after a drop must not toggle the destination row.");
+			Assert.That(overlayDropLane.ClassListContains("is-drop-target"), Is.False);
+			Assert.That(host.UnassignOverlayPatchFromLane(3).Accepted, Is.True);
 			Assert.That(host.AssignOverlayPatchToLane(0, rememberedOverlayPatch.Id).Accepted, Is.True);
 			yield return null;
 			Assert.That(ui.Q<Button>("sequencer-overlay-lane-label-0").ClassListContains("is-assigned"), Is.True);

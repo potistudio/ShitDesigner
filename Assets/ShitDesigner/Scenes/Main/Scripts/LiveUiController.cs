@@ -64,6 +64,7 @@ namespace ShitDesigner.Main {
 		private Vector2 m_PatchDragCurrent;
 		private bool m_IsPatchDragging;
 		private VisualElement m_PatchDropTarget;
+		private int m_LastPatchDropFrame = -1;
 
 		private readonly struct SequencerCellAddress {
 			public LiveSequencerKind Kind { get; }
@@ -417,6 +418,10 @@ namespace ShitDesigner.Main {
 		}
 
 		private void OnSequencerCellClicked(ClickEvent change) {
+			if (m_LastPatchDropFrame == Time.frameCount) {
+				change.StopImmediatePropagation();
+				return;
+			}
 			var target = change.target as VisualElement;
 			var button = target as Button ?? target?.GetFirstAncestorOfType<Button>();
 			if (change.button != 0) return;
@@ -777,8 +782,10 @@ namespace ShitDesigner.Main {
 					if (cueIndex >= 0 && !rejected && !(_host?.AssignMainPatchToCue(cueIndex, m_DraggedPatchId) ?? false))
 						_diagnosticLabel.text = "Only Main scenes can be assigned to a Cue Slot.";
 				}
-				else if (m_PatchDropTarget?.userData is SequencerLaneAddress laneAddress)
+				else if (m_PatchDropTarget?.userData is SequencerLaneAddress laneAddress) {
+					m_LastPatchDropFrame = Time.frameCount;
 					ShowSequencerRejection(_host.AssignOverlayPatchToLane(laneAddress.LaneIndex, m_DraggedPatchId));
+				}
 				evt.StopImmediatePropagation();
 			}
 			CancelPatchDrag();
