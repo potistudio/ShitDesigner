@@ -14,7 +14,7 @@ namespace ShitDesigner.Editor {
 					TriggerSelectedCuboids();
 
 			if (!UnityEngine.Application.isPlaying)
-				EditorGUILayout.HelpBox("Enter Play Mode to trigger the upward motion.", MessageType.Info);
+				EditorGUILayout.HelpBox("Enter Play Mode to trigger the independent instance burst.", MessageType.Info);
 		}
 
 		private void TriggerSelectedCuboids() {

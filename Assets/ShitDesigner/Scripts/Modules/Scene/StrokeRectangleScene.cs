@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -23,6 +24,9 @@ namespace ShitDesigner.Scene {
 		[Header("Trigger Burst")]
 		[Min(1)][SerializeField] private int m_BurstCount = 1;
 		[Min(0f)][SerializeField] private float m_BurstInterval;
+		[Header("Spawned Instances")]
+		[SerializeField] private bool m_HideSourceDuringPlay = true;
+		[SerializeField] private bool m_DestroySpawnedInstanceAfterAnimation = true;
 		[SerializeField] private bool m_TriggerOnColliderEnter = true;
 		[SerializeField] private bool m_ResetToOriginOnTrigger = true;
 
@@ -40,11 +44,9 @@ namespace ShitDesigner.Scene {
 		private float m_CurrentOpacity;
 		private float m_CurrentDepth;
 		private float m_MotionElapsed;
-		private float m_BurstIntervalElapsed;
-		private int m_CompletedBurstCount;
 		private bool m_HasOrigin;
 		private bool m_IsMoving;
-		private bool m_IsWaitingForNextBurst;
+		private bool m_IsSpawnedInstance;
 
 		private void OnEnable() {
 			CaptureOrigin();
@@ -52,11 +54,11 @@ namespace ShitDesigner.Scene {
 			m_CurrentDepth = m_Depth;
 			EnsureSurface();
 			RefreshSurface();
+			RefreshSurfaceVisibility();
 		}
 
 		private void OnDisable() {
 			m_IsMoving = false;
-			m_IsWaitingForNextBurst = false;
 			m_HasOrigin = false;
 			ReleaseSurface();
 		}
@@ -75,7 +77,7 @@ namespace ShitDesigner.Scene {
 			m_UpDistance = Mathf.Max(0f, m_UpDistance);
 			m_Duration = Mathf.Max(.001f, m_Duration);
 			m_EaseOut ??= CreateEaseOutCurve();
-			if (!Application.isPlaying || (!m_IsMoving && !m_IsWaitingForNextBurst)) {
+			if (!Application.isPlaying || !m_IsMoving) {
 				m_CurrentOpacity = m_Opacity;
 				m_CurrentDepth = m_Depth;
 			}
@@ -84,18 +86,11 @@ namespace ShitDesigner.Scene {
 				return;
 
 			RefreshSurface();
+			RefreshSurfaceVisibility();
 		}
 
 		private void Update() {
-			if (!Application.isPlaying)
-				return;
-			if (m_IsWaitingForNextBurst) {
-				m_BurstIntervalElapsed += Time.unscaledDeltaTime;
-				if (m_BurstIntervalElapsed >= m_BurstInterval)
-					StartBurstMotion();
-				return;
-			}
-			if (!m_IsMoving)
+			if (!Application.isPlaying || !m_IsMoving)
 				return;
 
 			m_MotionElapsed += Time.unscaledDeltaTime;
@@ -107,29 +102,52 @@ namespace ShitDesigner.Scene {
 			RefreshSurface();
 			if (progress >= 1f) {
 				m_IsMoving = false;
-				m_CompletedBurstCount++;
-				if (m_CompletedBurstCount < m_BurstCount) {
-					m_IsWaitingForNextBurst = true;
-					m_BurstIntervalElapsed = 0f;
-				}
+				if (m_IsSpawnedInstance && m_DestroySpawnedInstanceAfterAnimation)
+					Destroy(gameObject);
 			}
 		}
 
 		private void OnTriggerEnter(Collider other) {
-			if (m_TriggerOnColliderEnter)
+			if (!m_IsSpawnedInstance && m_TriggerOnColliderEnter)
 				TriggerMoveUp();
 		}
 
-		/// <summary>Starts the configured upward, fade, and depth burst. This is suitable for a UnityEvent trigger.</summary>
+		/// <summary>Spawns the configured independent upward, fade, and depth burst. This is suitable for a UnityEvent trigger.</summary>
 		[ContextMenu("Trigger Burst")]
 		public void TriggerMoveUp() {
-			CaptureOrigin();
-			m_CompletedBurstCount = 0;
-			m_IsWaitingForNextBurst = false;
-			StartBurstMotion();
+			if (!Application.isPlaying)
+				return;
+
+			if (m_IsSpawnedInstance)
+				StartMotion();
+			else
+				StartCoroutine(SpawnBurst());
 		}
 
-		private void StartBurstMotion() {
+		private IEnumerator SpawnBurst() {
+			for (var burstIndex = 0; burstIndex < m_BurstCount; burstIndex++) {
+				SpawnIndependentInstance();
+				if (burstIndex < m_BurstCount - 1)
+					yield return new WaitForSecondsRealtime(m_BurstInterval);
+			}
+		}
+
+		private void SpawnIndependentInstance() {
+			var instanceObject = Instantiate(gameObject, transform.parent);
+			instanceObject.transform.localPosition = transform.localPosition;
+			instanceObject.transform.localRotation = transform.localRotation;
+			instanceObject.transform.localScale = transform.localScale;
+			instanceObject.GetComponent<StrokeRectangleScene>().InitializeSpawnedInstance();
+		}
+
+		private void InitializeSpawnedInstance() {
+			m_IsSpawnedInstance = true;
+			RefreshSurfaceVisibility();
+			StartMotion();
+		}
+
+		private void StartMotion() {
+			CaptureOrigin();
 			m_MotionStartPosition = m_ResetToOriginOnTrigger ? m_OriginLocalPosition : transform.localPosition;
 			transform.localPosition = m_MotionStartPosition;
 			m_MotionEndPosition = m_MotionStartPosition + Vector3.up * m_UpDistance;
@@ -141,7 +159,6 @@ namespace ShitDesigner.Scene {
 			m_CurrentDepth = m_MotionStartDepth;
 			m_MotionElapsed = 0f;
 			m_IsMoving = true;
-			m_IsWaitingForNextBurst = false;
 			RefreshSurface();
 		}
 
@@ -204,6 +221,11 @@ namespace ShitDesigner.Scene {
 			m_Mesh.RecalculateNormals();
 			m_Mesh.RecalculateBounds();
 			ApplyColor(m_Material, m_Color, m_CurrentOpacity);
+		}
+
+		private void RefreshSurfaceVisibility() {
+			if (m_Renderer != null)
+				m_Renderer.enabled = !Application.isPlaying || m_IsSpawnedInstance || !m_HideSourceDuringPlay;
 		}
 
 		private static Material CreateMaterial() {
