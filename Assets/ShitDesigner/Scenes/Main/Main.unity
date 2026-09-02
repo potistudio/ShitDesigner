@@ -268,6 +268,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 02b77bd47245f44c99d3b1587ffe37c9, type: 2}
   - {fileID: 11400000, guid: a09759a58bb0b4f3585e1d67cc76e35c, type: 2}
   - {fileID: 11400000, guid: a6227cc86972e4817ac1b62208d7adab, type: 2}
+  - {fileID: 11400000, guid: a77ac94855394d93957281fef1a22f7f, type: 2}
   m_OverlayPatches:
   - {fileID: 11400000, guid: f5c5327b2f9e10544aa82240c82735cb, type: 2}
   - {fileID: 11400000, guid: c7e98bd2a7f64fe2b2539ceae6b0b9b4, type: 2}
