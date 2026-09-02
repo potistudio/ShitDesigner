@@ -173,6 +173,12 @@ namespace ShitDesigner.Main {
 			m_Root.RegisterCallback<PointerMoveEvent>(OnPatchPointerMove, TrickleDown.TrickleDown);
 			m_Root.RegisterCallback<PointerUpEvent>(OnPatchPointerUp, TrickleDown.TrickleDown);
 			m_Root.RegisterCallback<PointerCancelEvent>(OnPatchPointerCancel, TrickleDown.TrickleDown);
+			m_MainPatchControls.RegisterCallback<PointerDownEvent>(OnPatchPointerDown, TrickleDown.TrickleDown);
+			m_OverlayPatchControls.RegisterCallback<PointerDownEvent>(OnPatchPointerDown, TrickleDown.TrickleDown);
+			m_MainPatchControls.RegisterCallback<MouseDownEvent>(OnPatchMouseDown, TrickleDown.TrickleDown);
+			m_OverlayPatchControls.RegisterCallback<MouseDownEvent>(OnPatchMouseDown, TrickleDown.TrickleDown);
+			m_Root.RegisterCallback<MouseMoveEvent>(OnPatchMouseMove, TrickleDown.TrickleDown);
+			m_Root.RegisterCallback<MouseUpEvent>(OnPatchMouseUp, TrickleDown.TrickleDown);
 			m_SequencerControls.RegisterCallback<ClickEvent>(OnSequencerCellClicked);
 			m_InstantEffectCueControls.RegisterCallback<ClickEvent>(OnInstantEffectCueClicked);
 			BuildSequencers(root);
@@ -205,11 +211,17 @@ namespace ShitDesigner.Main {
 				m_Root.UnregisterCallback<PointerMoveEvent>(OnPatchPointerMove, TrickleDown.TrickleDown);
 				m_Root.UnregisterCallback<PointerUpEvent>(OnPatchPointerUp, TrickleDown.TrickleDown);
 				m_Root.UnregisterCallback<PointerCancelEvent>(OnPatchPointerCancel, TrickleDown.TrickleDown);
+				m_Root.UnregisterCallback<MouseMoveEvent>(OnPatchMouseMove, TrickleDown.TrickleDown);
+				m_Root.UnregisterCallback<MouseUpEvent>(OnPatchMouseUp, TrickleDown.TrickleDown);
 			}
 			if (m_PatchDragStroke != null) {
 				m_PatchDragStroke.generateVisualContent -= DrawPatchDragStroke;
 				m_PatchDragStroke.RemoveFromHierarchy();
 			}
+			m_MainPatchControls?.UnregisterCallback<PointerDownEvent>(OnPatchPointerDown, TrickleDown.TrickleDown);
+			m_OverlayPatchControls?.UnregisterCallback<PointerDownEvent>(OnPatchPointerDown, TrickleDown.TrickleDown);
+			m_MainPatchControls?.UnregisterCallback<MouseDownEvent>(OnPatchMouseDown, TrickleDown.TrickleDown);
+			m_OverlayPatchControls?.UnregisterCallback<MouseDownEvent>(OnPatchMouseDown, TrickleDown.TrickleDown);
 			m_MainCueSlots = Array.Empty<VisualElement>();
 			m_PatchDragStroke = null;
 			if (m_SequencerControls != null) m_SequencerControls.UnregisterCallback<ClickEvent>(OnSequencerCellClicked);
@@ -744,24 +756,33 @@ namespace ShitDesigner.Main {
 				}
 				return;
 			}
-			if (evt.button != 0 || m_PatchDragPointerId >= 0) return;
-			var target = evt.target as VisualElement;
+			if (!TryBeginPatchDrag(evt.target as VisualElement, evt.button, evt.pointerId, evt.position)) return;
+			evt.StopImmediatePropagation();
+		}
+
+		private void OnPatchMouseDown(MouseDownEvent evt) {
+			if (!TryBeginPatchDrag(evt.target as VisualElement, evt.button, PointerId.mousePointerId, evt.mousePosition)) return;
+			evt.StopImmediatePropagation();
+		}
+
+		private bool TryBeginPatchDrag(VisualElement target, int buttonIndex, int pointerId, Vector2 position) {
+			if (buttonIndex != 0 || m_PatchDragPointerId >= 0) return false;
 			var button = target as Button ?? target?.GetFirstAncestorOfType<Button>();
-			if (button == null || button.userData is not string patchId) return;
+			if (button == null || button.userData is not string patchId) return false;
 			if (button.ClassListContains("patch-main-button")) m_DraggedPatchRole = LivePatchRole.Main;
 			else if (button.ClassListContains("patch-overlay-button")) m_DraggedPatchRole = LivePatchRole.Overlay;
-			else return;
+			else return false;
 			m_PatchDragSource = button;
 			m_DraggedPatchId = patchId;
-			m_PatchDragPointerId = evt.pointerId;
-			m_PatchDragStart = evt.position;
-			m_PatchDragCurrent = evt.position;
+			m_PatchDragPointerId = pointerId;
+			m_PatchDragStart = position;
+			m_PatchDragCurrent = position;
 			m_IsPatchDragging = true;
 			m_PatchDragSource.AddToClassList("is-dragging");
 			m_PatchDragStroke.AddToClassList("is-active");
 			m_PatchDragStroke.MarkDirtyRepaint();
-			m_Root.CapturePointer(evt.pointerId);
-			evt.StopImmediatePropagation();
+			m_Root.CapturePointer(pointerId);
+			return true;
 		}
 
 		private void OnPatchPointerMove(PointerMoveEvent evt) {
@@ -772,10 +793,29 @@ namespace ShitDesigner.Main {
 			evt.StopImmediatePropagation();
 		}
 
+		private void OnPatchMouseMove(MouseMoveEvent evt) {
+			if (m_PatchDragPointerId != PointerId.mousePointerId || m_PatchDragSource == null) return;
+			m_PatchDragCurrent = evt.mousePosition;
+			m_PatchDragStroke.MarkDirtyRepaint();
+			UpdatePatchDropTarget(evt.mousePosition);
+			evt.StopImmediatePropagation();
+		}
+
 		private void OnPatchPointerUp(PointerUpEvent evt) {
 			if (evt.pointerId != m_PatchDragPointerId) return;
+			CompletePatchDrag(evt.position);
+			evt.StopImmediatePropagation();
+		}
+
+		private void OnPatchMouseUp(MouseUpEvent evt) {
+			if (m_PatchDragPointerId != PointerId.mousePointerId) return;
+			CompletePatchDrag(evt.mousePosition);
+			evt.StopImmediatePropagation();
+		}
+
+		private void CompletePatchDrag(Vector2 pointerPosition) {
 			if (m_IsPatchDragging) {
-				UpdatePatchDropTarget(evt.position);
+				UpdatePatchDropTarget(pointerPosition);
 				if (m_DraggedPatchRole == LivePatchRole.Main) {
 					var cueIndex = Array.IndexOf(m_MainCueSlots, m_PatchDropTarget);
 					var rejected = m_PatchDropTarget?.ClassListContains("is-active") == true;
@@ -786,7 +826,6 @@ namespace ShitDesigner.Main {
 					m_LastPatchDropFrame = Time.frameCount;
 					ShowSequencerRejection(_host.AssignOverlayPatchToLane(laneAddress.LaneIndex, m_DraggedPatchId));
 				}
-				evt.StopImmediatePropagation();
 			}
 			CancelPatchDrag();
 		}
