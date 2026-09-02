@@ -125,13 +125,8 @@ namespace ShitDesigner.Editor {
 			var number = binding.FindPropertyRelative("m_Number");
 
 			using (new EditorGUILayout.HorizontalScope()) {
-				EditorGUILayout.LabelField(slotName + " " + (index + 1).ToString("00"), GUILayout.Width(62f));
-				EditorGUILayout.PropertyField(isAssigned, GUIContent.none, GUILayout.Width(18f));
-				EditorGUI.BeginChangeCheck();
-				EditorGUILayout.PropertyField(messageType, GUIContent.none, GUILayout.MinWidth(105f));
-				EditorGUILayout.PropertyField(channel, GUIContent.none, GUILayout.Width(42f));
-				EditorGUILayout.PropertyField(number, GUIContent.none, GUILayout.Width(48f));
-				if (EditorGUI.EndChangeCheck()) isAssigned.boolValue = true;
+				EditorGUILayout.LabelField(slotName + " " + (index + 1).ToString("00"), GUILayout.Width(82f));
+				isAssigned.boolValue = EditorGUILayout.ToggleLeft("Enabled", isAssigned.boolValue, GUILayout.Width(72f));
 				using (new EditorGUI.DisabledScope(midiInputManager == null || !UnityEngine.Application.isPlaying || !midiInputManager.HasLastEvent)) {
 					if (GUILayout.Button("Learn", GUILayout.Width(48f))) AssignLastMessage(isAssigned, messageType, channel, number, midiInputManager.LastEvent);
 				}
@@ -139,6 +134,12 @@ namespace ShitDesigner.Editor {
 					if (GUILayout.Button("Clear", GUILayout.Width(48f))) isAssigned.boolValue = false;
 				}
 			}
+			EditorGUI.BeginChangeCheck();
+			EditorGUILayout.PropertyField(messageType, new GUIContent("Message Type"));
+			channel.intValue = Mathf.Clamp(EditorGUILayout.IntField("Channel", channel.intValue), 1, 16);
+			var numberLabel = messageType.enumValueIndex == (int)MidiControlKind.ControlChange ? "CC Number" : "Number";
+			number.intValue = Mathf.Clamp(EditorGUILayout.IntField(numberLabel, number.intValue), 0, 127);
+			if (EditorGUI.EndChangeCheck()) isAssigned.boolValue = true;
 		}
 
 		private static void AssignLastMessage(SerializedProperty isAssigned, SerializedProperty messageType, SerializedProperty channel, SerializedProperty number, MidiInputEvent inputEvent) {
