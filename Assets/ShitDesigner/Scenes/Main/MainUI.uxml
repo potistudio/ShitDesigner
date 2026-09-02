@@ -17,14 +17,16 @@
                             </ui:VisualElement>
                         </ui:VisualElement>
                     </ui:VisualElement>
-                    <ui:VisualElement name="output-2-preview" class="output-preview output-preview-2">
-                        <ui:VisualElement name="output-2-content" class="output-2-content"/>
-                        <ui:Label name="output-2-label" text="Output 2" class="output-preview-label"/>
+                    <ui:VisualElement class="output-2-column">
+                        <ui:VisualElement name="output-2-preview" class="output-preview output-preview-2">
+                            <ui:VisualElement name="output-2-content" class="output-2-content"/>
+                            <ui:Label name="output-2-label" text="Output 2" class="output-preview-label"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="sequencer-controls" class="sequencer-controls">
+                            <ui:VisualElement name="overlay-sequencer" class="sequencer"/>
+                            <ui:VisualElement name="effect-sequencer" class="sequencer"/>
+                        </ui:VisualElement>
                     </ui:VisualElement>
-                </ui:VisualElement>
-                <ui:VisualElement name="sequencer-controls" class="sequencer-controls">
-                    <ui:VisualElement name="overlay-sequencer" class="sequencer"/>
-                    <ui:VisualElement name="effect-sequencer" class="sequencer"/>
                 </ui:VisualElement>
                 <ui:VisualElement name="instant-effect-cues" class="instant-effect-cues">
                     <ui:Button name="instant-effect-cue-1" text="Q" tooltip="Instant Effect Trigger 1" class="instant-effect-cue-button"/>
