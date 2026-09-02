@@ -159,6 +159,7 @@ namespace ShitDesigner.Main.Tests {
 			var toggle = queue.EnqueueToggleMainCue();
 			var composite = queue.EnqueueSetMainCueComposite(true);
 			var toggleComposite = queue.EnqueueToggleMainCueComposite();
+			var unassign = queue.EnqueueUnassignMainCue(1);
 
 			var requests = new List<LiveParameterRequest>();
 			queue.Drain(requests);
@@ -166,15 +167,20 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(toggle.Accepted, Is.True);
 			Assert.That(composite.Accepted, Is.True);
 			Assert.That(toggleComposite.Accepted, Is.True);
+			Assert.That(unassign.Accepted, Is.True);
 			Assert.That(requests.Select(request => request.Kind), Is.EqualTo(new[] {
 				LiveParameterRequestKind.SetMainCueFader,
 				LiveParameterRequestKind.ToggleMainCue,
 				LiveParameterRequestKind.SetMainCueComposite,
-				LiveParameterRequestKind.ToggleMainCueComposite
+				LiveParameterRequestKind.ToggleMainCueComposite,
+				LiveParameterRequestKind.UnassignMainCue
 			}));
 			Assert.That(requests, Has.All.Matches<LiveParameterRequest>(request => request.PatchId == string.Empty));
 			Assert.That(requests[0].Value, Is.EqualTo(.75f));
 			Assert.That(requests[2].ParameterValue.AsBool(), Is.True);
+			Assert.That(requests[4].ParameterValue.AsInt(), Is.EqualTo(1));
+			Assert.That(queue.EnqueueUnassignMainCue(-1).Accepted, Is.False);
+			Assert.That(queue.EnqueueUnassignMainCue(ApplicationLiveHost.MainCueCount).Accepted, Is.False);
 		}
 
 		[Test]

@@ -86,6 +86,7 @@ namespace ShitDesigner.Main.Tests {
 			var runtime = (LiveGraphRuntime)typeof(ApplicationLiveHost).GetField("_runtime", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(host);
 			Assert.That(runtime.MainCuePatchIds, Is.EqualTo(new[] { host.ReadModel.LoadedPatchId, string.Empty }));
 			Assert.That(host.MainCuePatchIds, Is.EqualTo(runtime.MainCuePatchIds));
+			Assert.That(host.UnassignMainPatchFromCue(0).Accepted, Is.False);
 			Assert.That(runtime.ActiveMainCueIndex, Is.Zero);
 			Assert.That(runtime.CurrentFrames.Count, Is.EqualTo(2));
 			Assert.That(runtime.CurrentFrames[0].Texture, Is.SameAs(host.ReadModel.ProgramTexture));
@@ -252,6 +253,20 @@ namespace ShitDesigner.Main.Tests {
 			}
 			Assert.That(host.MainCuePatchIds[activeCueIndex], Is.EqualTo(activeCuePatchId));
 			Assert.That(dragStroke.ClassListContains("is-rejected"), Is.False);
+			var remainingCueIndex = 1 - activeCueIndex;
+			using (var pointerDown = PointerDownEvent.GetPooled(new Event {
+				type = EventType.MouseDown,
+				button = 1,
+				mousePosition = cueSlots[activeCueIndex].worldBound.center
+			})) {
+				cueSlots[activeCueIndex].SendEvent(pointerDown);
+			}
+			for (var frame = 0; frame < 60 && !string.IsNullOrEmpty(host.MainCuePatchIds[activeCueIndex]); frame++) yield return null;
+			Assert.That(host.MainCuePatchIds[activeCueIndex], Is.Empty);
+			Assert.That(host.ActiveMainCueIndex, Is.EqualTo(remainingCueIndex));
+			Assert.That(host.ReadModel.MainCuePreviews[activeCueIndex], Is.Null);
+			Assert.That(cueSlots[activeCueIndex].Q<Label>().text, Is.EqualTo("Cue Slot " + (activeCueIndex + 1)));
+			Assert.That(cueSlots[activeCueIndex].ClassListContains("has-preview"), Is.False);
 			Assert.That(firstMainButton.worldBound.yMin, Is.EqualTo(mainPatchControls.contentViewport.worldBound.yMin).Within(0.5f));
 			var initialMainListTop = firstMainButton.worldBound.yMin;
 			host.MoveCatalogSelection(0, 1);

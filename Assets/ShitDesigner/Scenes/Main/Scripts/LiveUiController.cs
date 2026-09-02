@@ -697,6 +697,9 @@ namespace ShitDesigner.Main {
 				var assigned = !string.IsNullOrEmpty(patch.Id);
 				m_MainCueSlots[index].Q<Label>().text = assigned ? patch.Name : "Cue Slot " + (index + 1);
 				m_MainCueSlots[index].EnableInClassList("is-active", assigned && index == _host.ActiveMainCueIndex);
+				m_MainCueSlots[index].tooltip = !assigned
+					? "CUE SLOT " + (index + 1) + " · ASSIGN MAIN SCENE"
+					: patch.Name + " · RIGHT-CLICK TO UNASSIGN";
 				var preview = index < model.MainCuePreviews.Count ? model.MainCuePreviews[index] : null;
 				if (m_MainCuePreviewTextures[index] == preview) continue;
 				m_MainCuePreviewTextures[index] = preview;
@@ -712,6 +715,17 @@ namespace ShitDesigner.Main {
 				if (_host != null && rightClickButton?.userData is SequencerLaneAddress laneAddress
 					&& laneAddress.Kind == LiveSequencerKind.Overlay) {
 					ShowSequencerRejection(_host.UnassignOverlayPatchFromLane(laneAddress.LaneIndex));
+					evt.StopImmediatePropagation();
+					return;
+				}
+				var cueSlot = rightClickTarget;
+				var cueIndex = Array.IndexOf(m_MainCueSlots, cueSlot);
+				while (cueIndex < 0 && cueSlot != null) {
+					cueSlot = cueSlot.parent;
+					cueIndex = Array.IndexOf(m_MainCueSlots, cueSlot);
+				}
+				if (_host != null && cueIndex >= 0) {
+					ShowEnqueueRejection(_host.UnassignMainPatchFromCue(cueIndex));
 					evt.StopImmediatePropagation();
 				}
 				return;

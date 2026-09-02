@@ -350,6 +350,14 @@ namespace ShitDesigner.Main {
 			return _parameterQueue.EnqueuePreloadPatch(patchId).Accepted;
 		}
 
+		public LiveParameterEnqueueResult UnassignMainPatchFromCue(int cueIndex) {
+			if (_runtime == null) return LiveParameterEnqueueResult.Reject("The live runtime is unavailable.");
+			if (cueIndex < 0 || cueIndex >= MainCueCount) return LiveParameterEnqueueResult.Reject("The Main Cue Slot does not exist.");
+			if (string.IsNullOrEmpty(_runtime.MainCuePatchIds[cueIndex])) return LiveParameterEnqueueResult.Reject("The Main Cue Slot is already empty.");
+			if (string.IsNullOrEmpty(_runtime.MainCuePatchIds[1 - cueIndex])) return LiveParameterEnqueueResult.Reject("At least one Main Cue Slot must remain assigned.");
+			return _parameterQueue.EnqueueUnassignMainCue(cueIndex);
+		}
+
 		private void BeginPianoMainCueSwitch() {
 			if (_runtime == null || !string.IsNullOrEmpty(m_PianoReturnMainPatchId)) return;
 			var targetPatchId = AlternateMainCuePatchId(_runtime.LoadedPatchId);
