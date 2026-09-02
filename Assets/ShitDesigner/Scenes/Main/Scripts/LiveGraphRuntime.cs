@@ -1690,10 +1690,10 @@ namespace ShitDesigner.Main {
 
 		public void SceneUpdate() {
 			EnsureUsable();
-			foreach (var patch in ActiveMainCuePatches())
+			// Presentation demand may deactivate a scene while its dynamic bodies still need
+			// to settle. Step every loaded scene so physical state does not freeze offscreen.
+			foreach (var patch in LoadedPatches())
 				foreach (var output in patch.Outputs) output.SceneUpdate(m_LastGraphDeltaSeconds);
-			foreach (var overlay in ActiveOverlayPatches())
-				foreach (var output in overlay.Outputs) output.SceneUpdate(m_LastGraphDeltaSeconds);
 		}
 
 		public LiveProgramFrames Render(IReadOnlyList<int> instantEffectTriggers = null, bool blackout = false, bool globalFlash = false) {
@@ -1966,6 +1966,11 @@ namespace ShitDesigner.Main {
 			var alternatePatch = m_MainCuePatches[m_MainCueFader.AlternateCueIndex];
 			if (alternatePatch != null && (m_IsMainCueCompositeActive || m_MainCueFader.AlternateOpacity > 0f)) yield return alternatePatch;
 		}
+
+		private IEnumerable<LivePatch> LoadedPatches() => m_MainCuePatches
+			.Concat(m_OverlayPatches)
+			.Where(patch => patch != null)
+			.Distinct();
 
 		private void RefreshMainCueActivation() {
 			m_ActiveMainCueIndex = m_MainCueFader.DominantCueIndex;
