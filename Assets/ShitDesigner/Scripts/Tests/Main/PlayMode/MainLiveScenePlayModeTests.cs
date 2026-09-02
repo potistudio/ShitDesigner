@@ -24,7 +24,14 @@ namespace ShitDesigner.Main.Tests {
 
 			var runtime = (LiveGraphRuntime)typeof(ApplicationLiveHost).GetField("_runtime", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(host);
 			Assert.That(runtime, Is.Not.Null);
-			Assert.That(HasVisiblePixels(runtime.CurrentFrames.Primary.Texture), Is.True);
+			var launch = new LiveParameterQueue();
+			Assert.That(launch.EnqueueLaunchPatch(host.ReadModel.Patches.First().Id).Accepted, Is.True);
+			var requests = new List<LiveParameterRequest>();
+			launch.Drain(requests);
+			Assert.That(runtime.Apply(requests.Single()).Applied, Is.True);
+			runtime.Evaluate(1d / 60d);
+			runtime.SceneUpdate();
+			Assert.That(HasVisiblePixels(runtime.Render().Primary.Texture), Is.True);
 
 			var blackoutFrames = runtime.Render(blackout: true);
 			Assert.That(blackoutFrames.Count, Is.EqualTo(2));
@@ -63,7 +70,7 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[UnityTest]
-		public IEnumerator MainBootsRendersAndSwitchesItsAuthoredLiveGraph() {
+		public IEnumerator MainBootsUnloadedThenRendersAndSwitchesItsAuthoredLiveGraph() {
 			SceneManager.LoadScene("Main", LoadSceneMode.Single);
 			yield return null;
 
@@ -84,7 +91,8 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(host.ReadModel.Sequencers, Has.Count.EqualTo(2));
 			Assert.That(host.ReadModel.Sequencers.All(sequencer => sequencer.ActiveLaneMasks.Count == LiveStepSequencer.StepCount), Is.True);
 			var runtime = (LiveGraphRuntime)typeof(ApplicationLiveHost).GetField("_runtime", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(host);
-			Assert.That(runtime.MainCuePatchIds, Is.EqualTo(new[] { host.ReadModel.LoadedPatchId, string.Empty }));
+			Assert.That(host.ReadModel.LoadedPatchId, Is.Empty);
+			Assert.That(runtime.MainCuePatchIds, Has.All.Empty);
 			Assert.That(host.MainCuePatchIds, Is.EqualTo(runtime.MainCuePatchIds));
 			Assert.That(runtime.ActiveMainCueIndex, Is.Zero);
 			Assert.That(runtime.CurrentFrames.Count, Is.EqualTo(2));
@@ -92,17 +100,16 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(runtime.CurrentFrames[1].Texture, Is.Not.SameAs(runtime.CurrentFrames[0].Texture));
 			Assert.That(runtime.CurrentFrames[1].Texture.width, Is.EqualTo(outputSizes.Overlay.Width));
 			Assert.That(runtime.CurrentFrames[1].Texture.height, Is.EqualTo(outputSizes.Overlay.Height));
-			Assert.That(HasVisiblePixels(host.ReadModel.ProgramTexture), Is.True);
+			Assert.That(HasVisiblePixels(host.ReadModel.ProgramTexture), Is.False);
 
-			var loadedPatchId = host.ReadModel.LoadedPatchId;
-			var nextPatch = host.ReadModel.Patches.First(patch => patch.Id != loadedPatchId);
+			var nextPatch = host.ReadModel.Patches.First();
 			var preload = host.ParameterQueue.EnqueuePreloadPatch(nextPatch.Id);
 			Assert.That(preload.Accepted, Is.True);
 			for (var frame = 0; frame < 60 && runtime.PreloadedPatchId != nextPatch.Id; frame++) yield return null;
 
-			Assert.That(host.ReadModel.LoadedPatchId, Is.EqualTo(loadedPatchId));
+			Assert.That(host.ReadModel.LoadedPatchId, Is.Empty);
 			Assert.That(runtime.PreloadedPatchId, Is.EqualTo(nextPatch.Id));
-			Assert.That(runtime.MainCuePatchIds, Is.EqualTo(new[] { loadedPatchId, nextPatch.Id }));
+			Assert.That(runtime.MainCuePatchIds, Is.EqualTo(new[] { string.Empty, nextPatch.Id }));
 			Assert.That(runtime.ActiveMainCueIndex, Is.Zero);
 			Assert.That(host.ReadModel.RequestResults.Any(result => result.SequenceNumber == preload.SequenceNumber && result.Applied), Is.True);
 			var load = host.ParameterQueue.EnqueueLoadPatch(nextPatch.Id);
@@ -110,7 +117,7 @@ namespace ShitDesigner.Main.Tests {
 			for (var frame = 0; frame < 60 && host.ReadModel.LoadedPatchId != nextPatch.Id; frame++) yield return null;
 
 			Assert.That(host.ReadModel.LoadedPatchId, Is.EqualTo(nextPatch.Id));
-			Assert.That(runtime.MainCuePatchIds, Is.EqualTo(new[] { loadedPatchId, nextPatch.Id }));
+			Assert.That(runtime.MainCuePatchIds, Is.EqualTo(new[] { string.Empty, nextPatch.Id }));
 			Assert.That(runtime.ActiveMainCueIndex, Is.EqualTo(1));
 			Assert.That(host.ReadModel.RequestResults.Any(result => result.SequenceNumber == load.SequenceNumber && result.Applied), Is.True);
 			Assert.That(host.ReadModel.ProgramFrameNumber, Is.GreaterThan(1));
