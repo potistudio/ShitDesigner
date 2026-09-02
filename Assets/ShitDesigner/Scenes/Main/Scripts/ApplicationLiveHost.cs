@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using ShitDesigner.Input;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace ShitDesigner.Main {
 	public enum ApplicationLiveHostState {
@@ -41,9 +40,9 @@ namespace ShitDesigner.Main {
 		[SerializeField, Range(.01f, 8f)] private float m_SceneTimeJogMaximumSpeedOffset = 4f;
 		[SerializeField, Min(0f)] private float m_ThumbnailTimeOffsetSeconds = .05f;
 
-		[Header("Instant Effect Keyboard")]
-		[SerializeField, Tooltip("Maps each Instant Effect slot to a keyboard key. None leaves the slot available through its on-screen control.")]
-		private Key[] m_InstantEffectKeys = new Key[ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount];
+		[Header("Instant Effect MIDI")]
+		[SerializeField, Tooltip("Maps each Instant Effect slot to a MIDI message. Disabled slots remain available through their on-screen control.")]
+		private InstantEffectMidiBinding[] m_InstantEffectMidiBindings = CreateInstantEffectMidiBindings();
 
 		private readonly LiveParameterQueue _parameterQueue = new LiveParameterQueue();
 		private readonly LiveBpmTap _bpmTap = new LiveBpmTap();
@@ -91,7 +90,7 @@ namespace ShitDesigner.Main {
 		public int ActiveMainCueIndex => _runtime?.ActiveMainCueIndex ?? -1;
 		public string LastDiagnostic { get; private set; } = string.Empty;
 		public IReadOnlyList<LiveStepSequencer> Sequencers => m_Sequencers;
-		public IReadOnlyList<Key> InstantEffectKeys => m_InstantEffectKeys;
+		public IReadOnlyList<InstantEffectMidiBinding> InstantEffectMidiBindings => m_InstantEffectMidiBindings;
 		public bool IsEditMode => m_IsEditMode;
 		public event Action<IReadOnlyList<int>> InstantEffectTriggersFired;
 
@@ -100,8 +99,16 @@ namespace ShitDesigner.Main {
 		}
 
 		private void OnValidate() {
-			if (m_InstantEffectKeys == null || m_InstantEffectKeys.Length != ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount)
-				Array.Resize(ref m_InstantEffectKeys, ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount);
+			if (m_InstantEffectMidiBindings == null || m_InstantEffectMidiBindings.Length != ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount)
+				Array.Resize(ref m_InstantEffectMidiBindings, ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount);
+			for (var index = 0; index < m_InstantEffectMidiBindings.Length; index++)
+				m_InstantEffectMidiBindings[index] ??= new InstantEffectMidiBinding();
+		}
+
+		private static InstantEffectMidiBinding[] CreateInstantEffectMidiBindings() {
+			var bindings = new InstantEffectMidiBinding[ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount];
+			for (var index = 0; index < bindings.Length; index++) bindings[index] = new InstantEffectMidiBinding();
+			return bindings;
 		}
 
 		public bool Boot() {
@@ -146,19 +153,22 @@ namespace ShitDesigner.Main {
 				m_PianoReturnMainPatchId = string.Empty;
 				ShitDesigner.Runtime.InstantEffectInputMode.SetEditing(false);
 				_keyboard = new LiveKeyboardInput(_parameterQueue, _runtime.Patches, BeginPianoOverlayTake, MoveCatalogSelection, () => { LaunchSelectedCatalogPatch(); }, TapBpm,
-					ToggleEditMode, cueIndex => { AssignSelectedEffectToCue(cueIndex); }, () => m_IsEditMode, QueueInstantEffectTrigger,
-					cueIndex => { FocusInstantEffectParameters(cueIndex); }, ToggleSelectedEffectCategory, BeginPianoMainCueSwitch,
+					ToggleEditMode, () => m_IsEditMode, ToggleSelectedEffectCategory, BeginPianoMainCueSwitch,
 					EndPianoMainCueSwitch, CompleteMainCueSwitch, EndPianoOverlayTake, TurnOnOverlaySequencerStep,
 					delta => {
 						LiveGraphRuntime.AdjustProgramWidth(delta);
 						m_RebuildRuntimeForProgramWidth = true;
-					}, m_InstantEffectKeys);
+					});
 				_midiInputManager.InitializeForHostPolling();
 				_midiInputManager.ConfigureLaunchControlXl3RelativeEncoder(m_SceneTimeEncoderChannel, m_SceneTimeEncoderControlNumber);
 				_shutdown.Add(_midiInputManager.Shutdown);
 				_midi = new LiveMidiInput(_midiInputManager, _parameterQueue, _runtime.Patches,
 					m_MainCueFaderChannel, m_MainCueFaderControlNumber, m_SceneTimeEncoderChannel,
-					m_SceneTimeEncoderControlNumber, m_SceneTimeJogSpeedPerStep);
+					m_SceneTimeEncoderControlNumber, m_SceneTimeJogSpeedPerStep, m_InstantEffectMidiBindings,
+					triggerNumber => {
+						if (m_IsEditMode) AssignSelectedEffectToCue(triggerNumber - 1);
+						else QueueInstantEffectTrigger(triggerNumber);
+					});
 				_shutdown.Add(() => { _midi?.Dispose(); _midi = null; });
 				_externalDisplay.Initialize();
 				_shutdown.Add(_externalDisplay.Shutdown);

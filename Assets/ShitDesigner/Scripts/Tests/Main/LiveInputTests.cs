@@ -337,113 +337,6 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void EditModeUsesConfiguredKeyForEffectReplacementAndSuppressesLiveControls() {
-			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.Q));
-			Keyboard keyboard = null;
-			try {
-				keyboard = InputSystem.AddDevice<Keyboard>();
-				keyboard.MakeCurrent();
-				var queue = new LiveParameterQueue();
-				var editMode = false;
-				var assignedEffects = new List<int>();
-				var launched = false;
-				var categoryToggleCount = 0;
-				var input = new LiveKeyboardInput(queue, new[] { patch }, _ => { }, (_, _) => { }, () => { launched = true; }, _ => { },
-					() => { editMode = !editMode; }, assignedEffects.Add, () => editMode,
-					toggleSelectedEffectCategory: () => { categoryToggleCount++; }, instantEffectKeys: CreateInstantEffectKeys((0, Key.F)));
-
-				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift, Key.Tab));
-				InputSystem.Update();
-				input.Poll("patch-a");
-				InputSystem.QueueStateEvent(keyboard, new KeyboardState());
-				InputSystem.Update();
-				input.Poll("patch-a");
-				PollKey(input, keyboard, Key.F);
-				PollKey(input, keyboard, Key.Space);
-				PollKey(input, keyboard, Key.Enter);
-
-				Assert.That(editMode, Is.True);
-				Assert.That(assignedEffects, Is.EqualTo(new[] { 0 }));
-				Assert.That(launched, Is.False);
-				Assert.That(categoryToggleCount, Is.EqualTo(1));
-				Assert.That(queue.Count, Is.Zero);
-			}
-			finally {
-				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
-				Object.DestroyImmediate(patch);
-			}
-		}
-
-		[Test]
-		public void ConfiguredInstantEffectKeysQueueGlobalCuesWithoutDrivingPatchBindings() {
-			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.Q));
-			Keyboard keyboard = null;
-			try {
-				keyboard = InputSystem.AddDevice<Keyboard>();
-				keyboard.MakeCurrent();
-				var queue = new LiveParameterQueue();
-				var cues = new List<int>();
-				var input = new LiveKeyboardInput(queue, new[] { patch }, _ => { }, (_, _) => { }, () => { }, _ => { },
-					cueInstantEffect: cues.Add, instantEffectKeys: CreateInstantEffectKeys((0, Key.F)));
-
-				PollKey(input, keyboard, Key.F);
-
-				var requests = new List<LiveParameterRequest>();
-				queue.Drain(requests);
-				Assert.That(cues, Is.EqualTo(new[] { 1 }));
-				Assert.That(requests, Is.Empty);
-			}
-			finally {
-				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
-				Object.DestroyImmediate(patch);
-			}
-		}
-
-		[Test]
-		public void ConfiguredInstantEffectKeyCanTargetSixteenthCue() {
-			var patch = CreatePatch("patch-a");
-			Keyboard keyboard = null;
-			try {
-				keyboard = InputSystem.AddDevice<Keyboard>();
-				keyboard.MakeCurrent();
-				var cues = new List<int>();
-				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, _ => { }, (_, _) => { }, () => { }, _ => { },
-					cueInstantEffect: cues.Add, instantEffectKeys: CreateInstantEffectKeys((15, Key.F)));
-
-				PollKey(input, keyboard, Key.F);
-
-				Assert.That(cues, Is.EqualTo(new[] { 16 }));
-			}
-			finally {
-				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
-				Object.DestroyImmediate(patch);
-			}
-		}
-
-		[Test]
-		public void ConfiguredInstantEffectKeyPreemptsOtherLiveControl() {
-			var patch = CreatePatch("patch-a");
-			Keyboard keyboard = null;
-			try {
-				keyboard = InputSystem.AddDevice<Keyboard>();
-				keyboard.MakeCurrent();
-				var cues = new List<int>();
-				var bpmTapCount = 0;
-				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, _ => { }, (_, _) => { }, () => { }, _ => { bpmTapCount++; },
-					cueInstantEffect: cues.Add, instantEffectKeys: CreateInstantEffectKeys((0, Key.Space)));
-
-				PollKey(input, keyboard, Key.Space);
-
-				Assert.That(cues, Is.EqualTo(new[] { 1 }));
-				Assert.That(bpmTapCount, Is.Zero);
-			}
-			finally {
-				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
-				Object.DestroyImmediate(patch);
-			}
-		}
-
-		[Test]
 		public void LeftAndRightArrowsAdjustProgramWidthInsteadOfMovingTheCatalog() {
 			var patch = CreatePatch("patch-a");
 			Keyboard keyboard = null;
@@ -461,36 +354,6 @@ namespace ShitDesigner.Main.Tests {
 
 				Assert.That(adjustments, Is.EqualTo(new[] { 10, -10 }));
 				Assert.That(movements, Is.Empty);
-			}
-			finally {
-				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
-				Object.DestroyImmediate(patch);
-			}
-		}
-
-		[Test]
-		public void ShiftConfiguredKeyFocusesInstantEffectParametersWithoutTriggeringOrAssigning() {
-			var patch = CreateKeyboardPatch("patch-a", new PatchKeyboardInputBinding("motion", Key.Q));
-			Keyboard keyboard = null;
-			try {
-				keyboard = InputSystem.AddDevice<Keyboard>();
-				keyboard.MakeCurrent();
-				var queue = new LiveParameterQueue();
-				var assigned = new List<int>();
-				var triggered = new List<int>();
-				var focused = new List<int>();
-				var input = new LiveKeyboardInput(queue, new[] { patch }, _ => { }, (_, _) => { }, () => { }, _ => { },
-					assignInstantEffect: assigned.Add, cueInstantEffect: triggered.Add, focusInstantEffectParameters: focused.Add,
-					instantEffectKeys: CreateInstantEffectKeys((0, Key.F)));
-
-				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift, Key.F));
-				InputSystem.Update();
-				input.Poll("patch-a");
-
-				Assert.That(focused, Is.EqualTo(new[] { 0 }));
-				Assert.That(assigned, Is.Empty);
-				Assert.That(triggered, Is.Empty);
-				Assert.That(queue.Count, Is.Zero);
 			}
 			finally {
 				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
@@ -562,6 +425,58 @@ namespace ShitDesigner.Main.Tests {
 				Object.DestroyImmediate(owner);
 				Object.DestroyImmediate(patchA);
 				Object.DestroyImmediate(patchB);
+			}
+		}
+
+		[Test]
+		public void InstantEffectMidiBindingQueuesSixteenthCueOnPressOnly() {
+			var owner = new GameObject("MIDI");
+			var patch = CreatePatch("patch-a");
+			try {
+				var manager = owner.AddComponent<MidiInputManager>();
+				var source = new QueueMidiInputSource();
+				manager.Configure(new NullMidiApplication(), new NullLiveControlApplication(), source);
+				var cues = new List<int>();
+				var bindings = new InstantEffectMidiBinding[InstantEffectTriggerContract.TriggerCount];
+				bindings[15] = new InstantEffectMidiBinding(MidiControlKind.Note, 2, 48);
+				using (var input = new LiveMidiInput(manager, new LiveParameterQueue(), new[] { patch },
+					instantEffectMidiBindings: bindings, activateInstantEffect: cues.Add)) {
+					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.Note, 2, 48), 127));
+					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.Note, 2, 48), 0));
+					manager.Poll();
+				}
+
+				Assert.That(cues, Is.EqualTo(new[] { 16 }));
+			}
+			finally {
+				Object.DestroyImmediate(owner);
+				Object.DestroyImmediate(patch);
+			}
+		}
+
+		[Test]
+		public void InstantEffectMidiBindingPreemptsOtherLiveControl() {
+			var owner = new GameObject("MIDI");
+			var patch = CreatePatch("patch-a");
+			try {
+				var manager = owner.AddComponent<MidiInputManager>();
+				var source = new QueueMidiInputSource();
+				manager.Configure(new NullMidiApplication(), new NullLiveControlApplication(), source);
+				var queue = new LiveParameterQueue();
+				var cues = new List<int>();
+				var bindings = new[] { new InstantEffectMidiBinding(MidiControlKind.ControlChange, 16, 5) };
+				using (var input = new LiveMidiInput(manager, queue, new[] { patch }, instantEffectMidiBindings: bindings,
+					activateInstantEffect: cues.Add)) {
+					source.Enqueue(new MidiInputEvent(new MidiControl("Test", MidiControlKind.ControlChange, 16, 5), 127));
+					manager.Poll();
+				}
+
+				Assert.That(cues, Is.EqualTo(new[] { 1 }));
+				Assert.That(queue.Count, Is.Zero);
+			}
+			finally {
+				Object.DestroyImmediate(owner);
+				Object.DestroyImmediate(patch);
 			}
 		}
 
@@ -656,12 +571,6 @@ namespace ShitDesigner.Main.Tests {
 			InputSystem.QueueStateEvent(keyboard, new KeyboardState());
 			InputSystem.Update();
 			input.Poll("patch-a");
-		}
-
-		private static Key[] CreateInstantEffectKeys(params (int CueIndex, Key Key)[] assignments) {
-			var keys = new Key[InstantEffectTriggerContract.TriggerCount];
-			foreach (var assignment in assignments) keys[assignment.CueIndex] = assignment.Key;
-			return keys;
 		}
 
 		private static PatchDefinition CreateKeyboardPatch(string id, params PatchKeyboardInputBinding[] keyboardInputs) {

@@ -6,7 +6,6 @@ using System.Linq;
 using ShitDesigner.Core;
 using ShitDesigner.Runtime;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 
 namespace ShitDesigner.Main {
@@ -230,7 +229,6 @@ namespace ShitDesigner.Main {
 		private void LateUpdate() {
 			m_OutputMenu?.Tick();
 			if (!_initialized) return;
-			RefreshInstantEffectCueHighlights();
 			if (_host.ReadModel == null) return;
 			var model = _host.ReadModel;
 			_updating = true;
@@ -250,12 +248,6 @@ namespace ShitDesigner.Main {
 			finally { _updating = false; }
 		}
 
-		private void RefreshInstantEffectCueHighlights() {
-			var keyboard = Keyboard.current;
-			for (var index = 0; index < m_InstantEffectCueButtons.Length; index++)
-				m_InstantEffectCueButtons[index].EnableInClassList("is-keyboard-active", !(_host?.IsEditMode ?? false) && IsInstantEffectCueKeyPressed(keyboard, index));
-		}
-
 		private void RefreshEditMode(LiveUiReadModel model) {
 			m_MainUi.EnableInClassList("is-edit-mode", model.IsEditMode);
 			m_SequencerControls.SetEnabled(!model.IsEditMode);
@@ -273,7 +265,8 @@ namespace ShitDesigner.Main {
 					? cueLabel + " · Instant Effect Trigger " + (index + 1)
 					: cueLabel + " · " + (model.IsEditMode ? "Replace " : string.Empty) + effectName;
 				m_InstantEffectCueButtons[index].EnableInClassList("is-assigned", !string.IsNullOrEmpty(typeId));
-				m_InstantEffectCueButtons[index].EnableInClassList("is-edit-key-active", model.IsEditMode && IsInstantEffectCueKeyPressed(Keyboard.current, index));
+				m_InstantEffectCueButtons[index].EnableInClassList("is-keyboard-active", false);
+				m_InstantEffectCueButtons[index].EnableInClassList("is-edit-key-active", false);
 				m_InstantEffectCueButtons[index].EnableInClassList("is-trigger-fired", model.FiredInstantEffectTriggers.Contains(index + 1));
 				m_InstantEffectCueButtons[index].EnableInClassList("is-parameter-focused", model.FocusedInstantEffectCueIndex == index);
 			}
@@ -288,19 +281,9 @@ namespace ShitDesigner.Main {
 		}
 
 		private string InstantEffectCueLabel(int index) {
-			var key = InstantEffectCueKey(index);
-			return key == Key.None ? (index + 1).ToString(CultureInfo.InvariantCulture) : key.ToString().ToUpperInvariant();
-		}
-
-		private bool IsInstantEffectCueKeyPressed(Keyboard keyboard, int index) {
-			if (keyboard == null) return false;
-			var key = InstantEffectCueKey(index);
-			return key != Key.None && keyboard.allKeys.Any(control => control.keyCode == key && control.isPressed);
-		}
-
-		private Key InstantEffectCueKey(int index) {
-			var keys = _host?.InstantEffectKeys;
-			return keys != null && index >= 0 && index < keys.Count ? keys[index] : Key.None;
+			var bindings = _host?.InstantEffectMidiBindings;
+			var binding = bindings != null && index >= 0 && index < bindings.Count ? bindings[index] : null;
+			return binding == null || !binding.IsAssigned ? (index + 1).ToString(CultureInfo.InvariantCulture) : binding.DisplayName;
 		}
 
 		private void OnSidebarTabClicked(ClickEvent click) {

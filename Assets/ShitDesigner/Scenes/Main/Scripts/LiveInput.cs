@@ -10,6 +10,41 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 
 namespace ShitDesigner.Main {
+	[Serializable]
+	public sealed class InstantEffectMidiBinding {
+		[SerializeField] private bool m_IsAssigned;
+		[SerializeField] private MidiControlKind m_MessageType = MidiControlKind.Note;
+		[SerializeField, Range(1, 16)] private int m_Channel = 1;
+		[SerializeField, Range(0, 127)] private int m_Number;
+
+		public bool IsAssigned => m_IsAssigned;
+		public MidiControlKind MessageType => m_MessageType;
+		public int Channel => m_Channel;
+		public int Number => m_Number;
+		public string DisplayName => m_IsAssigned ? MessageTypeLabel() + " " + m_Channel + ":" + m_Number : string.Empty;
+
+		public InstantEffectMidiBinding() { }
+
+		public InstantEffectMidiBinding(MidiControlKind messageType, int channel, int number) {
+			m_IsAssigned = true;
+			m_MessageType = messageType;
+			m_Channel = channel;
+			m_Number = number;
+		}
+
+		public bool Matches(MidiControl control)
+			=> m_IsAssigned && control.Kind == m_MessageType && control.Channel == m_Channel && control.Number == m_Number;
+
+		private string MessageTypeLabel() {
+			switch (m_MessageType) {
+				case MidiControlKind.Note: return "NOTE";
+				case MidiControlKind.ControlChange: return "CC";
+				case MidiControlKind.PitchBend: return "PB";
+				default: return m_MessageType.ToString();
+			}
+		}
+	}
+
 	/// <summary>Maps live keyboard controls to live requests without owning a PlayerLoop.</summary>
 	public sealed class LiveKeyboardInput {
 		private readonly LiveParameterQueue m_Queue;
@@ -21,16 +56,12 @@ namespace ShitDesigner.Main {
 		private readonly Action m_LaunchSelectedPatch;
 		private readonly Action<double> m_TapBpm;
 		private readonly Action m_ToggleEditMode;
-		private readonly Action<int> m_AssignInstantEffect;
 		private readonly Func<bool> m_IsEditMode;
-		private readonly Action<int> m_CueInstantEffect;
-		private readonly Action<int> m_FocusInstantEffectParameters;
 		private readonly Action m_ToggleSelectedEffectCategory;
 		private readonly Action m_BeginPianoMainCueSwitch;
 		private readonly Action m_EndPianoMainCueSwitch;
 		private readonly Action m_CompleteMainCueSwitch;
 		private readonly Action<int> m_AdjustProgramWidth;
-		private readonly IReadOnlyList<Key> m_InstantEffectKeys;
 		private bool m_IsPianoMainCueSwitchHeld;
 		private bool m_HasCompletedMainCueSwitchForCurrentAPress;
 		private int m_HeldPianoOverlayTakeMask;
@@ -38,10 +69,9 @@ namespace ShitDesigner.Main {
 			= new List<(Key Key, string PatchId, string ParameterId)>();
 
 		public LiveKeyboardInput(LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches, Action<int> beginPianoOverlayTake, Action<int, int> moveCatalogSelection, Action launchSelectedPatch, Action<double> tapBpm,
-			Action toggleEditMode = null, Action<int> assignInstantEffect = null, Func<bool> isEditMode = null, Action<int> cueInstantEffect = null,
-			Action<int> focusInstantEffectParameters = null, Action toggleSelectedEffectCategory = null, Action beginPianoMainCueSwitch = null,
+			Action toggleEditMode = null, Func<bool> isEditMode = null, Action toggleSelectedEffectCategory = null, Action beginPianoMainCueSwitch = null,
 			Action endPianoMainCueSwitch = null, Action completeMainCueSwitch = null, Action<int> endPianoOverlayTake = null,
-			Action<int> turnOnOverlaySequencerStep = null, Action<int> adjustProgramWidth = null, IReadOnlyList<Key> instantEffectKeys = null) {
+			Action<int> turnOnOverlaySequencerStep = null, Action<int> adjustProgramWidth = null) {
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));
 
@@ -58,16 +88,12 @@ namespace ShitDesigner.Main {
 			m_LaunchSelectedPatch = launchSelectedPatch ?? throw new ArgumentNullException(nameof(launchSelectedPatch));
 			m_TapBpm = tapBpm ?? throw new ArgumentNullException(nameof(tapBpm));
 			m_ToggleEditMode = toggleEditMode ?? (() => { });
-			m_AssignInstantEffect = assignInstantEffect ?? (_ => { });
 			m_IsEditMode = isEditMode ?? (() => false);
-			m_CueInstantEffect = cueInstantEffect ?? (_ => { });
-			m_FocusInstantEffectParameters = focusInstantEffectParameters ?? (_ => { });
 			m_ToggleSelectedEffectCategory = toggleSelectedEffectCategory ?? (() => { });
 			m_BeginPianoMainCueSwitch = beginPianoMainCueSwitch ?? (() => { });
 			m_EndPianoMainCueSwitch = endPianoMainCueSwitch ?? (() => { });
 			m_CompleteMainCueSwitch = completeMainCueSwitch ?? (() => { });
 			m_AdjustProgramWidth = adjustProgramWidth ?? (_ => { });
-			m_InstantEffectKeys = instantEffectKeys ?? Array.Empty<Key>();
 		}
 
 		public void Poll(string loadedPatchId) {
@@ -82,13 +108,6 @@ namespace ShitDesigner.Main {
 				m_ToggleEditMode();
 				return;
 			}
-			if (keyboard.shiftKey.isPressed) {
-				var parameterCueIndex = PressedInstantEffectIndex(keyboard);
-				if (parameterCueIndex >= 0) {
-					m_FocusInstantEffectParameters(parameterCueIndex);
-					return;
-				}
-			}
 			if (keyboard.rightArrowKey.wasPressedThisFrame) {
 				m_AdjustProgramWidth(LiveGraphRuntime.ProgramWidthStep);
 				return;
@@ -101,11 +120,8 @@ namespace ShitDesigner.Main {
 				if (keyboard.upArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, -1);
 				if (keyboard.downArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, 1);
 				if (keyboard.spaceKey.wasPressedThisFrame) m_ToggleSelectedEffectCategory();
-				var effectIndex = PressedInstantEffectIndex(keyboard);
-				if (effectIndex >= 0) m_AssignInstantEffect(effectIndex);
 				return;
 			}
-			if (CuePressedInstantEffects(keyboard)) return;
 			if (keyboard.leftBracketKey.wasPressedThisFrame) {
 				RecallHotCue(keyboard, 0);
 				return;
@@ -197,28 +213,6 @@ namespace ShitDesigner.Main {
 			}
 		}
 
-		private bool CuePressedInstantEffects(Keyboard keyboard) {
-			var fired = false;
-			for (var index = 0; index < m_InstantEffectKeys.Count && index < InstantEffectTriggerContract.TriggerCount; index++) {
-				var key = KeyControlFor(keyboard, m_InstantEffectKeys[index]);
-				if (key == null || !key.wasPressedThisFrame) continue;
-				m_CueInstantEffect(index + 1);
-				fired = true;
-			}
-			return fired;
-		}
-
-		private int PressedInstantEffectIndex(Keyboard keyboard) {
-			for (var index = 0; index < m_InstantEffectKeys.Count && index < InstantEffectTriggerContract.TriggerCount; index++) {
-				var key = KeyControlFor(keyboard, m_InstantEffectKeys[index]);
-				if (key != null && key.wasPressedThisFrame) return index;
-			}
-			return -1;
-		}
-
-		private static KeyControl KeyControlFor(Keyboard keyboard, Key key)
-			=> key == Key.None ? null : keyboard.allKeys.FirstOrDefault(control => control.keyCode == key);
-
 		private void QueuePressedPatchKeyboardInputs(Keyboard keyboard, string loadedPatchId) {
 			if (!m_PatchesById.TryGetValue(loadedPatchId, out var patch)) return;
 
@@ -309,11 +303,14 @@ namespace ShitDesigner.Main {
 		private readonly int m_SceneTimeEncoderChannel;
 		private readonly int m_SceneTimeEncoderControlNumber;
 		private readonly float m_SceneTimeJogSpeedPerStep;
+		private readonly IReadOnlyList<InstantEffectMidiBinding> m_InstantEffectMidiBindings;
+		private readonly Action<int> m_ActivateInstantEffect;
 		private string m_LoadedPatchId;
 
 		public LiveMidiInput(MidiInputManager manager, LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches,
 			int mainCueFaderChannel = 16, int mainCueFaderControlNumber = 5, int sceneTimeEncoderChannel = 16,
-			int sceneTimeEncoderControlNumber = 77, float sceneTimeJogSpeedPerStep = 1f) {
+			int sceneTimeEncoderControlNumber = 77, float sceneTimeJogSpeedPerStep = 1f,
+			IReadOnlyList<InstantEffectMidiBinding> instantEffectMidiBindings = null, Action<int> activateInstantEffect = null) {
 			m_Manager = manager ?? throw new ArgumentNullException(nameof(manager));
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
 			if (patches == null) throw new ArgumentNullException(nameof(patches));
@@ -328,6 +325,8 @@ namespace ShitDesigner.Main {
 			m_SceneTimeEncoderChannel = sceneTimeEncoderChannel;
 			m_SceneTimeEncoderControlNumber = sceneTimeEncoderControlNumber;
 			m_SceneTimeJogSpeedPerStep = sceneTimeJogSpeedPerStep;
+			m_InstantEffectMidiBindings = instantEffectMidiBindings ?? Array.Empty<InstantEffectMidiBinding>();
+			m_ActivateInstantEffect = activateInstantEffect ?? (_ => { });
 
 			var patchIds = new List<string>(patches.Count);
 			var patchesById = new Dictionary<string, PatchDefinition>(StringComparer.Ordinal);
@@ -348,6 +347,12 @@ namespace ShitDesigner.Main {
 		}
 
 		private void OnInputReceived(MidiInputEvent inputEvent) {
+			for (var cueIndex = 0; cueIndex < m_InstantEffectMidiBindings.Count && cueIndex < InstantEffectTriggerContract.TriggerCount; cueIndex++) {
+				var binding = m_InstantEffectMidiBindings[cueIndex];
+				if (binding == null || !binding.Matches(inputEvent.Control)) continue;
+				if (inputEvent.RawValue > 0) m_ActivateInstantEffect(cueIndex + 1);
+				return;
+			}
 			var control = inputEvent.Control;
 			if (control.Kind == MidiControlKind.ControlChange && control.Channel == m_SceneTimeEncoderChannel
 				&& control.Number == m_SceneTimeEncoderControlNumber) {

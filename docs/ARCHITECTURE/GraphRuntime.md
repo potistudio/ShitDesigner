@@ -250,8 +250,8 @@ Scene生成、動画準備およびTexture Lease取得はNodeExecutionContextか
 
 ### グローバルインスタントエフェクト入力
 
-- `Instant Effect Triggers` は16個のBool出力を持つInputノードとする。各出力のキーボード入力はMain HostのInspectorで任意に割り当て、未割り当ての出力は画面上の枠から操作する。
-- キー押下は対応する出力を1評価フレームだけtrueにし、押し続けても再発火しない。
+- `Instant Effect Triggers` は16個のBool出力を持つInputノードとする。各出力のMIDI入力はMain HostのInspectorで任意に割り当て、未割り当ての出力は画面上の枠から操作する。
+- MIDI入力の正値は対応する出力を1評価フレームだけtrueにし、値0では発火しない。
 - 入力ノード自身はFXを定義または起動しない。FXノードのTrigger入力へグラフ上で配線された出力だけが発火する。
 - 未配線の出力は何も変更しない。パッチのロード、選択または切替へ変換しない。
 
