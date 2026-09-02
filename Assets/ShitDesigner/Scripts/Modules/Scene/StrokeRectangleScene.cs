@@ -23,6 +23,7 @@ namespace ShitDesigner.Scene {
 		[Min(.001f)][SerializeField] private float m_EndDepth = .35f;
 		[Header("Trigger Burst")]
 		[Min(1)][SerializeField] private int m_BurstCount = 1;
+		[Min(0f)][SerializeField] private float m_BurstInitialDelay;
 		[Min(0f)][SerializeField] private float m_BurstInterval;
 		[Header("Spawned Instances")]
 		[SerializeField] private bool m_HideSourceDuringPlay = true;
@@ -73,6 +74,7 @@ namespace ShitDesigner.Scene {
 			m_EndOpacity = Mathf.Clamp01(m_EndOpacity);
 			m_EndDepth = Mathf.Max(.001f, m_EndDepth);
 			m_BurstCount = Mathf.Max(1, m_BurstCount);
+			m_BurstInitialDelay = Mathf.Max(0f, m_BurstInitialDelay);
 			m_BurstInterval = Mathf.Max(0f, m_BurstInterval);
 			m_UpDistance = Mathf.Max(0f, m_UpDistance);
 			m_Duration = Mathf.Max(.001f, m_Duration);
@@ -125,6 +127,9 @@ namespace ShitDesigner.Scene {
 		}
 
 		private IEnumerator SpawnBurst() {
+			if (m_BurstInitialDelay > 0f)
+				yield return new WaitForSecondsRealtime(m_BurstInitialDelay);
+
 			for (var burstIndex = 0; burstIndex < m_BurstCount; burstIndex++) {
 				SpawnIndependentInstance();
 				if (burstIndex < m_BurstCount - 1)
