@@ -647,7 +647,8 @@ namespace ShitDesigner.Main {
 
 		private void PublishReadModel(string diagnostic) {
 			ReadModel = new LiveUiReadModel(_tickFrameNumber, _patches, m_EffectNodes, m_SelectedCatalogRole, SelectedCatalogItemId, _runtime?.LoadedPatchId, _runtime?.OverlayPreviewFrames, _runtime?.MainCuePreviewFrames,
-				_runtime?.BpmDefinition ?? default, _runtime?.IsTimeEasingEnabled ?? false, CreateLiveParameterDefinitions(), CreateSequencerReadModels(), _runtime?.CurrentFrames ?? default(LiveProgramFrames), _externalDisplay,
+				_runtime?.BpmDefinition ?? default, _runtime?.IsTimeEasingEnabled ?? false, false, false, false, false,
+				CreateLiveParameterDefinitions(), CreateSequencerReadModels(), _runtime?.CurrentFrames ?? default(LiveProgramFrames), _externalDisplay,
 				_capabilityMonitor != null ? _capabilityMonitor.Snapshot : default(LiveCapabilitySnapshot), diagnostic,
 				_requestResults.ToArray(), m_IsEditMode, m_InstantEffectTypeIds, m_FiredInstantEffectTriggers, m_LiveParameterCueIndex, m_OpenEffectCategory,
 				m_IsEffectCategorySelected, m_SelectedEffectCategory);

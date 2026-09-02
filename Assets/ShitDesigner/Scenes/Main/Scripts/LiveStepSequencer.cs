@@ -198,7 +198,6 @@ namespace ShitDesigner.Main {
 				m_CellModes[laneIndex * StepCount + stepIndex] = LiveSequencerCellMode.Off;
 				m_ActiveLaneMasks[stepIndex] &= ~(1 << laneIndex);
 			}
-			if (SelectedLaneIndex == laneIndex) SelectedLaneIndex = -1;
 			return LiveSequencerOperationResult.Accept();
 		}
 
