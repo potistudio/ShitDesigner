@@ -60,6 +60,33 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void TogglingALaneTurnsEveryStepOnThenOff() {
+			var sequencer = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
+			sequencer.CycleCellMode(2, 3);
+			sequencer.CycleCellMode(2, 3);
+
+			Assert.That(sequencer.ToggleLane(2).Accepted, Is.True);
+
+			var enabled = sequencer.CreateReadModel(0d);
+			Assert.That(Enumerable.Range(0, LiveStepSequencer.StepCount).All(stepIndex => enabled.IsActive(2, stepIndex)), Is.True);
+			Assert.That(enabled.GetCellMode(2, 3), Is.EqualTo(LiveSequencerCellMode.Add));
+
+			Assert.That(sequencer.ToggleLane(2).Accepted, Is.True);
+
+			var disabled = sequencer.CreateReadModel(0d);
+			Assert.That(Enumerable.Range(0, LiveStepSequencer.StepCount).Any(stepIndex => disabled.IsActive(2, stepIndex)), Is.False);
+			Assert.That(Enumerable.Range(0, LiveStepSequencer.StepCount).All(stepIndex => disabled.GetCellMode(2, stepIndex) == LiveSequencerCellMode.Off), Is.True);
+		}
+
+		[Test]
+		public void InvalidLaneToggleIsRejectedWithoutChangingState() {
+			var sequencer = new LiveStepSequencer(LiveSequencerKind.Effect, "EFFECT");
+
+			Assert.That(sequencer.ToggleLane(sequencer.LaneCount).Accepted, Is.False);
+			Assert.That(sequencer.CreateReadModel(0d).ActiveLaneMasks, Is.All.Zero);
+		}
+
+		[Test]
 		public void CellModeCyclesThroughTheSupportedModes() {
 			var sequencer = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
 			var expectedModes = new[] {
@@ -104,33 +131,16 @@ namespace ShitDesigner.Main.Tests {
 
 			Assert.That(overlay.LaneCount, Is.EqualTo(8));
 			Assert.That(effect.LaneCount, Is.EqualTo(4));
-			Assert.That(overlay.SelectLane(7).Accepted, Is.True);
-			Assert.That(effect.SelectLane(7).Accepted, Is.False);
 		}
 
 		[Test]
-		public void SelectingALaneAndAssigningASceneUpdatesItsReadModel() {
+		public void AssigningASceneDirectlyUpdatesTheRequestedLane() {
 			var sequencer = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
 
-			Assert.That(sequencer.SelectLane(2).Accepted, Is.True);
-			Assert.That(sequencer.CreateReadModel(0d).SelectedLaneIndex, Is.EqualTo(2));
-			Assert.That(sequencer.AssignSelectedLane("overlay-c").Accepted, Is.True);
+			Assert.That(sequencer.AssignLane(2, "overlay-c").Accepted, Is.True);
 
 			var readModel = sequencer.CreateReadModel(0d);
-			Assert.That(readModel.SelectedLaneIndex, Is.EqualTo(-1));
 			Assert.That(readModel.LanePatchIds[2], Is.EqualTo("overlay-c"));
-		}
-
-		[Test]
-		public void AssigningASceneDirectlyUpdatesTheRequestedLaneWithoutChangingSelection() {
-			var sequencer = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
-			sequencer.SelectLane(2);
-
-			Assert.That(sequencer.AssignLane(7, "overlay-h").Accepted, Is.True);
-
-			var readModel = sequencer.CreateReadModel(0d);
-			Assert.That(readModel.SelectedLaneIndex, Is.EqualTo(2));
-			Assert.That(readModel.LanePatchIds[7], Is.EqualTo("overlay-h"));
 		}
 
 		[Test]
@@ -139,13 +149,11 @@ namespace ShitDesigner.Main.Tests {
 			sequencer.AssignLane(2, "overlay-c");
 			sequencer.CycleCellMode(2, 3);
 			sequencer.ToggleOutput2Copy(2);
-			sequencer.SelectLane(2);
 
 			Assert.That(sequencer.UnassignLane(2).Accepted, Is.True);
 
 			var readModel = sequencer.CreateReadModel(3d);
 			Assert.That(readModel.LanePatchIds[2], Is.Empty);
-			Assert.That(readModel.SelectedLaneIndex, Is.EqualTo(-1));
 			Assert.That(readModel.GetCellMode(2, 3), Is.EqualTo(LiveSequencerCellMode.Normal));
 			Assert.That(readModel.IsCopiedToOutput2(2), Is.True);
 			Assert.That(readModel.GetActiveLayers(), Is.Empty);
@@ -163,10 +171,8 @@ namespace ShitDesigner.Main.Tests {
 		[Test]
 		public void ActiveLayersContainAssignedScenesModesAndLaneOrder() {
 			var sequencer = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
-			sequencer.SelectLane(2);
-			sequencer.AssignSelectedLane("overlay-c");
-			sequencer.SelectLane(0);
-			sequencer.AssignSelectedLane("overlay-a");
+			sequencer.AssignLane(2, "overlay-c");
+			sequencer.AssignLane(0, "overlay-a");
 			sequencer.CycleCellMode(2, 5);
 			sequencer.CycleCellMode(2, 5);
 			sequencer.CycleCellMode(0, 5);

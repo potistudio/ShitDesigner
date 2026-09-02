@@ -303,14 +303,20 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(effectCell.ClassListContains("is-set"), Is.True);
 			Assert.That(ui.Q<Button>("sequencer-effect-lane-1-step-4").ClassListContains("is-set"), Is.True);
 			Assert.That(effectCell.text, Is.EqualTo("NORMAL"));
+			var effectLaneLabel = ui.Q<Button>("sequencer-effect-lane-label-1");
+			using (var click = ClickEvent.GetPooled()) effectLaneLabel.SendEvent(click);
+			yield return null;
+			Assert.That(Enumerable.Range(0, LiveStepSequencer.StepCount)
+				.All(stepIndex => ui.Q<Button>("sequencer-effect-lane-1-step-" + stepIndex).ClassListContains("is-set")), Is.True);
+			using (var click = ClickEvent.GetPooled()) effectLaneLabel.SendEvent(click);
+			yield return null;
+			Assert.That(Enumerable.Range(0, LiveStepSequencer.StepCount)
+				.Any(stepIndex => ui.Q<Button>("sequencer-effect-lane-1-step-" + stepIndex).ClassListContains("is-set")), Is.False);
 			Assert.That(ui.Query<Button>(className: "is-loaded").ToList(), Is.Empty);
 			var rememberedMainPatch = host.ReadModel.Patches.Last(patch => patch.Role == LivePatchRole.Main);
 			var rememberedOverlayPatch = host.ReadModel.Patches.First(patch => patch.Role == LivePatchRole.Overlay);
 			var nextOverlayPatch = host.ReadModel.Patches.Where(patch => patch.Role == LivePatchRole.Overlay).Skip(1).First();
-			Assert.That(host.SelectSequencerLane(LiveSequencerKind.Overlay, 0).Accepted, Is.True);
-			yield return null;
-			Assert.That(ui.Q<Button>("sequencer-overlay-lane-label-0").ClassListContains("is-selecting"), Is.True);
-			Assert.That(host.AssignSelectedSequencerPatch(rememberedOverlayPatch.Id).Accepted, Is.True);
+			Assert.That(host.AssignOverlayPatchToLane(0, rememberedOverlayPatch.Id).Accepted, Is.True);
 			yield return null;
 			Assert.That(ui.Q<Button>("sequencer-overlay-lane-label-0").ClassListContains("is-assigned"), Is.True);
 			Assert.That(host.ReadModel.OverlayLanePreviews, Has.Count.EqualTo(LiveStepSequencer.OverlayLaneCount));
@@ -323,8 +329,7 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(host.ReadModel.OverlayLanePreviews[0], Is.Null);
 			Assert.That(ui.Q<Button>("sequencer-overlay-lane-label-0").ClassListContains("is-assigned"), Is.False);
 			Assert.That(host.AssignOverlayPatchToLane(0, rememberedOverlayPatch.Id).Accepted, Is.True);
-			Assert.That(host.SelectSequencerLane(LiveSequencerKind.Overlay, 1).Accepted, Is.True);
-			Assert.That(host.AssignSelectedSequencerPatch(rememberedOverlayPatch.Id).Accepted, Is.True);
+			Assert.That(host.AssignOverlayPatchToLane(1, rememberedOverlayPatch.Id).Accepted, Is.True);
 			yield return null;
 			Assert.That(host.ReadModel.OverlayLanePreviews[1], Is.SameAs(host.ReadModel.OverlayLanePreviews[0]));
 			var sharedOverlayScenePrefix = "ShitDesigner.Main.LiveScene." + rememberedOverlayPatch.Id + ".1560x854.";
