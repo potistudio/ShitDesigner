@@ -480,25 +480,15 @@ namespace ShitDesigner.Main {
 				: sequencer.ToggleStep(stepIndex);
 		}
 
+		public LiveSequencerOperationResult ToggleSequencerLane(LiveSequencerKind kind, int laneIndex) {
+			var sequencer = m_Sequencers.FirstOrDefault(item => item.Kind == kind);
+			return sequencer == null
+				? LiveSequencerOperationResult.Reject("The requested sequencer does not exist.")
+				: sequencer.ToggleLane(laneIndex);
+		}
+
 		public LiveSequencerOperationResult ToggleOverlayLaneOutput2Copy(int laneIndex) {
 			return m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).ToggleOutput2Copy(laneIndex);
-		}
-
-		public bool IsSelectingSequencerLane => m_Sequencers.Any(sequencer => sequencer.SelectedLaneIndex >= 0);
-
-		public LiveSequencerOperationResult SelectSequencerLane(LiveSequencerKind kind, int laneIndex) {
-			if (kind != LiveSequencerKind.Overlay) return LiveSequencerOperationResult.Reject("Scene assignment is available for the overlay sequencer.");
-			var result = m_Sequencers.First(sequencer => sequencer.Kind == kind).SelectLane(laneIndex);
-			if (result.Accepted) m_SelectedCatalogRole = LiveCatalogRole.Overlay;
-			return result;
-		}
-
-		public LiveSequencerOperationResult AssignSelectedSequencerPatch(string patchId) {
-			if (!m_OverlayPatchIds.Contains(patchId)) return LiveSequencerOperationResult.Reject("Select an overlay scene for this lane.");
-			var sequencer = m_Sequencers.FirstOrDefault(item => item.SelectedLaneIndex >= 0);
-			return sequencer == null
-				? LiveSequencerOperationResult.Reject("Select a sequencer lane first.")
-				: sequencer.AssignSelectedLane(patchId);
 		}
 
 		public LiveSequencerOperationResult AssignSelectedOverlayPatchToLane(int laneIndex) {

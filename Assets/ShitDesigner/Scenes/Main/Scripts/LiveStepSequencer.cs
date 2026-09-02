@@ -51,17 +51,15 @@ namespace ShitDesigner.Main {
 		public LiveSequencerKind Kind { get; }
 		public string DisplayName { get; }
 		public int CurrentStep { get; }
-		public int SelectedLaneIndex { get; }
 		public int LaneCount => m_LanePatchIds?.Length ?? 0;
 		public IReadOnlyList<int> ActiveLaneMasks => m_ActiveLaneMasks ?? Array.Empty<int>();
 		public IReadOnlyList<string> LanePatchIds => m_LanePatchIds ?? Array.Empty<string>();
 
-		internal LiveSequencerReadModel(LiveSequencerKind kind, string displayName, int currentStep, int selectedLaneIndex, int[] activeLaneMasks,
+		internal LiveSequencerReadModel(LiveSequencerKind kind, string displayName, int currentStep, int[] activeLaneMasks,
 			string[] lanePatchIds, LiveSequencerCellMode[] cellModes, int output2CopyLaneMask) {
 			Kind = kind;
 			DisplayName = displayName;
 			CurrentStep = currentStep;
-			SelectedLaneIndex = selectedLaneIndex;
 			m_ActiveLaneMasks = activeLaneMasks ?? Array.Empty<int>();
 			m_LanePatchIds = lanePatchIds ?? Array.Empty<string>();
 			m_CellModes = cellModes ?? Array.Empty<LiveSequencerCellMode>();
@@ -110,7 +108,6 @@ namespace ShitDesigner.Main {
 		public LiveSequencerKind Kind { get; }
 		public string DisplayName { get; }
 		public int LaneCount { get; }
-		public int SelectedLaneIndex { get; private set; } = -1;
 
 		public LiveStepSequencer(LiveSequencerKind kind, string displayName) {
 			if (string.IsNullOrWhiteSpace(displayName)) throw new ArgumentException("A sequencer display name is required.", nameof(displayName));
@@ -159,17 +156,24 @@ namespace ShitDesigner.Main {
 			return LiveSequencerOperationResult.Accept();
 		}
 
-		public LiveSequencerOperationResult SelectLane(int laneIndex) {
+		public LiveSequencerOperationResult ToggleLane(int laneIndex) {
 			if (laneIndex < 0 || laneIndex >= LaneCount) return LiveSequencerOperationResult.Reject("The sequencer lane does not exist.");
-			SelectedLaneIndex = SelectedLaneIndex == laneIndex ? -1 : laneIndex;
+			var laneMask = 1 << laneIndex;
+			var turnOn = false;
+			for (var stepIndex = 0; stepIndex < StepCount; stepIndex++)
+				turnOn |= (m_ActiveLaneMasks[stepIndex] & laneMask) == 0;
+			for (var stepIndex = 0; stepIndex < StepCount; stepIndex++) {
+				var cellIndex = laneIndex * StepCount + stepIndex;
+				if (turnOn) {
+					if (m_CellModes[cellIndex] == LiveSequencerCellMode.Off) m_CellModes[cellIndex] = LiveSequencerCellMode.Normal;
+					m_ActiveLaneMasks[stepIndex] |= laneMask;
+				}
+				else {
+					m_CellModes[cellIndex] = LiveSequencerCellMode.Off;
+					m_ActiveLaneMasks[stepIndex] &= ~laneMask;
+				}
+			}
 			return LiveSequencerOperationResult.Accept();
-		}
-
-		public LiveSequencerOperationResult AssignSelectedLane(string patchId) {
-			if (SelectedLaneIndex < 0) return LiveSequencerOperationResult.Reject("Select a sequencer lane first.");
-			var result = AssignLane(SelectedLaneIndex, patchId);
-			if (result.Accepted) SelectedLaneIndex = -1;
-			return result;
 		}
 
 		public LiveSequencerOperationResult AssignLane(int laneIndex, string patchId) {
@@ -182,7 +186,6 @@ namespace ShitDesigner.Main {
 		public LiveSequencerOperationResult UnassignLane(int laneIndex) {
 			if (laneIndex < 0 || laneIndex >= LaneCount) return LiveSequencerOperationResult.Reject("The sequencer lane does not exist.");
 			m_LanePatchIds[laneIndex] = string.Empty;
-			if (SelectedLaneIndex == laneIndex) SelectedLaneIndex = -1;
 			return LiveSequencerOperationResult.Accept();
 		}
 
@@ -210,7 +213,7 @@ namespace ShitDesigner.Main {
 					else activeLaneMasks[currentStep] |= 1 << laneIndex;
 				}
 			}
-			return new LiveSequencerReadModel(Kind, DisplayName, currentStep, SelectedLaneIndex, activeLaneMasks,
+			return new LiveSequencerReadModel(Kind, DisplayName, currentStep, activeLaneMasks,
 				(string[])m_LanePatchIds.Clone(), cellModes, m_Output2CopyLaneMask);
 		}
 	}

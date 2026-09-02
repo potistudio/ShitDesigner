@@ -357,20 +357,12 @@ namespace ShitDesigner.Main {
 					lane.AddToClassList("sequencer-lane");
 					if (sequencer.Kind == LiveSequencerKind.Overlay)
 						lane.userData = new SequencerLaneAddress(sequencer.Kind, laneIndex);
-					VisualElement laneLabel;
-					if (sequencer.Kind == LiveSequencerKind.Overlay) {
-						laneLabel = new Button {
-							name = GetSequencerLaneName(sequencer.Kind, laneIndex),
-							text = (laneIndex + 1).ToString(CultureInfo.InvariantCulture),
-							userData = new SequencerLaneAddress(sequencer.Kind, laneIndex)
-						};
-						laneLabel.AddToClassList("is-clickable");
-					}
-					else {
-						laneLabel = new Label((laneIndex + 1).ToString(CultureInfo.InvariantCulture)) {
-							name = GetSequencerLaneName(sequencer.Kind, laneIndex)
-						};
-					}
+					var laneLabel = new Button {
+						name = GetSequencerLaneName(sequencer.Kind, laneIndex),
+						text = (laneIndex + 1).ToString(CultureInfo.InvariantCulture),
+						userData = new SequencerLaneAddress(sequencer.Kind, laneIndex)
+					};
+					laneLabel.AddToClassList("is-clickable");
 					laneLabel.AddToClassList("sequencer-lane-label");
 					lane.Add(laneLabel);
 					for (var stepIndex = 0; stepIndex < LiveStepSequencer.StepCount; stepIndex++) {
@@ -402,12 +394,13 @@ namespace ShitDesigner.Main {
 							}
 							laneLabel.EnableInClassList("has-preview", preview != null);
 						}
-						laneLabel.tooltip = string.IsNullOrEmpty(patchId)
-							? "LANE " + (laneIndex + 1) + " · SELECT OVERLAY SCENE"
-							: "LANE " + (laneIndex + 1) + " · " + (string.IsNullOrEmpty(patch.Name) ? patchId : patch.Name) + " · RIGHT-CLICK TO UNASSIGN";
+						laneLabel.tooltip = sequencer.Kind == LiveSequencerKind.Effect
+							? "LANE " + (laneIndex + 1) + " · CLICK TO TOGGLE ROW"
+							: string.IsNullOrEmpty(patchId)
+								? "LANE " + (laneIndex + 1) + " · CLICK TO TOGGLE ROW · DROP OVERLAY SCENE"
+								: "LANE " + (laneIndex + 1) + " · " + (string.IsNullOrEmpty(patch.Name) ? patchId : patch.Name) + " · CLICK TO TOGGLE ROW · RIGHT-CLICK TO UNASSIGN";
 						if (isCopiedToOutput2) laneLabel.tooltip += " · OUTPUT 2 COPY";
 						laneLabel.EnableInClassList("is-assigned", !string.IsNullOrEmpty(patchId));
-						laneLabel.EnableInClassList("is-selecting", sequencer.SelectedLaneIndex == laneIndex);
 						laneLabel.parent?.EnableInClassList("is-output-2-copy", isCopiedToOutput2);
 					}
 					for (var stepIndex = 0; stepIndex < LiveStepSequencer.StepCount; stepIndex++) {
@@ -421,7 +414,6 @@ namespace ShitDesigner.Main {
 					}
 				}
 			}
-			m_OverlayPatchControls.EnableInClassList("is-scene-selecting", model.Sequencers.Any(sequencer => sequencer.Kind == LiveSequencerKind.Overlay && sequencer.SelectedLaneIndex >= 0));
 		}
 
 		private void OnSequencerCellClicked(ClickEvent change) {
@@ -447,7 +439,7 @@ namespace ShitDesigner.Main {
 				return;
 			}
 			if (button.userData is SequencerLaneAddress laneAddress)
-				ShowSequencerRejection(_host.SelectSequencerLane(laneAddress.Kind, laneAddress.LaneIndex));
+				ShowSequencerRejection(_host.ToggleSequencerLane(laneAddress.Kind, laneAddress.LaneIndex));
 		}
 
 		private static string GetSequencerElementName(LiveSequencerKind kind) {
@@ -614,7 +606,6 @@ namespace ShitDesigner.Main {
 				var button = m_PatchControls.Q<Button>("patch-" + patch.Id);
 				if (button == null) continue;
 				button.EnableInClassList("is-selected", patch.Id == model.SelectedCatalogItemId);
-				button.EnableInClassList("is-assignment-option", _host.IsSelectingSequencerLane && patch.Role == LivePatchRole.Overlay);
 			}
 			foreach (var effect in model.EffectNodes) {
 				var button = m_EffectNodeControls.Q<Button>("effect-node-" + effect.TypeId);
@@ -842,10 +833,6 @@ namespace ShitDesigner.Main {
 
 		private void ChoosePatch(string patchId) {
 			if (_host == null) return;
-			if (_host.IsSelectingSequencerLane) {
-				ShowSequencerRejection(_host.AssignSelectedSequencerPatch(patchId));
-				return;
-			}
 			if (!_host.SelectCatalogPatch(patchId)) _diagnosticLabel.text = "The selected scene does not exist.";
 		}
 

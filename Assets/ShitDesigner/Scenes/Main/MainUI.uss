@@ -379,11 +379,6 @@
     -unity-background-scale-mode: scale-and-crop;
 }
 
-.sequencer-lane-label.is-selecting {
-    color: rgb(13, 15, 18);
-    background-color: rgb(255, 190, 74);
-}
-
 .sequencer-lane.is-drop-target .sequencer-lane-label,
 .sequencer-lane.is-drop-target .sequencer-step {
     border-color: rgb(255, 190, 74);
@@ -510,10 +505,6 @@
     border-color: rgb(88, 166, 255);
 }
 
-.catalog-button.is-assignment-option {
-    border-color: rgb(255, 190, 74);
-}
-
 .effect-category-button {
     width: 100%;
     height: 32px;
@@ -557,11 +548,6 @@
 .effect-category-items .catalog-button {
     padding-left: 20px;
     -unity-text-align: middle-left;
-}
-
-.patch-list-controls.is-scene-selecting {
-    border-width: 1px;
-    border-color: rgb(255, 190, 74);
 }
 
 .tempo-controls {
