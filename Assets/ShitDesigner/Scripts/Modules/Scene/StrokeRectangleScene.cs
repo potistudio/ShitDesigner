@@ -7,7 +7,7 @@ namespace ShitDesigner.Scene {
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
 	public sealed class StrokeRectangleScene : MonoBehaviour {
-		[Header("Rectangle")]
+		[Header("Cuboid")]
 		[Min(.01f)][SerializeField] private float m_Width = 16f;
 		[Min(.01f)][SerializeField] private float m_Height = 9f;
 		[Min(.001f)][SerializeField] private float m_Depth = .35f;
