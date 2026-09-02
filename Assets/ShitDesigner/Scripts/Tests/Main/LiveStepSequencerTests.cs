@@ -107,6 +107,33 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void UnassigningASceneClearsOnlyTheLaneAssignment() {
+			var sequencer = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
+			sequencer.AssignLane(2, "overlay-c");
+			sequencer.CycleCellMode(2, 3);
+			sequencer.ToggleOutput2Copy(2);
+			sequencer.SelectLane(2);
+
+			Assert.That(sequencer.UnassignLane(2).Accepted, Is.True);
+
+			var readModel = sequencer.CreateReadModel(3d);
+			Assert.That(readModel.LanePatchIds[2], Is.Empty);
+			Assert.That(readModel.SelectedLaneIndex, Is.EqualTo(-1));
+			Assert.That(readModel.GetCellMode(2, 3), Is.EqualTo(LiveSequencerCellMode.Normal));
+			Assert.That(readModel.IsCopiedToOutput2(2), Is.True);
+			Assert.That(readModel.GetActiveLayers(), Is.Empty);
+		}
+
+		[Test]
+		public void UnassigningAnInvalidLaneIsRejectedWithoutChangingAssignments() {
+			var sequencer = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
+			sequencer.AssignLane(0, "overlay-a");
+
+			Assert.That(sequencer.UnassignLane(sequencer.LaneCount).Accepted, Is.False);
+			Assert.That(sequencer.CreateReadModel(0d).LanePatchIds[0], Is.EqualTo("overlay-a"));
+		}
+
+		[Test]
 		public void ActiveLayersContainAssignedScenesModesAndLaneOrder() {
 			var sequencer = new LiveStepSequencer(LiveSequencerKind.Overlay, "OVERLAY");
 			sequencer.SelectLane(2);

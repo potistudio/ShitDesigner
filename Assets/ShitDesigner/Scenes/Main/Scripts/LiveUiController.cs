@@ -390,7 +390,7 @@ namespace ShitDesigner.Main {
 						}
 						laneLabel.tooltip = string.IsNullOrEmpty(patchId)
 							? "LANE " + (laneIndex + 1) + " · SELECT OVERLAY SCENE"
-							: "LANE " + (laneIndex + 1) + " · " + (string.IsNullOrEmpty(patch.Name) ? patchId : patch.Name);
+							: "LANE " + (laneIndex + 1) + " · " + (string.IsNullOrEmpty(patch.Name) ? patchId : patch.Name) + " · RIGHT-CLICK TO UNASSIGN";
 						if (isCopiedToOutput2) laneLabel.tooltip += " · OUTPUT 2 COPY";
 						laneLabel.EnableInClassList("is-assigned", !string.IsNullOrEmpty(patchId));
 						laneLabel.EnableInClassList("is-selecting", sequencer.SelectedLaneIndex == laneIndex);
@@ -412,6 +412,14 @@ namespace ShitDesigner.Main {
 
 		private void OnSequencerCellClicked(ClickEvent change) {
 			var target = change.target as VisualElement;
+			var button = target as Button ?? target?.GetFirstAncestorOfType<Button>();
+			if (_host != null && change.button == 1 && button?.userData is SequencerLaneAddress unassignLaneAddress
+				&& unassignLaneAddress.Kind == LiveSequencerKind.Overlay) {
+				ShowSequencerRejection(_host.UnassignOverlayPatchFromLane(unassignLaneAddress.LaneIndex));
+				change.StopImmediatePropagation();
+				return;
+			}
+			if (change.button != 0) return;
 			var lane = target;
 			while (lane != null && lane.userData is not SequencerLaneAddress) lane = lane.parent;
 			if (_host != null && lane?.userData is SequencerLaneAddress outputLaneAddress
@@ -421,7 +429,6 @@ namespace ShitDesigner.Main {
 				change.StopImmediatePropagation();
 				return;
 			}
-			var button = target as Button ?? target?.GetFirstAncestorOfType<Button>();
 			if (_host == null || button == null) return;
 			if (button.userData is SequencerCellAddress cellAddress) {
 				ShowSequencerRejection(_host.CycleSequencerCellMode(cellAddress.Kind, cellAddress.LaneIndex, cellAddress.StepIndex));

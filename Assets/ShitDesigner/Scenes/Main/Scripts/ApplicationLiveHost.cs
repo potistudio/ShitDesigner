@@ -500,6 +500,10 @@ namespace ShitDesigner.Main {
 				: m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).AssignLane(laneIndex, patchId);
 		}
 
+		public LiveSequencerOperationResult UnassignOverlayPatchFromLane(int laneIndex) {
+			return m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).UnassignLane(laneIndex);
+		}
+
 		private void ApplyRequests(bool clearResults = true) {
 			_pendingRequests.Clear();
 			if (clearResults) _requestResults.Clear();

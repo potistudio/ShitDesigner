@@ -163,6 +163,13 @@ namespace ShitDesigner.Main {
 			return LiveSequencerOperationResult.Accept();
 		}
 
+		public LiveSequencerOperationResult UnassignLane(int laneIndex) {
+			if (laneIndex < 0 || laneIndex >= LaneCount) return LiveSequencerOperationResult.Reject("The sequencer lane does not exist.");
+			m_LanePatchIds[laneIndex] = string.Empty;
+			if (SelectedLaneIndex == laneIndex) SelectedLaneIndex = -1;
+			return LiveSequencerOperationResult.Accept();
+		}
+
 		public LiveSequencerOperationResult ToggleOutput2Copy(int laneIndex) {
 			if (Kind != LiveSequencerKind.Overlay) return LiveSequencerOperationResult.Reject("Only overlay lanes can be copied to Output 2.");
 			if (laneIndex < 0 || laneIndex >= LaneCount) return LiveSequencerOperationResult.Reject("The sequencer lane does not exist.");
