@@ -83,7 +83,6 @@ namespace ShitDesigner.Main {
 		private readonly int[] m_PianoReturnOverlayTakeOverrides = new int[LiveStepSequencer.OverlayLaneCount];
 		private float m_BaseUnityTimeScale = 1f;
 		private bool m_OwnsUnityTimeScale;
-		private bool m_RebuildRuntimeForOutputResolution;
 		private bool m_IsBlackoutActive;
 
 		public ApplicationLiveHostState State { get; private set; } = ApplicationLiveHostState.Cold;
@@ -146,10 +145,8 @@ namespace ShitDesigner.Main {
 					ToggleEditMode, cueIndex => { AssignSelectedEffectToCue(cueIndex); }, () => m_IsEditMode, QueueInstantEffectTrigger,
 					cueIndex => { FocusInstantEffectParameters(cueIndex); }, ToggleSelectedEffectCategory, BeginPianoMainCueSwitch,
 					EndPianoMainCueSwitch, CompleteMainCueSwitch, EndPianoOverlayTake, TurnOnOverlaySequencerStep,
-					(widthDelta, heightDelta) => {
-						LiveGraphRuntime.AdjustOverlayResolution(widthDelta, heightDelta);
-						m_RebuildRuntimeForOutputResolution = true;
-					}, FireLiveParameter, m_BlackoutKey, active => { m_IsBlackoutActive = active; }, BeginMomentaryMainComposite,
+					(horizontalDelta, verticalDelta, move) => _externalDisplay.AdjustOutput2Viewport(horizontalDelta, verticalDelta, move),
+					FireLiveParameter, m_BlackoutKey, active => { m_IsBlackoutActive = active; }, BeginMomentaryMainComposite,
 					EndMomentaryMainComposite, CompleteMainComposite);
 				_midiInputManager.InitializeForHostPolling();
 				_midiInputManager.ConfigureLaunchControlXl3RelativeEncoder(m_SceneTimeEncoderChannel, m_SceneTimeEncoderControlNumber);
@@ -183,10 +180,6 @@ namespace ShitDesigner.Main {
 			if (_tickFrameNumber == 0) _tickFrameNumber = 1;
 
 			_keyboard.Poll(_runtime.LoadedPatchId);
-			if (m_RebuildRuntimeForOutputResolution) {
-				RebuildRuntimeForOutputResolution();
-				return;
-			}
 			_midi.SetSelectedPatch(_runtime.LoadedPatchId);
 			_midiInputManager.Poll();
 			try {
@@ -221,19 +214,6 @@ namespace ShitDesigner.Main {
 			m_IsBlackoutActive = false;
 			ShitDesigner.Runtime.InstantEffectInputMode.SetEditing(false);
 			State = ApplicationLiveHostState.Offline;
-		}
-
-		private void RebuildRuntimeForOutputResolution() {
-			m_RebuildRuntimeForOutputResolution = false;
-			var replacement = _graphBootstrap.CreateRuntime();
-			replacement.ConfigureMainCueFaderCurve(m_MainCueFaderCurve);
-			replacement.ConfigureMainCompositeOpacity(m_MainCompositeOpacity);
-			replacement.ConfigureSceneTimeJog(m_SceneTimeJogMaximumSpeedOffset);
-			var previous = _runtime;
-			_runtime = replacement;
-			previous.Dispose();
-			UpdateOverlayComposition(_runtime.BpmFrame.AdjustedTotalBeats);
-			PublishReadModel(string.Empty);
 		}
 
 		public void ToggleEditMode() {

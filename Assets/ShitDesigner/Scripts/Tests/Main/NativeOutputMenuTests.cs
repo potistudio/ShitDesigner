@@ -89,22 +89,14 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void AdjustingOverlayResolutionUpdatesOutput2Size() {
-			var originalWidth = LiveGraphRuntime.OverlayWidth;
-			var originalHeight = LiveGraphRuntime.OverlayHeight;
-			try {
-				LiveGraphRuntime.AdjustOverlayResolution(10, -10);
+		public void Output2ViewportClampsSizeAndPositionInsideTheFixedSignal() {
+			var viewport = LiveOutputViewport.Clamp(100, 80, 1000, -1000, 200, 120);
 
-				var sizes = LiveGraphBootstrap.ResolveOutputRenderSizes();
-				Assert.That(sizes.Overlay.Width, Is.EqualTo(originalWidth + 10));
-				Assert.That(sizes.Overlay.Height, Is.EqualTo(originalHeight - 10));
-				Assert.That(LiveExternalDisplayOutput.ResolveOutputResolution(3),
-					Is.EqualTo(new Vector2Int(originalWidth + 10, originalHeight - 10)));
-			}
-			finally {
-				LiveGraphRuntime.AdjustOverlayResolution(originalWidth - LiveGraphRuntime.OverlayWidth,
-					originalHeight - LiveGraphRuntime.OverlayHeight);
-			}
+			Assert.That(viewport.Width, Is.EqualTo(100));
+			Assert.That(viewport.Height, Is.EqualTo(80));
+			Assert.That(viewport.ResolveRect(200, 120), Is.EqualTo(new RectInt(100, 0, 100, 80)));
+			Assert.That(LiveOutputViewport.Clamp(0, 1000, 0, 0, 200, 120).ResolveRect(200, 120),
+				Is.EqualTo(new RectInt(95, 0, 10, 120)));
 		}
 
 		[Test]

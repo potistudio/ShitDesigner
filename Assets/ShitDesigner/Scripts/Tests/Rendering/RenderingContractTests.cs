@@ -784,6 +784,33 @@ namespace ShitDesigner.Rendering.Tests {
 			}
 		}
 
+		[UnityTest, Category("DisplayTransformPolicy")]
+		public IEnumerator DisplayTransform_ContentRectLeavesOpaqueBlackOutsideTheImage() {
+			Assert.That(DisplayTransformPass.IsSupported(ColorFormat), Is.True,
+				"RGBA8 render/sample support is required for the rendering contract.");
+			using (var pass = new DisplayTransformPass(RequiredDisplayTransformShader())) {
+				var source = NewTexture(4, 4, Color.white);
+				var destination = NewTexture(4, 4, Color.clear);
+				try {
+					pass.Blit(source, destination, DisplayTransformMode.Ldr, new Vector4(0.25f, 0.25f, 0.5f, 0.5f));
+					yield return null;
+					var outside = ReadPixel(destination, 0, 0);
+					var inside = ReadPixel(destination, 2, 2);
+					Assert.That(outside.r, Is.EqualTo(0).Within(1));
+					Assert.That(outside.g, Is.EqualTo(0).Within(1));
+					Assert.That(outside.b, Is.EqualTo(0).Within(1));
+					Assert.That(outside.a, Is.EqualTo(1).Within(0.01f));
+					Assert.That(inside.r, Is.GreaterThan(0.9f));
+					Assert.That(inside.g, Is.GreaterThan(0.9f));
+					Assert.That(inside.b, Is.GreaterThan(0.9f));
+				}
+				finally {
+					UnityEngine.Object.DestroyImmediate(source);
+					UnityEngine.Object.DestroyImmediate(destination);
+				}
+			}
+		}
+
 		[UnityTest, Category("GPU"), Category("Probe"), Category("D3D12"), Category("Vulkan"), Category("Metal")]
 		public IEnumerator PreviewDisplay_GpuReadback_ExercisesFitFillStretchAndBilinear() {
 			Assert.That(DisplayTransformPass.IsSupported(ColorFormat), Is.True,

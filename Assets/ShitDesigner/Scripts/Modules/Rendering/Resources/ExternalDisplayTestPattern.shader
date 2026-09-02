@@ -3,6 +3,7 @@ Shader "Hidden/ShitDesigner/ExternalDisplayTestPattern" {
 		_DisplayNumber("Display Number", Float) = 2
 		_DisplayResolution("Display Resolution", Vector) = (1920, 1080, 0, 0)
 		_PatternTime("Pattern Time", Float) = 0
+		_ContentRect("Content Rect", Vector) = (0, 0, 1, 1)
 	}
 	SubShader {
 		Tags { "Queue" = "Overlay" "RenderType" = "Opaque" }
@@ -19,6 +20,7 @@ Shader "Hidden/ShitDesigner/ExternalDisplayTestPattern" {
 			float _DisplayNumber;
 			float4 _DisplayResolution;
 			float _PatternTime;
+			float4 _ContentRect;
 
 			float Box(float2 coordinate, float2 center, float2 halfSize) {
 				float2 distance = abs(coordinate - center) - halfSize;
@@ -124,7 +126,8 @@ Shader "Hidden/ShitDesigner/ExternalDisplayTestPattern" {
 			}
 
 			fixed4 Frag(v2f_img input) : SV_Target {
-				float2 uv = input.uv;
+				float2 uv = (input.uv - _ContentRect.xy) / _ContentRect.zw;
+				if (any(uv < 0.0) || any(uv > 1.0)) return fixed4(0.0, 0.0, 0.0, 1.0);
 				float3 color = float3(0.025, 0.025, 0.025);
 
 				if (uv.y > 0.78) {

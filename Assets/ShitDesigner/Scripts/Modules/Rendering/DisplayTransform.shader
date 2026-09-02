@@ -22,6 +22,7 @@ Shader "Hidden/ShitDesigner/DisplayTransform"
 			float _Mode;
 			float _SourceSrgb;
 			float _Premultiply;
+			float4 _ContentRect;
 
 			struct appdata
 			{
@@ -77,10 +78,12 @@ Shader "Hidden/ShitDesigner/DisplayTransform"
 
 			float4 frag(v2f input) : SV_Target
 			{
+				float2 contentUv = (input.uv - _ContentRect.xy) / _ContentRect.zw;
+				if (any(contentUv < 0.0) || any(contentUv > 1.0)) return float4(0.0, 0.0, 0.0, 1.0);
 				// Keep HDR source values above one intact until the ACES
 				// branch.  fixed precision can clamp/quantize those values
 				// on D3D12 before tone mapping.
-				float4 color = tex2D(_MainTex, input.uv);
+				float4 color = tex2D(_MainTex, contentUv);
 				color.rgb = _SourceSrgb > 0.5 ? SrgbToLinear(color.rgb) : color.rgb;
 				color.rgb = _Premultiply > 0.5 ? color.rgb * color.a : color.rgb;
 				// Mapping each channel independently drives bright colors toward

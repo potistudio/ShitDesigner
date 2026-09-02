@@ -22,7 +22,14 @@ namespace ShitDesigner.Rendering {
 		public void Blit(RenderTexture source, RenderTexture destination, DisplayTransformMode mode)
 			=> Blit(source, destination, mode, false, false);
 
+		public void Blit(RenderTexture source, RenderTexture destination, DisplayTransformMode mode, Vector4 contentRect)
+			=> Blit(source, destination, mode, false, false, contentRect);
+
 		public void Blit(RenderTexture source, RenderTexture destination, DisplayTransformMode mode, bool sourceIsSrgb, bool premultiplySource) {
+			Blit(source, destination, mode, sourceIsSrgb, premultiplySource, new Vector4(0f, 0f, 1f, 1f));
+		}
+
+		private void Blit(RenderTexture source, RenderTexture destination, DisplayTransformMode mode, bool sourceIsSrgb, bool premultiplySource, Vector4 contentRect) {
 			if (_disposed) throw new ObjectDisposedException(nameof(DisplayTransformPass));
 			if (source == null) throw new ArgumentNullException(nameof(source));
 			if (destination == null) throw new ArgumentNullException(nameof(destination));
@@ -32,6 +39,7 @@ namespace ShitDesigner.Rendering {
 			_material.SetFloat("_Mode", mode == DisplayTransformMode.HdrAces ? 1f : 0f);
 			_material.SetFloat("_SourceSrgb", sourceIsSrgb ? 1f : 0f);
 			_material.SetFloat("_Premultiply", premultiplySource ? 1f : 0f);
+			_material.SetVector("_ContentRect", contentRect);
 			// The shader owns the Linear -> sRGB transfer at this terminal
 			// boundary.  Unity's global sRGB write state is mutable and can
 			// be left enabled by an earlier camera or blit; allowing it to

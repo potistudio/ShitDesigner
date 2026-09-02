@@ -23,7 +23,8 @@ namespace ShitDesigner.Main {
 		private ApplicationLiveHost _host;
 		private LiveExternalDisplayOutput _output;
 		private VisualElement _programMonitor;
-		private VisualElement m_Output2Preview;
+		private VisualElement m_Output2Content;
+		private Label m_Output2Label;
 		private VisualElement m_PatchControls;
 		private readonly RenderTexture[] m_OverlayLanePreviewTextures = new RenderTexture[LiveStepSequencer.OverlayLaneCount];
 		private readonly RenderTexture[] m_MainCuePreviewTextures = new RenderTexture[ApplicationLiveHost.MainCueCount];
@@ -125,7 +126,8 @@ namespace ShitDesigner.Main {
 			m_MainUi = Required<VisualElement>(root, "main-ui");
 
 			_programMonitor = Required<VisualElement>(root, "program-monitor");
-			m_Output2Preview = Required<VisualElement>(root, "output-2-preview");
+			m_Output2Content = Required<VisualElement>(root, "output-2-content");
+			m_Output2Label = Required<Label>(root, "output-2-label");
 			m_PatchControls = Required<VisualElement>(root, "patch-controls");
 			m_MainPatchControls = Required<ScrollView>(root, "main-patch-controls");
 			m_OverlayPatchControls = Required<ScrollView>(root, "overlay-patch-controls");
@@ -262,7 +264,8 @@ namespace ShitDesigner.Main {
 			try {
 				RefreshMainCueSlots(model);
 				ApplyPreviewTexture(_programMonitor, model.ProgramFrames.Count > 0 ? model.ProgramFrames[0].Texture : null);
-				ApplyPreviewTexture(m_Output2Preview, model.ProgramFrames.Count > 1 ? model.ProgramFrames[1].Texture : null);
+				ApplyPreviewTexture(m_Output2Content, model.ProgramFrames.Count > 1 ? model.ProgramFrames[1].Texture : null);
+				RefreshOutput2Viewport(model.Output2Viewport);
 				RefreshPatchControls(model);
 				RefreshEditMode(model);
 				RefreshSequencers(model);
@@ -279,6 +282,16 @@ namespace ShitDesigner.Main {
 			var keyboard = Keyboard.current;
 			for (var index = 0; index < m_InstantEffectCueButtons.Length; index++)
 				m_InstantEffectCueButtons[index].EnableInClassList("is-keyboard-active", !(_host?.IsEditMode ?? false) && IsInstantEffectCueKeyPressed(keyboard, index));
+		}
+
+		private void RefreshOutput2Viewport(LiveOutputViewport viewport) {
+			if (m_Output2Content == null || m_Output2Label == null) return;
+			var rect = viewport.ResolveRect(LiveGraphRuntime.OverlayWidth, LiveGraphRuntime.OverlayHeight);
+			m_Output2Content.style.left = Length.Percent(100f * rect.x / LiveGraphRuntime.OverlayWidth);
+			m_Output2Content.style.top = Length.Percent(100f * (LiveGraphRuntime.OverlayHeight - rect.yMax) / LiveGraphRuntime.OverlayHeight);
+			m_Output2Content.style.width = Length.Percent(100f * rect.width / LiveGraphRuntime.OverlayWidth);
+			m_Output2Content.style.height = Length.Percent(100f * rect.height / LiveGraphRuntime.OverlayHeight);
+			m_Output2Label.text = $"Output 2  {viewport.Width}×{viewport.Height}  {viewport.OffsetX:+0;-0;0},{viewport.OffsetY:+0;-0;0}";
 		}
 
 		private void RefreshEditMode(LiveUiReadModel model) {

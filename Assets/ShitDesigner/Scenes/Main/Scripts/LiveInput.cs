@@ -32,7 +32,7 @@ namespace ShitDesigner.Main {
 		private readonly Action m_BeginMomentaryMainComposite;
 		private readonly Action m_EndMomentaryMainComposite;
 		private readonly Action m_CompleteMainComposite;
-		private readonly Action<int, int> m_AdjustOutput2Resolution;
+		private readonly Action<int, int, bool> m_AdjustOutput2Viewport;
 		private readonly Action<int, bool> m_FireLiveParameter;
 		private readonly Key m_BlackoutKey;
 		private readonly Action<bool> m_SetBlackoutActive;
@@ -49,7 +49,7 @@ namespace ShitDesigner.Main {
 			Action toggleEditMode = null, Action<int> assignInstantEffect = null, Func<bool> isEditMode = null, Action<int> cueInstantEffect = null,
 			Action<int> focusInstantEffectParameters = null, Action toggleSelectedEffectCategory = null, Action beginPianoMainCueSwitch = null,
 			Action endPianoMainCueSwitch = null, Action completeMainCueSwitch = null, Action<int> endPianoOverlayTake = null,
-			Action<int> turnOnOverlaySequencerStep = null, Action<int, int> adjustOutput2Resolution = null, Action<int, bool> fireLiveParameter = null,
+			Action<int> turnOnOverlaySequencerStep = null, Action<int, int, bool> adjustOutput2Viewport = null, Action<int, bool> fireLiveParameter = null,
 			Key blackoutKey = Key.Backquote, Action<bool> setBlackoutActive = null, Action beginMomentaryMainComposite = null,
 			Action endMomentaryMainComposite = null, Action completeMainComposite = null) {
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
@@ -79,7 +79,7 @@ namespace ShitDesigner.Main {
 			m_BeginMomentaryMainComposite = beginMomentaryMainComposite ?? (() => { });
 			m_EndMomentaryMainComposite = endMomentaryMainComposite ?? (() => { });
 			m_CompleteMainComposite = completeMainComposite ?? (() => { });
-			m_AdjustOutput2Resolution = adjustOutput2Resolution ?? ((_, _) => { });
+			m_AdjustOutput2Viewport = adjustOutput2Viewport ?? ((_, _, _) => { });
 			m_FireLiveParameter = fireLiveParameter ?? ((_, _) => { });
 			m_BlackoutKey = blackoutKey;
 			m_SetBlackoutActive = setBlackoutActive ?? (_ => { });
@@ -109,20 +109,21 @@ namespace ShitDesigner.Main {
 					return;
 				}
 			}
+			var moveOutput2Viewport = keyboard.shiftKey.isPressed;
 			if (keyboard.rightArrowKey.wasPressedThisFrame) {
-				m_AdjustOutput2Resolution(LiveGraphRuntime.OutputResolutionStep, 0);
+				m_AdjustOutput2Viewport(LiveExternalDisplayOutput.Output2AdjustmentStep, 0, moveOutput2Viewport);
 				return;
 			}
 			if (keyboard.leftArrowKey.wasPressedThisFrame) {
-				m_AdjustOutput2Resolution(-LiveGraphRuntime.OutputResolutionStep, 0);
+				m_AdjustOutput2Viewport(-LiveExternalDisplayOutput.Output2AdjustmentStep, 0, moveOutput2Viewport);
 				return;
 			}
 			if (keyboard.upArrowKey.wasPressedThisFrame) {
-				m_AdjustOutput2Resolution(0, LiveGraphRuntime.OutputResolutionStep);
+				m_AdjustOutput2Viewport(0, LiveExternalDisplayOutput.Output2AdjustmentStep, moveOutput2Viewport);
 				return;
 			}
 			if (keyboard.downArrowKey.wasPressedThisFrame) {
-				m_AdjustOutput2Resolution(0, -LiveGraphRuntime.OutputResolutionStep);
+				m_AdjustOutput2Viewport(0, -LiveExternalDisplayOutput.Output2AdjustmentStep, moveOutput2Viewport);
 				return;
 			}
 			if (m_IsEditMode()) {

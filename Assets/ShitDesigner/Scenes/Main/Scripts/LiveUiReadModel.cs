@@ -68,6 +68,7 @@ namespace ShitDesigner.Main {
 		public string OpenEffectCategory { get; }
 		public bool IsEffectCategorySelected { get; }
 		public string SelectedEffectCategory { get; }
+		public LiveOutputViewport Output2Viewport { get; }
 
 		public LiveUiReadModel(ulong frameNumber, IReadOnlyList<LivePatchReadModel> patches, IReadOnlyList<LiveEffectNodeReadModel> effectNodes,
 			LiveCatalogRole selectedCatalogRole, string selectedCatalogItemId,
@@ -106,6 +107,9 @@ namespace ShitDesigner.Main {
 			OpenEffectCategory = openEffectCategory ?? string.Empty;
 			IsEffectCategorySelected = isEffectCategorySelected;
 			SelectedEffectCategory = selectedEffectCategory ?? string.Empty;
+			Output2Viewport = output?.Output2Viewport ?? LiveOutputViewport.Clamp(
+				LiveGraphRuntime.OverlayWidth, LiveGraphRuntime.OverlayHeight, 0, 0,
+				LiveGraphRuntime.OverlayWidth, LiveGraphRuntime.OverlayHeight);
 		}
 	}
 }

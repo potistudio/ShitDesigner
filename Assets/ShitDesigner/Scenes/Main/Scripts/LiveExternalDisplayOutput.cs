@@ -14,10 +14,43 @@ using UnityEngine;
 using UnityEngine.UI;
 
 namespace ShitDesigner.Main {
+	public readonly struct LiveOutputViewport {
+		public int Width { get; }
+		public int Height { get; }
+		public int OffsetX { get; }
+		public int OffsetY { get; }
+
+		private LiveOutputViewport(int width, int height, int offsetX, int offsetY) {
+			Width = width;
+			Height = height;
+			OffsetX = offsetX;
+			OffsetY = offsetY;
+		}
+
+		public static LiveOutputViewport Clamp(int width, int height, int offsetX, int offsetY, int canvasWidth, int canvasHeight) {
+			width = Mathf.Clamp(width, LiveExternalDisplayOutput.Output2AdjustmentStep, canvasWidth);
+			height = Mathf.Clamp(height, LiveExternalDisplayOutput.Output2AdjustmentStep, canvasHeight);
+			var centeredX = (canvasWidth - width) / 2;
+			var centeredY = (canvasHeight - height) / 2;
+			offsetX = Mathf.Clamp(offsetX, -centeredX, canvasWidth - width - centeredX);
+			offsetY = Mathf.Clamp(offsetY, -centeredY, canvasHeight - height - centeredY);
+			return new LiveOutputViewport(width, height, offsetX, offsetY);
+		}
+
+		public RectInt ResolveRect(int canvasWidth, int canvasHeight) {
+			return new RectInt((canvasWidth - Width) / 2 + OffsetX, (canvasHeight - Height) / 2 + OffsetY, Width, Height);
+		}
+	}
+
 	/// <summary>Owns external Display activation, display transform, and Program frame presentation.</summary>
 	[DisallowMultipleComponent]
 	public sealed class LiveExternalDisplayOutput : MonoBehaviour, ILiveOutputMenuTarget {
 		private const int OutputCount = 2;
+		private const string Output2WidthPreference = "ShitDesigner.Output2.Viewport.Width";
+		private const string Output2HeightPreference = "ShitDesigner.Output2.Viewport.Height";
+		private const string Output2OffsetXPreference = "ShitDesigner.Output2.Viewport.OffsetX";
+		private const string Output2OffsetYPreference = "ShitDesigner.Output2.Viewport.OffsetY";
+		public const int Output2AdjustmentStep = 10;
 		[SerializeField] private Shader _displayTransformShader;
 		[SerializeField, Min(0.1f)] private float m_TestPatternMotionSpeed = 1f;
 
@@ -29,6 +62,9 @@ namespace ShitDesigner.Main {
 		private ulong _presentedFrameNumber;
 		private bool _initialized;
 		private bool m_OutputsSwapped;
+		private LiveOutputViewport m_Output2Viewport = LiveOutputViewport.Clamp(
+			LiveGraphRuntime.OverlayWidth, LiveGraphRuntime.OverlayHeight, 0, 0,
+			LiveGraphRuntime.OverlayWidth, LiveGraphRuntime.OverlayHeight);
 
 		public int ConnectedDisplayCount => Display.displays?.Length ?? 0;
 		public IReadOnlyList<int> ConnectedExternalDisplayNumbers => Enumerable.Range(2, Math.Min(OutputCount, Math.Max(0, ConnectedDisplayCount - 1))).ToArray();
@@ -41,6 +77,8 @@ namespace ShitDesigner.Main {
 		public ulong PresentedFrameNumber => _presentedFrameNumber;
 		public string DisplayIdentity => DescribeDisplays();
 		public string LastError { get; private set; } = string.Empty;
+		public LiveOutputViewport Output2Viewport => m_Output2Viewport;
+		public RectInt Output2ContentRect => m_Output2Viewport.ResolveRect(LiveGraphRuntime.OverlayWidth, LiveGraphRuntime.OverlayHeight);
 
 		public void Initialize() {
 			Shutdown();
@@ -49,7 +87,20 @@ namespace ShitDesigner.Main {
 			var testPatternShader = Resources.Load<Shader>("ExternalDisplayTestPattern");
 			if (testPatternShader == null) throw new InvalidOperationException("The external Display test pattern shader is required.");
 			m_TestPatternMaterial = new Material(testPatternShader) { name = "ShitDesigner.ExternalDisplayTestPattern" };
+			LoadOutput2Viewport();
 			_initialized = true;
+		}
+
+		public void AdjustOutput2Viewport(int horizontalDelta, int verticalDelta, bool move) {
+			m_Output2Viewport = move
+				? LiveOutputViewport.Clamp(m_Output2Viewport.Width, m_Output2Viewport.Height,
+					m_Output2Viewport.OffsetX + horizontalDelta, m_Output2Viewport.OffsetY + verticalDelta,
+					LiveGraphRuntime.OverlayWidth, LiveGraphRuntime.OverlayHeight)
+				: LiveOutputViewport.Clamp(m_Output2Viewport.Width + horizontalDelta, m_Output2Viewport.Height + verticalDelta,
+					m_Output2Viewport.OffsetX, m_Output2Viewport.OffsetY,
+					LiveGraphRuntime.OverlayWidth, LiveGraphRuntime.OverlayHeight);
+			SaveOutput2Viewport();
+			_presentedFrameNumber = 0;
 		}
 
 		public bool IsActive(LiveOutputKind output) => m_OutputActive[OutputIndex(output)];
@@ -161,8 +212,12 @@ namespace ShitDesigner.Main {
 			if (frames.Primary.FrameNumber == _presentedFrameNumber && !outputsRebuilt) return;
 			foreach (var output in _outputs) {
 				var frameIndex = OutputIndexForDisplay(output.Key);
-				if (m_OutputActive[frameIndex] && frameIndex < frames.Count && frames[frameIndex].Texture != null)
-					_displayTransform.Blit(frames[frameIndex].Texture, output.Value.Texture, DisplayTransformMode.HdrAces);
+				if (m_OutputActive[frameIndex] && frameIndex < frames.Count && frames[frameIndex].Texture != null) {
+					if (frameIndex == (int)LiveOutputKind.Overlay)
+						_displayTransform.Blit(frames[frameIndex].Texture, output.Value.Texture, DisplayTransformMode.HdrAces,
+							NormalizedOutput2ContentRect());
+					else _displayTransform.Blit(frames[frameIndex].Texture, output.Value.Texture, DisplayTransformMode.HdrAces);
+				}
 				else output.Value.Clear();
 			}
 			foreach (var output in _outputs) if (m_OutputActive[OutputIndexForDisplay(output.Key)]) output.Value.Present();
@@ -321,14 +376,42 @@ namespace ShitDesigner.Main {
 		private void RenderTestPatterns() {
 			m_TestPatternMaterial.SetFloat("_PatternTime", Time.unscaledTime * m_TestPatternMotionSpeed);
 			foreach (var output in _outputs) {
+				var isOutput2 = OutputIndexForDisplay(output.Key) == (int)LiveOutputKind.Overlay;
+				var contentRect = isOutput2 ? NormalizedOutput2ContentRect() : new Vector4(0f, 0f, 1f, 1f);
 				m_TestPatternMaterial.SetFloat("_DisplayNumber", output.Key);
 				m_TestPatternMaterial.SetVector("_DisplayResolution", new Vector4(
-					output.Value.Texture.width,
-					output.Value.Texture.height,
+					isOutput2 ? m_Output2Viewport.Width : output.Value.Texture.width,
+					isOutput2 ? m_Output2Viewport.Height : output.Value.Texture.height,
 					0f,
 					0f));
+				m_TestPatternMaterial.SetVector("_ContentRect", contentRect);
 				Graphics.Blit(Texture2D.blackTexture, output.Value.Texture, m_TestPatternMaterial);
 			}
+		}
+
+		private Vector4 NormalizedOutput2ContentRect() {
+			var rect = Output2ContentRect;
+			return new Vector4(
+				(float)rect.x / LiveGraphRuntime.OverlayWidth,
+				(float)rect.y / LiveGraphRuntime.OverlayHeight,
+				(float)rect.width / LiveGraphRuntime.OverlayWidth,
+				(float)rect.height / LiveGraphRuntime.OverlayHeight);
+		}
+
+		private void LoadOutput2Viewport() {
+			m_Output2Viewport = LiveOutputViewport.Clamp(
+				PlayerPrefs.GetInt(Output2WidthPreference, LiveGraphRuntime.OverlayWidth),
+				PlayerPrefs.GetInt(Output2HeightPreference, LiveGraphRuntime.OverlayHeight),
+				PlayerPrefs.GetInt(Output2OffsetXPreference, 0),
+				PlayerPrefs.GetInt(Output2OffsetYPreference, 0),
+				LiveGraphRuntime.OverlayWidth, LiveGraphRuntime.OverlayHeight);
+		}
+
+		private void SaveOutput2Viewport() {
+			PlayerPrefs.SetInt(Output2WidthPreference, m_Output2Viewport.Width);
+			PlayerPrefs.SetInt(Output2HeightPreference, m_Output2Viewport.Height);
+			PlayerPrefs.SetInt(Output2OffsetXPreference, m_Output2Viewport.OffsetX);
+			PlayerPrefs.SetInt(Output2OffsetYPreference, m_Output2Viewport.OffsetY);
 		}
 
 		private void DestroyOutputs() {
