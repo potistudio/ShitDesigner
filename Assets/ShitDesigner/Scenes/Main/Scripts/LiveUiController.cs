@@ -291,7 +291,8 @@ namespace ShitDesigner.Main {
 			m_Output2Content.style.top = Length.Percent(100f * (LiveGraphRuntime.OverlayHeight - rect.yMax) / LiveGraphRuntime.OverlayHeight);
 			m_Output2Content.style.width = Length.Percent(100f * rect.width / LiveGraphRuntime.OverlayWidth);
 			m_Output2Content.style.height = Length.Percent(100f * rect.height / LiveGraphRuntime.OverlayHeight);
-			m_Output2Label.text = $"Output 2  {viewport.Width}×{viewport.Height}  {viewport.OffsetX:+0;-0;0},{viewport.OffsetY:+0;-0;0}";
+			var adjustmentMode = _output != null && _output.IsOutput2AdjustmentMode ? "  ADJUST" : string.Empty;
+			m_Output2Label.text = $"Output 2{adjustmentMode}  {viewport.Width}×{viewport.Height}  {viewport.OffsetX:+0;-0;0},{viewport.OffsetY:+0;-0;0}";
 		}
 
 		private void RefreshEditMode(LiveUiReadModel model) {

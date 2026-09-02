@@ -135,6 +135,32 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void HeldArrowAdjustsOutput2WithoutLoadedPatchAfterPressedFrameWasMissed() {
+			var patch = CreatePatch("patch-a");
+			Keyboard keyboard = null;
+			try {
+				keyboard = InputSystem.AddDevice<Keyboard>();
+				keyboard.MakeCurrent();
+				var adjustments = new List<(int Horizontal, int Vertical, bool Move)>();
+				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, _ => { },
+					(_, _) => { }, () => { }, _ => { },
+					adjustOutput2Viewport: (horizontal, vertical, move) => adjustments.Add((horizontal, vertical, move)),
+					isOutput2AdjustmentMode: () => true);
+
+				InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftArrow));
+				InputSystem.Update();
+				InputSystem.Update();
+				input.Poll(null);
+
+				Assert.That(adjustments, Is.EqualTo(new[] { (-10, 0, false) }));
+			}
+			finally {
+				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
+				Object.DestroyImmediate(patch);
+			}
+		}
+
+		[Test]
 		public void ArrowKeysDoNotAdjustOutput2WhenAdjustmentModeIsOff() {
 			var patch = CreatePatch("patch-a");
 			Keyboard keyboard = null;

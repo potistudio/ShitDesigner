@@ -12,6 +12,8 @@ using UnityEngine.InputSystem.Controls;
 namespace ShitDesigner.Main {
 	/// <summary>Maps live keyboard controls to live requests without owning a PlayerLoop.</summary>
 	public sealed class LiveKeyboardInput {
+		private const double Output2AdjustmentRepeatDelay = .3d;
+		private const double Output2AdjustmentRepeatInterval = .05d;
 		private readonly LiveParameterQueue m_Queue;
 		private readonly IReadOnlyDictionary<string, PatchDefinition> m_PatchesById;
 		private readonly Action<int> m_BeginPianoOverlayTake;
@@ -45,6 +47,8 @@ namespace ShitDesigner.Main {
 		private bool m_IsGlobalFlashHeld;
 		private int m_HeldPianoOverlayTakeMask;
 		private int m_HeldLiveParameterMask;
+		private Key m_HeldOutput2AdjustmentKey = Key.None;
+		private double m_NextOutput2AdjustmentTime;
 		private readonly List<(Key Key, string PatchId, string ParameterId)> m_HeldPatchKeyboardInputs
 			= new List<(Key Key, string PatchId, string ParameterId)>();
 
@@ -102,6 +106,8 @@ namespace ShitDesigner.Main {
 			SetGlobalFlashActive(!m_IsEditMode() && keyboard.slashKey.isPressed);
 			QueueReleasedPatchKeyboardInputs(keyboard);
 			ReleaseLiveParameterKeys(keyboard);
+			if (m_IsOutput2AdjustmentMode() && HandleOutput2Adjustment(keyboard)) return;
+			m_HeldOutput2AdjustmentKey = Key.None;
 			if (string.IsNullOrWhiteSpace(loadedPatchId)) return;
 			if (!keyboard.sKey.isPressed) m_HasCompletedPermanentTakeForCurrentSPress = false;
 			EndReleasedPianoOverlayTakes(keyboard);
@@ -114,25 +120,6 @@ namespace ShitDesigner.Main {
 				var parameterCueIndex = PressedInstantEffectIndex(keyboard);
 				if (parameterCueIndex >= 0) {
 					m_FocusInstantEffectParameters(parameterCueIndex);
-					return;
-				}
-			}
-			if (m_IsOutput2AdjustmentMode()) {
-				var moveOutput2Viewport = keyboard.shiftKey.isPressed;
-				if (keyboard.rightArrowKey.wasPressedThisFrame) {
-					m_AdjustOutput2Viewport(LiveExternalDisplayOutput.Output2AdjustmentStep, 0, moveOutput2Viewport);
-					return;
-				}
-				if (keyboard.leftArrowKey.wasPressedThisFrame) {
-					m_AdjustOutput2Viewport(-LiveExternalDisplayOutput.Output2AdjustmentStep, 0, moveOutput2Viewport);
-					return;
-				}
-				if (keyboard.upArrowKey.wasPressedThisFrame) {
-					m_AdjustOutput2Viewport(0, LiveExternalDisplayOutput.Output2AdjustmentStep, moveOutput2Viewport);
-					return;
-				}
-				if (keyboard.downArrowKey.wasPressedThisFrame) {
-					m_AdjustOutput2Viewport(0, -LiveExternalDisplayOutput.Output2AdjustmentStep, moveOutput2Viewport);
 					return;
 				}
 			}
@@ -190,6 +177,33 @@ namespace ShitDesigner.Main {
 			if (CuePressedInstantEffects(keyboard)) return;
 			if (FirePressedLiveParameters(keyboard)) return;
 			QueuePressedPatchKeyboardInputs(keyboard, loadedPatchId);
+		}
+
+		private bool HandleOutput2Adjustment(Keyboard keyboard) {
+			var key = PressedOutput2AdjustmentKey(keyboard);
+			if (key == Key.None) {
+				m_HeldOutput2AdjustmentKey = Key.None;
+				return false;
+			}
+			var now = Time.unscaledTimeAsDouble;
+			var isNewPress = key != m_HeldOutput2AdjustmentKey || keyboard[key].wasPressedThisFrame;
+			if (isNewPress || now >= m_NextOutput2AdjustmentTime) {
+				var step = LiveExternalDisplayOutput.Output2AdjustmentStep;
+				var horizontal = key == Key.RightArrow ? step : key == Key.LeftArrow ? -step : 0;
+				var vertical = key == Key.UpArrow ? step : key == Key.DownArrow ? -step : 0;
+				m_AdjustOutput2Viewport(horizontal, vertical, keyboard.shiftKey.isPressed);
+				m_NextOutput2AdjustmentTime = now + (isNewPress ? Output2AdjustmentRepeatDelay : Output2AdjustmentRepeatInterval);
+			}
+			m_HeldOutput2AdjustmentKey = key;
+			return true;
+		}
+
+		private static Key PressedOutput2AdjustmentKey(Keyboard keyboard) {
+			if (keyboard.rightArrowKey.isPressed) return Key.RightArrow;
+			if (keyboard.leftArrowKey.isPressed) return Key.LeftArrow;
+			if (keyboard.upArrowKey.isPressed) return Key.UpArrow;
+			if (keyboard.downArrowKey.isPressed) return Key.DownArrow;
+			return Key.None;
 		}
 
 		private void SetBlackoutActive(bool active) {
