@@ -291,7 +291,7 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void MainUiDefinesOverlayAndEffectSequencerHosts() {
+		public void MainUiStaticallyDefinesOverlayAndEffectSequencers() {
 			var asset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/ShitDesigner/Scenes/Main/MainUI.uxml");
 			Assert.That(asset, Is.Not.Null);
 			var root = new VisualElement();
@@ -299,6 +299,8 @@ namespace ShitDesigner.Main.Tests {
 
 			var controls = root.Q<VisualElement>("sequencer-controls");
 			var outputTwo = root.Q<VisualElement>("output-2-preview");
+			var overlay = root.Q<VisualElement>("overlay-sequencer");
+			var effect = root.Q<VisualElement>("effect-sequencer");
 
 			Assert.That(controls, Is.Not.Null);
 			Assert.That(controls.childCount, Is.EqualTo(2));
@@ -306,8 +308,14 @@ namespace ShitDesigner.Main.Tests {
 			Assert.That(controls.parent, Is.SameAs(outputTwo.parent));
 			Assert.That(controls.parent.IndexOf(controls), Is.EqualTo(controls.parent.IndexOf(outputTwo) + 1));
 			Assert.That(controls.parent.ClassListContains("inspector-column"), Is.False);
-			Assert.That(root.Q<VisualElement>("overlay-sequencer"), Is.Not.Null);
-			Assert.That(root.Q<VisualElement>("effect-sequencer"), Is.Not.Null);
+			Assert.That(overlay, Is.Not.Null);
+			Assert.That(effect, Is.Not.Null);
+			Assert.That(overlay.childCount, Is.EqualTo(2 + LiveStepSequencer.OverlayLaneCount));
+			Assert.That(effect.childCount, Is.EqualTo(2 + LiveStepSequencer.EffectLaneCount));
+			Assert.That(overlay.Query<Button>(className: "sequencer-step").ToList().Count,
+				Is.EqualTo(LiveStepSequencer.OverlayLaneCount * LiveStepSequencer.StepCount));
+			Assert.That(effect.Query<Button>(className: "sequencer-step").ToList().Count,
+				Is.EqualTo(LiveStepSequencer.EffectLaneCount * LiveStepSequencer.StepCount));
 			Assert.That(root.Q<VisualElement>("compositing-mode-sequencer"), Is.Null);
 		}
 
