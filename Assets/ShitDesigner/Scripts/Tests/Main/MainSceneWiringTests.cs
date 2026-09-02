@@ -213,7 +213,7 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void GlobalFlashStartsGrayscaleRestartsItsPhaseAndBypassesRenderingWhenInactive() {
+		public void GlobalFlashCyclesInvertGrayscaleAndWhiteEmissionRestartsItsPhaseAndBypassesRenderingWhenInactive() {
 			var shader = Resources.Load<Shader>("Shaders/InstantFlash");
 			Assert.That(shader, Is.Not.Null);
 			var renderer = new LiveGlobalFlashRenderer(shader, new LiveRenderSize(4, 4));
@@ -227,10 +227,12 @@ namespace ShitDesigner.Main.Tests {
 				renderer.Configure(1f, 10f, .35f);
 
 				Assert.That(renderer.Render(source, false, 2d), Is.SameAs(source));
-				AssertFlashPixel(renderer.Render(source, true, 2d), readback, new Color(.286f, .286f, .286f, 1f));
+				AssertFlashPixel(renderer.Render(source, true, 2d), readback, new Color(.8f, .7f, .6f, 1f));
+				AssertFlashPixel(renderer.Render(source, true, 2.02d), readback, new Color(.714f, .714f, .714f, 1f));
+				AssertFlashPixel(renderer.Render(source, true, 2.03d), readback, Color.white);
 				AssertFlashPixel(renderer.Render(source, true, 2.05d), readback, new Color(.2f, .3f, .4f, 1f));
 				Assert.That(renderer.Render(source, false, 2.06d), Is.SameAs(source));
-				AssertFlashPixel(renderer.Render(source, true, 5d), readback, new Color(.286f, .286f, .286f, 1f));
+				AssertFlashPixel(renderer.Render(source, true, 5d), readback, new Color(.8f, .7f, .6f, 1f));
 			}
 			finally {
 				RenderTexture.active = previous;

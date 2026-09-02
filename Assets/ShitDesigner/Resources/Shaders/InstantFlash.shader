@@ -41,8 +41,13 @@ Shader "Hidden/ShitDesigner/Main/InstantFlash"
 				float4 source = tex2D(_MainTex, input.uv);
 				float phase = frac(max(_FlashTime, 0.0) * max(_StrobeRate, 0.01));
 				float pulse = 1.0 - step(saturate(_Duty), phase);
-				float luminance = dot(source.rgb, float3(0.2126, 0.7152, 0.0722));
-				float3 color = lerp(source.rgb, luminance.xxx, saturate(_Amount) * pulse);
+				float flashPhase = phase / max(_Duty, 0.01);
+				float3 inverted = 1.0.xxx - source.rgb;
+				float luminance = dot(inverted, float3(0.2126, 0.7152, 0.0722));
+				float3 flash = flashPhase < 1.0 / 3.0 ? inverted
+					: flashPhase < 2.0 / 3.0 ? luminance.xxx
+					: 1.0.xxx;
+				float3 color = lerp(source.rgb, flash, saturate(_Amount) * pulse);
 				return float4(color, source.a);
 			}
 			ENDCG
