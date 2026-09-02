@@ -1378,15 +1378,17 @@ namespace ShitDesigner.Main {
 	/// <summary>Evaluates Bootstrap-created patch graphs and composes their live Program output.</summary>
 	public sealed class LiveGraphRuntime : IDisposable {
 		public const int MainCueCount = 2;
-		public const int ProgramWidthStep = 10;
-		private static int m_ProgramWidth = 1560;
+		public const int OutputResolutionStep = 10;
+		public const int ProgramWidth = 1560;
 		public const int ProgramHeight = 854;
-		public const int OverlayWidth = 3840;
-		public const int OverlayHeight = 1536;
-		public static int ProgramWidth => m_ProgramWidth;
+		private static int m_OverlayWidth = 3840;
+		private static int m_OverlayHeight = 1536;
+		public static int OverlayWidth => m_OverlayWidth;
+		public static int OverlayHeight => m_OverlayHeight;
 
-		internal static void AdjustProgramWidth(int delta) {
-			m_ProgramWidth = Math.Max(ProgramWidthStep, m_ProgramWidth + delta);
+		internal static void AdjustOverlayResolution(int widthDelta, int heightDelta) {
+			m_OverlayWidth = Math.Max(OutputResolutionStep, m_OverlayWidth + widthDelta);
+			m_OverlayHeight = Math.Max(OutputResolutionStep, m_OverlayHeight + heightDelta);
 		}
 		public const int PreviewWidth = 160;
 		public const int PreviewHeight = 90;

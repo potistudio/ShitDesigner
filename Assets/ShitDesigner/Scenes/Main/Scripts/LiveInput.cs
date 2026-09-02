@@ -89,7 +89,7 @@ namespace ShitDesigner.Main {
 		private readonly Action m_BeginMomentaryMainComposite;
 		private readonly Action m_EndMomentaryMainComposite;
 		private readonly Action m_CompleteMainComposite;
-		private readonly Action<int> m_AdjustProgramWidth;
+		private readonly Action<int, int> m_AdjustOutput2Resolution;
 		private readonly Action<int, bool> m_FireLiveParameter;
 		private readonly Key m_BlackoutKey;
 		private readonly Action<bool> m_SetBlackoutActive;
@@ -105,7 +105,7 @@ namespace ShitDesigner.Main {
 		public LiveKeyboardInput(LiveParameterQueue queue, IReadOnlyList<PatchDefinition> patches, Action<int> beginPianoOverlayTake, Action<int, int> moveCatalogSelection, Action launchSelectedPatch, Action<double> tapBpm,
 			Action toggleEditMode = null, Func<bool> isEditMode = null, Action toggleSelectedEffectCategory = null, Action beginPianoMainCueSwitch = null,
 			Action endPianoMainCueSwitch = null, Action completeMainCueSwitch = null, Action<int> endPianoOverlayTake = null,
-			Action<int> turnOnOverlaySequencerStep = null, Action<int> adjustProgramWidth = null, Action<int, bool> fireLiveParameter = null,
+			Action<int> turnOnOverlaySequencerStep = null, Action<int, int> adjustOutput2Resolution = null, Action<int, bool> fireLiveParameter = null,
 			Key blackoutKey = Key.Backquote, Action<bool> setBlackoutActive = null, Action beginMomentaryMainComposite = null,
 			Action endMomentaryMainComposite = null, Action completeMainComposite = null) {
 			m_Queue = queue ?? throw new ArgumentNullException(nameof(queue));
@@ -132,7 +132,7 @@ namespace ShitDesigner.Main {
 			m_BeginMomentaryMainComposite = beginMomentaryMainComposite ?? (() => { });
 			m_EndMomentaryMainComposite = endMomentaryMainComposite ?? (() => { });
 			m_CompleteMainComposite = completeMainComposite ?? (() => { });
-			m_AdjustProgramWidth = adjustProgramWidth ?? (_ => { });
+			m_AdjustOutput2Resolution = adjustOutput2Resolution ?? ((_, _) => { });
 			m_FireLiveParameter = fireLiveParameter ?? ((_, _) => { });
 			m_BlackoutKey = blackoutKey;
 			m_SetBlackoutActive = setBlackoutActive ?? (_ => { });
@@ -156,16 +156,22 @@ namespace ShitDesigner.Main {
 				return;
 			}
 			if (keyboard.rightArrowKey.wasPressedThisFrame) {
-				m_AdjustProgramWidth(LiveGraphRuntime.ProgramWidthStep);
+				m_AdjustOutput2Resolution(LiveGraphRuntime.OutputResolutionStep, 0);
 				return;
 			}
 			if (keyboard.leftArrowKey.wasPressedThisFrame) {
-				m_AdjustProgramWidth(-LiveGraphRuntime.ProgramWidthStep);
+				m_AdjustOutput2Resolution(-LiveGraphRuntime.OutputResolutionStep, 0);
+				return;
+			}
+			if (keyboard.upArrowKey.wasPressedThisFrame) {
+				m_AdjustOutput2Resolution(0, LiveGraphRuntime.OutputResolutionStep);
+				return;
+			}
+			if (keyboard.downArrowKey.wasPressedThisFrame) {
+				m_AdjustOutput2Resolution(0, -LiveGraphRuntime.OutputResolutionStep);
 				return;
 			}
 			if (m_IsEditMode()) {
-				if (keyboard.upArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, -1);
-				if (keyboard.downArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, 1);
 				if (keyboard.spaceKey.wasPressedThisFrame) m_ToggleSelectedEffectCategory();
 				return;
 			}
@@ -208,8 +214,6 @@ namespace ShitDesigner.Main {
 					if (!key.isPressed) EndPianoOverlayTake(laneIndex);
 				}
 			}
-			if (keyboard.upArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, -1);
-			if (keyboard.downArrowKey.wasPressedThisFrame) m_MoveCatalogSelection(0, 1);
 			if (keyboard.enterKey.wasPressedThisFrame) m_LaunchSelectedPatch();
 			if (keyboard.spaceKey.wasPressedThisFrame) m_TapBpm(Time.unscaledTimeAsDouble);
 			if (FirePressedLiveParameters(keyboard)) return;
