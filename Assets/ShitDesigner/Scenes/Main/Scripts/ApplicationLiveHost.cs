@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using ShitDesigner.Input;
+using ShitDesigner.Scene;
 using UnityEngine;
 
 namespace ShitDesigner.Main {
@@ -43,9 +44,15 @@ namespace ShitDesigner.Main {
 		[Header("Instant Effect MIDI")]
 		[SerializeField, Tooltip("Maps each Instant Effect slot to a MIDI message. Disabled slots remain available through their on-screen control.")]
 		private InstantEffectMidiBinding[] m_InstantEffectMidiBindings = CreateInstantEffectMidiBindings();
+		[Header("Instant Effect")]
+		[SerializeField, Tooltip("Maps each Instant Effect Cue to a User Addable Shader Manifest node.")]
+		private string[] m_InstantEffectTypeIds = CreateInstantEffectTypeIds();
 		[Header("Instant Overlay MIDI")]
 		[SerializeField, Tooltip("Maps each of the sixteen Instant Overlay lanes to a MIDI message. The lane remains active while the mapped control is pressed.")]
 		private InstantOverlayMidiBinding[] m_InstantOverlayMidiBindings = CreateInstantOverlayMidiBindings();
+		[Header("Instant Overlay")]
+		[SerializeField, Tooltip("Maps each Instant Overlay Lane to an Overlay Patch.")]
+		private PatchDefinition[] m_InstantOverlayPatches = CreateInstantOverlayPatches();
 
 		private readonly LiveParameterQueue _parameterQueue = new LiveParameterQueue();
 		private readonly LiveBpmTap _bpmTap = new LiveBpmTap();
@@ -70,7 +77,6 @@ namespace ShitDesigner.Main {
 		private int m_SelectedMainPatchIndex;
 		private int m_SelectedOverlayPatchIndex;
 		private int m_SelectedEffectNodeIndex;
-		private readonly string[] m_InstantEffectTypeIds = new string[ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount];
 		private readonly LiveBeatQuantizedTriggerQueue m_InstantEffectTriggerQueue = new LiveBeatQuantizedTriggerQueue();
 		private readonly LiveBeatEffectGate m_InstantEffectGate = new LiveBeatEffectGate();
 		private IReadOnlyList<int> m_FiredInstantEffectTriggers = Array.Empty<int>();
@@ -107,10 +113,14 @@ namespace ShitDesigner.Main {
 				Array.Resize(ref m_InstantEffectMidiBindings, ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount);
 			for (var index = 0; index < m_InstantEffectMidiBindings.Length; index++)
 				m_InstantEffectMidiBindings[index] ??= new InstantEffectMidiBinding();
+			if (m_InstantEffectTypeIds == null || m_InstantEffectTypeIds.Length != ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount)
+				Array.Resize(ref m_InstantEffectTypeIds, ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount);
 			if (m_InstantOverlayMidiBindings == null || m_InstantOverlayMidiBindings.Length != LiveStepSequencer.OverlayLaneCount)
 				Array.Resize(ref m_InstantOverlayMidiBindings, LiveStepSequencer.OverlayLaneCount);
 			for (var index = 0; index < m_InstantOverlayMidiBindings.Length; index++)
 				m_InstantOverlayMidiBindings[index] ??= new InstantOverlayMidiBinding();
+			if (m_InstantOverlayPatches == null || m_InstantOverlayPatches.Length != LiveStepSequencer.OverlayLaneCount)
+				Array.Resize(ref m_InstantOverlayPatches, LiveStepSequencer.OverlayLaneCount);
 		}
 
 		private static InstantEffectMidiBinding[] CreateInstantEffectMidiBindings() {
@@ -119,11 +129,15 @@ namespace ShitDesigner.Main {
 			return bindings;
 		}
 
+		private static string[] CreateInstantEffectTypeIds() => new string[ShitDesigner.Runtime.InstantEffectTriggerContract.TriggerCount];
+
 		private static InstantOverlayMidiBinding[] CreateInstantOverlayMidiBindings() {
 			var bindings = new InstantOverlayMidiBinding[LiveStepSequencer.OverlayLaneCount];
 			for (var index = 0; index < bindings.Length; index++) bindings[index] = new InstantOverlayMidiBinding();
 			return bindings;
 		}
+
+		private static PatchDefinition[] CreateInstantOverlayPatches() => new PatchDefinition[LiveStepSequencer.OverlayLaneCount];
 
 		public bool Boot() {
 			if (State == ApplicationLiveHostState.Running) return true;
@@ -158,6 +172,8 @@ namespace ShitDesigner.Main {
 				m_OpenEffectCategory = m_EffectNodes.Length > 0 ? m_EffectNodes[0].Category : string.Empty;
 				m_SelectedEffectCategory = m_OpenEffectCategory;
 				m_IsEffectCategorySelected = false;
+				ApplyInstantEffectAssignments();
+				ApplyInstantOverlayAssignments();
 				for (var laneIndex = 0; laneIndex < LiveStepSequencer.OverlayLaneCount; laneIndex++) {
 					m_OverlayTakeOverrides[laneIndex] = FollowOverlaySequencer;
 					m_PianoReturnOverlayTakeOverrides[laneIndex] = NoPianoOverlayTake;
@@ -279,12 +295,21 @@ namespace ShitDesigner.Main {
 				return false;
 			var typeId = SelectedCatalogItemId;
 			if (string.IsNullOrEmpty(typeId)) return false;
-			if (!_runtime.TryAssignInstantEffect(cueIndex, typeId, out var rejectionReason)) {
-				LastDiagnostic = rejectionReason;
-				return false;
+			return AssignInstantEffect(cueIndex, typeId);
+		}
+
+		public bool AssignInstantEffect(int cueIndex, string typeId) {
+			if (cueIndex < 0 || cueIndex >= m_InstantEffectTypeIds.Length) return false;
+			if (_runtime != null) {
+				if (string.IsNullOrEmpty(typeId)) _runtime.ClearInstantEffect(cueIndex);
+				else if (!_runtime.TryAssignInstantEffect(cueIndex, typeId, out var rejectionReason)) {
+					LastDiagnostic = rejectionReason;
+					return false;
+				}
 			}
-			m_InstantEffectTypeIds[cueIndex] = typeId;
-			m_LiveParameterCueIndex = cueIndex;
+			m_InstantEffectTypeIds[cueIndex] = typeId ?? string.Empty;
+			if (string.IsNullOrEmpty(typeId) && m_LiveParameterCueIndex == cueIndex) m_LiveParameterCueIndex = -1;
+			else if (!string.IsNullOrEmpty(typeId)) m_LiveParameterCueIndex = cueIndex;
 			return true;
 		}
 
@@ -498,6 +523,21 @@ namespace ShitDesigner.Main {
 				: m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay).AssignLane(laneIndex, patchId);
 		}
 
+		public bool AssignInstantOverlayPatch(int laneIndex, PatchDefinition patch) {
+			if (laneIndex < 0 || laneIndex >= m_InstantOverlayPatches.Length) return false;
+			if (patch != null && (_graphBootstrap == null || !_graphBootstrap.OverlayPatches.Contains(patch))) return false;
+			m_InstantOverlayPatches[laneIndex] = patch;
+			if (_runtime == null) return true;
+			var overlay = m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay);
+			if (patch == null) {
+				overlay.ClearLane(laneIndex);
+				m_OverlayTakeOverrides[laneIndex] = FollowOverlaySequencer;
+				m_PianoReturnOverlayTakeOverrides[laneIndex] = NoPianoOverlayTake;
+				return true;
+			}
+			return overlay.AssignLane(laneIndex, patch.Id).Accepted;
+		}
+
 		private void ApplyRequests(bool clearResults = true) {
 			_pendingRequests.Clear();
 			if (clearResults) _requestResults.Clear();
@@ -513,6 +553,24 @@ namespace ShitDesigner.Main {
 				.CreateReadModel(adjustedTotalBeats, m_OverlayTakeOverrides);
 			_runtime.SetOverlayComposition(overlay);
 			return overlay;
+		}
+
+		private void ApplyInstantEffectAssignments() {
+			for (var cueIndex = 0; cueIndex < m_InstantEffectTypeIds.Length; cueIndex++) {
+				var typeId = m_InstantEffectTypeIds[cueIndex];
+				if (string.IsNullOrEmpty(typeId)) continue;
+				if (_runtime.TryAssignInstantEffect(cueIndex, typeId, out var rejectionReason)) continue;
+				Debug.LogWarning("[ApplicationLiveHost] Instant Effect Cue " + (cueIndex + 1) + " could not be assigned: " + rejectionReason, this);
+			}
+		}
+
+		private void ApplyInstantOverlayAssignments() {
+			var overlay = m_Sequencers.First(sequencer => sequencer.Kind == LiveSequencerKind.Overlay);
+			for (var laneIndex = 0; laneIndex < m_InstantOverlayPatches.Length; laneIndex++) {
+				var patch = m_InstantOverlayPatches[laneIndex];
+				if (patch == null || !m_OverlayPatchIds.Contains(patch.Id)) continue;
+				overlay.AssignLane(laneIndex, patch.Id);
+			}
 		}
 
 		private void PublishReadModel(string diagnostic) {

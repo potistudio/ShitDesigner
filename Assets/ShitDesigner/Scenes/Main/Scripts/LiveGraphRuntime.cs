@@ -555,6 +555,14 @@ namespace ShitDesigner.Main {
 			return true;
 		}
 
+		public void Clear(int cueIndex) {
+			if (m_Disposed) throw new ObjectDisposedException(nameof(LiveInstantEffectRenderer));
+			if (cueIndex < 0 || cueIndex >= m_Slots.Length) throw new ArgumentOutOfRangeException(nameof(cueIndex));
+			var previous = m_Slots[cueIndex];
+			m_Slots[cueIndex] = null;
+			previous?.Dispose();
+		}
+
 		public LiveParameterDefinition[] GetParameterDefinitions(int cueIndex) {
 			if (m_Disposed) throw new ObjectDisposedException(nameof(LiveInstantEffectRenderer));
 			if (cueIndex < 0 || cueIndex >= m_Slots.Length) return Array.Empty<LiveParameterDefinition>();
@@ -1628,6 +1636,11 @@ namespace ShitDesigner.Main {
 		public bool TryAssignInstantEffect(int cueIndex, string typeId, out string rejectionReason) {
 			EnsureUsable();
 			return _graph.InstantEffects.TryAssign(cueIndex, typeId, out rejectionReason);
+		}
+
+		public void ClearInstantEffect(int cueIndex) {
+			EnsureUsable();
+			_graph.InstantEffects.Clear(cueIndex);
 		}
 
 		public void Dispose() {

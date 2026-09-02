@@ -1,20 +1,31 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using ShitDesigner.Core;
 using ShitDesigner.Input;
 using ShitDesigner.Main;
+using ShitDesigner.Nodes;
+using ShitDesigner.Scene;
 using UnityEditor;
 using UnityEngine;
 
 namespace ShitDesigner.Editor {
 	[CustomEditor(typeof(ApplicationLiveHost))]
 	public sealed class ApplicationLiveHostEditor : UnityEditor.Editor {
+		private SerializedProperty m_GraphBootstrap;
 		private SerializedProperty m_MidiInputManager;
+		private SerializedProperty m_InstantEffectTypeIds;
 		private SerializedProperty m_InstantEffectMidiBindings;
+		private SerializedProperty m_InstantOverlayPatches;
 		private SerializedProperty m_InstantOverlayMidiBindings;
 		private double m_NextRepaint;
 
 		private void OnEnable() {
+			m_GraphBootstrap = serializedObject.FindProperty("_graphBootstrap");
 			m_MidiInputManager = serializedObject.FindProperty("_midiInputManager");
+			m_InstantEffectTypeIds = serializedObject.FindProperty("m_InstantEffectTypeIds");
 			m_InstantEffectMidiBindings = serializedObject.FindProperty("m_InstantEffectMidiBindings");
+			m_InstantOverlayPatches = serializedObject.FindProperty("m_InstantOverlayPatches");
 			m_InstantOverlayMidiBindings = serializedObject.FindProperty("m_InstantOverlayMidiBindings");
 			EditorApplication.update += RepaintWhilePlaying;
 		}
@@ -28,11 +39,83 @@ namespace ShitDesigner.Editor {
 			}
 
 			serializedObject.Update();
-			DrawPropertiesExcluding(serializedObject, "m_Script", "m_InstantEffectMidiBindings", "m_InstantOverlayMidiBindings");
+			DrawPropertiesExcluding(serializedObject, "m_Script", "m_InstantEffectTypeIds", "m_InstantEffectMidiBindings", "m_InstantOverlayPatches", "m_InstantOverlayMidiBindings");
+			var host = (ApplicationLiveHost)target;
+			var graphBootstrap = m_GraphBootstrap.objectReferenceValue as LiveGraphBootstrap;
 			var midiInputManager = m_MidiInputManager.objectReferenceValue as MidiInputManager;
+			DrawInstantEffectAssignments(host, graphBootstrap);
+			DrawInstantOverlayAssignments(host, graphBootstrap);
 			DrawMidiAssignments("Instant Effect", "Cue", m_InstantEffectMidiBindings, midiInputManager);
 			DrawMidiAssignments("Instant Overlay", "Lane", m_InstantOverlayMidiBindings, midiInputManager);
 			serializedObject.ApplyModifiedProperties();
+		}
+
+		private void DrawInstantEffectAssignments(ApplicationLiveHost host, LiveGraphBootstrap graphBootstrap) {
+			EditorGUILayout.Space();
+			EditorGUILayout.LabelField("Instant Effect Assignments", EditorStyles.boldLabel);
+			var effects = graphBootstrap == null ? Array.Empty<ShaderNodeManifestEntry>() : graphBootstrap.EffectNodes.ToArray();
+			if (graphBootstrap == null) EditorGUILayout.HelpBox("Assign a Live Graph Bootstrap to choose Instant Effects.", MessageType.Warning);
+			else if (effects.Length == 0) EditorGUILayout.HelpBox("No User Addable image effects are available from the Shader Manifest.", MessageType.Warning);
+			for (var index = 0; index < m_InstantEffectTypeIds.arraySize; index++)
+				DrawInstantEffectAssignment(host, index, m_InstantEffectTypeIds.GetArrayElementAtIndex(index), effects);
+		}
+
+		private static void DrawInstantEffectAssignment(ApplicationLiveHost host, int index, SerializedProperty typeId, IReadOnlyList<ShaderNodeManifestEntry> effects) {
+			var currentTypeId = typeId.stringValue;
+			var options = new List<string> { "<Unassigned>" };
+			var typeIds = new List<string> { string.Empty };
+			var selected = 0;
+			for (var effectIndex = 0; effectIndex < effects.Count; effectIndex++) {
+				var effect = effects[effectIndex];
+				options.Add(effect.Category + " / " + effect.DisplayName);
+				typeIds.Add(effect.TypeId.Value);
+				if (string.Equals(currentTypeId, effect.TypeId.Value, StringComparison.Ordinal)) selected = effectIndex + 1;
+			}
+			if (!string.IsNullOrEmpty(currentTypeId) && selected == 0) {
+				options.Add("<Unavailable> " + currentTypeId);
+				typeIds.Add(currentTypeId);
+				selected = options.Count - 1;
+			}
+
+			EditorGUI.BeginChangeCheck();
+			selected = EditorGUILayout.Popup("Cue " + (index + 1).ToString("00"), selected, options.ToArray());
+			if (!EditorGUI.EndChangeCheck()) return;
+			typeId.stringValue = typeIds[selected];
+			if (UnityEngine.Application.isPlaying) host.AssignInstantEffect(index, typeId.stringValue);
+		}
+
+		private void DrawInstantOverlayAssignments(ApplicationLiveHost host, LiveGraphBootstrap graphBootstrap) {
+			EditorGUILayout.Space();
+			EditorGUILayout.LabelField("Instant Overlay Assignments", EditorStyles.boldLabel);
+			var overlays = graphBootstrap == null ? Array.Empty<PatchDefinition>() : graphBootstrap.OverlayPatches.Where(patch => patch != null).ToArray();
+			if (graphBootstrap == null) EditorGUILayout.HelpBox("Assign a Live Graph Bootstrap to choose Instant Overlays.", MessageType.Warning);
+			else if (overlays.Length == 0) EditorGUILayout.HelpBox("No Overlay Patches are configured in the Live Graph Bootstrap.", MessageType.Warning);
+			for (var index = 0; index < m_InstantOverlayPatches.arraySize; index++)
+				DrawInstantOverlayAssignment(host, index, m_InstantOverlayPatches.GetArrayElementAtIndex(index), overlays);
+		}
+
+		private static void DrawInstantOverlayAssignment(ApplicationLiveHost host, int index, SerializedProperty patchProperty, IReadOnlyList<PatchDefinition> overlays) {
+			var currentPatch = patchProperty.objectReferenceValue as PatchDefinition;
+			var options = new List<string> { "<Unassigned>" };
+			var patches = new List<PatchDefinition> { null };
+			var selected = 0;
+			for (var patchIndex = 0; patchIndex < overlays.Count; patchIndex++) {
+				var patch = overlays[patchIndex];
+				options.Add(patch.DisplayName);
+				patches.Add(patch);
+				if (patch == currentPatch) selected = patchIndex + 1;
+			}
+			if (currentPatch != null && selected == 0) {
+				options.Add("<Unavailable> " + currentPatch.DisplayName);
+				patches.Add(currentPatch);
+				selected = options.Count - 1;
+			}
+
+			EditorGUI.BeginChangeCheck();
+			selected = EditorGUILayout.Popup("Lane " + (index + 1).ToString("00"), selected, options.ToArray());
+			if (!EditorGUI.EndChangeCheck()) return;
+			patchProperty.objectReferenceValue = patches[selected];
+			if (UnityEngine.Application.isPlaying) host.AssignInstantOverlayPatch(index, patches[selected]);
 		}
 
 		private static void DrawMidiAssignments(string title, string slotName, SerializedProperty bindings, MidiInputManager midiInputManager) {
