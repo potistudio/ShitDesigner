@@ -82,7 +82,7 @@ namespace ShitDesigner.Tests.Scene {
 		}
 
 		[UnityTest]
-		public IEnumerator CylindricalFlythroughBuildsConfiguredFieldAndMovesCameraForward() {
+		public IEnumerator CylindricalFlythroughBuildsConfiguredFieldAndMovesObjectsWhileCameraStaysFixed() {
 			var root = new GameObject("Cylinder Flythrough Test");
 			try {
 				var cameraObject = new GameObject("Camera");
@@ -91,13 +91,13 @@ namespace ShitDesigner.Tests.Scene {
 				var flythrough = root.AddComponent<CylindricalObjectFlythrough>();
 				flythrough.Rebuild();
 				Assert.That(flythrough.GeneratedObjectCount, Is.EqualTo(300));
-				var startingZ = cameraObject.transform.localPosition.z;
+				var startingCameraPosition = cameraObject.transform.localPosition;
+				var startingFieldPosition = flythrough.GeneratedFieldLocalPosition;
 
 				yield return null;
 
-				Assert.That(cameraObject.transform.localPosition.x, Is.EqualTo(0f));
-				Assert.That(cameraObject.transform.localPosition.y, Is.EqualTo(0f));
-				Assert.That(cameraObject.transform.localPosition.z, Is.GreaterThan(startingZ));
+				Assert.That(cameraObject.transform.localPosition, Is.EqualTo(startingCameraPosition));
+				Assert.That(flythrough.GeneratedFieldLocalPosition.z, Is.LessThan(startingFieldPosition.z));
 			}
 			finally {
 				Object.DestroyImmediate(root);
@@ -105,7 +105,7 @@ namespace ShitDesigner.Tests.Scene {
 		}
 
 		[UnityTest]
-		public IEnumerator GraphClockMovesTheInstantiatedPrefabCameraBeforeRendering() {
+		public IEnumerator GraphClockMovesTheInstantiatedPrefabObjectsBeforeRenderingWhileCameraStaysFixed() {
 			var prefab = new GameObject("Cylinder Flythrough Prefab");
 			var cameraObject = new GameObject("Camera");
 			cameraObject.transform.SetParent(prefab.transform, false);
@@ -118,12 +118,15 @@ namespace ShitDesigner.Tests.Scene {
 				Assert.That(created.IsSuccess, Is.True, created.IsFailure ? created.Error.Message : string.Empty);
 				created.Value.BindGraphClock();
 				var camera = created.Value.Camera;
-				var startingZ = camera.transform.localPosition.z;
+				var startingCameraPosition = camera.transform.localPosition;
+				var flythrough = created.Value.Root.GetComponent<CylindricalObjectFlythrough>();
+				var startingFieldPosition = flythrough.GeneratedFieldLocalPosition;
 
 				var advanced = created.Value.AdvanceGraphClock(2d);
 
 				Assert.That(advanced.IsSuccess, Is.True, advanced.IsFailure ? advanced.Error.Message : string.Empty);
-				Assert.That(camera.transform.localPosition.z, Is.EqualTo(startingZ + 3f).Within(0.001f));
+				Assert.That(camera.transform.localPosition, Is.EqualTo(startingCameraPosition));
+				Assert.That(flythrough.GeneratedFieldLocalPosition.z, Is.EqualTo(startingFieldPosition.z - 3f).Within(0.001f));
 			}
 			finally {
 				if (created.IsSuccess) created.Value.Dispose();

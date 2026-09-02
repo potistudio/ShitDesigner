@@ -1,8 +1,9 @@
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace ShitDesigner.Scene {
-	/// <summary>Builds an inspector-configurable cylindrical object field and moves a camera through its center.</summary>
+	/// <summary>Builds an inspector-configurable cylindrical object field that moves around a fixed camera.</summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
 	public sealed class CylindricalObjectFlythrough : MonoBehaviour, ISceneGraphClockReceiver {
@@ -37,11 +38,13 @@ namespace ShitDesigner.Scene {
 			new Color(1f, 0.65f, 0.08f, 1f)
 		};
 
-		[Header("Camera")]
-		[SerializeField] private Camera sceneCamera;
-		[Min(0f)][SerializeField] private float cameraSpeed = 1.5f;
-		[SerializeField] private float cameraStartZ;
-		[SerializeField] private bool loopCamera = true;
+		[Header("Object motion")]
+		[FormerlySerializedAs("cameraSpeed")]
+		[Min(0f)][SerializeField] private float objectSpeed = 1.5f;
+		[FormerlySerializedAs("cameraStartZ")]
+		[SerializeField] private float objectStartZ;
+		[FormerlySerializedAs("loopCamera")]
+		[SerializeField] private bool loopObjects = true;
 
 		private Transform _generatedRoot;
 		private Material[] _generatedMaterials = Array.Empty<Material>();
@@ -49,22 +52,23 @@ namespace ShitDesigner.Scene {
 		private bool _graphClockDriven;
 
 		public int GeneratedObjectCount => _generatedRoot == null ? 0 : _generatedRoot.childCount;
+		public Vector3 GeneratedFieldLocalPosition => _generatedRoot == null ? Vector3.zero : _generatedRoot.localPosition;
 
 		private void OnEnable() {
 			Rebuild();
-			ResetCameraPosition();
+			ResetObjectFieldPosition();
 		}
 
 		private void Update() {
 			if (_rebuildRequested) Rebuild();
-			if (Application.isPlaying && !_graphClockDriven) MoveCamera(Time.deltaTime);
+			if (Application.isPlaying && !_graphClockDriven) MoveObjects(Time.deltaTime);
 		}
 
 		public void SetGraphClockDriven(bool graphClockDriven) => _graphClockDriven = graphClockDriven;
 
 		public void AdvanceGraphClock(double deltaSeconds) {
 			if (!_graphClockDriven || deltaSeconds <= 0d) return;
-			MoveCamera((float)Math.Min(deltaSeconds, float.MaxValue));
+			MoveObjects((float)Math.Min(deltaSeconds, float.MaxValue));
 		}
 
 		private void OnDisable() => ReleaseGeneratedContent();
@@ -78,7 +82,7 @@ namespace ShitDesigner.Scene {
 			tunnelLength = Mathf.Max(1f, tunnelLength);
 			objectScaleRange.x = Mathf.Max(0.01f, objectScaleRange.x);
 			objectScaleRange.y = Mathf.Max(objectScaleRange.x, objectScaleRange.y);
-			cameraSpeed = Mathf.Max(0f, cameraSpeed);
+			objectSpeed = Mathf.Max(0f, objectSpeed);
 			_rebuildRequested = true;
 		}
 
@@ -104,24 +108,19 @@ namespace ShitDesigner.Scene {
 			}
 		}
 
-		[ContextMenu("Reset Camera Position")]
-		public void ResetCameraPosition() {
-			if (sceneCamera == null) sceneCamera = GetComponentInChildren<Camera>();
-			if (sceneCamera == null) return;
-			sceneCamera.transform.localPosition = new Vector3(0f, 0f, cameraStartZ);
-			sceneCamera.transform.localRotation = Quaternion.identity;
+		[ContextMenu("Reset Object Field Position")]
+		public void ResetObjectFieldPosition() {
+			if (_generatedRoot == null) return;
+			_generatedRoot.localPosition = Vector3.zero;
 		}
 
-		private void MoveCamera(float deltaTime) {
-			if (sceneCamera == null) return;
-			var position = sceneCamera.transform.localPosition;
-			position.x = 0f;
-			position.y = 0f;
-			position.z += cameraSpeed * deltaTime;
-			if (loopCamera && position.z >= cameraStartZ + tunnelLength)
-				position.z = cameraStartZ + Mathf.Repeat(position.z - cameraStartZ, tunnelLength);
-			sceneCamera.transform.localPosition = position;
-			sceneCamera.transform.localRotation = Quaternion.identity;
+		private void MoveObjects(float deltaTime) {
+			if (_generatedRoot == null) return;
+			var position = _generatedRoot.localPosition;
+			position.z -= objectSpeed * deltaTime;
+			if (loopObjects && position.z <= -tunnelLength)
+				position.z = -Mathf.Repeat(-position.z, tunnelLength);
+			_generatedRoot.localPosition = position;
 		}
 
 		private GameObject CreateObject(int index, System.Random random) {
@@ -156,7 +155,7 @@ namespace ShitDesigner.Scene {
 			var angle = NextFloat(random, 0f, Mathf.PI * 2f);
 			var radius = cylinderRadius + NextFloat(random, -radialJitter, radialJitter);
 			var radialDirection = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f);
-			item.localPosition = radialDirection * radius + Vector3.forward * NextFloat(random, cameraStartZ, cameraStartZ + tunnelLength);
+			item.localPosition = radialDirection * radius + Vector3.forward * NextFloat(random, objectStartZ, objectStartZ + tunnelLength);
 
 			var uniformScale = NextFloat(random, objectScaleRange.x, objectScaleRange.y);
 			var stretch = NextFloat(random, 0.65f, 1.6f);
