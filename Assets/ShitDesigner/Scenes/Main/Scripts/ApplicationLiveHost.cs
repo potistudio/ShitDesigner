@@ -83,7 +83,7 @@ namespace ShitDesigner.Main {
 		private readonly int[] m_PianoReturnOverlayTakeOverrides = new int[LiveStepSequencer.OverlayLaneCount];
 		private float m_BaseUnityTimeScale = 1f;
 		private bool m_OwnsUnityTimeScale;
-		private bool m_RebuildRuntimeForProgramWidth;
+		private bool m_RebuildRuntimeForOutputResolution;
 		private bool m_IsBlackoutActive;
 
 		public ApplicationLiveHostState State { get; private set; } = ApplicationLiveHostState.Cold;
@@ -146,9 +146,9 @@ namespace ShitDesigner.Main {
 					ToggleEditMode, cueIndex => { AssignSelectedEffectToCue(cueIndex); }, () => m_IsEditMode, QueueInstantEffectTrigger,
 					cueIndex => { FocusInstantEffectParameters(cueIndex); }, ToggleSelectedEffectCategory, BeginPianoMainCueSwitch,
 					EndPianoMainCueSwitch, CompleteMainCueSwitch, EndPianoOverlayTake, TurnOnOverlaySequencerStep,
-					delta => {
-						LiveGraphRuntime.AdjustProgramWidth(delta);
-						m_RebuildRuntimeForProgramWidth = true;
+					(widthDelta, heightDelta) => {
+						LiveGraphRuntime.AdjustOverlayResolution(widthDelta, heightDelta);
+						m_RebuildRuntimeForOutputResolution = true;
 					}, FireLiveParameter, m_BlackoutKey, active => { m_IsBlackoutActive = active; }, BeginMomentaryMainComposite,
 					EndMomentaryMainComposite, CompleteMainComposite);
 				_midiInputManager.InitializeForHostPolling();
@@ -183,8 +183,8 @@ namespace ShitDesigner.Main {
 			if (_tickFrameNumber == 0) _tickFrameNumber = 1;
 
 			_keyboard.Poll(_runtime.LoadedPatchId);
-			if (m_RebuildRuntimeForProgramWidth) {
-				RebuildRuntimeForProgramWidth();
+			if (m_RebuildRuntimeForOutputResolution) {
+				RebuildRuntimeForOutputResolution();
 				return;
 			}
 			_midi.SetSelectedPatch(_runtime.LoadedPatchId);
@@ -223,8 +223,8 @@ namespace ShitDesigner.Main {
 			State = ApplicationLiveHostState.Offline;
 		}
 
-		private void RebuildRuntimeForProgramWidth() {
-			m_RebuildRuntimeForProgramWidth = false;
+		private void RebuildRuntimeForOutputResolution() {
+			m_RebuildRuntimeForOutputResolution = false;
 			var replacement = _graphBootstrap.CreateRuntime();
 			replacement.ConfigureMainCueFaderCurve(m_MainCueFaderCurve);
 			replacement.ConfigureMainCompositeOpacity(m_MainCompositeOpacity);

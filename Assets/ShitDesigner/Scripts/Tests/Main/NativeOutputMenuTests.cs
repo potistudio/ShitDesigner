@@ -89,6 +89,25 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void AdjustingOverlayResolutionUpdatesOutput2Size() {
+			var originalWidth = LiveGraphRuntime.OverlayWidth;
+			var originalHeight = LiveGraphRuntime.OverlayHeight;
+			try {
+				LiveGraphRuntime.AdjustOverlayResolution(10, -10);
+
+				var sizes = LiveGraphBootstrap.ResolveOutputRenderSizes();
+				Assert.That(sizes.Overlay.Width, Is.EqualTo(originalWidth + 10));
+				Assert.That(sizes.Overlay.Height, Is.EqualTo(originalHeight - 10));
+				Assert.That(LiveExternalDisplayOutput.ResolveOutputResolution(3),
+					Is.EqualTo(new Vector2Int(originalWidth + 10, originalHeight - 10)));
+			}
+			finally {
+				LiveGraphRuntime.AdjustOverlayResolution(originalWidth - LiveGraphRuntime.OverlayWidth,
+					originalHeight - LiveGraphRuntime.OverlayHeight);
+			}
+		}
+
+		[Test]
 		public void ControllerReflectsAvailabilityAndDispatchesNativeCommands() {
 			var target = new RecordingOutputTarget(programAvailable: true, overlayAvailable: true);
 			var backend = new RecordingOutputMenuBackend();

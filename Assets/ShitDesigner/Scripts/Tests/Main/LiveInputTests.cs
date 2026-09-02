@@ -73,20 +73,25 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
-		public void KeyboardUpAndDownArrowsMoveWithinCatalogLists() {
+		public void ArrowKeysAdjustOutput2ResolutionInsteadOfMovingTheCatalog() {
 			var patch = CreatePatch("patch-a");
 			Keyboard keyboard = null;
 			try {
 				keyboard = InputSystem.AddDevice<Keyboard>();
 				keyboard.MakeCurrent();
+				var adjustments = new List<(int Width, int Height)>();
 				var movements = new List<(int Horizontal, int Vertical)>();
 				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, _ => { },
-					(horizontal, vertical) => movements.Add((horizontal, vertical)), () => { }, _ => { });
+					(horizontal, vertical) => movements.Add((horizontal, vertical)), () => { }, _ => { },
+					adjustOutput2Resolution: (width, height) => adjustments.Add((width, height)));
 
+				PollKey(input, keyboard, Key.RightArrow);
+				PollKey(input, keyboard, Key.LeftArrow);
 				PollKey(input, keyboard, Key.UpArrow);
 				PollKey(input, keyboard, Key.DownArrow);
 
-				Assert.That(movements, Is.EqualTo(new[] { (0, -1), (0, 1) }));
+				Assert.That(adjustments, Is.EqualTo(new[] { (10, 0), (-10, 0), (0, 10), (0, -10) }));
+				Assert.That(movements, Is.Empty);
 			}
 			finally {
 				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
@@ -424,31 +429,6 @@ namespace ShitDesigner.Main.Tests {
 
 				Assert.That(firing, Is.EqualTo(Enumerable.Range(0, 7).SelectMany(index => new[] { (index, true), (index, false) })));
 				Assert.That(queue.Count, Is.Zero);
-			}
-			finally {
-				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
-				Object.DestroyImmediate(patch);
-			}
-		}
-
-		[Test]
-		public void LeftAndRightArrowsAdjustProgramWidthInsteadOfMovingTheCatalog() {
-			var patch = CreatePatch("patch-a");
-			Keyboard keyboard = null;
-			try {
-				keyboard = InputSystem.AddDevice<Keyboard>();
-				keyboard.MakeCurrent();
-				var adjustments = new List<int>();
-				var movements = new List<(int Horizontal, int Vertical)>();
-				var input = new LiveKeyboardInput(new LiveParameterQueue(), new[] { patch }, _ => { },
-					(horizontal, vertical) => movements.Add((horizontal, vertical)), () => { }, _ => { },
-					adjustProgramWidth: adjustments.Add);
-
-				PollKey(input, keyboard, Key.RightArrow);
-				PollKey(input, keyboard, Key.LeftArrow);
-
-				Assert.That(adjustments, Is.EqualTo(new[] { 10, -10 }));
-				Assert.That(movements, Is.Empty);
 			}
 			finally {
 				if (keyboard != null) InputSystem.RemoveDevice(keyboard);
