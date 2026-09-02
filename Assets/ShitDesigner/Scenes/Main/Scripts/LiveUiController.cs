@@ -14,7 +14,9 @@ namespace ShitDesigner.Main {
 	[DisallowMultipleComponent]
 	[DefaultExecutionOrder(1100)]
 	public sealed class LiveUiController : MonoBehaviour {
-		private static readonly string[] m_InstantEffectCueKeys = { "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P" };
+		private static readonly string[] m_InstantEffectCueLabels = {
+			"Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "11", "12", "13", "14", "15", "16"
+		};
 
 		[SerializeField] private PanelRenderer m_PanelRenderer;
 
@@ -269,10 +271,11 @@ namespace ShitDesigner.Main {
 				var typeId = index < model.InstantEffectTypeIds.Count ? model.InstantEffectTypeIds[index] : string.Empty;
 				var effect = model.EffectNodes.FirstOrDefault(candidate => candidate.TypeId == typeId);
 				var effectName = string.IsNullOrEmpty(effect.Name) ? typeId : effect.Name;
-				m_InstantEffectCueButtons[index].text = string.IsNullOrEmpty(typeId) ? m_InstantEffectCueKeys[index] : effectName;
+				var cueLabel = m_InstantEffectCueLabels[index];
+				m_InstantEffectCueButtons[index].text = string.IsNullOrEmpty(typeId) ? cueLabel : effectName;
 				m_InstantEffectCueButtons[index].tooltip = string.IsNullOrEmpty(typeId)
-					? m_InstantEffectCueKeys[index] + " · Instant Effect Trigger " + (index + 1)
-					: m_InstantEffectCueKeys[index] + " · " + (model.IsEditMode ? "Replace " : string.Empty) + effectName;
+					? cueLabel + " · Instant Effect Trigger " + (index + 1)
+					: cueLabel + " · " + (model.IsEditMode ? "Replace " : string.Empty) + effectName;
 				m_InstantEffectCueButtons[index].EnableInClassList("is-assigned", !string.IsNullOrEmpty(typeId));
 				m_InstantEffectCueButtons[index].EnableInClassList("is-edit-key-active", model.IsEditMode && IsInstantEffectCueKeyPressed(Keyboard.current, index));
 				m_InstantEffectCueButtons[index].EnableInClassList("is-trigger-fired", model.FiredInstantEffectTriggers.Contains(index + 1));

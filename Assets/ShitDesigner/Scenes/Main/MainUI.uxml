@@ -36,6 +36,12 @@
                     <ui:Button name="instant-effect-cue-8" text="I" tooltip="Instant Effect Trigger 8" class="instant-effect-cue-button"/>
                     <ui:Button name="instant-effect-cue-9" text="O" tooltip="Instant Effect Trigger 9" class="instant-effect-cue-button"/>
                     <ui:Button name="instant-effect-cue-10" text="P" tooltip="Instant Effect Trigger 10" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-11" text="11" tooltip="Instant Effect Trigger 11" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-12" text="12" tooltip="Instant Effect Trigger 12" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-13" text="13" tooltip="Instant Effect Trigger 13" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-14" text="14" tooltip="Instant Effect Trigger 14" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-15" text="15" tooltip="Instant Effect Trigger 15" class="instant-effect-cue-button"/>
+                    <ui:Button name="instant-effect-cue-16" text="16" tooltip="Instant Effect Trigger 16" class="instant-effect-cue-button"/>
                 </ui:VisualElement>
                 <ui:VisualElement class="live-fader-panel">
                     <ui:VisualElement name="parameter-controls" class="parameter-controls"/>

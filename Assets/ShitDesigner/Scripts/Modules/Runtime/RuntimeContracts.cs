@@ -10,7 +10,7 @@ using ShitDesigner.Project;
 namespace ShitDesigner.Runtime {
 	public static class InstantEffectTriggerContract {
 		public const string NodeTypeId = "shitdesigner.input.instant_effect_triggers";
-		public const int TriggerCount = 10;
+		public const int TriggerCount = 16;
 
 		public static string PortId(int triggerNumber) => "trigger_" + Validate(triggerNumber);
 

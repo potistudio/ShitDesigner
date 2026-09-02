@@ -58,7 +58,7 @@ namespace ShitDesigner.Nodes.Tests {
 		}
 
 		[Test]
-		public void InstantEffectTriggerDefinition_ExposesTenBooleanOutputsInKeyboardOrder() {
+		public void InstantEffectTriggerDefinition_ExposesSixteenBooleanOutputsInTriggerOrder() {
 			var triggers = NodeDefinitionCatalog.CreateInitial().Entries.Single(x => x.TypeId.Value == InstantEffectTriggerContract.NodeTypeId);
 			Assert.That(triggers.Category, Is.EqualTo("Input"));
 			Assert.That(triggers.Parameters, Is.Empty);

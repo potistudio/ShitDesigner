@@ -208,11 +208,11 @@ namespace ShitDesigner.Tests.Runtime {
 			var fixture = CreateFrameFixture(false);
 			Assert.That(fixture.Coordinator.EnqueueInstantEffectTrigger(1).IsSuccess, Is.True);
 			Assert.That(fixture.Coordinator.EnqueueInstantEffectTrigger(1).IsSuccess, Is.True);
-			Assert.That(fixture.Coordinator.EnqueueInstantEffectTrigger(10).IsSuccess, Is.True);
+			Assert.That(fixture.Coordinator.EnqueueInstantEffectTrigger(16).IsSuccess, Is.True);
 			Assert.That(fixture.Coordinator.EnqueueInstantEffectTrigger(0).IsFailure, Is.True);
 
 			var fired = fixture.Coordinator.Tick(0d);
-			Assert.That(fired.Snapshot.InstantEffectTriggers, Is.EqualTo(new[] { 1, 10 }));
+			Assert.That(fired.Snapshot.InstantEffectTriggers, Is.EqualTo(new[] { 1, 16 }));
 			Assert.That(fixture.Coordinator.Tick(1d / 60d).Snapshot.InstantEffectTriggers, Is.Empty);
 		}
 

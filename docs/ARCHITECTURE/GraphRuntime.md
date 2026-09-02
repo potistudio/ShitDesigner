@@ -250,7 +250,7 @@ Scene生成、動画準備およびTexture Lease取得はNodeExecutionContextか
 
 ### グローバルインスタントエフェクト入力
 
-- `Instant Effect Triggers` は `QWERTYUIOP` に対応する10個のBool出力を持つInputノードとする。
+- `Instant Effect Triggers` は16個のBool出力を持つInputノードとする。`QWERTYUIOP` は1〜10番の出力に対応し、11〜16番は画面上の枠から操作する。
 - キー押下は対応する出力を1評価フレームだけtrueにし、押し続けても再発火しない。
 - 入力ノード自身はFXを定義または起動しない。FXノードのTrigger入力へグラフ上で配線された出力だけが発火する。
 - 未配線の出力は何も変更しない。パッチのロード、選択または切替へ変換しない。
