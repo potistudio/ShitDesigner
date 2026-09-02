@@ -17,9 +17,9 @@ namespace ShitDesigner.Scene {
 		[Min(0f)][SerializeField] private float m_UpDistance = 2f;
 		[Min(.001f)][SerializeField] private float m_Duration = .5f;
 		[SerializeField] private AnimationCurve m_EaseOut = CreateEaseOutCurve();
-		[Header("Trigger Appearance")]
-		[Range(0f, 1f)][SerializeField] private float m_TriggerStartOpacity;
-		[Min(.001f)][SerializeField] private float m_TriggerStartDepth = .001f;
+		[Header("End Appearance")]
+		[Range(0f, 1f)][SerializeField] private float m_EndOpacity = 1f;
+		[Min(.001f)][SerializeField] private float m_EndDepth = .35f;
 		[SerializeField] private bool m_TriggerOnColliderEnter = true;
 		[SerializeField] private bool m_ResetToOriginOnTrigger = true;
 
@@ -61,8 +61,8 @@ namespace ShitDesigner.Scene {
 			m_Height = Mathf.Max(.01f, m_Height);
 			m_Depth = Mathf.Max(.001f, m_Depth);
 			m_Opacity = Mathf.Clamp01(m_Opacity);
-			m_TriggerStartOpacity = Mathf.Clamp01(m_TriggerStartOpacity);
-			m_TriggerStartDepth = Mathf.Max(.001f, m_TriggerStartDepth);
+			m_EndOpacity = Mathf.Clamp01(m_EndOpacity);
+			m_EndDepth = Mathf.Max(.001f, m_EndDepth);
 			m_UpDistance = Mathf.Max(0f, m_UpDistance);
 			m_Duration = Mathf.Max(.001f, m_Duration);
 			m_EaseOut ??= CreateEaseOutCurve();
@@ -104,10 +104,10 @@ namespace ShitDesigner.Scene {
 			m_MotionStartPosition = m_ResetToOriginOnTrigger ? m_OriginLocalPosition : transform.localPosition;
 			transform.localPosition = m_MotionStartPosition;
 			m_MotionEndPosition = m_MotionStartPosition + Vector3.up * m_UpDistance;
-			m_MotionStartOpacity = m_TriggerStartOpacity;
-			m_MotionEndOpacity = m_Opacity;
-			m_MotionStartDepth = m_TriggerStartDepth;
-			m_MotionEndDepth = m_Depth;
+			m_MotionStartOpacity = m_Opacity;
+			m_MotionEndOpacity = m_EndOpacity;
+			m_MotionStartDepth = m_Depth;
+			m_MotionEndDepth = m_EndDepth;
 			m_CurrentOpacity = m_MotionStartOpacity;
 			m_CurrentDepth = m_MotionStartDepth;
 			m_MotionElapsed = 0f;
