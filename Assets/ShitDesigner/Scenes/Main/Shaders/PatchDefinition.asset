@@ -12,11 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36a7c9fd8af84f24a8db20cf4457e4ca, type: 3}
   m_Name: PatchDefinition
   m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
-  _id: 
-  _displayName: 
+  _id: 21321334124
+  _displayName: 123
   _programGraph:
-    _outputNodeId: composite
-    _nodes: []
+    _outputNodeId: item
+    _nodes:
+    - _id: item
+      _typeId: shitdesigner.shader.generator.recursive-rectangles
+      m_SceneDefinition: {fileID: 0}
+      m_VideoPath: 
+      m_VideoClip: {fileID: 0}
+      m_VideoBpm: 0
+      _parameters: []
     _connections: []
   _parameters: []
   m_HotCue1:

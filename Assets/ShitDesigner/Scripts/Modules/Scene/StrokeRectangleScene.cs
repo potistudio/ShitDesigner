@@ -14,18 +14,22 @@ namespace ShitDesigner.Scene {
 		[Min(.001f)][SerializeField] private float m_Depth = .35f;
 		[ColorUsage(false, true)][SerializeField] private Color m_Color = Color.white;
 		[Range(0f, 1f)][SerializeField] private float m_Opacity = 1f;
+
 		[Header("Trigger Motion")]
 		[Min(0f)][SerializeField] private float m_UpDistance = 2f;
 		[Min(.001f)][SerializeField] private float m_Duration = .5f;
-		[SerializeField] private AnimationCurve m_EaseOut = CreateEaseOutCurve();
+		[SerializeField] private AnimationCurve m_EaseOut;
+
 		[Header("End Appearance")]
 		[Range(0f, 1f)][SerializeField] private float m_EndOpacity = 1f;
 		[Min(.001f)][SerializeField] private float m_EndDepth = .35f;
 		[SerializeField] private Vector3 m_EndRotationOffset;
+
 		[Header("Trigger Burst")]
 		[Min(1)][SerializeField] private int m_BurstCount = 1;
 		[Min(0f)][SerializeField] private float m_BurstInitialDelay;
 		[Min(0f)][SerializeField] private float m_BurstInterval;
+
 		[Header("Spawned Instances")]
 		[SerializeField] private bool m_HideSourceDuringPlay = true;
 		[SerializeField] private bool m_DestroySpawnedInstanceAfterAnimation = true;
@@ -81,7 +85,6 @@ namespace ShitDesigner.Scene {
 			m_BurstInterval = Mathf.Max(0f, m_BurstInterval);
 			m_UpDistance = Mathf.Max(0f, m_UpDistance);
 			m_Duration = Mathf.Max(.001f, m_Duration);
-			m_EaseOut ??= CreateEaseOutCurve();
 			if (!Application.isPlaying || !m_IsMoving) {
 				m_CurrentOpacity = m_Opacity;
 				m_CurrentDepth = m_Depth;
@@ -275,10 +278,6 @@ namespace ShitDesigner.Scene {
 			material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
 			material.renderQueue = (int)RenderQueue.Transparent;
 		}
-
-		private static AnimationCurve CreateEaseOutCurve() => new AnimationCurve(
-			new Keyframe(0f, 0f, 0f, 2f),
-			new Keyframe(1f, 1f, 0f, 0f));
 
 		private void ReleaseSurface() {
 			if (m_Filter != null)

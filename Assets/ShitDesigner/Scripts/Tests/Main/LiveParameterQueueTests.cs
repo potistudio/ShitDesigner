@@ -89,6 +89,41 @@ namespace ShitDesigner.Main.Tests {
 		}
 
 		[Test]
+		public void EachQuantizeModeQueuesItsOwnGlobalBooleanWithoutAPatchId() {
+			var queue = new LiveParameterQueue();
+
+			var scene = queue.EnqueueSetSceneQuantizeMode(true);
+			var hotCue = queue.EnqueueSetHotCueQuantizeMode(true);
+			var mainCue = queue.EnqueueSetMainCueQuantizeMode(true);
+			var pianoFx = queue.EnqueueSetPianoFxQuantizeMode(true);
+
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+			Assert.That(scene.Accepted && hotCue.Accepted && mainCue.Accepted && pianoFx.Accepted, Is.True);
+			Assert.That(requests.Select(request => request.Kind), Is.EqualTo(new[] {
+				LiveParameterRequestKind.SetSceneQuantizeMode, LiveParameterRequestKind.SetHotCueQuantizeMode,
+				LiveParameterRequestKind.SetMainCueQuantizeMode, LiveParameterRequestKind.SetPianoFxQuantizeMode
+			}));
+			Assert.That(requests, Has.All.Matches<LiveParameterRequest>(request => request.PatchId == string.Empty && request.ParameterValue.AsBool()));
+		}
+
+		[Test]
+		public void QuantizedActionsReleaseOnTheNextBeatInSequenceOrder() {
+			var source = new LiveParameterQueue();
+			source.EnqueueLaunchPatch("patch-a");
+			source.EnqueueRecallHotCue(1);
+			var requests = new List<LiveParameterRequest>();
+			source.Drain(requests);
+			var queue = new LiveBeatQuantizedRequestQueue();
+
+			Assert.That(queue.TryEnqueue(requests[1], 12.25d, out var secondReason), Is.True, secondReason);
+			Assert.That(queue.TryEnqueue(requests[0], 12.25d, out var firstReason), Is.True, firstReason);
+			Assert.That(queue.DrainDue(12.999d), Is.Empty);
+			Assert.That(queue.DrainDue(13d).Select(request => request.SequenceNumber),
+				Is.EqualTo(requests.Select(request => request.SequenceNumber)));
+		}
+
+		[Test]
 		public void SceneTimeJogQueuesAGlobalRequestWithoutAPatchId() {
 			var queue = new LiveParameterQueue();
 
