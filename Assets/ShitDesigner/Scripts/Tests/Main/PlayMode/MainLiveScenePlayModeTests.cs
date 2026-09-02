@@ -316,23 +316,26 @@ namespace ShitDesigner.Main.Tests {
 			var rememberedMainPatch = host.ReadModel.Patches.Last(patch => patch.Role == LivePatchRole.Main);
 			var rememberedOverlayPatch = host.ReadModel.Patches.First(patch => patch.Role == LivePatchRole.Overlay);
 			var nextOverlayPatch = host.ReadModel.Patches.Where(patch => patch.Role == LivePatchRole.Overlay).Skip(1).First();
+			host.MoveCatalogSelection(1, 0);
+			yield return null;
+			Assert.That(host.ReadModel.SelectedCatalogRole, Is.EqualTo(LiveCatalogRole.Overlay));
 			var overlayPatchButton = ui.Q<Button>("patch-" + rememberedOverlayPatch.Id);
 			var overlayDropLane = ui.Q<VisualElement>("sequencer-overlay-lane-label-3").parent;
-			using (var pointerDown = PointerDownEvent.GetPooled(new Event {
+			using (var pointerDown = MouseDownEvent.GetPooled(new Event {
 				type = EventType.MouseDown,
 				button = 0,
 				mousePosition = overlayPatchButton.worldBound.center
 			})) {
 				overlayPatchButton.SendEvent(pointerDown);
 			}
-			using (var pointerMove = PointerMoveEvent.GetPooled(new Event {
+			using (var pointerMove = MouseMoveEvent.GetPooled(new Event {
 				type = EventType.MouseMove,
 				mousePosition = overlayDropLane.worldBound.center
 			})) {
 				ui.SendEvent(pointerMove);
 			}
 			Assert.That(overlayDropLane.ClassListContains("is-drop-target"), Is.True);
-			using (var pointerUp = PointerUpEvent.GetPooled(new Event {
+			using (var pointerUp = MouseUpEvent.GetPooled(new Event {
 				type = EventType.MouseUp,
 				button = 0,
 				mousePosition = overlayDropLane.worldBound.center
