@@ -12,6 +12,7 @@ namespace ShitDesigner.Scene {
 		[Min(.01f)][SerializeField] private float m_Height = 9f;
 		[Min(.001f)][SerializeField] private float m_Depth = .35f;
 		[ColorUsage(false, true)][SerializeField] private Color m_Color = Color.white;
+		[Range(0f, 1f)][SerializeField] private float m_Opacity = 1f;
 		[Header("Trigger Motion")]
 		[Min(0f)][SerializeField] private float m_UpDistance = 2f;
 		[Min(.001f)][SerializeField] private float m_Duration = .5f;
@@ -48,6 +49,7 @@ namespace ShitDesigner.Scene {
 			m_Width = Mathf.Max(.01f, m_Width);
 			m_Height = Mathf.Max(.01f, m_Height);
 			m_Depth = Mathf.Max(.001f, m_Depth);
+			m_Opacity = Mathf.Clamp01(m_Opacity);
 			m_UpDistance = Mathf.Max(0f, m_UpDistance);
 			m_Duration = Mathf.Max(.001f, m_Duration);
 			m_EaseOut ??= CreateEaseOutCurve();
@@ -143,7 +145,7 @@ namespace ShitDesigner.Scene {
 			};
 			m_Mesh.RecalculateNormals();
 			m_Mesh.RecalculateBounds();
-			ApplyColor(m_Material, m_Color);
+			ApplyColor(m_Material, m_Color, m_Opacity);
 		}
 
 		private static Material CreateMaterial() {
@@ -156,14 +158,31 @@ namespace ShitDesigner.Scene {
 			var material = new Material(shader) { hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSave };
 			if (material.HasProperty("_Cull"))
 				material.SetInt("_Cull", (int)CullMode.Off);
+			ConfigureTransparency(material);
 			return material;
 		}
 
-		private static void ApplyColor(Material material, Color color) {
+		private static void ApplyColor(Material material, Color color, float opacity) {
+			color.a *= opacity;
 			if (material.HasProperty("_BaseColor"))
 				material.SetColor("_BaseColor", color);
 			else if (material.HasProperty("_Color"))
 				material.SetColor("_Color", color);
+		}
+
+		private static void ConfigureTransparency(Material material) {
+			if (!material.HasProperty("_Surface"))
+				return;
+
+			material.SetFloat("_Surface", 1f);
+			if (material.HasProperty("_SrcBlend"))
+				material.SetInt("_SrcBlend", (int)BlendMode.SrcAlpha);
+			if (material.HasProperty("_DstBlend"))
+				material.SetInt("_DstBlend", (int)BlendMode.OneMinusSrcAlpha);
+			if (material.HasProperty("_ZWrite"))
+				material.SetInt("_ZWrite", 0);
+			material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+			material.renderQueue = (int)RenderQueue.Transparent;
 		}
 
 		private static AnimationCurve CreateEaseOutCurve() => new AnimationCurve(
