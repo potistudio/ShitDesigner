@@ -553,7 +553,8 @@ namespace ShitDesigner.Nodes {
 			var keys = new[] { "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P" };
 			var ports = Enumerable.Range(1, InstantEffectTriggerContract.TriggerCount)
 				.Select(triggerNumber => new NodePortDefinition(new PortId(InstantEffectTriggerContract.PortId(triggerNumber)),
-					"Trigger " + triggerNumber + " (" + keys[triggerNumber - 1] + ")", NodePortDirection.Output, NodePortType.Bool, false));
+					triggerNumber <= keys.Length ? "Trigger " + triggerNumber + " (" + keys[triggerNumber - 1] + ")" : "Trigger " + triggerNumber,
+					NodePortDirection.Output, NodePortType.Bool, false));
 			return new NodeDefinition(new NodeTypeId(InstantEffectTriggerContract.NodeTypeId), 1, "Instant Effect Triggers", "Input", ports);
 		}
 		private static NodeDefinition AssetFlash() {

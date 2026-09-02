@@ -66,7 +66,11 @@ namespace ShitDesigner.Nodes.Tests {
 				Is.EqualTo(Enumerable.Range(1, InstantEffectTriggerContract.TriggerCount).Select(InstantEffectTriggerContract.PortId)));
 			Assert.That(triggers.Ports.All(port => port.Direction == NodePortDirection.Output && port.Type == NodePortType.Bool), Is.True);
 			Assert.That(triggers.Ports.Select(port => port.DisplayName),
-				Is.EqualTo(new[] { "Trigger 1 (Q)", "Trigger 2 (W)", "Trigger 3 (E)", "Trigger 4 (R)", "Trigger 5 (T)", "Trigger 6 (Y)", "Trigger 7 (U)", "Trigger 8 (I)", "Trigger 9 (O)", "Trigger 10 (P)" }));
+				Is.EqualTo(new[] {
+					"Trigger 1 (Q)", "Trigger 2 (W)", "Trigger 3 (E)", "Trigger 4 (R)", "Trigger 5 (T)",
+					"Trigger 6 (Y)", "Trigger 7 (U)", "Trigger 8 (I)", "Trigger 9 (O)", "Trigger 10 (P)",
+					"Trigger 11", "Trigger 12", "Trigger 13", "Trigger 14", "Trigger 15", "Trigger 16"
+				}));
 		}
 
 		[Test]
