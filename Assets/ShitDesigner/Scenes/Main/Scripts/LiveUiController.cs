@@ -325,7 +325,8 @@ namespace ShitDesigner.Main {
 
 		private void BindSequencers(VisualElement root) {
 			foreach (var sequencer in _host.Sequencers) {
-				var container = Required<VisualElement>(root, GetSequencerElementName(sequencer.Kind));
+				var container = root.Q<VisualElement>(GetSequencerElementName(sequencer.Kind));
+				if (container == null) continue;
 				for (var stepIndex = 0; stepIndex < LiveStepSequencer.StepCount; stepIndex++) {
 					Required<Button>(container, GetSequencerStepName(sequencer.Kind, stepIndex)).userData =
 						new SequencerStepAddress(sequencer.Kind, stepIndex);
