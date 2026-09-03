@@ -13,6 +13,8 @@ namespace ShitDesigner.Main {
 	[DisallowMultipleComponent]
 	[DefaultExecutionOrder(1100)]
 	public sealed class LiveUiController : MonoBehaviour {
+		private const float FullLayoutMinimumWidth = 1600f;
+
 		[SerializeField] private PanelRenderer m_PanelRenderer;
 
 		private VisualElement m_Root;
@@ -120,6 +122,8 @@ namespace ShitDesigner.Main {
 			UnbindVisualTree();
 			m_Root = root;
 			m_MainUi = Required<VisualElement>(root, "main-ui");
+			m_Root.RegisterCallback<GeometryChangedEvent>(OnRootGeometryChanged);
+			RefreshLayoutMode(m_Root.contentRect.width);
 
 			_programMonitor = Required<VisualElement>(root, "program-monitor");
 			m_Output2Preview = Required<VisualElement>(root, "output-2-preview");
@@ -203,6 +207,7 @@ namespace ShitDesigner.Main {
 
 		private void UnbindVisualTree() {
 			if (m_Root != null) {
+				m_Root.UnregisterCallback<GeometryChangedEvent>(OnRootGeometryChanged);
 				CancelPatchDrag();
 				m_Root.UnregisterCallback<PointerDownEvent>(OnPatchPointerDown, TrickleDown.TrickleDown);
 				m_Root.UnregisterCallback<PointerMoveEvent>(OnPatchPointerMove, TrickleDown.TrickleDown);
@@ -247,6 +252,15 @@ namespace ShitDesigner.Main {
 			m_RenderedEffectNodeCount = -1;
 			Array.Clear(m_OverlayLanePreviewTextures, 0, m_OverlayLanePreviewTextures.Length);
 			Array.Clear(m_MainCuePreviewTextures, 0, m_MainCuePreviewTextures.Length);
+		}
+
+		private void OnRootGeometryChanged(GeometryChangedEvent change) {
+			RefreshLayoutMode(change.newRect.width);
+		}
+
+		private void RefreshLayoutMode(float availableWidth) {
+			if (m_MainUi == null || availableWidth <= 0f) return;
+			m_MainUi.EnableInClassList("is-compact-layout", availableWidth < FullLayoutMinimumWidth);
 		}
 
 		private void LateUpdate() {

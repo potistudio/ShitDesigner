@@ -34,6 +34,27 @@
     flex-direction: row;
 }
 
+.main-ui.is-compact-layout .workspace {
+    flex-direction: column;
+}
+
+.main-ui.is-compact-layout .preview-stack {
+    display: none;
+}
+
+.main-ui.is-compact-layout .inspector-column {
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    flex-grow: 1;
+}
+
+.main-ui.is-compact-layout .sidebar-tabs {
+    width: auto;
+    min-width: 0;
+    max-width: none;
+}
+
 .bottom-bar {
     height: 40px;
     min-height: 40px;
