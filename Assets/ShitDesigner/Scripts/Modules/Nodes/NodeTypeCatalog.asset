@@ -151206,6 +151206,12 @@ MonoBehaviour:
     - trigger_8
     - trigger_9
     - trigger_10
+    - trigger_11
+    - trigger_12
+    - trigger_13
+    - trigger_14
+    - trigger_15
+    - trigger_16
     parameterIds: []
     ports:
     - id: trigger_1
@@ -151273,6 +151279,48 @@ MonoBehaviour:
       defaultImage: 0
     - id: trigger_10
       displayName: Trigger 10 (P)
+      direction: 1
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_11
+      displayName: Trigger 11
+      direction: 1
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_12
+      displayName: Trigger 12
+      direction: 1
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_13
+      displayName: Trigger 13
+      direction: 1
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_14
+      displayName: Trigger 14
+      direction: 1
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_15
+      displayName: Trigger 15
+      direction: 1
+      type: 3
+      required: 0
+      hasDefaultImage: 0
+      defaultImage: 0
+    - id: trigger_16
+      displayName: Trigger 16
       direction: 1
       type: 3
       required: 0

@@ -2,6 +2,8 @@
 *.jpg
 *.png
 *.mp4
+*.webm
+*.mov
 
 # Large environment source asset kept locally
 /Shared/Skybox/qwantani_dusk_2_puresky_4k.exr
