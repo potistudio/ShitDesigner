@@ -1,0 +1,228 @@
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using NUnit.Framework;
+using ShitDesigner.Main;
+using ShitDesigner.Stage;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.TestTools;
+using UnityEngine.Video;
+
+namespace ShitDesigner.CameraCues.Tests {
+	public sealed class StageCameraDirectorPlayModeTests {
+		[UnityTest]
+		public IEnumerator MainStageHotCueSeeksOnlyItsIsolatedVideoPlayer() {
+			SceneManager.LoadScene("Main", LoadSceneMode.Single);
+			yield return null;
+
+			var host = Object.FindAnyObjectByType<ApplicationLiveHost>();
+			Assert.That(host, Is.Not.Null);
+			for (var frame = 0; frame < 600 && host.State != ApplicationLiveHostState.Running; frame++) yield return null;
+			Assert.That(host.State, Is.EqualTo(ApplicationLiveHostState.Running), host.LastDiagnostic);
+			Assert.That(host.ReadModel.LoadedPatchId, Is.EqualTo("stage"));
+
+			var directors = Object.FindObjectsByType<StageCameraDirector>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+			Assert.That(directors, Is.Not.Empty);
+			var competingStage = Object.Instantiate(directors[0].gameObject);
+			directors = Object.FindObjectsByType<StageCameraDirector>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+			Assert.That(directors.Length, Is.GreaterThan(1));
+			var players = directors.Select(director => director.GetComponentInChildren<VideoPlayer>(true))
+				.Where(player => player != null)
+				.Distinct()
+				.ToArray();
+			Assert.That(players, Is.Not.Empty);
+			Assert.That(players.Select(player => player.targetTexture).Distinct().Count(), Is.EqualTo(players.Length),
+				"Every runtime Stage instance must decode into its own RenderTexture.");
+			var videoTextures = directors.Select(director => {
+				var renderer = director.transform.Find("LED Screen").GetComponent<Renderer>();
+				var properties = new MaterialPropertyBlock();
+				renderer.GetPropertyBlock(properties);
+				return properties.GetTexture(Shader.PropertyToID("_BaseMap"));
+			}).ToArray();
+			Assert.That(videoTextures.All(texture => texture != null), Is.True);
+			Assert.That(videoTextures.Distinct().Count(), Is.EqualTo(videoTextures.Length),
+				"Every runtime Stage LED must display its own video output RenderTexture.");
+
+			var fixturePath = Path.Combine(Application.dataPath,
+				"ShitDesigner/Scripts/Tests/Media/Fixtures/h264-audio.mp4");
+			foreach (var director in directors)
+				ConfigureVideoCue(director, 1, .5f);
+			foreach (var candidate in players) {
+				candidate.Stop();
+				candidate.source = VideoSource.Url;
+				candidate.url = fixturePath;
+				candidate.audioOutputMode = VideoAudioOutputMode.None;
+				candidate.Prepare();
+			}
+			var prepareDeadline = Time.realtimeSinceStartup + 10f;
+			while (players.Any(player => !player.isPrepared) && Time.realtimeSinceStartup < prepareDeadline)
+				yield return null;
+			Assert.That(players.All(player => player.isPrepared), Is.True, "The video fixture did not prepare within 10 seconds.");
+			foreach (var candidate in players)
+				candidate.Pause();
+
+			var request = host.ParameterQueue.EnqueueRecallHotCue(1);
+			Assert.That(request.Accepted, Is.True, request.RejectionReason);
+			for (var frame = 0; frame < 600 && !host.ReadModel.RequestResults.Any(result =>
+				result.SequenceNumber == request.SequenceNumber); frame++) yield return null;
+			Assert.That(host.ReadModel.RequestResults.Any(result =>
+				result.SequenceNumber == request.SequenceNumber && result.Applied), Is.True);
+
+			var minimumObservedTime = double.PositiveInfinity;
+			var maximumObservedTime = double.NegativeInfinity;
+			VideoPlayer player = null;
+			for (var frame = 0; frame < 600 && maximumObservedTime < .45d; frame++) {
+				foreach (var candidate in players) {
+					minimumObservedTime = System.Math.Min(minimumObservedTime, candidate.time);
+					if (candidate.time <= maximumObservedTime) continue;
+					maximumObservedTime = candidate.time;
+					player = candidate;
+				}
+				yield return null;
+			}
+			Assert.That(maximumObservedTime, Is.GreaterThanOrEqualTo(.45d),
+				$"The Stage VideoPlayer did not reach Cue 2's playhead. Observed {minimumObservedTime:R}..{maximumObservedTime:R}.");
+
+			var postSeekMinimum = player.time;
+			for (var frame = 0; frame < 30; frame++) {
+				postSeekMinimum = System.Math.Min(postSeekMinimum, player.time);
+				yield return null;
+			}
+			Assert.That(postSeekMinimum, Is.GreaterThanOrEqualTo(.4d),
+				"Normal playback overwrote the Stage seek with a pre-seek playhead.");
+			host.Shutdown();
+			Object.Destroy(competingStage);
+		}
+
+		[UnityTest]
+		public IEnumerator VideoCuePausesUntilSeekCompletesThenResumesPlayback() {
+			var root = new GameObject("Stage Camera Video Seek Test");
+			var outputTexture = new RenderTexture(64, 64, 0);
+			var decodeTexture = new RenderTexture(64, 64, 0);
+			try {
+				var cameraObject = new GameObject("Main Camera");
+				cameraObject.transform.SetParent(root.transform, false);
+				cameraObject.AddComponent<Camera>();
+
+				var videoObject = new GameObject("Video Player");
+				videoObject.transform.SetParent(root.transform, false);
+				var videoPlayer = videoObject.AddComponent<VideoPlayer>();
+				videoPlayer.playOnAwake = false;
+				videoPlayer.source = VideoSource.Url;
+				videoPlayer.url = Path.Combine(Application.dataPath,
+					"ShitDesigner/Scripts/Tests/Media/Fixtures/h264-audio.mp4");
+				videoPlayer.renderMode = VideoRenderMode.RenderTexture;
+				videoPlayer.targetTexture = decodeTexture;
+				videoPlayer.audioOutputMode = VideoAudioOutputMode.None;
+				videoPlayer.isLooping = true;
+
+				var director = root.AddComponent<StageCameraDirector>();
+				SetField(director, "m_VideoOutputTexture", outputTexture);
+				director.enabled = false;
+				director.enabled = true;
+				Assert.That(videoPlayer.renderMode, Is.EqualTo(VideoRenderMode.RenderTexture));
+				Assert.That(videoPlayer.targetTexture, Is.SameAs(decodeTexture));
+				ConfigureVideoCue(director, 0, .5f);
+				director.ActivateScene();
+
+				string videoError = null;
+				videoPlayer.errorReceived += (_, message) => videoError = message;
+				videoPlayer.Prepare();
+				var prepareDeadline = Time.realtimeSinceStartup + 10f;
+				while (!videoPlayer.isPrepared && videoError == null && Time.realtimeSinceStartup < prepareDeadline)
+					yield return null;
+				Assert.That(videoError, Is.Null);
+				Assert.That(videoPlayer.isPrepared, Is.True, "The H.264 fixture did not prepare within 10 seconds.");
+
+				videoPlayer.Play();
+				var playDeadline = Time.realtimeSinceStartup + 2f;
+				while (!videoPlayer.isPlaying && Time.realtimeSinceStartup < playDeadline)
+					yield return null;
+				Assert.That(videoPlayer.isPlaying, Is.True);
+				var firstFrameDeadline = Time.realtimeSinceStartup + 10f;
+				while (videoPlayer.texture == null && videoError == null && Time.realtimeSinceStartup < firstFrameDeadline)
+					yield return null;
+				Assert.That(videoError, Is.Null);
+				Assert.That(videoPlayer.texture, Is.Not.Null,
+					"Normal playback must decode a frame before the seek-race regression is exercised.");
+				yield return null;
+				var preSeekColor = ReadCenterPixel(outputTexture);
+
+				var targetFrameReady = false;
+				var resumedInsideFrameReady = false;
+				var completedTime = double.NaN;
+				var observedFrames = new List<string>();
+				videoPlayer.frameReady += (source, frameIndex) => {
+					observedFrames.Add($"time={source.time:R}, frame={frameIndex}");
+					if (System.Math.Abs(source.time - .5d) > .05d)
+						return;
+					targetFrameReady = true;
+					resumedInsideFrameReady = source.isPlaying;
+					completedTime = source.time;
+				};
+
+				Assert.That(director.TriggerCue(0, out var rejectionReason), Is.True, rejectionReason);
+				Assert.That(videoPlayer.isPlaying, Is.False,
+					"Normal playback must remain paused while Unity completes the asynchronous seek.");
+
+				var seekDeadline = Time.realtimeSinceStartup + 5f;
+				while (!targetFrameReady && videoError == null && Time.realtimeSinceStartup < seekDeadline)
+					yield return null;
+				Assert.That(videoError, Is.Null);
+				Assert.That(targetFrameReady, Is.True,
+					"The target video frame was not displayed within 5 seconds. Observed: " + string.Join("; ", observedFrames));
+				Assert.That(completedTime, Is.EqualTo(.5d).Within(.05d));
+				Assert.That(resumedInsideFrameReady, Is.False,
+					"Playback must not resume reentrantly from inside VideoPlayer.frameReady.");
+
+				var resumeDeadline = Time.realtimeSinceStartup + 2f;
+				while (!videoPlayer.isPlaying && Time.realtimeSinceStartup < resumeDeadline)
+					yield return null;
+				Assert.That(videoPlayer.isPlaying, Is.True,
+					"A cue triggered during playback must resume playback after the seek completes.");
+				yield return null;
+				var postSeekColor = ReadCenterPixel(outputTexture);
+				Assert.That(Vector4.Distance(preSeekColor, postSeekColor), Is.GreaterThan(.01f),
+					"The LED output RenderTexture must visibly change after the seek.");
+			}
+			finally {
+				Object.Destroy(root);
+				outputTexture.Release();
+				Object.Destroy(outputTexture);
+				decodeTexture.Release();
+				Object.Destroy(decodeTexture);
+			}
+		}
+
+		private static void ConfigureVideoCue(StageCameraDirector director, int cueIndex, float playheadSeconds) {
+			var cues = (StageCameraCueDefinition[])GetField(typeof(StageCameraDirector), "m_Cues").GetValue(director);
+			SetField(cues[cueIndex], "m_Motion", StageCameraCueMotion.Cut);
+			SetField(cues[cueIndex], "m_ControlVideoPlayhead", true);
+			SetField(cues[cueIndex], "m_VideoPlayheadSeconds", playheadSeconds);
+		}
+
+		private static Color ReadCenterPixel(RenderTexture texture) {
+			var previous = RenderTexture.active;
+			var sample = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+			try {
+				RenderTexture.active = texture;
+				sample.ReadPixels(new Rect(texture.width / 2f, texture.height / 2f, 1f, 1f), 0, 0);
+				sample.Apply();
+				return sample.GetPixel(0, 0);
+			}
+			finally {
+				RenderTexture.active = previous;
+				Object.DestroyImmediate(sample);
+			}
+		}
+
+		private static void SetField(object target, string name, object value)
+			=> GetField(target.GetType(), name).SetValue(target, value);
+
+		private static FieldInfo GetField(System.Type type, string name)
+			=> type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic);
+	}
+}

@@ -1,0 +1,9 @@
+{
+	"name": "ChitoseCandy",
+	"rootNamespace": "ShitDesigner.Scene",
+	"references": [
+		"ShitDesigner.Scene",
+		"ShitDesigner.Core",
+		"ShitDesigner.Main"
+	]
+}

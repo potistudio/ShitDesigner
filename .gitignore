@@ -15,3 +15,42 @@ refs/
 
 *.csproj
 *.slnx
+
+# Local verification and test artifacts
+/.verification/
+/TestResults/
+/TestResult.xml
+/root/
+
+# Local package/build backups
+/Library.upm-backup-*/
+
+# .NET helper build output
+/bin/
+**/bin/
+**/obj/
+
+# Test Framework temporary initialization scenes
+/Assets/InitTestScene*.unity
+/Assets/InitTestScene*.unity.meta
+
+# Unused Unity template assets
+/Assets/Resources.meta
+/Assets/TutorialInfo.meta
+/Assets/TutorialInfo/
+/Assets/UI Toolkit.meta
+/Assets/UI Toolkit/
+
+# Pre-Assets migration scraps
+/Bootstrap/
+/Media/
+/Presentation/
+/TestHarness/
+/Tests/
+
+# Locally imported third-party assets
+/Assets/External/
+/Assets/External.meta
+
+# Python caches
+__pycache__/

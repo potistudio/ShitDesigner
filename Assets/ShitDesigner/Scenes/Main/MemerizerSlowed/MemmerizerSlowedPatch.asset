@@ -1,0 +1,89 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36a7c9fd8af84f24a8db20cf4457e4ca, type: 3}
+  m_Name: MemmerizerSlowedPatch
+  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
+  _id: memerizer_slowed
+  _displayName: Memerizer Slowed
+  _programGraph:
+    _outputNodeId: video_key
+    _nodes:
+    - _id: video
+      _typeId: shitdesigner.video.player
+      m_SceneDefinition: {fileID: 0}
+      m_VideoPath: 
+      m_VideoClip: {fileID: 32900000, guid: 6ac9c7f8c42804570a6dab55432edfc2, type: 3}
+      m_VideoBpm: 96
+      _parameters:
+      - m_NodeId: 
+        _id: transport.playhead_seconds
+        _type: 0
+        _floatValue: 0
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 0, g: 0, b: 0, a: 0}
+        _textValue: 
+    - _id: video_key
+      _typeId: shitdesigner.shader.key.chroma-key
+      m_SceneDefinition: {fileID: 0}
+      m_VideoPath: 
+      m_VideoClip: {fileID: 0}
+      m_VideoBpm: 96
+      _parameters:
+      - m_NodeId: 
+        _id: amount
+        _type: 0
+        _floatValue: 1
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 0, g: 0, b: 0, a: 0}
+        _textValue: 
+      - m_NodeId: 
+        _id: color_a
+        _type: 6
+        _floatValue: 1
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 0, g: 1, b: 0.000000059604645, a: 1}
+        _textValue: 
+    _connections:
+    - _sourceNodeId: video
+      _sourcePortId: image
+      _targetNodeId: video_key
+      _targetPortId: input
+  _parameters: []
+  m_HotCue1:
+    m_Values:
+    - m_NodeId: video
+      _id: transport.playhead_seconds
+      _type: 0
+      _floatValue: 1
+      _intValue: 0
+      _boolValue: 0
+      _vector2Value: {x: 0, y: 0}
+      _vector3Value: {x: 0, y: 0, z: 0}
+      _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+      _colorValue: {r: 0, g: 0, b: 0, a: 0}
+      _textValue: 
+  m_HotCue2:
+    m_Values: []
+  m_KeyboardInputs: []
+  m_MidiInputs: []

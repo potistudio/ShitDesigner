@@ -1,0 +1,8 @@
+{
+  "name": "VerticalBeatStrokes",
+  "rootNamespace": "ShitDesigner.Scene",
+  "references": [
+    "ShitDesigner.Scene",
+    "ShitDesigner.Core"
+  ]
+}

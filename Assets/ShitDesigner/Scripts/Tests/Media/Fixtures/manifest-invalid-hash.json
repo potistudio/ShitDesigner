@@ -1,0 +1,7 @@
+{
+  "generator": "Tools/VideoFixtures/generate.ps1",
+  "reason": "negative test: expected hash deliberately differs from h264.mp4",
+  "fixture": "h264.mp4",
+  "xxh3_128": "00000000000000000000000000000000",
+  "bytes": 1469
+}

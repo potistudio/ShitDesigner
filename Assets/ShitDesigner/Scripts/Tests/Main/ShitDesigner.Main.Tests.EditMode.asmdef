@@ -1,0 +1,36 @@
+{
+  "name": "ShitDesigner.Main.Tests.EditMode",
+  "rootNamespace": "ShitDesigner.Main.Tests",
+  "references": [
+    "ShitDesigner.Main",
+    "ShitDesigner.Application",
+    "ShitDesigner.Bootstrap",
+    "ShitDesigner.Core",
+    "ShitDesigner.Input",
+    "ShitDesigner.Nodes",
+    "ShitDesigner.Rendering",
+    "ShitDesigner.Runtime",
+    "ShitDesigner.Scene",
+    "Unity.InputSystem"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "CSharpFunctionalExtensions.dll",
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "SHITDESIGNER_INCLUDE_TESTS",
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

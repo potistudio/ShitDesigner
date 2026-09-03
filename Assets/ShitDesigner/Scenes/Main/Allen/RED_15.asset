@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36a7c9fd8af84f24a8db20cf4457e4ca, type: 3}
+  m_Name: RED_15
+  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
+  _id: allen-red-15
+  _displayName: RED_15
+  _programGraph:
+    _outputNodeId: video
+    _nodes:
+    - _id: video
+      _typeId: shitdesigner.video.player
+      m_SceneDefinition: {fileID: 0}
+      m_VideoPath:
+      m_VideoClip: {fileID: 32900000, guid: 581450bac081e2a4e851886be49ec912, type: 3}
+      m_VideoBpm: 120
+      _parameters: []
+    _connections: []
+  _parameters: []
+  m_HotCue1:
+    m_Values: []
+  m_HotCue2:
+    m_Values: []
+  m_KeyboardInputs: []
+  m_MidiInputs: []

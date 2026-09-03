@@ -1,0 +1,19 @@
+{
+  "name": "ShitDesigner.Input",
+  "rootNamespace": "ShitDesigner.Input",
+  "references": [
+    "ShitDesigner.Core",
+    "ShitDesigner.Application",
+    "Unity.InputSystem"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": []
+}

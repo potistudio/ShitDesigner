@@ -1,0 +1,8 @@
+{
+  "name": "ShitDesigner.BeatFreeze",
+  "rootNamespace": "ShitDesigner.BeatFreeze",
+  "references": [
+    "ShitDesigner.Core",
+    "ShitDesigner.Scene"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+    "name": "ShitDesigner.Stage",
+    "rootNamespace": "",
+    "references": [
+        "GUID:7c0b0c44fe7269a4abcd27737e40fc31",
+        "GUID:5dc5c1b040b2649468f4f3590bb6d44a",
+        "GUID:c62c51896a614e8eb86406e5405abc4f",
+        "Unity.Mathematics",
+        "Unity.Splines"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

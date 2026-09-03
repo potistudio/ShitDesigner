@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36a7c9fd8af84f24a8db20cf4457e4ca, type: 3}
+  m_Name: Wireframe Cube Fractal Patch
+  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
+  _id: wireframe-cube-fractal
+  _displayName: Wireframe Cube Fractal
+  _programGraph:
+    _outputNodeId: wireframe-cube-fractal
+    _nodes:
+    - _id: wireframe-cube-fractal
+      _typeId: shitdesigner.shader.audio.wireframe_cube_fractal
+      m_SceneDefinition: {fileID: 0}
+      m_VideoPath:
+      m_VideoClip: {fileID: 0}
+      _parameters:
+      - _id: amount
+        _type: 0
+        _floatValue: 0.5
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 0, g: 0, b: 0, a: 0}
+        _textValue:
+      - _id: gain
+        _type: 0
+        _floatValue: 1
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 0, g: 0, b: 0, a: 0}
+        _textValue:
+    _connections: []
+  _parameters:
+  - _id: mix
+    _displayName: Cube / Fractal Mix
+    _nodeId: wireframe-cube-fractal
+    _parameterId: amount
+    m_BeatModulation:
+      m_Enabled: 0
+      m_Signal: 0
+      m_Strength: 0
+      m_Minimum: 0
+      m_Maximum: 1
+  - _id: bpm-strength
+    _displayName: BPM Strength
+    _nodeId: wireframe-cube-fractal
+    _parameterId: gain
+    m_BeatModulation:
+      m_Enabled: 0
+      m_Signal: 0
+      m_Strength: 0
+      m_Minimum: 0
+      m_Maximum: 4
+  m_KeyboardInputs: []
+  m_MidiInputs: []

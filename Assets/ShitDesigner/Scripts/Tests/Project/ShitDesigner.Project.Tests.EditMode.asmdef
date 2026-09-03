@@ -1,0 +1,14 @@
+{
+  "name": "ShitDesigner.Project.Tests.EditMode",
+  "rootNamespace": "ShitDesigner.Tests.Project",
+  "references": ["ShitDesigner.Core", "ShitDesigner.Project", "UnityEngine.TestRunner", "UnityEditor.TestRunner"],
+  "includePlatforms": ["Editor"],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": ["SHITDESIGNER_INCLUDE_TESTS", "UNITY_INCLUDE_TESTS"],
+  "versionDefines": [],
+  "noEngineReferences": true
+}

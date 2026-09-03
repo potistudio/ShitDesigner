@@ -1,0 +1,126 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36a7c9fd8af84f24a8db20cf4457e4ca, type: 3}
+  m_Name: Shower Patch
+  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
+  _id: shower
+  _displayName: Shower
+  _programGraph:
+    _outputNodeId: rgb
+    _nodes:
+    - _id: cfae3603-ae17-4bb3-bf87-1840f21a2663
+      _typeId: shitdesigner.scene.3d
+      m_SceneDefinition: {fileID: 11400000, guid: ad4cb928ade2f7a4e8cfd9bdf32a864a, type: 2}
+      _parameters: []
+    - _id: rings
+      _typeId: shitdesigner.shader.generator.concentric-rings
+      m_VideoPath: 
+      m_VideoClip: {fileID: 0}
+      _parameters:
+      - _id: color_a
+        _type: 5
+        _floatValue: 0
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 1, y: 1, z: 1, w: 1}
+        _colorValue: {r: 0, g: 0, b: 0, a: 0}
+        _textValue: 
+      - _id: color_b
+        _type: 5
+        _floatValue: 0
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 1, y: 0.629, z: 0.863, w: 1}
+        _colorValue: {r: 0, g: 0, b: 0, a: 0}
+        _textValue: 
+      - _id: frequency
+        _type: 0
+        _floatValue: 2
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 1, y: 0.629, z: 0.863, w: 1}
+        _colorValue: {r: 0, g: 0, b: 0, a: 0}
+        _textValue: 
+    - _id: premultiplied_over
+      _typeId: shitdesigner.shader.blend.premultiplied_over
+      m_VideoPath: 
+      m_VideoClip: {fileID: 0}
+      _parameters:
+      - _id: amount
+        _type: 0
+        _floatValue: 1
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 0, g: 0, b: 0, a: 0}
+        _textValue: 
+    - _id: rgb
+      _typeId: shitdesigner.shader.temporal.slit_scan_horizontal
+      m_VideoPath: 
+      m_VideoClip: {fileID: 0}
+      _parameters:
+      - _id: amount
+        _type: 0
+        _floatValue: 3.45
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 0, g: 0, b: 0, a: 0}
+        _textValue: 
+      - _id: feedback
+        _type: 0
+        _floatValue: 1.56
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 0, g: 0, b: 0, a: 0}
+        _textValue: 
+    _connections:
+    - _sourceNodeId: cfae3603-ae17-4bb3-bf87-1840f21a2663
+      _sourcePortId: image
+      _targetNodeId: premultiplied_over
+      _targetPortId: a
+    - _sourceNodeId: rings
+      _sourcePortId: image
+      _targetNodeId: premultiplied_over
+      _targetPortId: b
+    - _sourceNodeId: premultiplied_over
+      _sourcePortId: image
+      _targetNodeId: rgb
+      _targetPortId: input
+  _parameters:
+  - _id: shower_sequence
+    _displayName: Shower Sequence
+    _nodeId: cfae3603-ae17-4bb3-bf87-1840f21a2663
+    _parameterId: shower_sequence
+    m_BeatModulation:
+      m_Enabled: 1
+      m_Signal: 0
+      m_Strength: 1
+      m_Minimum: 0
+      m_Maximum: 1
+  m_KeyboardInputs:
+  - m_Key: 31
+    m_ParameterId: shower_sequence
+  m_MidiInputs: []

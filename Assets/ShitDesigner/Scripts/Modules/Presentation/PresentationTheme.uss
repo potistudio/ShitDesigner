@@ -1,0 +1,55 @@
+.sd-root {
+    /* GUI/VisualAndInteraction.md canonical dark-theme tokens. Keep these
+       explicit so status and port classes remain legible without relying on
+       color alone. */
+    --sd-app-background: rgb(13, 15, 18);
+    --sd-panel-background: rgb(21, 24, 29);
+    --sd-elevated-surface: rgb(29, 34, 41);
+    --sd-border: rgb(48, 55, 65);
+    --sd-primary-text: rgb(232, 236, 242);
+    --sd-secondary-text: rgb(157, 167, 180);
+    --sd-disabled-text: rgb(98, 107, 118);
+    --sd-accent: rgb(88, 166, 255);
+    --sd-success: rgb(76, 195, 138);
+    --sd-info: rgb(73, 191, 209);
+    --sd-clamp: rgb(232, 180, 76);
+    --sd-blocked: rgb(232, 135, 58);
+    --sd-error: rgb(237, 95, 104);
+    --sd-holding: rgb(200, 121, 232);
+    --sd-bg: var(--sd-app-background);
+    --sd-surface: var(--sd-panel-background);
+    --sd-surface-raised: var(--sd-elevated-surface);
+    --sd-text: var(--sd-primary-text);
+    --sd-muted: var(--sd-secondary-text);
+    --sd-focus: var(--sd-accent);
+    --sd-warning: var(--sd-clamp);
+    flex-grow: 1;
+    min-width: 1280px;
+    min-height: 720px;
+    background-color: var(--sd-app-background);
+    color: var(--sd-primary-text);
+    -unity-font-definition: resource("NotoSans");
+}
+.sd-top-bar { height: 40px; flex-direction: row; align-items: center; background-color: var(--sd-panel-background); padding-left: 12px; padding-right: 12px; border-bottom-width: 1px; border-bottom-color: var(--sd-border); }
+.sd-project-name { -unity-font-style: bold; margin-right: 16px; }
+.sd-status-bar { height: 24px; flex-direction: row; align-items: center; background-color: var(--sd-panel-background); padding-left: 8px; color: var(--sd-secondary-text); border-top-width: 1px; border-top-color: var(--sd-border); }
+.sd-dock-workspace { flex-grow: 1; min-height: 200px; background-color: var(--sd-bg); padding: 8px; }
+.sd-banner { display: none; min-height: 28px; background-color: var(--sd-warning); color: rgb(13, 15, 18); padding-left: 12px; padding-top: 6px; }
+.sd-banner.is-visible { display: flex; }
+.sd-layer { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
+*:focus { border-left-color: var(--sd-accent); border-right-color: var(--sd-accent); border-top-color: var(--sd-accent); border-bottom-color: var(--sd-accent); border-left-width: 2px; border-right-width: 2px; border-top-width: 2px; border-bottom-width: 2px; }
+
+.sd-panel { background-color: var(--sd-panel-background); border-color: var(--sd-border); border-width: 1px; }
+.sd-elevated { background-color: var(--sd-elevated-surface); border-color: var(--sd-border); border-width: 1px; }
+.sd-secondary { color: var(--sd-secondary-text); }
+.sd-disabled { color: var(--sd-disabled-text); }
+.sd-status-blocked { color: var(--sd-blocked); border-color: var(--sd-blocked); }
+.sd-status-faulted { color: var(--sd-error); border-color: var(--sd-error); }
+.sd-status-preparing { color: var(--sd-info); border-color: var(--sd-info); }
+.sd-status-fallback { color: var(--sd-clamp); border-color: var(--sd-clamp); }
+.sd-status-holding { color: var(--sd-holding); border-color: var(--sd-holding); }
+.is-hidden { display: none; }
+.sd-port.is-required { border-width: 2px; }
+.sd-port.is-optional { border-width: 1px; border-style: solid; }
+.sd-connection-dashed { border-bottom-width: 2px; border-bottom-color: var(--sd-info); border-bottom-style: dashed; }
+.reduce-motion * { transition-duration: 0ms; transition-delay: 0ms; }

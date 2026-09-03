@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36a7c9fd8af84f24a8db20cf4457e4ca, type: 3}
+  m_Name: DVD Bounce Patch
+  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
+  _id: dvd_bounce
+  _displayName: DVD Bounce
+  _programGraph:
+    _outputNodeId: item
+    _nodes:
+    - _id: item
+      _typeId: shitdesigner.scene.3d
+      m_SceneDefinition: {fileID: 11400000, guid: 1b6319cd2cab06c41beb473700d38156, type: 2}
+      m_VideoPath: 
+      m_VideoClip: {fileID: 0}
+      _parameters: []
+    _connections: []
+  _parameters:
+  - _id: speed
+    _displayName: Speed
+    _nodeId: item
+    _parameterId: speed
+    m_BeatModulation:
+      m_Enabled: 0
+      m_Signal: 0
+      m_Strength: 1
+      m_Minimum: 0.01
+      m_Maximum: 30
+  - _id: instance_count
+    _displayName: Instance Count
+    _nodeId: item
+    _parameterId: instance_count
+    m_BeatModulation:
+      m_Enabled: 0
+      m_Signal: 0
+      m_Strength: 1
+      m_Minimum: 1
+      m_Maximum: 64
+  m_HotCue1:
+    m_Values: []
+  m_HotCue2:
+    m_Values: []
+  m_KeyboardInputs: []
+  m_MidiInputs:
+  - m_MessageType: 1
+    m_Channel: 1
+    m_Number: 21
+    m_RawMinimum: 0
+    m_RawMaximum: 127
+    m_Invert: 0
+    m_ParameterId: speed
+  - m_MessageType: 1
+    m_Channel: 1
+    m_Number: 22
+    m_RawMinimum: 0
+    m_RawMaximum: 64
+    m_Invert: 0
+    m_ParameterId: instance_count

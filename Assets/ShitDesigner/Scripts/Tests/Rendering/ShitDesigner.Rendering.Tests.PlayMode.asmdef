@@ -1,0 +1,25 @@
+{
+  "name": "ShitDesigner.Rendering.Tests.PlayMode",
+  "rootNamespace": "ShitDesigner.Rendering.Tests",
+  "references": [
+    "ShitDesigner.Rendering",
+    "ShitDesigner.Runtime",
+    "ShitDesigner.Core",
+    "ShitDesigner.Graph",
+    "ShitDesigner.Project",
+    "ShitDesigner.Tests.Shared",
+    "UnityEngine.TestRunner"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "SHITDESIGNER_INCLUDE_TESTS",
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

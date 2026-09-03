@@ -1,0 +1,139 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36a7c9fd8af84f24a8db20cf4457e4ca, type: 3}
+  m_Name: Recursive Rectangles Beat Patch
+  m_EditorClassIdentifier: ShitDesigner.Scene::ShitDesigner.Scene.PatchDefinition
+  _id: recursive-rectangles-beat
+  _displayName: Recursive Rectangles Beat
+  _programGraph:
+    _outputNodeId: recursive-rectangles
+    _nodes:
+    - _id: recursive-rectangles
+      _typeId: shitdesigner.shader.generator.recursive-rectangles
+      m_SceneDefinition: {fileID: 0}
+      m_VideoPath: 
+      m_VideoClip: {fileID: 0}
+      _parameters:
+      - _id: beat_sync
+        _type: 2
+        _floatValue: 0
+        _intValue: 0
+        _boolValue: 1
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 1, g: 1, b: 1, a: 1}
+        _textValue: 
+      - _id: color_a
+        _type: 6
+        _floatValue: 0
+        _intValue: 0
+        _boolValue: 1
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 1, g: 1, b: 1, a: 1}
+        _textValue: smooth_step
+      - _id: max_depth
+        _type: 1
+        _floatValue: 0
+        _intValue: 5
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 1, g: 1, b: 1, a: 1}
+        _textValue: 
+      - _id: min_leaf_size
+        _type: 0
+        _floatValue: 0.001
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 1, g: 1, b: 1, a: 1}
+        _textValue: 
+      - _id: split_probability
+        _type: 0
+        _floatValue: 0.72
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 1, g: 1, b: 1, a: 1}
+        _textValue: 
+      - _id: axis_mode
+        _type: 8
+        _floatValue: 0
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 1, g: 1, b: 1, a: 1}
+        _textValue: longer_side
+      - _id: ratio_min
+        _type: 0
+        _floatValue: 0.5
+        _intValue: 0
+        _boolValue: 0
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 1, g: 1, b: 1, a: 1}
+        _textValue: 
+      - _id: split_duration
+        _type: 0
+        _floatValue: 0.4
+        _intValue: 0
+        _boolValue: 1
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 1, g: 1, b: 1, a: 1}
+        _textValue: 
+      - _id: split_stagger
+        _type: 0
+        _floatValue: 0
+        _intValue: 0
+        _boolValue: 1
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 1, g: 1, b: 1, a: 1}
+        _textValue: 
+      - _id: ratio_max
+        _type: 0
+        _floatValue: 0.5
+        _intValue: 0
+        _boolValue: 1
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 1, g: 1, b: 1, a: 1}
+        _textValue: smooth_step
+      - _id: easing
+        _type: 8
+        _floatValue: 0.5
+        _intValue: 0
+        _boolValue: 1
+        _vector2Value: {x: 0, y: 0}
+        _vector3Value: {x: 0, y: 0, z: 0}
+        _vector4Value: {x: 0, y: 0, z: 0, w: 0}
+        _colorValue: {r: 1, g: 1, b: 1, a: 1}
+        _textValue: ease_out
+    _connections: []
+  _parameters: []
+  m_KeyboardInputs: []
+  m_MidiInputs: []

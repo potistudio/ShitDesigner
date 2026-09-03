@@ -1,0 +1,19 @@
+{
+  "name": "ShitDesigner.Persistence",
+  "rootNamespace": "ShitDesigner.Persistence",
+  "references": [
+    "ShitDesigner.Core",
+    "ShitDesigner.Project",
+    "ShitDesigner.Runtime"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": true,
+  "optionalUnityReferences": []
+}

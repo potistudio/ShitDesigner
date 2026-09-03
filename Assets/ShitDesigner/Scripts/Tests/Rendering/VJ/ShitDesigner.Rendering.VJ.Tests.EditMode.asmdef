@@ -1,0 +1,25 @@
+{
+  "name": "ShitDesigner.Rendering.VJ.Tests.EditMode",
+  "rootNamespace": "ShitDesigner.Rendering.Tests.VJ",
+  "references": [
+    "ShitDesigner.Rendering",
+    "ShitDesigner.Nodes",
+    "ShitDesigner.Core",
+    "ShitDesigner.Runtime",
+    "UnityEngine.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "SHITDESIGNER_INCLUDE_TESTS",
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

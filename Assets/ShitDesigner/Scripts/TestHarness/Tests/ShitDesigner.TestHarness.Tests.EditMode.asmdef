@@ -1,0 +1,29 @@
+{
+  "name": "ShitDesigner.TestHarness.Tests.EditMode",
+  "rootNamespace": "ShitDesigner.TestHarness.Tests",
+  "references": [
+    "ShitDesigner.TestHarness",
+    "ShitDesigner.Application",
+    "ShitDesigner.Bootstrap",
+    "ShitDesigner.Core",
+    "ShitDesigner.Graph",
+    "ShitDesigner.Media",
+    "ShitDesigner.Project",
+    "ShitDesigner.Nodes",
+    "ShitDesigner.Persistence",
+    "ShitDesigner.Runtime",
+    "ShitDesigner.Rendering",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": ["Editor"],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": ["SHITDESIGNER_TEST_HARNESS", "SHITDESIGNER_INCLUDE_TESTS", "UNITY_INCLUDE_TESTS"],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": []
+}

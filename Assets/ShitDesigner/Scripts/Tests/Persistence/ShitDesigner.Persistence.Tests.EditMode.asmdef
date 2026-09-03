@@ -1,0 +1,30 @@
+{
+  "name": "ShitDesigner.Persistence.Tests.EditMode",
+  "rootNamespace": "ShitDesigner.Persistence.Tests",
+  "references": [
+    "ShitDesigner.Persistence",
+    "ShitDesigner.Project",
+    "ShitDesigner.Runtime",
+    "ShitDesigner.Core",
+    "ShitDesigner.Tests.Shared"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [
+    "CSharpFunctionalExtensions.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "SHITDESIGNER_INCLUDE_TESTS",
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": true,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

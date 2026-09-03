@@ -1,0 +1,264 @@
+using System.Collections.Generic;
+using System.Linq;
+using NUnit.Framework;
+using ShitDesigner.Core;
+
+namespace ShitDesigner.Main.Tests {
+	[TestFixture]
+	public sealed class LiveParameterQueueTests {
+		[Test]
+		public void DrainPreservesAcceptanceOrderAcrossSources() {
+			var queue = new LiveParameterQueue();
+			var preload = queue.EnqueuePreloadPatch("patch-b");
+			var load = queue.EnqueueLoadPatch("patch-b");
+			var parameter = queue.EnqueueSetParameter("patch-a", "motion", 0.75f);
+
+			var requests = new List<LiveParameterRequest>();
+			var drained = queue.Drain(requests);
+
+			Assert.That(preload.Accepted, Is.True);
+			Assert.That(load.Accepted, Is.True);
+			Assert.That(parameter.Accepted, Is.True);
+			Assert.That(parameter.SequenceNumber, Is.GreaterThan(load.SequenceNumber));
+			Assert.That(drained, Is.EqualTo(3));
+			Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.PreloadPatch));
+			Assert.That(requests[0].PatchId, Is.EqualTo("patch-b"));
+			Assert.That(requests[1].Kind, Is.EqualTo(LiveParameterRequestKind.LoadPatch));
+			Assert.That(requests[1].PatchId, Is.EqualTo("patch-b"));
+			Assert.That(requests[2].Kind, Is.EqualTo(LiveParameterRequestKind.SetParameter));
+			Assert.That(requests[2].PatchId, Is.EqualTo("patch-a"));
+			Assert.That(requests[2].ParameterId, Is.EqualTo("motion"));
+			Assert.That(requests[2].Value, Is.EqualTo(0.75f));
+			Assert.That(queue.Count, Is.Zero);
+		}
+
+		[Test]
+		public void TypedParameterValueIsPreserved() {
+			var queue = new LiveParameterQueue();
+
+			var result = queue.EnqueueSetParameter("patch-a", "tint", ParameterValue.FromColor(new ColorValue(.1f, .2f, .3f, 1f)));
+
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+			Assert.That(result.Accepted, Is.True);
+			Assert.That(requests[0].ParameterValue, Is.EqualTo(ParameterValue.FromColor(new ColorValue(.1f, .2f, .3f, 1f))));
+		}
+
+		[Test]
+		public void LaunchPatchQueuesAsOneAtomicRequest() {
+			var queue = new LiveParameterQueue();
+
+			var result = queue.EnqueueLaunchPatch("patch-b");
+
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+			Assert.That(result.Accepted, Is.True);
+			Assert.That(requests, Has.Count.EqualTo(1));
+			Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.LaunchPatch));
+			Assert.That(requests[0].PatchId, Is.EqualTo("patch-b"));
+		}
+
+		[Test]
+		public void SetBpmQueuesAGlobalRequestWithoutAPatchId() {
+			var queue = new LiveParameterQueue();
+
+			var result = queue.EnqueueSetBpm(138f);
+
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+			Assert.That(result.Accepted, Is.True);
+			Assert.That(requests, Has.Count.EqualTo(1));
+			Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.SetBpm));
+			Assert.That(requests[0].PatchId, Is.Empty);
+			Assert.That(requests[0].Value, Is.EqualTo(138f));
+		}
+
+		[Test]
+		public void AlignBeatQueuesAGlobalRequestWithoutAPatchId() {
+			var queue = new LiveParameterQueue();
+
+			var result = queue.EnqueueAlignBeat();
+
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+			Assert.That(result.Accepted, Is.True);
+			Assert.That(requests, Has.Count.EqualTo(1));
+			Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.AlignBeat));
+			Assert.That(requests[0].PatchId, Is.Empty);
+			Assert.That(requests[0].Value, Is.Zero);
+		}
+
+		[Test]
+		public void EachQuantizeModeQueuesItsOwnGlobalBooleanWithoutAPatchId() {
+			var queue = new LiveParameterQueue();
+
+			var scene = queue.EnqueueSetSceneQuantizeMode(true);
+			var hotCue = queue.EnqueueSetHotCueQuantizeMode(true);
+			var mainCue = queue.EnqueueSetMainCueQuantizeMode(true);
+			var pianoFx = queue.EnqueueSetPianoFxQuantizeMode(true);
+
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+			Assert.That(scene.Accepted && hotCue.Accepted && mainCue.Accepted && pianoFx.Accepted, Is.True);
+			Assert.That(requests.Select(request => request.Kind), Is.EqualTo(new[] {
+				LiveParameterRequestKind.SetSceneQuantizeMode, LiveParameterRequestKind.SetHotCueQuantizeMode,
+				LiveParameterRequestKind.SetMainCueQuantizeMode, LiveParameterRequestKind.SetPianoFxQuantizeMode
+			}));
+			Assert.That(requests, Has.All.Matches<LiveParameterRequest>(request => request.PatchId == string.Empty && request.ParameterValue.AsBool()));
+		}
+
+		[Test]
+		public void QuantizedActionsReleaseOnTheNextBeatInSequenceOrder() {
+			var source = new LiveParameterQueue();
+			source.EnqueueLaunchPatch("patch-a");
+			source.EnqueueRecallHotCue(1);
+			var requests = new List<LiveParameterRequest>();
+			source.Drain(requests);
+			var queue = new LiveBeatQuantizedRequestQueue();
+
+			Assert.That(queue.TryEnqueue(requests[1], 12.25d, out var secondReason), Is.True, secondReason);
+			Assert.That(queue.TryEnqueue(requests[0], 12.25d, out var firstReason), Is.True, firstReason);
+			Assert.That(queue.DrainDue(12.999d), Is.Empty);
+			Assert.That(queue.DrainDue(13d).Select(request => request.SequenceNumber),
+				Is.EqualTo(requests.Select(request => request.SequenceNumber)));
+		}
+
+		[Test]
+		public void SceneTimeJogQueuesAGlobalRequestWithoutAPatchId() {
+			var queue = new LiveParameterQueue();
+
+			var result = queue.EnqueueJogSceneTime(-.25f);
+
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+			Assert.That(result.Accepted, Is.True);
+			Assert.That(requests, Has.Count.EqualTo(1));
+			Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.JogSceneTime));
+			Assert.That(requests[0].PatchId, Is.Empty);
+			Assert.That(requests[0].Value, Is.EqualTo(-.25f));
+		}
+
+		[Test]
+		public void HotCueQueueAcceptsExactlyTwoGlobalSlots() {
+			var queue = new LiveParameterQueue();
+
+			Assert.That(queue.EnqueueRecallHotCue(-1).Accepted, Is.False);
+			Assert.That(queue.EnqueueRecallHotCue(0).Accepted, Is.True);
+			Assert.That(queue.EnqueueRecallHotCue(1).Accepted, Is.True);
+			Assert.That(queue.EnqueueRecallHotCue(2).Accepted, Is.False);
+
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+			Assert.That(requests, Has.Count.EqualTo(2));
+			Assert.That(requests, Has.All.Matches<LiveParameterRequest>(request =>
+				request.Kind == LiveParameterRequestKind.RecallHotCue && request.PatchId == string.Empty));
+			Assert.That(requests.Select(request => request.ParameterValue.AsInt()), Is.EqualTo(new[] { 0, 1 }));
+		}
+
+		[Test]
+		public void OppositeHotCueQueuesAsADistinctGlobalRequest() {
+			var queue = new LiveParameterQueue();
+
+			var result = queue.EnqueueRecallHotCue(1, true);
+
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+			Assert.That(result.Accepted, Is.True);
+			Assert.That(requests, Has.Count.EqualTo(1));
+			Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.RecallOppositeHotCue));
+			Assert.That(requests[0].PatchId, Is.Empty);
+			Assert.That(requests[0].ParameterValue.AsInt(), Is.EqualTo(1));
+		}
+
+		[Test]
+		public void SetTimeEasingEnabledQueuesAGlobalBooleanWithoutAPatchId() {
+			var queue = new LiveParameterQueue();
+
+			var result = queue.EnqueueSetTimeEasingEnabled(false);
+
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+			Assert.That(result.Accepted, Is.True);
+			Assert.That(requests, Has.Count.EqualTo(1));
+			Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.SetTimeEasingEnabled));
+			Assert.That(requests[0].PatchId, Is.Empty);
+			Assert.That(requests[0].ParameterValue.Type, Is.EqualTo(ParameterType.Bool));
+			Assert.That(requests[0].ParameterValue.AsBool(), Is.False);
+		}
+
+		[Test]
+		public void MainCueControlsQueueGlobalRequestsWithoutPatchIds() {
+			var queue = new LiveParameterQueue();
+
+			var fader = queue.EnqueueSetMainCueFader(.75f);
+			var toggle = queue.EnqueueToggleMainCue();
+			var composite = queue.EnqueueSetMainCueComposite(true);
+			var toggleComposite = queue.EnqueueToggleMainCueComposite();
+			var unassign = queue.EnqueueUnassignMainCue(1);
+
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+			Assert.That(fader.Accepted, Is.True);
+			Assert.That(toggle.Accepted, Is.True);
+			Assert.That(composite.Accepted, Is.True);
+			Assert.That(toggleComposite.Accepted, Is.True);
+			Assert.That(unassign.Accepted, Is.True);
+			Assert.That(requests.Select(request => request.Kind), Is.EqualTo(new[] {
+				LiveParameterRequestKind.SetMainCueFader,
+				LiveParameterRequestKind.ToggleMainCue,
+				LiveParameterRequestKind.SetMainCueComposite,
+				LiveParameterRequestKind.ToggleMainCueComposite,
+				LiveParameterRequestKind.UnassignMainCue
+			}));
+			Assert.That(requests, Has.All.Matches<LiveParameterRequest>(request => request.PatchId == string.Empty));
+			Assert.That(requests[0].Value, Is.EqualTo(.75f));
+			Assert.That(requests[2].ParameterValue.AsBool(), Is.True);
+			Assert.That(requests[4].ParameterValue.AsInt(), Is.EqualTo(1));
+			Assert.That(queue.EnqueueUnassignMainCue(-1).Accepted, Is.False);
+			Assert.That(queue.EnqueueUnassignMainCue(ApplicationLiveHost.MainCueCount).Accepted, Is.False);
+		}
+
+		[Test]
+		public void AssignMainCuePreservesTheRequestedCueSlot() {
+			var queue = new LiveParameterQueue();
+
+			var assignment = queue.EnqueueAssignMainCue(0, "patch-a");
+			var requests = new List<LiveParameterRequest>();
+			queue.Drain(requests);
+
+			Assert.That(assignment.Accepted, Is.True);
+			Assert.That(requests, Has.Count.EqualTo(1));
+			Assert.That(requests[0].Kind, Is.EqualTo(LiveParameterRequestKind.AssignMainCue));
+			Assert.That(requests[0].PatchId, Is.EqualTo("patch-a"));
+			Assert.That(requests[0].ParameterValue.AsInt(), Is.Zero);
+			Assert.That(queue.EnqueueAssignMainCue(-1, "patch-a").Accepted, Is.False);
+			Assert.That(queue.EnqueueAssignMainCue(ApplicationLiveHost.MainCueCount, "patch-a").Accepted, Is.False);
+		}
+
+		[Test]
+		public void FullQueueRejectsNewRequestsWithoutAssigningASequence() {
+			var queue = new LiveParameterQueue();
+			for (var index = 0; index < LiveParameterQueue.Capacity; index++)
+				Assert.That(queue.EnqueuePreloadPatch("patch-a").Accepted, Is.True);
+
+			var rejected = queue.EnqueueSetParameter("patch-a", "motion", 0.5f);
+
+			Assert.That(rejected.Accepted, Is.False);
+			Assert.That(rejected.SequenceNumber, Is.Zero);
+			Assert.That(rejected.RejectionReason, Is.Not.Empty);
+			Assert.That(queue.Count, Is.EqualTo(LiveParameterQueue.Capacity));
+		}
+
+		[TestCase(null, "motion")]
+		[TestCase("", "motion")]
+		[TestCase("patch-a", null)]
+		[TestCase("patch-a", "")]
+		public void InvalidIdentifiersAreRejected(string patchId, string parameterId) {
+			var queue = new LiveParameterQueue();
+			var result = queue.EnqueueSetParameter(patchId, parameterId, 0f);
+
+			Assert.That(result.Accepted, Is.False);
+			Assert.That(result.SequenceNumber, Is.Zero);
+		}
+	}
+}

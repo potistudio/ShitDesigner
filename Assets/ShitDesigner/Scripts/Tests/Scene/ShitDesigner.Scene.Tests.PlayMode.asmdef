@@ -1,0 +1,27 @@
+{
+  "name": "ShitDesigner.Scene.Tests.PlayMode",
+  "rootNamespace": "ShitDesigner.Scene.Tests",
+  "references": [
+    "ShitDesigner.Scene",
+    "ChitoseCandy",
+    "ShitDesigner.Main",
+    "ShitDesigner.Runtime",
+    "ShitDesigner.Core",
+    "ShitDesigner.Tests.Shared",
+    "UnityEngine.TestRunner",
+    "Unity.RenderPipelines.Core.Runtime",
+    "Unity.RenderPipelines.Universal.Runtime"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "SHITDESIGNER_INCLUDE_TESTS",
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

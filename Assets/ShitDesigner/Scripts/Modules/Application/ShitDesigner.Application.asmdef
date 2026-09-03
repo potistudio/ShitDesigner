@@ -1,0 +1,21 @@
+{
+  "name": "ShitDesigner.Application",
+  "rootNamespace": "ShitDesigner.Application",
+  "references": [
+    "ShitDesigner.Core",
+    "ShitDesigner.Project",
+    "ShitDesigner.Graph",
+    "ShitDesigner.Runtime",
+    "ShitDesigner.Persistence"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": true,
+  "optionalUnityReferences": []
+}
