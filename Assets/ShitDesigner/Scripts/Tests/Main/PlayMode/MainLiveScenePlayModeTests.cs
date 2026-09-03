@@ -162,6 +162,10 @@ namespace ShitDesigner.Main.Tests {
 			var overlayPatchControls = ui.Q<ScrollView>("overlay-patch-controls");
 			var effectNodeControls = ui.Q<ScrollView>("effect-node-controls");
 			Assert.That(sidebarTabs.layout.height, Is.EqualTo(40f).Within(0.5f));
+			Assert.That(sidebarTabs.layout.width, Is.EqualTo(320f).Within(0.5f));
+			Assert.That(ui.Query<Button>(className: "sidebar-tab").ToList().Select(tab => tab.layout.width),
+				Is.All.GreaterThanOrEqualTo(80f),
+				"Every catalog tab must retain a usable pointer target when the preview area is constrained.");
 			Assert.That(mainPatchControls.worldBound.yMin, Is.GreaterThanOrEqualTo(sidebarTabs.worldBound.yMax - 0.5f));
 			Assert.That(ui.Query<Button>(className: "sidebar-tab").ToList().Select(tab => tab.text), Is.EqualTo(new[] { "MAIN", "OVERLAY", "FX" }));
 			Assert.That(mainPatchControls, Is.Not.Null);
